@@ -22,7 +22,9 @@ the can start&stop disabler function is done by simply shorting a gpio to ground
 
 ## Usage Instructions
 use stm32CubeIde to compile on windows
+
 use stm32CubeProgrammer to flash the firmware elf file contained in subfolder firmware\ledsStripController\Release 
+
 Note: i downloaded previous version of the programmer (v.2.15.0) since last available revision had some bug that won't allow me to flash canable.
 
 You should perform some settings inside firmware:
