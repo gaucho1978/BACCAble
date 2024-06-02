@@ -68,8 +68,8 @@ DMA controllers in STM32s support various operations, one of them being super ha
 We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
 
 ## The interconnections
-![Interconnections](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png?sanitize=true)
-## The Box
+![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 
-![Box](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/box/box.png)
+## The Box
+![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
