@@ -217,7 +217,7 @@ void vuMeterUpdate(float volume, uint8_t colorPreset ){
 		currentColorPreset=colorPreset;
 	}
 	UNUSED(lastVumeterUpdate);
-	if(lastVumeterUpdate+10 > HAL_GetTick()) { //enter update function only once each 100 msec.
+	if(lastVumeterUpdate+10 > HAL_GetTick()) { //enter update function only once each 10 msec.
 		return;
 	}
 	lastVumeterUpdate=HAL_GetTick();
