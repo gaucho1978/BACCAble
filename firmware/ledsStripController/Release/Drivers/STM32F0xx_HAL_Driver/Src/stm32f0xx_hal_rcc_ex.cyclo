@@ -1,0 +1,12 @@
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:102:19:HAL_RCCEx_PeriphCLKConfig	17
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:268:6:HAL_RCCEx_GetPeriphCLKConfig	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:368:10:HAL_RCCEx_GetPeriphCLKFreq	31
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:657:6:HAL_RCCEx_CRSConfig	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:699:6:HAL_RCCEx_CRSSoftwareSynchronizationGenerate	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:709:6:HAL_RCCEx_CRSGetSynchronizationInfo	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:742:10:HAL_RCCEx_CRSWaitSynchronization	10
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:890:13:HAL_RCCEx_CRS_SyncOkCallback	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:901:13:HAL_RCCEx_CRS_SyncWarnCallback	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:912:13:HAL_RCCEx_CRS_ExpectedSyncCallback	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:928:13:HAL_RCCEx_CRS_ErrorCallback	1
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_rcc_ex.c:825:6:HAL_RCCEx_CRS_IRQHandler	11

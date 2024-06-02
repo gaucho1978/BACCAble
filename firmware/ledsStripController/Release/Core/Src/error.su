@@ -1,0 +1,4 @@
+../Core/Src/error.c:16:6:error_assert	8	static
+../Core/Src/error.c:27:10:error_timestamp	0	static
+../Core/Src/error.c:36:9:error_occurred	0	static
+../Core/Src/error.c:45:10:error_reg	0	static

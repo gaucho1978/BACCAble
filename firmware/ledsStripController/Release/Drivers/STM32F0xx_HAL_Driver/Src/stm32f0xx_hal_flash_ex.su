@@ -1,0 +1,9 @@
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:498:13:FLASH_MassErase	0	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:749:26:FLASH_OB_RDP_LevelConfig	16	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:311:19:HAL_FLASHEx_OBErase	16	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:360:19:HAL_FLASHEx_OBProgram	32	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:441:6:HAL_FLASHEx_OBGetConfig	8	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:463:10:HAL_FLASHEx_OBGetUserData	0	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:958:6:FLASH_PageErase	0	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:157:19:HAL_FLASHEx_Erase	24	static
+../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_flash_ex.c:238:19:HAL_FLASHEx_Erase_IT	16	static

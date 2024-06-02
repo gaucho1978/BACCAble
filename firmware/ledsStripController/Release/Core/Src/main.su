@@ -1,0 +1,8 @@
+../Core/Src/main.c:121:7:scaleVolume	8	static
+../Core/Src/main.c:133:9:scaleColorSet	0	static
+../Core/Src/main.c:172:6:SystemClock_Config	112	static,ignoring_inline_asm
+../Core/Src/main.c:17:5:main	56	static
+../Core/Src/main.c:249:6:Error_Handler	0	static,ignoring_inline_asm
+../Core/Src/main.c:255:6:system_irq_disable	0	static,ignoring_inline_asm
+../Core/Src/main.c:264:6:system_irq_enable	0	static,ignoring_inline_asm
+../Core/Src/main.c:269:6:system_hex32	12	static

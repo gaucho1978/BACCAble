@@ -1,0 +1,2 @@
+../Core/Src/slcan.c:11:8:slcan_parse_frame	8
+../Core/Src/slcan.c:80:8:slcan_parse_str	28

@@ -1,0 +1,6 @@
+../USB_DEVICE/App/usbd_cdc_if.c:40:15:CDC_DeInit_FS	0	static
+../USB_DEVICE/App/usbd_cdc_if.c:33:15:CDC_Init_FS	8	static
+../USB_DEVICE/App/usbd_cdc_if.c:52:15:CDC_Control_FS	0	static
+../USB_DEVICE/App/usbd_cdc_if.c:130:15:CDC_Receive_FS	32	static
+../USB_DEVICE/App/usbd_cdc_if.c:165:6:cdc_process	24	static
+../USB_DEVICE/App/usbd_cdc_if.c:219:9:CDC_Transmit_FS	32	static
