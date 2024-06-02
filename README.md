@@ -28,10 +28,10 @@ use stm32CubeProgrammer to flash the firmware elf file contained in subfolder fi
 Note: i downloaded previous version of the programmer (v.2.15.0) since last available revision had some bug that won't allow me to flash canable.
 
 You should perform some settings inside firmware:
-If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
-If you want to use the device as leds strip controller you shall comment #define ACT_AS_CANABLE in main.h
-If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h
-In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
+- If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
+- If you want to use the device as leds strip controller you shall comment #define ACT_AS_CANABLE in main.h
+- If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h
+- In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 
 flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
@@ -71,7 +71,7 @@ More explained in the later sections.
 
 
 ## The interconnections
-![Interconnections](https://raw.githubusercontent.com/gaucho1978/ledsstripcontroller/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png?sanitize=true)
+![Interconnections](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png?sanitize=true)
 ## The Box
-![Box](https://raw.githubusercontent.com/gaucho1978/ledsstripcontroller/hardware/box/box.png?sanitize=true)
-![Cap](https://raw.githubusercontent.com/gaucho1978/ledsstripcontroller/hardware/box/cap.png?sanitize=true)
+![Box](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/box/box.png?sanitize=true)
+![Cap](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/box/cap.png?sanitize=true)
