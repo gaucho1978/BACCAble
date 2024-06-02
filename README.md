@@ -70,5 +70,7 @@ We will use *HT* and *TC* events extensively, as they will be use to *prepare da
 ## The interconnections
 ![Interconnections](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png?sanitize=true)
 ## The Box
+hardware/box/cap.png
+
 ![Box](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/box/box.png?sanitize=true)
 ![Cap](https://raw.githubusercontent.com/gaucho1978/CANableAndLedsStripController/hardware/box/cap.png?sanitize=true)
