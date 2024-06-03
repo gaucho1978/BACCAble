@@ -18,7 +18,7 @@ Subfolder tools contains the famous savvyCan sniffer tool for windows (portable)
 
 In the firmware I used the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), then I added message decoding, leds Controlling functions and start&stop car function disabler.
 
-the can start&stop disabler function is done by simply shorting a gpio to ground to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. Each one of you shoud perform some checks on the panel with a multimeter to find the proper resistor value. Same approach shall be used on the can bus protocol, even if the accelerator pedal position should be the same on each car.
+the car start&stop disabler function is implemented by simply shorting a gpio to ground to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. Each one of you shoud perform some checks on the panel with a multimeter to find the proper resistor value. Same approach shall be used on the can bus protocol, even if the accelerator pedal position should be the same on each car.
 
 ## Usage Instructions
 - use stm32CubeIde to compile on windows
