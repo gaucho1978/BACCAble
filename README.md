@@ -5,7 +5,7 @@ This project uses the famous CANABLE in order to:
 - control a WS281x leds strip by means of the decoded can bus data
 - automatically disable start&stop car 
 ## Description
-I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), then I added message decoding, leds Controlling functions and start&stop car function disabler.
+I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added message decoding, leds Controlling functions and start&stop car function disabler.
 The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor, in order to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. 
 Each one of you should perform some checks on the panel with a multimeter, in order to find the proper resistor value. Same approach shall be used on the can bus protocol, by sniffing data with savvycan, even if the accelerator pedal position should be the same on each car
 ## Folders content
