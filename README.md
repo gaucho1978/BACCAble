@@ -73,8 +73,8 @@ We will use *HT* and *TC* events extensively, as they will be use to *prepare da
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
 With such configuration the device is seen by the pc as a virtual serial port implementing the following serial commands:
 
-O - Open channel
-C - Close channel
+.O - Open channel
+.C - Close channel
 S0 - Set bitrate to 10k
 S1 - Set bitrate to 20k
 S2 - Set bitrate to 50k
