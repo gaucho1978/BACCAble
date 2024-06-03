@@ -1,5 +1,5 @@
 ## Scope
-This project uses the famous CANABLE (the cheapest can bus device in the market) in order to:
+This project uses the famous CANABLE (the cheapest can bus device on the market) in order to:
 - sniff on the can bus (useful for debug and exploit purposes)
 - decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip by means of the decoded can bus data
