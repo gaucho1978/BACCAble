@@ -68,3 +68,33 @@ We will use *HT* and *TC* events extensively, as they will be use to *prepare da
 ## The Box
 ![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
+
+## Usage when configured to act as Canable
+when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
+With such configuration the device is seen by the pc as a virtual serial port implementing the following serial commands:
+
+O - Open channel
+C - Close channel
+S0 - Set bitrate to 10k
+S1 - Set bitrate to 20k
+S2 - Set bitrate to 50k
+S3 - Set bitrate to 100k
+S4 - Set bitrate to 125k
+S5 - Set bitrate to 250k
+S6 - Set bitrate to 500k
+S7 - Set bitrate to 750k
+S8 - Set bitrate to 1M
+M0 - Set mode to normal mode (default)
+M1 - Set mode to silent mode
+A0 - Disable automatic retransmission
+A1 - Enable automatic retransmission (default)
+TIIIIIIIILDD... - Transmit data frame (Extended ID) [ID, length, data]
+tIIILDD... - Transmit data frame (Standard ID) [ID, length, data]
+RIIIIIIIIL - Transmit remote frame (Extended ID) [ID, length]
+rIIIL - Transmit remote frame (Standard ID) [ID, length]
+V - Returns firmware version and remote path as a string
+Note: Channel configuration commands must be sent before opening the channel. The channel must be opened before transmitting frames.
+
+This firmware currently does not provide any ACK/NACK feedback for serial commands.
+
+
