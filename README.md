@@ -2,7 +2,7 @@
 
 This project uses the famous CANABLE in order to:
 - sniff on the can bus (useful for debug and exploit purposes)
-- decode some parameters on the bus (like motor rpm, accelerator pedal position and gear selection)
+- decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip controlled by means of the decoded can bus data
 - automatically disable start&stop car functionality
 
