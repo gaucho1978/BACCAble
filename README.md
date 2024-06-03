@@ -1,24 +1,19 @@
 ## General description
-
+#Scope
 This project uses the famous CANABLE in order to:
 - sniff on the can bus (useful for debug and exploit purposes)
 - decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip by means of the decoded can bus data
 - automatically disable start&stop car functionality
-
-Subfolder firmware contains the firmware
-
-Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
-
-Subfolder hardware/box contains the 3d model of the case to accomodate required components.
-
-Subfolder hardware/system interconnection contains interconnection diagram to connect required components
-
-Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
-
-In the firmware I used the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), then I added message decoding, leds Controlling functions and start&stop car function disabler.
-
-the car start&stop disabler function is implemented by simply shorting a gpio to ground to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. Each one of you shoud perform some checks on the panel with a multimeter to find the proper resistor value. Same approach shall be used on the can bus protocol, even if the accelerator pedal position should be the same on each car.
+#Folders content
+- Subfolder firmware contains the firmware
+- Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
+- Subfolder hardware/box contains the 3d model of the case to accomodate required components.
+- Subfolder hardware/system interconnection contains interconnection diagram to connect required components
+- Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
+#Description
+I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), then I added message decoding, leds Controlling functions and start&stop car function disabler.
+The functionality " car start&stop disabler " is implemented by simply shorting a gpio to ground to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. Each one of you shoud perform some checks on the panel with a multimeter to find the proper resistor value. Same approach shall be used on the can bus protocol, even if the accelerator pedal position should be the same on each car.
 
 ## Usage Instructions
 - use stm32CubeIde to compile on windows
