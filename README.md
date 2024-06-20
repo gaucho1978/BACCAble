@@ -97,4 +97,38 @@ Note: Channel configuration commands must be sent before opening the channel. Th
 
 This firmware currently does not provide any ACK/NACK feedback for serial commands.
 
+## Alfa Romeo Giulia Protocol Reverse Engineering 
 
+These are information that I found and thet I can share. Use everything this at your own risk.
+
+These messages changes when you move accelerator pedal:
+message id 0ff, second and third byte, changes from 1D33 to 39f3
+message id 1f0, first 3 nibble changes from 000 to 1f2
+message id 412 , fourth byte, changes from 33 to E6. I use this one!!
+message id 736, second and third byte, changes from 3319 to E772
+
+The following message identifies gear selection (I use this too):
+message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
+
+According to Sniz (a famous guru), this is RFHUB Reset (But I didn't tested it):
+T18DAC7F180211010000000000 
+
+According to Sniz this starts car Alarm, but on my car it doesn't work:
+T1E340041488201500
+t1EF84202E20000000156 This, on my car, temporary resets the main panel
+t2EC80000000000000000
+T1E340041488201500
+
+This message is periodically sent when panel is on:
+t38480809DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Dynamic
+t38480801DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Natural
+t38480811DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - AllWeather
+t38480831DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Race (on my car this is not available)
+
+You can Sent this message to emulate the following key Press:
+t2FA390XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - RES
+
+Experiments: 
+
+t2EE47FE00000 This on my car, if the panel is on, temporary resets main panel ad you can ear relays switch sound
+t0FA8A0200000200400F1 this on my car, if the panel is on, generates animation on the panel like switch off and on
