@@ -107,10 +107,12 @@ message id 1f0, first 3 nibble changes from 000 to 1f2
 message id 412 , fourth byte, changes from 33 to E6. I use this one!!
 message id 736, second and third byte, changes from 3319 to E772
 
-The following message identifies gear selection (I use this too):
-message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
+- The following message identifies gear selection (I use this too):
+
+-- message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
 
 According to Sniz (a famous guru), this is RFHUB Reset (But I didn't tested it):
+
 T18DAC7F180211010000000000 
 
 According to Sniz this starts car Alarm, but on my car it doesn't work:
