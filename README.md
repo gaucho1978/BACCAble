@@ -20,7 +20,7 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - Subfolder hardware/system interconnection contains interconnection diagram to connect required components
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 ## Start&Stop car functionality Disabler
-The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor, in order to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. 
+The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor, in order to simulate Start&Stop button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. 
 This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
 - perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button. 
 ## Immobilizer functionality
