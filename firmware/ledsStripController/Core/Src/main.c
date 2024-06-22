@@ -14,6 +14,12 @@ uint8_t scaledColorSet;
 
 uint32_t debugTimer0;
 
+//the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
+CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ {.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2EC, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},};
+uint8_t panicAlarmStartMsgData[5][8]={{0x02,0x11,0x01,0x00,},{0x88,0x20,0x15,0x00,},{0x42,0x02,0xE2,0x00,0x00,0x00,0x01,0x56},{0x00,},{0x88,0x20,0x15,0x00,}};
+
+
+
 int main(void){
 
 	SystemClock_Config(); //set system clocks
@@ -106,6 +112,19 @@ int main(void){
 					}
 					vuMeterUpdate(scaledVolume,scaledColorSet);
 					//vuMeterUpdate(scaledVolume,3);
+
+					#if defined(IMMOBILIZER_ENABLED)
+						//if it is a message of connection to RFHUB, reset the connection and start the panic alarm
+						if ((rx_msg_header.ExtId==0x18DAC7F1) && (rx_msg_header.DLC==8)){
+							//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
+							uint8_t i;
+							onboardLed_red_on();
+							for(i=0; i<4; i++){
+								can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
+							}
+						}
+
+					#endif
 				#endif /* ACT_AS_CANABLE */
 			}
 		}

@@ -1,13 +1,33 @@
+### New Project name: BACCAble 
+
 ## Scope
 This project uses the famous CANABLE (the cheapest can bus device on the market) in order to:
 - sniff on the can bus (useful for debug and exploit purposes)
 - decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip by means of the decoded can bus data
 - automatically disable start&stop car functionality
+- act as a can bus Immobilizer.
 ## Description
-I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added message decoding, leds Controlling functions and start&stop car function disabler.
+I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
+- message decoding, 
+- leds Controlling functions, 
+- start&stop car function disabler,
+- immobilizer
+
 The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor, in order to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. 
-Each one of you should perform some checks on the panel with a multimeter, in order to find the proper resistor value. Same approach shall be used on the can bus protocol, by sniffing data with savvycan, even if the accelerator pedal position should be the same on each car
+This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
+- perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button. 
+- identify proprietary can bus messages, by sniffing data with savvycan, even if I expect same message for the accelerator pedal position.
+
+The functionality IMMOBILIZER performs the following:
+1. Detects if the thief is trying to connect to to RFHUB (they do it to add a key to the car)
+2. Resets the RFHUB in order to reset the thief connection
+3. Starts the Panic Alarm
+
+Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: https://youtu.be/dHC6A2Jsalo
+Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. I'm still working on this, in order to understand if Could I use another approach.
+
+
 ## Folders content
 - Subfolder firmware contains the firmware
 - Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
@@ -19,6 +39,7 @@ You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
 - If you want to use the device as leds strip controller you shall comment #define ACT_AS_CANABLE in main.h
 - If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h
+- If you want to disable IMMOBILIZER functionality, you shall comment #define IMMOBILIZER_ENABLED in main.h
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 
 Software to use:
@@ -115,7 +136,7 @@ These are information that I found and that I can share. Use everything this at 
 
 3. According to Sniz this starts car Alarm, but on my car it doesn't work:
    - T1E340041488201500
-   - t1EF84202E20000000156 This, on my car, temporary resets the main panel
+   - t1EF84202E20000000156 This, on my car, temporary resets the main panel (if it is on) and starts the panic alarm
    - t2EC80000000000000000
    - T1E340041488201500
 
@@ -125,9 +146,14 @@ These are information that I found and that I can share. Use everything this at 
    - t38480811DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - AllWeather
    - t38480831DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Race (on my car this is not available)
 
-5. You can Sent this message to emulate the following key Press:
+5. You can Send these messages to emulate the following key Press (or you can detect when they have been pressed, by filtering received messages):
    - t2FA390XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - RES
-
+   - t2FA312XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control on/off
+   - t2FA308XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed gently up
+   - t2FA300XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed strong up
+   - t2FA318XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed gently down
+   - t2FA320XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed strong down
+   
 6. Experiments: 
    - t2EE47FE00000 This on my car, if the panel is on, temporary resets main panel ad you can ear relays switch sound
    - t0FA8A0200000200400F1 this on my car, if the panel is on, generates animation on the panel like switch off and on

@@ -205,6 +205,10 @@ Discarded input sections
                 0x00000000        0x4 ./Core/Src/main.o
  .text.system_hex32
                 0x00000000       0x2a ./Core/Src/main.o
+ .data.panicAlarmStartMsgData
+                0x00000000       0x28 ./Core/Src/main.o
+ .data.panicAlarmStartMsgHeader
+                0x00000000       0x78 ./Core/Src/main.o
  .rodata.str1.1
                 0x00000000       0x14 ./Core/Src/main.o
  .data.FW_VERSION
