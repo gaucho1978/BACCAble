@@ -7,18 +7,23 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - control a WS281x leds strip by means of the decoded can bus data
 - automatically disable start&stop car functionality
 - act as a can bus Immobilizer.
-## Description
+## General Description
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
 - message decoding, 
 - leds Controlling functions, 
-- start&stop car function disabler,
-- immobilizer
-
+- start&stop car function disabler (more detailes in the dedicated subparagraph),
+- immobilizer (more details in the dedicated subparagraph)
+## Folders content
+- Subfolder firmware contains the firmware
+- Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
+- Subfolder hardware/box contains the 3d model of the case to accomodate required components.
+- Subfolder hardware/system interconnection contains interconnection diagram to connect required components
+- Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
+## Start&Stop car functionality Disabler
 The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor, in order to simulate button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. 
 This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
 - perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button. 
-- identify proprietary can bus messages, by sniffing data with savvycan, even if I expect same message for the accelerator pedal position.
-
+## Immobilizer functionality
 The functionality IMMOBILIZER performs the following:
 1. Detects if the thief is trying to connect to to RFHUB (they do it to add a key to the car)
 2. Resets the RFHUB in order to reset the thief connection
@@ -26,14 +31,11 @@ The functionality IMMOBILIZER performs the following:
 
 Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: https://youtu.be/dHC6A2Jsalo
 Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. I'm still working on this, in order to understand if Could I use another approach.
+## Leds Strip controller
+The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
 
-
-## Folders content
-- Subfolder firmware contains the firmware
-- Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
-- Subfolder hardware/box contains the 3d model of the case to accomodate required components.
-- Subfolder hardware/system interconnection contains interconnection diagram to connect required components
-- Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
+This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, should:
+- identify proprietary can bus messages, by sniffing data with savvycan.
 ## Usage Instructions
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
