@@ -1,4 +1,4 @@
-## New Project name: BACCAble 
+## PROJECT CODE NAME: BACCAble 
 
 ## Scope
 This project uses the famous CANABLE (the cheapest can bus device on the market) in order to:
