@@ -11,6 +11,8 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
 - message decoding, 
 - leds Controlling functions, 
+https://youtu.be/QDK8YCOsdVM?si=4o-OhhPRR7-ae9Gz
+
 - start&stop car function disabler (more detailes in the dedicated subparagraph),
 - immobilizer (more details in the dedicated subparagraph)
 ## Folders content
