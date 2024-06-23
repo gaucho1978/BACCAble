@@ -31,7 +31,7 @@ The functionality IMMOBILIZER performs the following:
 2. Resets the RFHUB in order to reset the thief connection
 3. Starts the Panic Alarm
 
-Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: https://youtu.be/dHC6A2Jsalo
+Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
 Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. I'm still working on this, in order to understand if Could I use another approach.
 ## Leds Strip controller
 The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
