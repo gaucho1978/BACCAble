@@ -36,15 +36,181 @@ uint32_t debugTimer;
 
 uint32_t lastVumeterUpdate=0; //last time we called the related function
 
+uint8_t vuMeterInitState=0; //state machine of the initialization phase. used to divide actions on more loops and avoid blocking execution
+uint32_t newInternalDelay=0; //used to manage pauses inside init sequence
+int16_t newInternalIndex=0; //used for cycles inside init sequence
 
 //this function initializes gpio,dma,timer and everything needed to output leds protocol.
 //if you change leds number you shall adapt the function, where it creates welcome effects
 void vuMeterInit(void){
-	//initialize GPIO, DMA, and TIMER
-	MX_GPIO_Init();
-	MX_DMA_Init();
-	MX_TIM1_Init();
+	switch(vuMeterInitState){
+	case 0:
+		//initialize GPIO, DMA, and TIMER
+		MX_GPIO_Init();
+		MX_DMA_Init();
+		MX_TIM1_Init();
+		vuMeterInitState++;
+		return;
+		break;
+	case 1:
+		shutdownLedsStrip();
+		vuMeterInitState++;
+		return;
+		break;
+	case 2:
+		if(datasentflag==1){ //wait the frame to be sent
+			datasentflag = 0; //restore the flag for next frame
+			newInternalDelay=HAL_GetTick();
+			vuMeterInitState++;
+		}
+		break;
+	case 3:
+		//let's sleep for 1 second. but if time is elapsed, go inside if
+		if(newInternalDelay+1000<HAL_GetTick()){
+			vuMeterInitState++;
+		}
+		break;
+	case 4:
+		//welcome effect preset
+		//set initial leds color like double italian flag
+		//setEuropeanFlag();
+		setItalianFlag();
+		newInternalIndex=0;
+		vuMeterInitState++;
+		return;
+		break;
+	case 5:
+		//welcome effect, like double heart pulse
+		if(newInternalIndex<30){
+			Set_Brightness(newInternalIndex);
+			WS2812_Send();
+			//wait message to be sent
+			vuMeterInitState++;
+		}else{
+			//jump to nex phase
+			vuMeterInitState=8;
+			newInternalIndex=30; //reset the index counter for newt phase
+		}
+		break;
+	case 6:
+		if(datasentflag==1){ //wait the frame to be sent
+			datasentflag = 0; //restore the flag for next frame
+			newInternalDelay=HAL_GetTick();
+			vuMeterInitState++;
+		}
+		break;
+	case 7:
+		//let's sleep for 50msec. but if time is elapsed, go inside if
+		if(newInternalDelay+50<HAL_GetTick()){
+			newInternalIndex++;
+			vuMeterInitState=5;
+		}
+		break;
+	case 8:
+		//welcome effect, like double heart pulse
+		if(newInternalIndex>=0){
+			Set_Brightness(newInternalIndex);
+			WS2812_Send();
+			//wait message to be sent
+			vuMeterInitState++;
+		}else{
+			//jump to nex phase
+			vuMeterInitState=11;
+			newInternalDelay=HAL_GetTick(); //prepare to sleep
+		}
+		break;
+	case 9:
+		if(datasentflag==1){ //wait the frame to be sent
+			datasentflag = 0; //restore the flag for next frame
+			newInternalDelay=HAL_GetTick();
+			vuMeterInitState++;
+		}
+		break;
+	case 10:
+		//let's sleep for 50msec. but if time is elapsed, go inside if
+		if(newInternalDelay+50<HAL_GetTick()){
+			newInternalIndex--;
+			vuMeterInitState=8;
+		}
+		break;
+	case 11:
+		//let's sleep for 500msec. but if time is elapsed, go inside if
+		if(newInternalDelay+500<HAL_GetTick()){
+			vuMeterInitState++;
+			newInternalIndex=0; //reset the index counter for newt phase
+		}
+		break;
+	case 12: //ex5
+		//welcome effect, like double heart pulse
+		if(newInternalIndex<30){
+			Set_Brightness(newInternalIndex);
+			WS2812_Send();
+			//wait message to be sent
+			vuMeterInitState++;
+		}else{
+			//jump to nex phase
+			vuMeterInitState=15;
+			newInternalIndex=30; //reset the index counter for newt phase
+		}
+		break;
+	case 13: //ex 6:
+		if(datasentflag==1){ //wait the frame to be sent
+			datasentflag = 0; //restore the flag for next frame
+			newInternalDelay=HAL_GetTick();
+			vuMeterInitState++;
+		}
+		break;
+	case 14: //ex 7:
+		//let's sleep for 50msec. but if time is elapsed, go inside if
+		if(newInternalDelay+50<HAL_GetTick()){
+			newInternalIndex++;
+			vuMeterInitState=12;
+		}
+		break;
+	case 15: //ex 8:
+		//welcome effect, like double heart pulse
+		if(newInternalIndex>=0){
+			Set_Brightness(newInternalIndex);
+			WS2812_Send();
+			//wait message to be sent
+			vuMeterInitState++;
+		}else{
+			//jump to nex phase
+			vuMeterInitState=18;
+			newInternalDelay=HAL_GetTick(); //prepare to sleep
+		}
+		break;
+	case 16: // ex 9:
+		if(datasentflag==1){ //wait the frame to be sent
+			datasentflag = 0; //restore the flag for next frame
+			newInternalDelay=HAL_GetTick();
+			vuMeterInitState++;
+		}
+		break;
+	case 17: //ex 10:
+		//let's sleep for 50msec. but if time is elapsed, go inside if
+		if(newInternalDelay+50<HAL_GetTick()){
+			newInternalIndex--;
+			vuMeterInitState=15;
+		}
+		break;
+	case 18: //ex 11:
+		//let's sleep for 500msec. but if time is elapsed, go inside if
+		if(newInternalDelay+500<HAL_GetTick()){
+			vuMeterInitState++;
+			newInternalIndex=0; //reset the index counter for newt phase
+		}
+		break;
+	case 50:
+		return; //init completed
+		break;
+	default:
+		vuMeterInitState++;	//increment the counter - we leave empty position for future growth
+		break;
+	}
+}
 
+void shutdownLedsStrip(){
 	//start sending zeros in order to avoid white leds ON at the beginning
 	for(int i=0;i<24*MAX_LED;i++){
 		pwmData[i]=17; //sets logical 0 (duty 17)
@@ -53,50 +219,7 @@ void vuMeterInit(void){
 			pwmData[i]=0; //sets duty 0
 	}
 	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_4, (uint32_t *)pwmData, 24*MAX_LED+50);
-
-	while (!datasentflag){}; //wait the frame to be sent
-
-	datasentflag = 0; //restore the flag for next frame
-	HAL_Delay (1000); //sleep 1 sec
-
-	//welcome effect preset
-	//set initial leds color like double italian flag
-	//setEuropeanFlag();
-	setItalianFlag();
-
-	//welcome effect, like double heart pulse
-	for (int i=0; i<30; i++){
-		Set_Brightness(i);
-		WS2812_Send();
-		while (!datasentflag){}; //wait the frame to be sent
-		datasentflag = 0; //restore the flag for next frame
-		HAL_Delay (50); //sleep 50msec
-	}
-
-	for (int i=30; i>=0; i--){
-		Set_Brightness(i);
-		WS2812_Send();
-		while (!datasentflag){}; //wait the frame to be sent
-		datasentflag = 0; //restore the flag for next frame
-		HAL_Delay (50); //sleep 50msec
-	}
-	HAL_Delay (500);
-	for (int i=0; i<30; i++){
-		Set_Brightness(i);
-		WS2812_Send();
-		while (!datasentflag){}; //wait the frame to be sent
-		datasentflag = 0; //restore the flag for next frame
-		HAL_Delay (50); //sleep 50msec
-	}
-	for (int i=30; i>=0; i--){
-		Set_Brightness(i);
-		WS2812_Send();
-		while (!datasentflag){}; //wait the frame to be sent
-		datasentflag = 0; //restore the flag for next frame
-		HAL_Delay (50); //sleep 50msec
-	}
 }
-
 void setItalianFlag(){
 	//set initial leds color like double italian flag
 	//rrrrrrrr-wwwwww-ggggggg-gggg-ggggggg-wwwwww-rrrrrrrr
@@ -186,6 +309,7 @@ void setEuropeanFlag(){
 // color preset. We use the volume parameter to change brightness (and light only required
 // leds), and we use the color_preset parameter (gear position) to change colors of the leds
 void vuMeterUpdate(float volume, uint8_t colorPreset ){
+	if (vuMeterInitState<50) return; //initialization still not completed
 
 	currentVolume= (currentVolume * 99.0 / 100.0)+(volume / 100.0); //integrated in time on 50 samples (one message each 2 millisecond?, more or less)
 

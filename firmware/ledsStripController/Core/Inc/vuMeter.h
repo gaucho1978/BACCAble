@@ -10,6 +10,7 @@
 	void Set_LED (uint8_t LEDnum, uint8_t Red, uint8_t Green, uint8_t Blue);
 	void Set_Brightness (uint8_t brightness);
 	void WS2812_Send (void);
+	void shutdownLedsStrip();
 	void setItalianFlag(void);
 	void setGermanFlag(void);
 	void setEuropeanFlag(void);

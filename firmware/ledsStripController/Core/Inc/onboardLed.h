@@ -23,6 +23,7 @@
 	void onboardLed_red_on(void);
 	void onboardLed_red_off(void);
 	void onboardLed_blue_on(void);
+	void onboardLed_blue_off(void);
 	void onboardLed_process(void);
 
 #endif

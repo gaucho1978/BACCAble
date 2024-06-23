@@ -13,49 +13,47 @@ float scaledVolume;
 uint8_t scaledColorSet;
 
 uint32_t debugTimer0;
+uint32_t timeSinceLastReceivedCanMessage=0;
+uint32_t timeSinceLastPanicAlarmActivation=0;
+uint8_t ledsStripIsOn=0; //indicates if leds strip is on
+uint8_t alarmActivated=0; //indicates if the panic alarm was activated during last 10 minutes
 
 //the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
 CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ {.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2EC, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},};
 uint8_t panicAlarmStartMsgData[5][8]={{0x02,0x11,0x01,0x00,},{0x88,0x20,0x15,0x00,},{0x42,0x02,0xE2,0x00,0x00,0x00,0x01,0x56},{0x00,},{0x88,0x20,0x15,0x00,}};
 
+uint8_t startAndStopEnabled=1;
+uint32_t lastTimeStartAndstopDisablerButtonPressed=0;
+
+// Storage for status and received message buffer
+CAN_RxHeaderTypeDef rx_msg_header;  //msg header
+uint8_t rx_msg_data[8] = {0};  //msg data
+uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
 
 int main(void){
 
 	SystemClock_Config(); //set system clocks
 	onboardLed_init(); //initialize onboard leds for debug purposes
-	HAL_Delay(100);
+	//HAL_Delay(10); //it was 100
 	can_init(); //initialize can interface
 	onboardLed_red_on();
+	//onboardLed_blue_blink(2);
+
+
 	#if defined(ACT_AS_CANABLE)
 		MX_USB_DEVICE_Init();
-	#else
-		vuMeterInit(); //initialize leds strip controller
+	#endif
+
+	#if (!defined(ACT_AS_CANABLE)) || defined(IMMOBILIZER_ENABLED)  //if we require the automatic reading of the can bus (to ctrl leds or to make the immobilizer)...
+		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
 		can_enable(); //enable can port
-	#endif /* ACT_AS_CANABLE */
-
-	onboardLed_blue_blink(2);
-
-	#if defined(DISABLE_START_STOP)
-		// It is assumed that there is a delay introduced by the previous activities (led intro),
-		// otherwise the car ECU could not be ready to accept commands
-		// We will now short gpio to ground for 500msec in order to disable start&stop car functionality
-		// I use swclk pin, pin37, PA14
-		HAL_GPIO_WritePin(START_STOP_DISABLER, 0);
-		HAL_Delay(500);
-		HAL_GPIO_WritePin(START_STOP_DISABLER, 1);
 	#endif
-	// Storage for status and received message buffer
-	CAN_RxHeaderTypeDef rx_msg_header;
-	uint8_t rx_msg_data[8] = {0};
-	uint8_t msg_buf[SLCAN_MTU];
 
 	while (1){
 		debugTimer0=HAL_GetTick();
-
 		onboardLed_process();
-		//onboardLed_red_on();
 		can_process();
 		#if defined(ACT_AS_CANABLE)
 			cdc_process(); //processa dati usb
@@ -64,45 +62,104 @@ int main(void){
 			//CDC_Transmit_FS((uint8_t*)data, strlen(data));
 			//HAL_Delay (1000);
 
+			//just for test, we can periodically send a packet to can bus
+			//we can set the can bus in loopback mode, to receive back each sent message.
+			// To set loopback mode, in function can_enable (can.c) we shall set can_handle.Init.Mode = CAN_MODE_LOOPBACK
+			// This way we will receive whatever we send
+			// Before to send can messages, speed shall be set and can port shall be enabled,
+			//can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
+			//can_enable(); //enable can port
+			//Then we can prepare and send the following test packet
+			//CAN_TxHeaderTypeDef testMsgHeader;
+			//testMsgHeader.IDE= CAN_ID_STD;
+			//testMsgHeader.RTR = CAN_RTR_DATA;
+			//testMsgHeader.StdId=0x0412;
+			//testMsgHeader.DLC=5;
+			//uint8_t testMsgData[8] = {0};
+			//testMsgData[0]=0x01;
+			//testMsgData[1]=0x01;
+			//testMsgData[2]=0x01;
+			//testMsgData[3]=0x01;
+			//testMsgData[4]=0xE6; //pedal position
+			//can_tx(&testMsgHeader, testMsgData);
 		#else
+			//don't act as canable. One USB port pin is used to control leds.
+			vuMeterInit(); //initialize leds strip controller - this is called many times to divide the operations on more loops
+
+			if((timeSinceLastReceivedCanMessage+10000<HAL_GetTick()) && (ledsStripIsOn) ){ //if no can interesting message for 10 seconds, and the strip is on, shutdown the leds to save energy
+				shutdownLedsStrip();
+				ledsStripIsOn=0; //entriamo solo una volta
+			}
+
 		#endif
 
-		//just for debug purposes, we can periodically send a packet to can bus
-		//we can set the can bus in loopback mode, to receive back each sent message.
-		// To set loopback mode, in function can_enable (can.c) we shall set can_handle.Init.Mode = CAN_MODE_LOOPBACK
-		// This way we will receive whatever we send
-		// Before to send can messages, speed cshall be set and can port shall be enabled,
-		// if you defined ACT_AS_CANABLE, use the following commands (not required if
-		// ACT_AS_CANABLE is not defined, since this is done in this function, at the beginning
-		//can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
-		//can_enable(); //enable can port
-		//Then we can prepare and send the following test packet
-		//CAN_TxHeaderTypeDef testMsgHeader;
-		//testMsgHeader.IDE= CAN_ID_STD;
-		//testMsgHeader.RTR = CAN_RTR_DATA;
-		//testMsgHeader.StdId=0x0412;
-		//testMsgHeader.DLC=5;
-		//uint8_t testMsgData[8] = {0};
-		//testMsgData[0]=0x01;
-		//testMsgData[1]=0x01;
-		//testMsgData[2]=0x01;
-		//testMsgData[3]=0x01;
-		//testMsgData[4]=0xE6; //pedal position
-		//can_tx(&testMsgHeader, testMsgData);
+		#if defined(IMMOBILIZER_ENABLED)
+			//the following if is used only by IMMOBILIZER functionality
+			if((timeSinceLastPanicAlarmActivation+600000<HAL_GetTick()) && (alarmActivated)){ //after 10 minutes, alarm return to not activated (cause for sure it is off)
+				alarmActivated=0;
+			}
+		#endif
+
+		#if defined(DISABLE_START_STOP)
+			if(startAndStopEnabled && (HAL_GetTick()>6000)){
+				if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
+					// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
+					HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
+					lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
+					onboardLed_red_on();
+				}
+
+				if(lastTimeStartAndstopDisablerButtonPressed+500<HAL_GetTick()){ //if pressed since 500msec
+					HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
+					startAndStopEnabled=0;
+					onboardLed_blue_on();
+
+				}
+			}
+		#endif
+
 
 		// If CAN message receive is pending, process the message
 		if(is_can_msg_pending(CAN_RX_FIFO0)){
 			// If message received from bus, parse the frame
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
+				#if defined(IMMOBILIZER_ENABLED)
+					//if it is a message of connection to RFHUB, reset the connection periodically, but start the panic alarm only once
+					if ((rx_msg_header.ExtId==0x18DAC7F1) && (rx_msg_header.DLC==8)){
+						//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
+						uint8_t i;
+						onboardLed_red_on();
+						can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //reset the connection to RFHUB
+
+						if(!alarmActivated ){ //if alarm is not running, start the alarm
+							alarmActivated=1;
+							timeSinceLastPanicAlarmActivation=HAL_GetTick();
+							for(i=1; i<5; i++){
+								can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
+							}
+						}
+					}
+
+					//FUTURE GROWTH
+					//se e' il messaggio che contiene la pressione del tasto RES (id 2FA), se é lungo 3 byte, se il primo byte é 0x90 (sfrutto le info ottenute sniffando)
+					if ((rx_msg_header.StdId==0x000002FA) && (rx_msg_header.DLC==3) && (rx_msg_data[0]==0x90)){
+						//premuto tasto RES!!
+						//just for test now. we will decide later what we caould do with button press sequence
+						onboardLed_red_on();
+					}
+
+				#endif
+
 				#if defined(ACT_AS_CANABLE)
 					uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
 					if(msg_len){
-						CDC_Transmit_FS(msg_buf, msg_len); //trasmetti dati via usb
+						CDC_Transmit_FS(msg_buf, msg_len); //transmit data via usb
 					}
 				#else
 					UNUSED(msg_buf); //avoid warning when used as leds strip controller
 					//se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
 					if ((rx_msg_header.StdId==0x00000412) && (rx_msg_header.DLC==5) && (rx_msg_data[3]>=51)){
+						timeSinceLastReceivedCanMessage=HAL_GetTick();
 						scaledVolume=scaleVolume(rx_msg_data[3]); //prendi il dato e scalalo, per prepararlo per l'invio alla classe vumeter
 					}
 					//se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
@@ -111,29 +168,16 @@ int main(void){
 						//onboardLed_red_on();
 					}
 					vuMeterUpdate(scaledVolume,scaledColorSet);
-					//vuMeterUpdate(scaledVolume,3);
-
-					#if defined(IMMOBILIZER_ENABLED)
-						//if it is a message of connection to RFHUB, reset the connection and start the panic alarm
-						if ((rx_msg_header.ExtId==0x18DAC7F1) && (rx_msg_header.DLC==8)){
-							//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
-							uint8_t i;
-							onboardLed_red_on();
-							for(i=0; i<4; i++){
-								can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
-							}
-						}
-
-					#endif
-				#endif /* ACT_AS_CANABLE */
+					ledsStripIsOn=1;
+				#endif
 			}
 		}
+
 		//for debug, measure the loop duration
 		if (HAL_GetTick()>debugTimer0+2){
-				//onboardLed_red_on();
+				onboardLed_red_on();
 		}
 	}
-
 }
 
 // this function scales value received from can bus. It is assumed that pedal position (or motor rpm) will change vumeter volume represented with the leds strip

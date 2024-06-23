@@ -24,6 +24,7 @@ void onboardLed_init(){
     GPIO_InitStruct.Alternate = 0;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
     onboardLed_red_off(); //shut down red led
+    onboardLed_blue_off(); //shut down blue led
     HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //outputs High signal at PA14, used to disable start&stop car functionality
 }
 
