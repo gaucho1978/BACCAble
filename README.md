@@ -138,7 +138,7 @@ These are information that I found and that I can share. Use everything this at 
 2. According to Sniz (a famous guru), this is RFHUB Reset (But I didn't tested it):
    - T18DAC7F180211010000000000 
 
-3. According to Sniz this starts car Alarm, but on my car it doesn't work:
+3. The following message sequence starts car Alarm:
    - T1E340041488201500
    - t1EF84202E20000000156 This, on my car, temporary resets the main panel (if it is on) and starts the panic alarm
    - t2EC80000000000000000
