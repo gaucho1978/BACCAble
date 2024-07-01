@@ -61,6 +61,9 @@ Note: i downloaded previous version of the programmer (v.2.15.0) since last avai
 Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
 - use stm32CubeProgrammer to flash the device
+## The hardware
+click on the following image to see the full hardware video:
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
 
 ## The interconnections
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
