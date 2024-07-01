@@ -10,7 +10,10 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 ## General Description
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
 - message decoding, 
-- leds Controlling functions, 
+- leds Controlling functions,
+  
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/QDK8YCOsdVM/0.jpg)](https://www.youtube.com/watch?v=QDK8YCOsdVM)
+
 - start&stop car function disabler (more detailes in the dedicated subparagraph),
 - immobilizer (more details in the dedicated subparagraph)
 ## Folders content
@@ -29,8 +32,9 @@ The functionality IMMOBILIZER performs the following:
 2. Resets the RFHUB in order to reset the thief connection
 3. Starts the Panic Alarm
 
-Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: https://youtu.be/dHC6A2Jsalo
-Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. I'm still working on this, in order to understand if Could I use another approach.
+Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
+Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. Therefore, if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the canable to the 5V usb voltage taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
+
 ## Leds Strip controller
 The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
 
@@ -54,40 +58,9 @@ Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
 - use stm32CubeProgrammer to flash the device
 
-
-## Understanding LED protocol
-
-The approach used to control WS281x leds strip controller was derived from this: https://github.com/MaJerle/stm32-ws2811-ws2812-ws2812b-ws281x-tim-pwm-dma-timer where it is used a timer to start a pwm, then DMA allows a fast change of the duty cycle of the pwm.
-
-Summarizing, the ws281x uses a control signal where each bit is transmitted as 1 or 0 with a pwm signal (with 2 different duty cycle for 0 and for 1 logic levels).
-The ws281x protocol expects a 24 bits sequence (3x8) for each led, where each 8 bits defines a color (red, green and blue). 
-First led will get the first 24 bits, then it sends the rest to the next led. each led does the same.
-A pause in the transmission determines the end of the frame, then a new frame can be sent.
-The protocol and the timings are described in the ws281x datasheet
-
-WS2811 and WS2812 protocol is specific one and has defined values:
-
-- Transfer rate is `800 kHz`, or `1.25us` pulse length for each bit
-- Transfer length is `24` pulses for each led, that's `30us` for one LED
-- Each logical bit (`1` or `0`) consists of high and low part, with different length
-- Reset pulse is needed prior updating led strip, to synchronize sequence
-
-![WS2811 & WS2812 & WS2812B LED protocol](https://raw.githubusercontent.com/MaJerle/stm32-ws2812b-tim-pwm-dma/master/docs/ws-protocol.svg?sanitize=true)
-
-> Minimum reset pulse length depends on WS281x device. Check datasheet for your particular unit. WS2812B says `> 50us`, while WS2811 says `> 280us`.
-
-## STM32 DMA
-
-DMA controllers in STM32s support various operations, one of them being super handy for our WS LED driver, called *circular operation mode*.
-*Circular mode* will continuously transmit data from memory to peripheral (or, in general, can also go opposite direction) and periodically send *transfer-complete* or *half-transfer-complete* interrupts to the application.
-
-![STM32 DMA circular mode](https://raw.githubusercontent.com/MaJerle/stm32-ws2812b-tim-pwm-dma/master/docs/stm32-dma-circular.svg?sanitize=true)
-
-We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
-
 ## The interconnections
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
-
+Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
 ## The Box
 ![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
@@ -120,6 +93,36 @@ Note: Channel configuration commands must be sent before opening the channel. Th
 
 This firmware currently does not provide any ACK/NACK feedback for serial commands.
 
+## Understanding LED protocol
+
+The approach used to control WS281x leds strip controller was derived from this: https://github.com/MaJerle/stm32-ws2811-ws2812-ws2812b-ws281x-tim-pwm-dma-timer where it is used a timer to start a pwm, then DMA allows a fast change of the duty cycle of the pwm.
+
+Summarizing, the ws281x uses a control signal where each bit is transmitted as 1 or 0 with a pwm signal (with 2 different duty cycle for 0 and for 1 logic levels).
+The ws281x protocol expects a 24 bits sequence (3x8) for each led, where each 8 bits defines a color (red, green and blue). 
+First led will get the first 24 bits, then it sends the rest to the next led. each led does the same.
+A pause in the transmission determines the end of the frame, then a new frame can be sent.
+The protocol and the timings are described in the ws281x datasheet
+
+WS2811 and WS2812 protocol is specific one and has defined values:
+
+- Transfer rate is `800 kHz`, or `1.25us` pulse length for each bit
+- Transfer length is `24` pulses for each led, that's `30us` for one LED
+- Each logical bit (`1` or `0`) consists of high and low part, with different length
+- Reset pulse is needed prior updating led strip, to synchronize sequence
+
+![WS2811 & WS2812 & WS2812B LED protocol](https://raw.githubusercontent.com/MaJerle/stm32-ws2812b-tim-pwm-dma/master/docs/ws-protocol.svg?sanitize=true)
+
+> Minimum reset pulse length depends on WS281x device. Check datasheet for your particular unit. WS2812B says `> 50us`, while WS2811 says `> 280us`.
+
+## STM32 DMA
+
+DMA controllers in STM32s support various operations, one of them being super handy for our WS LED driver, called *circular operation mode*.
+*Circular mode* will continuously transmit data from memory to peripheral (or, in general, can also go opposite direction) and periodically send *transfer-complete* or *half-transfer-complete* interrupts to the application.
+
+![STM32 DMA circular mode](https://raw.githubusercontent.com/MaJerle/stm32-ws2812b-tim-pwm-dma/master/docs/stm32-dma-circular.svg?sanitize=true)
+
+We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
+
 ## Alfa Romeo Giulia Protocol Reverse Engineering 
 
 These are information that I found and that I can share. Use everything this at your own risk.
@@ -136,7 +139,7 @@ These are information that I found and that I can share. Use everything this at 
 2. According to Sniz (a famous guru), this is RFHUB Reset (But I didn't tested it):
    - T18DAC7F180211010000000000 
 
-3. According to Sniz this starts car Alarm, but on my car it doesn't work:
+3. The following message sequence starts car Alarm:
    - T1E340041488201500
    - t1EF84202E20000000156 This, on my car, temporary resets the main panel (if it is on) and starts the panic alarm
    - t2EC80000000000000000
