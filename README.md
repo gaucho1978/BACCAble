@@ -7,6 +7,10 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - control a WS281x leds strip by means of the decoded can bus data, then lighting the leds strip according to accelerator pedal position and gear selection.
 - automatically disable start&stop car functionality
 - act as Immobilizer, by injecting can bus messages when required.
+
+BACCABLE overview video:
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
+
 ## General Description
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
 - message decoding, 
