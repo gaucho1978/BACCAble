@@ -13,8 +13,11 @@ BACCABLE overview (click on the following image to see the video)
 
 ## General Description
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
-- message decoding, 
-- leds Controlling functions,
+- message decoding (watch the following video)
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/v0ZhjYjx-OM/0.jpg)](https://www.youtube.com/watch?v=v0ZhjYjx-OM)
+
+- leds Controlling function  (watch the following video)
   
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/QDK8YCOsdVM/0.jpg)](https://www.youtube.com/watch?v=QDK8YCOsdVM)
 
