@@ -8,7 +8,7 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - automatically disable start&stop car functionality
 - act as Immobilizer, by injecting can bus messages when required.
 
-BACCABLE overview video:
+BACCABLE overview (click on the following image to see the video)
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
 
 ## General Description
