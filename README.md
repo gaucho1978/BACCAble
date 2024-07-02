@@ -64,6 +64,7 @@ Note: i downloaded previous version of the programmer (v.2.15.0) since last avai
 Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
 - use stm32CubeProgrammer to flash the device
+
 ## The hardware
 click on the following image to see the full hardware video:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
@@ -74,6 +75,12 @@ Note: if you use immobilizer function, you shall remove the voltage regulator th
 ## The Box
 ![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
+
+## Installation 
+watch the following video to see installation procedure.
+note: the video doesn't show the connection from usb +5V required to use immobilizer function.
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/aylwa35GtuU/0.jpg)](https://www.youtube.com/watch?v=aylwa35GtuU)
 
 ## Usage when configured to act as Canable
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
