@@ -66,8 +66,11 @@ Flash procedure:
 - use stm32CubeProgrammer to flash the device
 
 ## The hardware
-click on the following image to see the full hardware video:
+click on the following image to see the full hardware and interconnections video:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
+Used hardware:
+Canable: https://a.aliexpress.com/_Ev1yBz1
+Leds Strip ws2811 ip65: https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
 
 ## The interconnections
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
