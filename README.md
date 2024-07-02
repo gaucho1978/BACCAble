@@ -71,6 +71,9 @@ click on the following image to see the full hardware and interconnections video
 Used hardware:
 Canable: https://a.aliexpress.com/_Ev1yBz1
 Leds Strip ws2811 ip65: https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
+Amazon alternatives:
+Canable: https://amzn.to/3zzeNMq
+Leds strip: https://amzn.to/3W3TifJ
 
 ## The interconnections
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
