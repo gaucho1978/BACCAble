@@ -11,6 +11,9 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 BACCABLE overview (click on the following image to see the video)
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
 
+Link to youtube videos playlist:
+https://www.youtube.com/playlist?list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X
+
 ## General Description
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
 - message decoding (watch the following video)
