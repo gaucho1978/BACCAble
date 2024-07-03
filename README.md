@@ -91,6 +91,10 @@ note: the video doesn't show the connection from usb +5V required to use immobil
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/aylwa35GtuU/0.jpg)](https://www.youtube.com/watch?v=aylwa35GtuU)
 
+## Firmware description
+The following video will show the strucure of the firmware:
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zmMgXUu2TZM/0.jpg)](https://www.youtube.com/watch?v=zmMgXUu2TZM)
+
 ## Usage when configured to act as Canable
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
 With such configuration the device is seen by the pc as a virtual serial port implementing the following serial commands:
