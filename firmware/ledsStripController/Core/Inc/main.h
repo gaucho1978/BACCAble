@@ -14,8 +14,12 @@
 
 
 	//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter
-
-	#define DISABLE_START_STOP //uncomment this to automatically disable start&stop car functionality
+	//WARNING: ACT_AS_CANABLE takes a lot of time to buffer and send packets to usb, therefore the main
+	//         loop time duration increases. If you have IMMOBILIZER_ENABLED therefore can messages will
+	//         start to be lost and IMMOBILIZER function will not properly work. Then, if you use
+	//         IMMOBILIZER_ENABLED, it is recommended to comment ACT_AS_CANABLE. Anyway you can test it
+	//         by your own, by checking main loop time duration with both functions enabled.
+	#define DISABLE_START_STOP //comment this if you don't want to automatically disable start&stop car functionality
 	#define IMMOBILIZER_ENABLED //comment this if you don't want immobilizer functionality. This functionality waits for a thief to connect to RFHUB and if the connection message is found, it resets the rfhub and it starts the Panic alarm.
 
 	#if defined(ACT_AS_CANABLE)

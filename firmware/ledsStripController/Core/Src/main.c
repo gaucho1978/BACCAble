@@ -19,7 +19,7 @@ uint8_t ledsStripIsOn=0; //indicates if leds strip is on
 uint8_t alarmActivated=0; //indicates if the panic alarm was activated during last 10 minutes
 
 //the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
-CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ {.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2EC, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},};
+CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ {.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2EC, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},};
 uint8_t panicAlarmStartMsgData[5][8]={{0x02,0x11,0x01,0x00,},{0x88,0x20,0x15,0x00,},{0x42,0x02,0xE2,0x00,0x00,0x00,0x01,0x56},{0x00,},{0x88,0x20,0x15,0x00,}};
 
 uint8_t startAndStopEnabled=1;
@@ -30,6 +30,30 @@ CAN_RxHeaderTypeDef rx_msg_header;  //msg header
 uint8_t rx_msg_data[8] = {0};  //msg data
 uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
+//the following array stores buttons pressed password sequence
+//these are possible values 0x90=RES,
+//							0x12=Cruise control on/off,
+//                          0x08=Cruise control speed gently up,
+//                          0x00=Cruise control speed strong up,
+//                          0x18=Cruise control speed gently down,
+//                          0x20=Cruise control speed strong down
+// WARNING: when you press cruise control strong up, before and after it, also cruise control gently up
+//          message is fired, therefore your sequence will be altered. A workaround
+//          is to use both messages in the sequence, or to use just the gently up/down message.
+
+//uint32_t buttonPressedTimeArray[20] = {0};  //0=RES, 1=Cruise control on/off, 2=Cruise control speed gently up, 3=Cruise control speed strong up, 4=Cruise control speed gently down, 5=Cruise control speed strong down
+uint8_t ButtonPressSequence1Index=0;
+uint8_t ButtonPressSequence1Len=5;
+uint8_t ButtonPressSequence1[5]={0x90,0x08,0x00,0x08,0x90}; //current password: RES - CC gently up  - CC strong up - CC gently up - RES
+
+//future growth
+uint8_t ButtonPressSequence2Index=0;
+uint8_t ButtonPressSequence2Len=8;
+uint8_t ButtonPressSequence2[8]={0x90,0x08,0x00,0x08,0x18,0x20,0x18,0x12}; //current password: RES - CC gently up - CC strong up - CC gently up - CC gently down - CC strong down - CC gently down - CC on/off
+
+uint8_t  lastPressedWheelButton=0xff; //default value, means no button pressed on the wheel
+uint32_t lastPressedWheelButtonTime=0;//stores the last time a wheel button was pressed, in msec from boot
+uint32_t lastPressedWheelButtonDuration=0x00; //default value
 
 int main(void){
 
@@ -125,28 +149,72 @@ int main(void){
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
 				#if defined(IMMOBILIZER_ENABLED)
 					//if it is a message of connection to RFHUB, reset the connection periodically, but start the panic alarm only once
-					if ((rx_msg_header.ExtId==0x18DAC7F1) && (rx_msg_header.DLC==8)){
-						//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
-						uint8_t i;
-						onboardLed_red_on();
-						can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //reset the connection to RFHUB
+					// if ((rx_msg_header.ExtId==0x18DAC7F1) && (rx_msg_header.DLC==8)){  //commented on 07/07/2024
+					if (((rx_msg_header.ExtId==0x18DAC7F1)||(rx_msg_header.ExtId==0x18DAF1C7))){  //added on 07/07/2024  - If msg from thief OR reply from RFHub
+						//if(((rx_msg_data[0]==0x02) && (rx_msg_data[1]==0x10) && (rx_msg_data[2]==0x03)) || (rx_msg_data[0]==0x06) && (rx_msg_data[1]==0x50) && (rx_msg_data[2]==0x03)) || ((rx_msg_data[0]==0x01) && (rx_msg_data[1]==0x51) )){ //added on 07/07/2024 - if 0x021003 (msg from thief) OR 0x0151 (reply from RFhub
+							//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
+							uint8_t i;
+							//onboardLed_red_on();
+							can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //reset the connection to RFHUB
+							onboardLed_blue_on();
+							if(!alarmActivated ){ //if alarm is not running, start the alarm
+								alarmActivated=1;
+								timeSinceLastPanicAlarmActivation=HAL_GetTick();
+								for(i=1; i<5; i++){
+									can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
+								}
+							}
+						//}
+					}
 
-						if(!alarmActivated ){ //if alarm is not running, start the alarm
-							alarmActivated=1;
+
+
+					//button press on left area of the wheel (id 2FA), 3 byte length , different than 0x10 that sometimes is sent on the bus (but we are not interested in it)
+					if ((rx_msg_header.StdId==0x000002FA) && (rx_msg_header.DLC==3) && rx_msg_data[0]!=0x10){
+						//if 2 seconds has passed since last button press, restart password sequence
+						if (lastPressedWheelButtonTime+2000<HAL_GetTick()){
+							ButtonPressSequence1Index=0;
+							lastPressedWheelButtonDuration=0;
+							lastPressedWheelButtonTime=HAL_GetTick();
+						}
+						//if the previous button is still pressed, we shall consider it as the same button press
+						if ((lastPressedWheelButton== rx_msg_data[0]) ){
+							lastPressedWheelButtonDuration=lastPressedWheelButtonDuration+ (HAL_GetTick()-lastPressedWheelButtonTime) ;
+						}else{
+							//another button was pressed, let's consider it as a button release event:
+							//  if the button was pressed for at least 100msec, and if it is the button expected by the secret sequence
+							if(lastPressedWheelButtonDuration>100 && (lastPressedWheelButton==ButtonPressSequence1[ButtonPressSequence1Index])){
+								onboardLed_blue_on();
+								ButtonPressSequence1Index++; //prepare for next button in the sequence
+							}else{
+								//something else arrived. restart the sequence
+								ButtonPressSequence1Index=0;
+							}
+							lastPressedWheelButtonDuration=0;
+						}
+
+						//manage the particular case of last button of the sequence pressed for enough time
+						if(lastPressedWheelButtonDuration>100 && (lastPressedWheelButton==ButtonPressSequence1[ButtonPressSequence1Index]) && ButtonPressSequence1Index==ButtonPressSequence1Len-1){
+							ButtonPressSequence1Index++;
+						}
+
+						lastPressedWheelButton= rx_msg_data[0]; //store last pressed button
+						lastPressedWheelButtonTime=HAL_GetTick(); //store last time a button was pressed
+
+						//if password sequence was fully correctly typed...
+						if(ButtonPressSequence1Index==ButtonPressSequence1Len){
+							ButtonPressSequence1Index=0; //reset password sequence, so that we can type it again in the future, then do what you shall do
+							onboardLed_red_on();
+							// we associate to this sequence, the toggle of panic alarm
+							alarmActivated=!alarmActivated;
 							timeSinceLastPanicAlarmActivation=HAL_GetTick();
+							uint8_t i;
 							for(i=1; i<5; i++){
 								can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
 							}
 						}
 					}
 
-					//FUTURE GROWTH
-					//se e' il messaggio che contiene la pressione del tasto RES (id 2FA), se é lungo 3 byte, se il primo byte é 0x90 (sfrutto le info ottenute sniffando)
-					if ((rx_msg_header.StdId==0x000002FA) && (rx_msg_header.DLC==3) && (rx_msg_data[0]==0x90)){
-						//premuto tasto RES!!
-						//just for test now. we will decide later what we caould do with button press sequence
-						onboardLed_red_on();
-					}
 
 				#endif
 
@@ -175,7 +243,7 @@ int main(void){
 
 		//for debug, measure the loop duration
 		if (HAL_GetTick()>debugTimer0+2){
-				onboardLed_red_on();
+			//onboardLed_red_on();
 		}
 	}
 }
