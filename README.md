@@ -7,10 +7,20 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - control a WS281x leds strip by means of the decoded can bus data, then lighting the leds strip according to accelerator pedal position and gear selection.
 - automatically disable start&stop car functionality
 - act as Immobilizer, by injecting can bus messages when required.
+
+BACCABLE overview (click on the following image to see the video)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
+
+Link to youtube videos playlist:
+https://www.youtube.com/playlist?list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X
+
 ## General Description
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added: 
-- message decoding, 
-- leds Controlling functions,
+- message decoding (watch the following video)
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/v0ZhjYjx-OM/0.jpg)](https://www.youtube.com/watch?v=v0ZhjYjx-OM)
+
+- leds Controlling function  (watch the following video)
   
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/QDK8YCOsdVM/0.jpg)](https://www.youtube.com/watch?v=QDK8YCOsdVM)
 
@@ -58,12 +68,36 @@ Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
 - use stm32CubeProgrammer to flash the device
 
+## The hardware
+click on the following image to see the full hardware and interconnections video:
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
+
+Used hardware:
+
+Canable: https://a.aliexpress.com/_Ev1yBz1
+Leds Strip ws2811 ip65: https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
+Amazon alternatives:
+Canable: https://amzn.to/3zzeNMq
+Leds strip: https://amzn.to/3W3TifJ
+
+Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
+
 ## The interconnections
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
 ## The Box
 ![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
+
+## Installation 
+watch the following video to see installation procedure.
+note: the video doesn't show the connection from usb +5V required to use immobilizer function.
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/aylwa35GtuU/0.jpg)](https://www.youtube.com/watch?v=aylwa35GtuU)
+
+## Firmware description
+The following video will show the strucure of the firmware:
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zmMgXUu2TZM/0.jpg)](https://www.youtube.com/watch?v=zmMgXUu2TZM)
 
 ## Usage when configured to act as Canable
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
