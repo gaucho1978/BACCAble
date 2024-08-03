@@ -6,14 +6,15 @@
 #include "can.h"
 
 
+
 // Private variables
 static CAN_HandleTypeDef can_handle;
-static CAN_FilterTypeDef filter;
 static uint32_t prescaler;
 static can_bus_state_t bus_state = OFF_BUS;
 static uint8_t can_autoretransmit = ENABLE;
 static can_txbuf_t txqueue = {0};
 
+extern uint8_t immobilizerEnabled;
 
 // Initialize CAN peripheral settings, but don't actually start the peripheral
 void can_init(void)
@@ -34,16 +35,7 @@ void can_init(void)
 
 
 
-    // Initialize default CAN filter configuration
-    filter.FilterIdHigh = 0;
-    filter.FilterIdLow = 0;
-    filter.FilterMaskIdHigh = 0;
-    filter.FilterMaskIdLow = 0;
-    filter.FilterFIFOAssignment = CAN_RX_FIFO0;
-    filter.FilterBank = 0;
-    filter.FilterMode = CAN_FILTERMODE_IDMASK;
-    filter.FilterScale = CAN_FILTERSCALE_32BIT;
-    filter.FilterActivation = ENABLE;
+
 
 
     // default to 500 kbit/s
@@ -75,8 +67,47 @@ void can_enable(void)
     	can_handle.Init.ReceiveFifoLocked = DISABLE;
     	can_handle.Init.TransmitFifoPriority = ENABLE;
         HAL_CAN_Init(&can_handle);
+        //immobilizerEnabled=0;
+		if(immobilizerEnabled){ //filter only required messages to achieve fast response . The filter includes messages for led control, to make it simple, even if led control don't require such fast response
 
-        HAL_CAN_ConfigFilter(&can_handle, &filter);
+			CAN_FilterTypeDef filter;
+			filter.FilterIdHigh = ID3<<5u;
+			filter.FilterIdLow = ID4<<5u;
+			filter.FilterMaskIdHigh = ID5<<5u;
+			filter.FilterMaskIdLow = ID5<<5u;
+			filter.FilterFIFOAssignment = CAN_RX_FIFO0;
+			filter.FilterBank = 0;
+			filter.FilterMode = CAN_FILTERMODE_IDLIST;
+			filter.FilterScale = CAN_FILTERSCALE_16BIT;
+			filter.FilterActivation = ENABLE;
+			HAL_CAN_ConfigFilter( &can_handle, &filter);
+
+			CAN_FilterTypeDef filter2;
+			filter2.FilterIdHigh = ((ID1 <<3) >> 16) & 0xFFFF; // High bits of ID1
+			filter2.FilterIdLow = ((ID1 << 3) & 0xFFFF) | 0x04; // Low bits of ID1
+			filter2.FilterMaskIdHigh = ((ID2 <<3) >> 16) & 0xFFFF; // High bits of ID2
+			filter2.FilterMaskIdLow = ((ID2 << 3) & 0xFFFF) | 0x04; // Low bits of ID2
+			filter2.FilterFIFOAssignment = CAN_RX_FIFO0;
+			filter2.FilterBank = 1;
+			filter2.FilterMode = CAN_FILTERMODE_IDLIST;
+			filter2.FilterScale = CAN_FILTERSCALE_32BIT;
+			filter2.FilterActivation = ENABLE;
+			HAL_CAN_ConfigFilter( &can_handle, &filter2);
+
+			onboardLed_red_on();
+		}else{ //default filter
+			CAN_FilterTypeDef filter;
+			filter.FilterIdHigh = 0;
+			filter.FilterIdLow = 0;
+			filter.FilterMaskIdHigh = 0;
+			filter.FilterMaskIdLow = 0;
+			filter.FilterFIFOAssignment = CAN_RX_FIFO0;
+			filter.FilterBank = 0;
+			filter.FilterMode = CAN_FILTERMODE_IDMASK;
+			filter.FilterScale = CAN_FILTERSCALE_32BIT;
+			filter.FilterActivation = ENABLE;
+			HAL_CAN_ConfigFilter( &can_handle, &filter);
+		}
 
         HAL_CAN_Start(&can_handle);
         bus_state = ON_BUS;

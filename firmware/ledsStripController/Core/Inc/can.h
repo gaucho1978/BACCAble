@@ -56,4 +56,16 @@
 	uint8_t is_can_msg_pending(uint8_t fifo);
 	CAN_HandleTypeDef* can_gethandle(void);
 
+
+	//define filters based on messages id that we use in immobilizer and led control. each ID is associated to id and mask)
+	#define ID1   0x18DAC7F1
+	#define ID2   0x18DAF1C7
+	#define ID3   0x000002FA
+	#define ID4   0x00000412
+	#define ID5   0x000002EF
+
+
+
+
+
 #endif // _CAN_H

@@ -7,6 +7,12 @@
 	#include "string.h"
 #endif /* ACT_AS_CANABLE */
 
+#if defined(IMMOBILIZER_ENABLED)
+	uint8_t immobilizerEnabled=1; //used to set filter in can.c
+#else
+	uint8_t immobilizerEnabled=0;
+#endif
+
 
 char *FW_VERSION="BACCA CANable V.1.0";  //this is used to store FW version, also shown on usb when used as slcan
 float scaledVolume;
@@ -14,9 +20,10 @@ uint8_t scaledColorSet;
 
 uint32_t debugTimer0;
 uint32_t timeSinceLastReceivedCanMessage=0;
-uint32_t timeSinceLastPanicAlarmActivation=0;
+
 uint8_t ledsStripIsOn=0; //indicates if leds strip is on
-uint8_t alarmActivated=0; //indicates if the panic alarm was activated during last 10 minutes
+uint8_t panicAlarmActivated=0; //indicates if the panic alarm was activated during last 10 minutes
+uint32_t panicAlarmActivatedStartTime=0; //time when the alarm was started
 
 //the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
 CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ {.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2EC, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},};
@@ -54,6 +61,9 @@ uint8_t ButtonPressSequence2[8]={0x90,0x08,0x00,0x08,0x18,0x20,0x18,0x12}; //cur
 uint8_t  lastPressedWheelButton=0xff; //default value, means no button pressed on the wheel
 uint32_t lastPressedWheelButtonTime=0;//stores the last time a wheel button was pressed, in msec from boot
 uint32_t lastPressedWheelButtonDuration=0x00; //default value
+
+uint8_t floodTheBus=0;
+uint32_t floodTheBusStartTime=0;
 
 int main(void){
 
@@ -117,12 +127,22 @@ int main(void){
 
 		#endif
 
-		#if defined(IMMOBILIZER_ENABLED)
+		if(immobilizerEnabled){
 			//the following if is used only by IMMOBILIZER functionality
-			if((timeSinceLastPanicAlarmActivation+600000<HAL_GetTick()) && (alarmActivated)){ //after 10 minutes, alarm return to not activated (cause for sure it is off)
-				alarmActivated=0;
+			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE BUS WILL NOT BE ABLE TO TRANSFER ANYTHING ELSE, THEREFORE THE CAR WILL NOT SWITCH ON.
+				can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //sends a message on can bus: reset the connection to RFHUB
 			}
-		#endif
+			if(floodTheBus && (floodTheBusStartTime+300000<HAL_GetTick())){ //if the bus is flooded since 5 minutes, stop flooding it
+				floodTheBus=0;
+			}
+			if((panicAlarmActivatedStartTime+300005<HAL_GetTick()) && (panicAlarmActivated)){ //after 5 minutes and 5msec (when bus is not flooded), disable panic alarm
+				uint8_t i;
+				for(i=1; i<5; i++){
+					can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
+				}
+				panicAlarmActivated=0;
+			}
+		}
 
 		#if defined(DISABLE_START_STOP)
 			if(startAndStopEnabled && (HAL_GetTick()>6000)){
@@ -147,19 +167,22 @@ int main(void){
 		if(is_can_msg_pending(CAN_RX_FIFO0)){
 			// If message received from bus, parse the frame
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
-				#if defined(IMMOBILIZER_ENABLED)
+				if(immobilizerEnabled){
 					//if it is a message of connection to RFHUB, reset the connection periodically, but start the panic alarm only once
 					// if ((rx_msg_header.ExtId==0x18DAC7F1) && (rx_msg_header.DLC==8)){  //commented on 07/07/2024
 					if (((rx_msg_header.ExtId==0x18DAC7F1)||(rx_msg_header.ExtId==0x18DAF1C7))){  //added on 07/07/2024  - If msg from thief OR reply from RFHub
 						//if(((rx_msg_data[0]==0x02) && (rx_msg_data[1]==0x10) && (rx_msg_data[2]==0x03)) || (rx_msg_data[0]==0x06) && (rx_msg_data[1]==0x50) && (rx_msg_data[2]==0x03)) || ((rx_msg_data[0]==0x01) && (rx_msg_data[1]==0x51) )){ //added on 07/07/2024 - if 0x021003 (msg from thief) OR 0x0151 (reply from RFhub
 							//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
+							//start to flood the bus with the rfhub disconnect message
+							//floodTheBus=1;
+							floodTheBusStartTime=HAL_GetTick();
 							uint8_t i;
-							//onboardLed_red_on();
-							can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //reset the connection to RFHUB
+
 							onboardLed_blue_on();
-							if(!alarmActivated ){ //if alarm is not running, start the alarm
-								alarmActivated=1;
-								timeSinceLastPanicAlarmActivation=HAL_GetTick();
+							//panicAlarmActivated =1; //just for test avoid to start panic alarm
+							if(!panicAlarmActivated ){ //if alarm is not running, start the alarm
+								panicAlarmActivated=1;
+								panicAlarmActivatedStartTime=HAL_GetTick();
 								for(i=1; i<5; i++){
 									can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
 								}
@@ -205,18 +228,13 @@ int main(void){
 						if(ButtonPressSequence1Index==ButtonPressSequence1Len){
 							ButtonPressSequence1Index=0; //reset password sequence, so that we can type it again in the future, then do what you shall do
 							onboardLed_red_on();
-							// we associate to this sequence, the toggle of panic alarm
-							alarmActivated=!alarmActivated;
-							timeSinceLastPanicAlarmActivation=HAL_GetTick();
-							uint8_t i;
-							for(i=1; i<5; i++){
-								can_tx(&panicAlarmStartMsgHeader[i], panicAlarmStartMsgData[i]);
-							}
+							//what do we want to do? this will work only if the bus is not flood.
+							//future usage....
 						}
 					}
 
 
-				#endif
+				} //end of immobilizer section
 
 				#if defined(ACT_AS_CANABLE)
 					uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
@@ -242,8 +260,8 @@ int main(void){
 		}
 
 		//for debug, measure the loop duration
-		if (HAL_GetTick()>debugTimer0+2){
-			//onboardLed_red_on();
+		if (HAL_GetTick()>debugTimer0+1){
+			onboardLed_red_on();
 		}
 	}
 }
