@@ -39,11 +39,13 @@ This projet was tested on alfaromeo Giulia. Each one of you, if dealing with oth
 ## Immobilizer functionality
 The functionality IMMOBILIZER performs the following:
 1. Detects if the thief is trying to connect to to RFHUB (they do it to add a key to the car)
-2. Resets the RFHUB in order to reset the thief connection
-3. Starts the Panic Alarm
+2. Starts the Panic Alarm
+3. Resets the RFHUB in order to reset the thief connection, and floods the bus with this message for 5 minutes
+4. after 5 minutes stops to send messages and stops alarm, and return listening for thief messages
 
 Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
 Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. Therefore, if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the canable to the 5V usb voltage taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
+Note3: Once the bus is flooded with the reset message, neither the injition button will work. the car will appear as dead..
 
 ## Leds Strip controller
 The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
