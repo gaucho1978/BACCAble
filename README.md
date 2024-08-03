@@ -101,6 +101,7 @@ note: the video doesn't show the connection from usb +5V required to use immobil
 ## Firmware description
 The following video will show the strucure of the firmware:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zmMgXUu2TZM/0.jpg)](https://www.youtube.com/watch?v=zmMgXUu2TZM)
+Note: the video was made before to decide to flood the bus with the rfhub reset message for 5 minutes.
 
 ## Usage when configured to act as Canable
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
@@ -173,16 +174,16 @@ These are information that I found and that I can share. Use everything this at 
 1. The following message identifies gear selection (I use this too):
    - Message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
 
-2. According to Sniz (a famous guru), this is RFHUB Reset (But I didn't tested it):
+2. According to Sniz (a famous guru), and to alfaobd developer, this is RFHUB Reset message, but it doesn't properly work. the only way I found to stop the thief connection was to flood the bus with this message:
    - T18DAC7F180211010000000000 
 
-3. The following message sequence starts car Alarm:
+3. The following message sequence starts car Alarm, but it works only if the main car panel is on:
    - T1E340041488201500
-   - t1EF84202E20000000156 This, on my car, temporary resets the main panel (if it is on) and starts the panic alarm
+   - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm
    - t2EC80000000000000000
    - T1E340041488201500
 
-4. This message is periodically sent when panel is on:
+4. This message is periodically sent when panel is on, to define DNA selector position:
    - t38480809DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Dynamic
    - t38480801DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Natural
    - t38480811DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - AllWeather
