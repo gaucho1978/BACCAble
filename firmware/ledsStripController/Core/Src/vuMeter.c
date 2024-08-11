@@ -311,7 +311,7 @@ void setEuropeanFlag(){
 void vuMeterUpdate(float volume, uint8_t colorPreset ){
 	if (vuMeterInitState<50) return; //initialization still not completed
 
-	currentVolume= (currentVolume * 99.0 / 100.0)+(volume / 100.0); //integrated in time on 50 samples (one message each 2 millisecond?, more or less)
+	currentVolume= (currentVolume * 74.0 / 75.0)+(volume / 75.0); //integrated in time on 75 samples (one message each 2 millisecond?, more or less)
 
 	if(colorPreset!=currentColorPreset){
 		switch(colorPreset){

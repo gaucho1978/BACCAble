@@ -12,7 +12,7 @@ static CAN_HandleTypeDef can_handle;
 static uint32_t prescaler;
 static can_bus_state_t bus_state = OFF_BUS;
 static uint8_t can_autoretransmit = ENABLE;
-static can_txbuf_t txqueue = {0};
+can_txbuf_t txqueue = {0};
 
 extern uint8_t immobilizerEnabled;
 
