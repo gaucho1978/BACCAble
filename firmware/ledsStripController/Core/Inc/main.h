@@ -13,7 +13,7 @@
 
 
 
-	#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter
+	//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter
 	//WARNING: ACT_AS_CANABLE takes a lot of time to buffer and send packets to usb, therefore the main
 	//         loop time duration increases. If you have IMMOBILIZER_ENABLED therefore can messages will
 	//         start to be lost and IMMOBILIZER function will not properly work. Then, if you use

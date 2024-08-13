@@ -32,7 +32,7 @@ Core/Src/slcan.o: ../Core/Src/slcan.c ../Core/Inc/slcan.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim_ex.h \
  ../Core/Inc/error.h ../Core/Inc/can.h ../Core/Inc/slcan.h \
  ../Core/Inc/onboardLed.h ../Core/Inc/printf.h ../Core/Inc/main.h \
- ../USB_DEVICE/App/usbd_cdc_if.h \
+ ../Core/Inc/vuMeter.h ../USB_DEVICE/App/usbd_cdc_if.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
@@ -78,6 +78,7 @@ Core/Src/slcan.o: ../Core/Src/slcan.c ../Core/Inc/slcan.h \
 ../Core/Inc/onboardLed.h:
 ../Core/Inc/printf.h:
 ../Core/Inc/main.h:
+../Core/Inc/vuMeter.h:
 ../USB_DEVICE/App/usbd_cdc_if.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:

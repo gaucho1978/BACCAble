@@ -29,10 +29,12 @@ uint32_t panicAlarmActivatedStartTime=0; //time when the alarm was started
 CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ 	{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=3},
 													{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},
 													{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},
+													{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},
 												};
 uint8_t panicAlarmStartMsgData[5][8]={	{0x02,0x11,0x01,0x00,},
 										{0x88,0x20,0x15,0x00,},
 										{0x42,0x02,0xE2,0x00,0x00,0x00,0x01,0x56},
+										{0x00,0x00,0xE2,0x00,0x00,0x00,0x00,0x00},
 									 };
 
 uint8_t startAndStopEnabled=1;
@@ -70,7 +72,7 @@ uint32_t lastPressedWheelButtonDuration=0x00; //default value
 
 uint8_t floodTheBus=0;
 uint32_t floodTheBusStartTime=0;
-
+uint32_t floodTheBusLastTimeSent=0;
 extern can_txbuf_t txqueue;
 
 int main(void){
@@ -123,48 +125,56 @@ int main(void){
 		#else
 			//don't act as canable. One USB port pin is used to control leds.
 			vuMeterInit(); //initialize leds strip controller - this is called many times to divide the operations on more loops
-
-			if((timeSinceLastReceivedCanMessage+10000<HAL_GetTick()) && (ledsStripIsOn) ){ //if no can interesting message for 10 seconds, and the strip is on, shutdown the leds to save energy
-				shutdownLedsStrip();
-				ledsStripIsOn=0; //entriamo solo una volta
+			if(ledsStripIsOn){ //if the strip is on,
+				if(timeSinceLastReceivedCanMessage+10000<HAL_GetTick() ){ //if no can interesting message for 10 seconds,  shutdown the leds to save energy
+					shutdownLedsStrip();
+					ledsStripIsOn=0; //entriamo solo una volta
+				}
 			}
 
 		#endif
 
 		if(immobilizerEnabled){
-			//the following if is used only by IMMOBILIZER functionality
+			//the following it is used only by IMMOBILIZER functionality
 			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE BUS WILL NOT BE ABLE TO TRANSFER ANYTHING ELSE, THEREFORE THE CAR WILL NOT SWITCH ON.
-				can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //sends a message on can bus: reset the connection to RFHUB
-			}
-			if(floodTheBus && (floodTheBusStartTime+10000<HAL_GetTick())){ //if the bus is flooded since 5 minutes, stop flooding it
-				floodTheBus=0; //stop flooding
-				txqueue.tail=0; //reset the queue
-				txqueue.head=0; //reset the queue
-			}
-			panicAlarmActivated=0; //just for test avoid to start panic alarm
-			if((panicAlarmActivatedStartTime+10000<HAL_GetTick()) && (panicAlarmActivated)){ //after 5 minutes and 5msec (when bus is not flooded), disable panic alarm
-				for (uint8_t i=0;i<15;i++){
-				can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
+				if(floodTheBusLastTimeSent+500<HAL_GetTick()){
+					can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //sends the message on can bus that resets the connection to RFHUB
 				}
-				can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
-				panicAlarmActivated=0;
+				if(floodTheBusStartTime+10000 < HAL_GetTick()){ //if the bus is flooded since 10 seconds, stop flooding it
+					floodTheBus=0; //stop flooding
+					txqueue.tail=0; //reset the queue
+					txqueue.head=0; //reset the queue
+				}
+			}
+			
+			//panicAlarmActivated=0; //just for test avoid to start panic alarm
+			if(panicAlarmActivated){
+				if(panicAlarmActivatedStartTime+10000<HAL_GetTick()){ //after 10 seconds (when bus is not flooded), disable panic alarm
+					for (uint8_t i=0;i<15;i++){
+						can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
+					}
+					can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
+					panicAlarmActivated=0;
+				}
 			}
 		}
 
 		#if defined(DISABLE_START_STOP)
-			if(startAndStopEnabled && (HAL_GetTick()>6000)){
-				if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
-					// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
-					HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
-					lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
-					onboardLed_red_on();
-				}
+			if(startAndStopEnabled){
+				if(HAL_GetTick()>60000){ //after one minute the car should be on
+					if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
+						// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
+						HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
+						lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
+						onboardLed_red_on();
+					}
 
-				if(lastTimeStartAndstopDisablerButtonPressed+500<HAL_GetTick()){ //if pressed since 500msec
-					HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
-					startAndStopEnabled=0;
-					onboardLed_blue_on();
+					if(lastTimeStartAndstopDisablerButtonPressed+500<HAL_GetTick()){ //if pressed since 500msec
+						HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
+						startAndStopEnabled=0;
+						onboardLed_blue_on();
 
+					}
 				}
 			}
 		#endif
@@ -178,30 +188,39 @@ int main(void){
 					//if it is a message of connection to RFHUB, reset the connection periodically, but start the panic alarm only once
 					if(rx_msg_header.IDE == CAN_ID_EXT){
 						if(rx_msg_header.RTR == CAN_RTR_DATA){
-							if ((rx_msg_header.ExtId==0x18DAC7F1)  ){  // If msg from thief
-								//Note: the reply from RFHub "||(rx_msg_header.ExtId==0x18DAF1C7)" causes an unwanted restart of the alarm after the timeout
-								//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
-								//start to flood the bus with the rfhub disconnect message
-								floodTheBus=1;
-								floodTheBusStartTime=HAL_GetTick();
-								onboardLed_blue_on();
-								panicAlarmActivated =1; //just for test avoid to start panic alarm
-								if(!panicAlarmActivated ){ //if alarm is not running, start the alarm
-									panicAlarmActivated=1;
-									panicAlarmActivatedStartTime=HAL_GetTick();
-									for (uint8_t i=0;i<15;i++){
-									can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
+							if(floodTheBus==0){ //if we are not flooding the bus
+								if ((rx_msg_header.ExtId==0x18DAC7F1) ||( (rx_msg_header.ExtId==0x18DAF1C7) && (floodTheBusStartTime==0)) ){  // If msg from thief or (reply from rfhub && it is the first time that it occurs)
+									//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
+									//start to flood the bus with the rfhub disconnect message
+									floodTheBus=1;
+									floodTheBusStartTime=HAL_GetTick();
+									onboardLed_blue_on();
+									//panicAlarmActivated =1; //just for test avoid to start panic alarm
+									if(!panicAlarmActivated ){ //if alarm is not running, start the alarm
+										panicAlarmActivated=1;
+										panicAlarmActivatedStartTime=HAL_GetTick();
+										for (uint8_t i=0;i<15;i++){
+										can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
+										}
+										can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
 									}
-									can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
-
 								}
 							}
 						}
 					}
 
 
-
-					//button press on left area of the wheel (id 2FA), 3 byte length , different than 0x10 that sometimes is sent on the bus (but we are not interested in it)
+					/*----------------------------------------------------------------------------------*/
+					// The following section intercepts buttons press sequence on the wheel.
+					// This sequence works only if the main panel of the car is on.
+					// We commented this section since we are not using it now. Uncomment to use it.
+					// When uncommented, the cycle duration could increase and make blink the red led.
+					// The action of the button's sequence is left empty for you to choose what to do.
+					/*----------------------------------------------------------------------------------*/
+					
+					// if Button is pressed on left area of the wheel (id 2FA), 3 byte length , different than 
+					// 0x10 (that sometimes is sent on the bus, but we are not interested in it)
+					/*
 					if (rx_msg_header.StdId==0x000002FA) {
 						if( (rx_msg_header.RTR == CAN_RTR_DATA) && (rx_msg_header.IDE == CAN_ID_STD) && (rx_msg_header.DLC==3) && (rx_msg_data[0]!=0x10) ){
 							//if 2 seconds has passed since last button press, restart password sequence
@@ -236,13 +255,19 @@ int main(void){
 
 							//if password sequence was fully correctly typed...
 							if(ButtonPressSequence1Index==ButtonPressSequence1Len){
-								ButtonPressSequence1Index=0; //reset password sequence, so that we can type it again in the future, then do what you shall do
+								// reset password sequence, so that we can type it again in the future, 
+								// then do what you shall do
+								ButtonPressSequence1Index=0; 
 								onboardLed_red_on();
-								//what do we want to do? this will work only if the bus is not flood.
-								//future usage....
+								// what do we want to do? this will work only if the bus is not flood 
+								// and the car panel is on.
+								// future usage....
 							}
 						}
 					}
+					*/
+					/*----------------------------------------------------------------------------------*/
+					
 				} //end of immobilizer section
 
 				#if defined(ACT_AS_CANABLE)
