@@ -1,8 +1,8 @@
-../Core/Src/main.c:311:7:scaleVolume	8	static
-../Core/Src/main.c:321:9:scaleColorSet	0	static
-../Core/Src/main.c:330:6:SystemClock_Config	112	static,ignoring_inline_asm
-../Core/Src/main.c:78:5:main	32	static
-../Core/Src/main.c:371:6:Error_Handler	0	static,ignoring_inline_asm
-../Core/Src/main.c:377:6:system_irq_disable	0	static,ignoring_inline_asm
-../Core/Src/main.c:385:6:system_irq_enable	0	static,ignoring_inline_asm
-../Core/Src/main.c:389:6:system_hex32	12	static
+../Core/Src/main.c:307:7:scaleVolume	8	static
+../Core/Src/main.c:317:9:scaleColorSet	0	static
+../Core/Src/main.c:326:6:SystemClock_Config	112	static,ignoring_inline_asm
+../Core/Src/main.c:77:5:main	40	static
+../Core/Src/main.c:367:6:Error_Handler	0	static,ignoring_inline_asm
+../Core/Src/main.c:373:6:system_irq_disable	0	static,ignoring_inline_asm
+../Core/Src/main.c:381:6:system_irq_enable	0	static,ignoring_inline_asm
+../Core/Src/main.c:385:6:system_hex32	12	static

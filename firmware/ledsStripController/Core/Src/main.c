@@ -19,11 +19,10 @@ float scaledVolume;
 uint8_t scaledColorSet;
 
 uint32_t debugTimer0;
-uint32_t timeSinceLastReceivedCanMessage=0;
+uint32_t timeSinceLastReceivedAcceleratorMessage=0;
 
 uint8_t ledsStripIsOn=0; //indicates if leds strip is on
 uint8_t panicAlarmActivated=0; //indicates if the panic alarm was activated during last 10 minutes
-uint32_t panicAlarmActivatedStartTime=0; //time when the alarm was started
 
 //the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
 CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ 	{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=3},
@@ -126,7 +125,7 @@ int main(void){
 			//don't act as canable. One USB port pin is used to control leds.
 			vuMeterInit(); //initialize leds strip controller - this is called many times to divide the operations on more loops
 			if(ledsStripIsOn){ //if the strip is on,
-				if(timeSinceLastReceivedCanMessage+10000<HAL_GetTick() ){ //if no can interesting message for 10 seconds,  shutdown the leds to save energy
+				if(timeSinceLastReceivedAcceleratorMessage+10000<HAL_GetTick() ){ //if no can interesting message for 10 seconds,  shutdown the leds to save energy
 					shutdownLedsStrip();
 					ledsStripIsOn=0; //entriamo solo una volta
 				}
@@ -136,26 +135,32 @@ int main(void){
 
 		if(immobilizerEnabled){
 			//the following it is used only by IMMOBILIZER functionality
-			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE BUS WILL NOT BE ABLE TO TRANSFER ANYTHING ELSE, THEREFORE THE CAR WILL NOT SWITCH ON.
-				if(floodTheBusLastTimeSent+500<HAL_GetTick()){
+			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE THIEF WILL NOT BE ABLE TO CONNECT TO RFHUB, AND CAR WILL NOT SWITCH ON.
+				if(floodTheBusLastTimeSent+10<HAL_GetTick()){
 					can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //sends the message on can bus that resets the connection to RFHUB
+					floodTheBusLastTimeSent=HAL_GetTick();
+				}
+
+				if(!panicAlarmActivated){ //if panic alarm is not activated, we shall activate it after 1 second (1 second to avoid stop and start simultaneous)
+					if(floodTheBusStartTime+1000<HAL_GetTick()){
+						for (uint8_t i=0;i<15;i++){
+							can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
+						}
+						can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
+						panicAlarmActivated=1;
+					}
 				}
 				if(floodTheBusStartTime+10000 < HAL_GetTick()){ //if the bus is flooded since 10 seconds, stop flooding it
 					floodTheBus=0; //stop flooding
-					txqueue.tail=0; //reset the queue
-					txqueue.head=0; //reset the queue
-				}
-			}
-			
-			//panicAlarmActivated=0; //just for test avoid to start panic alarm
-			if(panicAlarmActivated){
-				if(panicAlarmActivatedStartTime+10000<HAL_GetTick()){ //after 10 seconds (when bus is not flooded), disable panic alarm
+					//stop the panic alarm
 					for (uint8_t i=0;i<15;i++){
 						can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
 					}
 					can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
 					panicAlarmActivated=0;
 				}
+
+
 			}
 		}
 
@@ -195,15 +200,6 @@ int main(void){
 									floodTheBus=1;
 									floodTheBusStartTime=HAL_GetTick();
 									onboardLed_blue_on();
-									//panicAlarmActivated =1; //just for test avoid to start panic alarm
-									if(!panicAlarmActivated ){ //if alarm is not running, start the alarm
-										panicAlarmActivated=1;
-										panicAlarmActivatedStartTime=HAL_GetTick();
-										for (uint8_t i=0;i<15;i++){
-										can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
-										}
-										can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
-									}
 								}
 							}
 						}
@@ -282,7 +278,7 @@ int main(void){
 						//se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
 						if (rx_msg_header.StdId==0x00000412){
 							if( (rx_msg_header.DLC==5) && (rx_msg_data[3]>=51) ){
-								timeSinceLastReceivedCanMessage=HAL_GetTick();
+								timeSinceLastReceivedAcceleratorMessage=HAL_GetTick();
 								ledsStripIsOn=1;
 								scaledVolume=scaleVolume(rx_msg_data[3]); //prendi il dato e scalalo, per prepararlo per l'invio alla classe vumeter
 								vuMeterUpdate(scaledVolume,scaledColorSet);
