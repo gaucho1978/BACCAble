@@ -39,14 +39,14 @@ This projet was tested on alfaromeo Giulia. Each one of you, if dealing with oth
 ## Immobilizer functionality
 The functionality IMMOBILIZER performs the following:
 1. Detects if the thief is trying to connect to to RFHUB (they do it to add a key to the car)
-2. Starts the Panic Alarm
-3. Resets the RFHUB in order to reset the thief connection, and floods the bus with this message for 5 minutes
-4. after 5 minutes stops to send messages and stops alarm, and return listening for thief messages
+2. Starts the Panic Alarm after one second
+3. Continuously Resets the RFHUB in order to reset the thief connection, with this message for 10 seconds
+4. after 10 seconds stops to send messages and stops alarm, and return listening for thief messages
 
 Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
-Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. Therefore, if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the canable to the 5V usb voltage taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
+Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. Therefore, if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the canable to the 5V usb voltage taken from the connector of the USB interface in the central area, close to cigarette lighter socket. In fact, usb voltage is switched on as soon as the thief wakes up the rfhub. 
 
-Note3: Once the bus is flooded with the reset message, neither the injition button will work. the car will appear as dead..
+Note3: Once we start to send the rfhub reset message, neither the injition button will work. the car will appear as dead..
 
 ## Leds Strip controller
 The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
@@ -101,7 +101,7 @@ note: the video doesn't show the connection from usb +5V required to use immobil
 ## Firmware description
 The following video will show the strucure of the firmware:
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zmMgXUu2TZM/0.jpg)](https://www.youtube.com/watch?v=zmMgXUu2TZM)
-Note: the video was made before to decide to flood the bus with the rfhub reset message for 5 minutes.
+Note: the video was made before to update the method to send rfhub reset message for 10 seconds.
 
 ## Usage when configured to act as Canable
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
@@ -174,15 +174,29 @@ These are information that I found and that I can share. Use everything this at 
 1. The following message identifies gear selection (I use this too):
    - Message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
 
-2. According to Sniz (a famous guru), and to alfaobd developer, this is RFHUB Reset message, but it doesn't properly work. the only way I found to stop the thief connection was to flood the bus with this message:
+2. According to Sniz (a famous guru), and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
    - T18DAC7F180211010000000000 
 
-3. The following message sequence starts car Alarm, but it works only if the main car panel is on:
+3. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
+   - T1E340041488201500  //this message it is like a wake up sequence
    - T1E340041488201500
-   - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm
-   - t2EC80000000000000000
    - T1E340041488201500
-
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm. If the alarm was on, it goes off.
+    
+   
+   
 4. This message is periodically sent when panel is on, to define DNA selector position:
    - t38480809DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Dynamic
    - t38480801DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Natural
