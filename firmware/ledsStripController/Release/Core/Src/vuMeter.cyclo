@@ -7,7 +7,7 @@
 ../Core/Src/vuMeter.c:287:6:setEuropeanFlag	3
 ../Core/Src/vuMeter.c:461:6:Set_Brightness	4
 ../Core/Src/vuMeter.c:476:6:WS2812_Send	4
-../Core/Src/vuMeter.c:311:6:vuMeterUpdate	8
+../Core/Src/vuMeter.c:311:6:vuMeterUpdate	9
 ../Core/Src/vuMeter.c:525:6:MX_TIM1_Init	7
 ../Core/Src/vuMeter.c:587:6:MX_DMA_Init	1
 ../Core/Src/vuMeter.c:598:6:HAL_TIM_PWM_PulseFinishedCallback	1

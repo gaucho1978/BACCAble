@@ -310,8 +310,8 @@ void setEuropeanFlag(){
 // leds), and we use the color_preset parameter (gear position) to change colors of the leds
 void vuMeterUpdate(float volume, uint8_t colorPreset ){
 	if (vuMeterInitState<50) return; //initialization still not completed
-
-	currentVolume= (currentVolume * 74.0 / 75.0)+(volume / 75.0); //integrated in time on 75 samples (one message each 2 millisecond?, more or less)
+	if (volume>24) volume=24.0;
+	currentVolume= (currentVolume * 9.0 / 10.0)+(volume / 10.0); //integrated in time on 10 samples (one message each ? boh!)
 
 	if(colorPreset!=currentColorPreset){
 		switch(colorPreset){
