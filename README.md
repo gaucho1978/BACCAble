@@ -58,7 +58,7 @@ This projet was tested on alfaromeo Giulia. Each one of you, if dealing with oth
 
 ## Shift Warning Indicator
 The SHIFT warning indicator function allows you to show on dashboard the SHIFT warning label when configurable motor rpm speed is overcomed (3 levels of warning).
-The following video explains the behavious and the code description:
+The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JYUBBTW4WRo/0.jpg)](https://www.youtube.com/watch?v=JYUBBTW4WRo)
 
 
 ## Usage Instructions
