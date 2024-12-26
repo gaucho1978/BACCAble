@@ -17,7 +17,7 @@
 	#define DISABLE_START_STOP //comment this if you don't want to automatically disable start&stop car functionality
 	#define IMMOBILIZER_ENABLED //comment this if you don't want immobilizer functionality. This functionality waits for a thief to connect to RFHUB and if the connection message is found, it resets the rfhub and it starts the Panic alarm.
 	#define LED_STRIP_CONTROLLER_ENABLED //comment this if you don't want led strip controller functionality
-	#define SHIFT_INDICATOR_ENABLED //comment this line to show shift indicator when rpm motor goes over the configurable threshold SHIFT_THRESHOLD
+	#define SHIFT_INDICATOR_ENABLED //comment this line if you don't want to show shift indicator when rpm motor goes over the configurable threshold SHIFT_THRESHOLD
 	#define SHIFT_THRESHOLD 5000 //this is the configurable shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
 
 	//WARNING: ACT_AS_CANABLE takes a lot of time to buffer and send packets to usb, therefore the main
