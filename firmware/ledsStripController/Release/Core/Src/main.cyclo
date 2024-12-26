@@ -1,8 +1,8 @@
-../Core/Src/main.c:307:7:scaleVolume	2
-../Core/Src/main.c:317:9:scaleColorSet	1
-../Core/Src/main.c:326:6:SystemClock_Config	4
-../Core/Src/main.c:77:5:main	32
-../Core/Src/main.c:367:6:Error_Handler	1
-../Core/Src/main.c:373:6:system_irq_disable	1
-../Core/Src/main.c:381:6:system_irq_enable	1
-../Core/Src/main.c:385:6:system_hex32	3
+../Core/Src/main.c:348:7:scaleVolume	2
+../Core/Src/main.c:358:9:scaleColorSet	1
+../Core/Src/main.c:367:6:SystemClock_Config	4
+../Core/Src/main.c:81:5:main	38
+../Core/Src/main.c:408:6:Error_Handler	1
+../Core/Src/main.c:414:6:system_irq_disable	1
+../Core/Src/main.c:422:6:system_irq_enable	1
+../Core/Src/main.c:426:6:system_hex32	3

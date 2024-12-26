@@ -64,8 +64,8 @@ all: main-build
 main-build: ledsStripController.elf secondary-outputs
 
 # Tool invocations
-ledsStripController.elf ledsStripController.map: $(OBJS) $(USER_OBJS) C:\Users\GauchoHP\Desktop\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "ledsStripController.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"C:\Users\GauchoHP\Desktop\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ledsStripController.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+ledsStripController.elf ledsStripController.map: $(OBJS) $(USER_OBJS) E:\Dati\Documenti_Emanuele\Linguaggi_di_Programmazione\ST\ MCU\baccable\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "ledsStripController.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"E:\Dati\Documenti_Emanuele\Linguaggi_di_Programmazione\ST MCU\baccable\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ledsStripController.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
