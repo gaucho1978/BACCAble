@@ -183,11 +183,11 @@ These are information that I found and that I can share. Use everything this at 
 2. The following message identifies gear selection (I use this too):
    - Message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
 
-3. Thanks to Sniz(a famous guru), we know that message id 0x0fc contains motor rpm speed in first and second byte (the least significant 2 bits of the second byte are not related to rpm speed, and should not be used)
+3. Thanks to SniZ (a famous guru - https://alfatuning.app ), we know that message id 0x0fc contains motor rpm speed in first and second byte (the least significant 2 bits of the second byte are not related to rpm speed, and should not be used)
 
-4. Thanks to Sniz, we know that message id 0x0ed contains the shift warning lamp directed to dashboard. The information is contained in byte6 of the message data (zero based), first 2 bits. Value 0= no indicator, 1=urgency level1, 2=urgency level2, 3=urgency level3 (the one with shift label)
+4. Thanks to SniZ ( https://alfatuning.app ) , we know that message id 0x0ed contains the shift warning lamp directed to dashboard. The information is contained in byte6 of the message data (zero based), first 2 bits. Value 0= no indicator, 1=urgency level1, 2=urgency level2, 3=urgency level3 (the one with shift label)
    
-2. Thanks to Sniz, and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
+2. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
    - T18DAC7F180211010000000000 
 
 3. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
