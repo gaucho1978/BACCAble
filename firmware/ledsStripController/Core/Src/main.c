@@ -220,26 +220,18 @@ int main(void){
 						case CAN_ID_STD: //if standard ID
 
 							UNUSED(msg_buf); //avoid warning when used as leds strip controller
-							switch(rx_msg_header.StdId){
-								case 0x00000412: //se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
-									#if defined(LED_STRIP_CONTROLLER_ENABLED)
-										if( (rx_msg_header.DLC==5) && (rx_msg_data[3]>=51) ){
-											timeSinceLastReceivedAcceleratorMessage=HAL_GetTick();
-											ledsStripIsOn=1;
-											scaledVolume=scaleVolume(rx_msg_data[3]); //prendi il dato e scalalo, per prepararlo per l'invio alla classe vumeter
-											vuMeterUpdate(scaledVolume,scaledColorSet);
-										}
-									#endif
+							switch(rx_msg_header.StdId){ //messages in this switch is on C can bus, only when on different bus, the comments explicitly tells if it is on another can bus
+
+								case 0x00000090:
+									//on BH can bus, slow bus at 125kbps, this message contains:
+									//total frame number is on byte 0 from bit 7 to 3
+									//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
+									//infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
+									//UTF text 1 is on byte 2 and byte 3
+									//UTF text 2 is on byte 4 and byte 5
+									//UTF text 3 is on byte 6 and byte 7
 									break;
-								case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
-									#if defined(LED_STRIP_CONTROLLER_ENABLED)
-										if(rx_msg_header.DLC==8){
-											scaledColorSet=scaleColorSet(rx_msg_data[0]); //prendi il dato e scalalo, per prepararlo per l'invio alla classe vumeter
-											vuMeterUpdate(scaledVolume,scaledColorSet);
-										}
-									#endif
-									break;
-								case 0x000000FC: //message to dashboard containing rpm speed
+								case 0x000000FC: //message to dashboard containing rpm speed and not only
 									#if defined(SHIFT_INDICATOR_ENABLED)
 										if(rx_msg_header.DLC==8){
 											//extract rpm speed and set the variable currentRpmSpeed
@@ -247,6 +239,24 @@ int main(void){
 											//onboardLed_blue_on();
 										}
 									#endif
+									//engine speed fail is on byte1 bit 1.
+									//engine StopStart Status is on byte 1 bit 0 and byte 2 bit 7
+									//engine Status is on byte 2 bit 6 and bit 5.
+									//gas pedal position is on byte 2 from bit 4 to 0 and byte 3 from bit 7 to 5.
+									//gas pedal position fail is on byte3 bit 4.
+									//.....
+									//alternator fail is on byte 3, bit1.
+									//stopStart status is on byte3 bit 0 and byte4 bit7.
+									//CC brake intervention request is on byte 4, bit5
+									//bank deactivation status is on byte5, bit 7 and 6
+									//CC brake intervention is on byte 5 from bit 5 to 0 and byte 6 from bit 7 to 4.
+									break;
+								case 0x000001F0:
+									//clutch interlock is on byte 0 bit 7
+									//clutch upstop is on byte0 bit 6
+									//actual pedal position is on byte0 from bit 4 to 0 and byte 1 from bit7 to 5
+									//analog cluch is on byte 1 from bit 4 to 0 and byte 2 from bit 7 to 5.
+
 									break;
 								case 0x000002ED: //message to dashboard containing shift indicator
 									#if defined(SHIFT_INDICATOR_ENABLED)
@@ -272,6 +282,27 @@ int main(void){
 
 										}
 									#endif
+
+										//EngineWaterTemperature is on byte0
+										//fuel consumption is on byte 4 bit 0 to 3, byte 5, and byte 6 from bit 7 to 3
+									break;
+								case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
+									#if defined(LED_STRIP_CONTROLLER_ENABLED)
+										if(rx_msg_header.DLC==8){
+											scaledColorSet=scaleColorSet(rx_msg_data[0] & ~0xF); //prima di tutto azzeriamo i primi 4 bit meno significativi, poi scala il dato con la funzione scaleColorSet, per prepararlo per l'invio alla classe vumeter
+											vuMeterUpdate(scaledVolume,scaledColorSet);
+										}
+									#endif
+
+									//actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
+									//suggested gear status is on byte 0 from bit 3 to 0
+									//DPF Regeneration mode is on byte 1 bit 7.
+									//SAM info is on byte 1 from bit 3 to 0
+									//stop start fault status is on byte 2 bit 7
+									//..
+									//boost pressure indication is on byte 3 bit from 6 to 0 and byte 4  bit 7
+
+
 									break;
 								case 0x000002FA: // Button is pressed on left area of the wheel
 									// This sequence works only if the main panel of the car is on.
@@ -326,6 +357,26 @@ int main(void){
 										}
 									}
 									*/
+									break;
+								case 0x00000412: //se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
+									#if defined(LED_STRIP_CONTROLLER_ENABLED)
+										if( (rx_msg_header.DLC==5) && (rx_msg_data[3]>=51) ){
+											timeSinceLastReceivedAcceleratorMessage=HAL_GetTick();
+											ledsStripIsOn=1;
+											scaledVolume=scaleVolume(rx_msg_data[3]); //prendi il dato e scalalo, per prepararlo per l'invio alla classe vumeter
+											vuMeterUpdate(scaledVolume,scaledColorSet);
+										}
+									#endif
+									break;
+								case 0x000004B2:
+									//engine oil level is in byte 0 from bit 7 to 3.
+									//engine oil over fill status is on byte 0, bit 2.
+									//engine oil min. is on byte 0 bit 1
+									//engine oil pressure is on byte 0, bit 0 and on byte 1 from bit 7 to 1.
+									//power mode status is on byte 1 bit 0 and on byte 2 bit 7.
+									//engine water level is on byte 2 bit 6.
+									//engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
+									//engine oil temperature warning light is on byte 3 bit 5.
 									break;
 								default:
 							}

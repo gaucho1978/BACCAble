@@ -5581,12 +5581,12 @@ Disassembly of section .text:
  8002cda:	6823      	ldr	r3, [r4, #0]
  8002cdc:	4a47      	ldr	r2, [pc, #284]	@ (8002dfc <main+0x2d4>)
  8002cde:	4293      	cmp	r3, r2
- 8002ce0:	d03f      	beq.n	8002d62 <main+0x23a>
+ 8002ce0:	d054      	beq.n	8002d8c <main+0x264>
  8002ce2:	3201      	adds	r2, #1
  8002ce4:	4293      	cmp	r3, r2
  8002ce6:	d222      	bcs.n	8002d2e <main+0x206>
  8002ce8:	2bfc      	cmp	r3, #252	@ 0xfc
- 8002cea:	d044      	beq.n	8002d76 <main+0x24e>
+ 8002cea:	d038      	beq.n	8002d5e <main+0x236>
  8002cec:	4a44      	ldr	r2, [pc, #272]	@ (8002e00 <main+0x2d8>)
  8002cee:	4293      	cmp	r3, r2
  8002cf0:	d1e9      	bne.n	8002cc6 <main+0x19e>
@@ -5608,7 +5608,7 @@ Disassembly of section .text:
  8002d12:	18fb      	adds	r3, r7, r3
  8002d14:	0049      	lsls	r1, r1, #1
  8002d16:	428b      	cmp	r3, r1
- 8002d18:	d23a      	bcs.n	8002d90 <main+0x268>
+ 8002d18:	d22e      	bcs.n	8002d78 <main+0x250>
  8002d1a:	2303      	movs	r3, #3
  8002d1c:	439a      	bics	r2, r3
  8002d1e:	3b02      	subs	r3, #2
@@ -5639,41 +5639,41 @@ Disassembly of section .text:
  8002d56:	6018      	str	r0, [r3, #0]
  8002d58:	4b31      	ldr	r3, [pc, #196]	@ (8002e20 <main+0x2f8>)
  8002d5a:	7819      	ldrb	r1, [r3, #0]
- 8002d5c:	f000 fb8a 	bl	8003474 <vuMeterUpdate>
- 8002d60:	e7b1      	b.n	8002cc6 <main+0x19e>
- 8002d62:	6923      	ldr	r3, [r4, #16]
- 8002d64:	2b08      	cmp	r3, #8
- 8002d66:	d1ae      	bne.n	8002cc6 <main+0x19e>
- 8002d68:	7829      	ldrb	r1, [r5, #0]
- 8002d6a:	4b2d      	ldr	r3, [pc, #180]	@ (8002e20 <main+0x2f8>)
- 8002d6c:	0909      	lsrs	r1, r1, #4
- 8002d6e:	7019      	strb	r1, [r3, #0]
- 8002d70:	4b2a      	ldr	r3, [pc, #168]	@ (8002e1c <main+0x2f4>)
- 8002d72:	6818      	ldr	r0, [r3, #0]
- 8002d74:	e7f2      	b.n	8002d5c <main+0x234>
- 8002d76:	6923      	ldr	r3, [r4, #16]
- 8002d78:	2b08      	cmp	r3, #8
- 8002d7a:	d1a4      	bne.n	8002cc6 <main+0x19e>
- 8002d7c:	2003      	movs	r0, #3
- 8002d7e:	7869      	ldrb	r1, [r5, #1]
- 8002d80:	782b      	ldrb	r3, [r5, #0]
- 8002d82:	4381      	bics	r1, r0
- 8002d84:	021b      	lsls	r3, r3, #8
- 8002d86:	4a1f      	ldr	r2, [pc, #124]	@ (8002e04 <main+0x2dc>)
- 8002d88:	185b      	adds	r3, r3, r1
- 8002d8a:	109b      	asrs	r3, r3, #2
- 8002d8c:	6013      	str	r3, [r2, #0]
- 8002d8e:	e79a      	b.n	8002cc6 <main+0x19e>
- 8002d90:	2003      	movs	r0, #3
- 8002d92:	4b24      	ldr	r3, [pc, #144]	@ (8002e24 <main+0x2fc>)
- 8002d94:	18ff      	adds	r7, r7, r3
- 8002d96:	0003      	movs	r3, r0
- 8002d98:	4313      	orrs	r3, r2
- 8002d9a:	428f      	cmp	r7, r1
- 8002d9c:	d2c1      	bcs.n	8002d22 <main+0x1fa>
- 8002d9e:	2302      	movs	r3, #2
- 8002da0:	4382      	bics	r2, r0
- 8002da2:	e7bd      	b.n	8002d20 <main+0x1f8>
+ 8002d5c:	e01f      	b.n	8002d9e <main+0x276>
+ 8002d5e:	6923      	ldr	r3, [r4, #16]
+ 8002d60:	2b08      	cmp	r3, #8
+ 8002d62:	d1b0      	bne.n	8002cc6 <main+0x19e>
+ 8002d64:	2003      	movs	r0, #3
+ 8002d66:	7869      	ldrb	r1, [r5, #1]
+ 8002d68:	782b      	ldrb	r3, [r5, #0]
+ 8002d6a:	4381      	bics	r1, r0
+ 8002d6c:	021b      	lsls	r3, r3, #8
+ 8002d6e:	4a25      	ldr	r2, [pc, #148]	@ (8002e04 <main+0x2dc>)
+ 8002d70:	185b      	adds	r3, r3, r1
+ 8002d72:	109b      	asrs	r3, r3, #2
+ 8002d74:	6013      	str	r3, [r2, #0]
+ 8002d76:	e7a6      	b.n	8002cc6 <main+0x19e>
+ 8002d78:	2003      	movs	r0, #3
+ 8002d7a:	4b2a      	ldr	r3, [pc, #168]	@ (8002e24 <main+0x2fc>)
+ 8002d7c:	18ff      	adds	r7, r7, r3
+ 8002d7e:	0003      	movs	r3, r0
+ 8002d80:	4313      	orrs	r3, r2
+ 8002d82:	428f      	cmp	r7, r1
+ 8002d84:	d2cd      	bcs.n	8002d22 <main+0x1fa>
+ 8002d86:	2302      	movs	r3, #2
+ 8002d88:	4382      	bics	r2, r0
+ 8002d8a:	e7c9      	b.n	8002d20 <main+0x1f8>
+ 8002d8c:	6923      	ldr	r3, [r4, #16]
+ 8002d8e:	2b08      	cmp	r3, #8
+ 8002d90:	d199      	bne.n	8002cc6 <main+0x19e>
+ 8002d92:	7829      	ldrb	r1, [r5, #0]
+ 8002d94:	4b22      	ldr	r3, [pc, #136]	@ (8002e20 <main+0x2f8>)
+ 8002d96:	0909      	lsrs	r1, r1, #4
+ 8002d98:	7019      	strb	r1, [r3, #0]
+ 8002d9a:	4b20      	ldr	r3, [pc, #128]	@ (8002e1c <main+0x2f4>)
+ 8002d9c:	6818      	ldr	r0, [r3, #0]
+ 8002d9e:	f000 fb69 	bl	8003474 <vuMeterUpdate>
+ 8002da2:	e790      	b.n	8002cc6 <main+0x19e>
  8002da4:	20000560 	.word	0x20000560
  8002da8:	20000559 	.word	0x20000559
  8002dac:	2000055c 	.word	0x2000055c
