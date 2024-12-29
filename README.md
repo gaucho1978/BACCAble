@@ -171,6 +171,7 @@ DMA controllers in STM32s support various operations, one of them being super ha
 We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
 
 ## Alfa Romeo Giulia Protocol Reverse Engineering 
+Note (added on 29/12/2024): apart what i wrote in this paragraph, more message decoding was detailed inside main.c file, as comments for now, in order to be able to decode more messages in the near future. I don't have time to update this section now.
 
 These are information that I found and that I can share. Use everything this at your own risk.
 
