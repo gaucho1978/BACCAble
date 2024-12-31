@@ -216,6 +216,7 @@ These are information that I found and that I can share. Use everything this at 
    - t38480801DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Natural
    - t38480811DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - AllWeather
    - t38480831DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Race (on my car this is not available)
+
   So to summarize we can say that msg id 0x384, byte 1 indicated current DNA mode selection: 0x01=Natural, 0x09=Dynamic, 0x11=AllWeather, 0x31=Race
 
 5. You can Send these messages to emulate the following key Press (or you can detect when they have been pressed, by filtering received messages):
