@@ -182,7 +182,9 @@ These are information that I found and that I can share. Use everything this at 
    - message id 736, second and third byte, changes from 3319 to E772
 
 2. The following message identifies gear selection (I use this too):
-   - Message id 2ef, first byte: 0x70=Reverse , 0x00=Neutral, 0xf0=Undefined (in example pressed clutch), 0x10=first gear, 0x20=second gear ...and so on up to sixt gear
+   - Message id 2ef, first byte (first nibble) contains current gear selection: 0x7X=Reverse , 0x0X=Neutral, 0xfX=Undefined (in example pressed clutch), 0x1X=first gear, 0x2X=second gear ...and so on up to sixt gear
+   - Message id 2ef, first byte (second nibble)contains suggested gear: 0xX7=Reverse , 0xX0=Neutral, 0xXf=Undefined, 0xX1=first gear, 0xX2=second gear ...and so on up to sixt gear
+
 
 3. Thanks to SniZ (a famous guru - https://alfatuning.app ), we know that message id 0x0fc contains motor rpm speed in first and second byte (the least significant 2 bits of the second byte are not related to rpm speed, and should not be used)
 
@@ -217,7 +219,7 @@ These are information that I found and that I can share. Use everything this at 
    - t38480811DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - AllWeather
    - t38480831DA080004XXYY (XX= counter from 00 to 0F , YY=checksum) DNA status - Race (on my car this is not available)
 
-  So to summarize we can say that msg id 0x384, byte 1 indicated current DNA mode selection: 0x01=Natural, 0x09=Dynamic, 0x11=AllWeather, 0x31=Race
+   So to summarize we can say that msg id 0x384, byte 1 indicated current DNA mode selection: 0x01=Natural, 0x09=Dynamic, 0x11=AllWeather, 0x31=Race
 
 5. You can Send these messages to emulate the following key Press (or you can detect when they have been pressed, by filtering received messages):
    - t2FA390XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - RES
