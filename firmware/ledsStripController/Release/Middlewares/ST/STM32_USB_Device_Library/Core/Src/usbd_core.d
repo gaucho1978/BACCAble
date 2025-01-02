@@ -2,6 +2,7 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.o: \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
  ../USB_DEVICE/Target/usbd_conf.h ../Core/Inc/main.h \
+ ../Core/Inc/vuMeter.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h \
  ../Core/Inc/stm32f0xx_hal_conf.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h \
@@ -35,7 +36,6 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.o: \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim_ex.h \
  ../Core/Inc/onboardLed.h ../Core/Inc/can.h ../Core/Inc/slcan.h \
  ../Core/Inc/error.h ../Core/Inc/printf.h ../Core/Inc/main.h \
- ../Core/Inc/vuMeter.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
@@ -43,6 +43,7 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.o: \
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h:
 ../USB_DEVICE/Target/usbd_conf.h:
 ../Core/Inc/main.h:
+../Core/Inc/vuMeter.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h:
 ../Core/Inc/stm32f0xx_hal_conf.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h:
@@ -80,7 +81,6 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.o: \
 ../Core/Inc/error.h:
 ../Core/Inc/printf.h:
 ../Core/Inc/main.h:
-../Core/Inc/vuMeter.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
 ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h:

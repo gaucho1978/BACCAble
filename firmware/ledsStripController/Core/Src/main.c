@@ -1,11 +1,15 @@
+// the definition of ACT_AS_CANABLE shall be placed in main.h
 #include "main.h"
 
-// the definition of ACT_AS_CANABLE shall be placed in main.h
 #if defined(ACT_AS_CANABLE)
+
 	#include "usb_device.h"
 	#include "usbd_cdc_if.h"
 	#include "string.h"
-#endif /* ACT_AS_CANABLE */
+#endif
+
+
+
 
 #if defined(IMMOBILIZER_ENABLED)
 	uint8_t immobilizerEnabled=1; //used to set filter in can.c
@@ -39,9 +43,9 @@ uint8_t panicAlarmStartMsgData[5][8]={	{0x02,0x11,0x01,0x00,},
 uint8_t startAndStopEnabled=1;
 uint32_t lastTimeStartAndstopDisablerButtonPressed=0;
 
-CAN_TxHeaderTypeDef shift_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2ED, .DLC=8};
-uint8_t shift_msg_data[8];
-uint32_t currentRpmSpeed=0;
+CAN_TxHeaderTypeDef shift_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2ED, .DLC=8}; //used when SHIFT_INDICATOR_ENABLED is defined
+uint8_t shift_msg_data[8]; //used when SHIFT_INDICATOR_ENABLED is defined
+uint32_t currentRpmSpeed=0;//used when SHIFT_INDICATOR_ENABLED is defined
 
 // Storage for status and received message buffer
 CAN_RxHeaderTypeDef rx_msg_header;  //msg header
@@ -78,17 +82,24 @@ uint32_t floodTheBusStartTime=0;
 uint32_t floodTheBusLastTimeSent=0;
 extern can_txbuf_t txqueue;
 
+uint8_t currentDNAmode; //used when ESC_TC_CUSTOMIZATOR_ENABLED is defined
+uint8_t DNA_msg_data[8];//used when ESC_TC_CUSTOMIZATOR_ENABLED is defined
+CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8}; //used when ESC_TC_CUSTOMIZATOR_ENABLED is defined
+uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
+uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
 int main(void){
 	SystemClock_Config(); //set system clocks
 	onboardLed_init(); //initialize onboard leds for debug purposes
 	can_init(); //initialize can interface
 	onboardLed_red_on();
+	onboardLed_blue_on();
 
 	#if defined(ACT_AS_CANABLE)
 		MX_USB_DEVICE_Init();
 	#endif
 
-	#if (!defined(ACT_AS_CANABLE)) || defined(IMMOBILIZER_ENABLED)  //if we require the automatic reading of the can bus (to ctrl leds or to make the immobilizer)...
+	#if (defined(DISABLE_START_STOP) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED))  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
 		can_enable(); //enable can port
@@ -125,7 +136,9 @@ int main(void){
 			//testMsgData[3]=0x01;
 			//testMsgData[4]=0xE6; //pedal position
 			//can_tx(&testMsgHeader, testMsgData);
-		#else
+		#endif
+
+		#if defined(LED_STRIP_CONTROLLER_ENABLED)
 			//don't act as canable. One USB port pin is used to control leds.
 			vuMeterInit(); //initialize leds strip controller - this is called many times to divide the operations on more loops
 			if(ledsStripIsOn){ //if the strip is on,
@@ -219,7 +232,6 @@ int main(void){
 							break;
 						case CAN_ID_STD: //if standard ID
 
-							UNUSED(msg_buf); //avoid warning when used as leds strip controller
 							switch(rx_msg_header.StdId){ //messages in this switch is on C can bus, only when on different bus, the comments explicitly tells if it is on another can bus
 
 								case 0x00000090:
@@ -305,7 +317,8 @@ int main(void){
 
 									break;
 								case 0x000002FA: // Button is pressed on left area of the wheel
-									// This sequence works only if the main panel of the car is on.
+									// These Buttons are detected only if the main panel of the car is on.
+
 									// We commented this section since we are not using it now. Uncomment to use it.
 									// The cycle duration could increase and make blink the red led onboard.
 									// The action of the button's sequence is left empty for you to add it.
@@ -357,6 +370,39 @@ int main(void){
 										}
 									}
 									*/
+									break;
+								case 0x00000384:
+									#if defined(ESC_TC_CUSTOMIZATOR_ENABLED)
+										//byte3, bit6 contains left stalk button press status (LANE indicator button)
+										if((rx_msg_data[3] & 0x40) ==0x40){ // left stalk button was pressed (lane following indicator)
+											LANEbuttonPressLastTimeSeen=HAL_GetTick();//save current time it was pressed as LANEbuttonPressLastTimeSeen
+											LANEbuttonPressCount++;
+											if (LANEbuttonPressCount>8){ //8 is more or less 2 seconds
+												ESCandTCinversion=!ESCandTCinversion; //toggle the status
+												onboardLed_red_on();
+												LANEbuttonPressCount=0; //reset the count
+											}
+										}else{
+											if(LANEbuttonPressLastTimeSeen+1000<HAL_GetTick()){ // if LANEbuttonPressLastTimeSeen, is older than 1 second ago, it means that button was released
+												LANEbuttonPressCount=0;// reset the count assigning it zero
+											}
+										}
+
+										if(currentDNAmode!=rx_msg_data[1]){ //RDNA mode was changed, reset the ESCandTCinversion
+											ESCandTCinversion=0;
+										}
+										currentDNAmode=rx_msg_data[1];
+										if (ESCandTCinversion){
+											memcpy(&DNA_msg_data, &rx_msg_data, 8);
+											if(currentDNAmode==0x31){
+												DNA_msg_data[1]=0x09;  //set Dynamic mode to enable ESC and TC
+											}else{
+												DNA_msg_data[1]=0x31;  //set Race mode to disable ESC and TC
+											}
+											can_tx(&DNA_msg_header, DNA_msg_data); //transmit the modified packet
+											onboardLed_blue_on();
+										}
+									#endif
 									break;
 								case 0x00000412: //se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
 									#if defined(LED_STRIP_CONTROLLER_ENABLED)

@@ -1,5 +1,5 @@
 ../Core/Src/can.c:20:6:can_init	1
-../Core/Src/can.c:53:6:can_enable	3
+../Core/Src/can.c:53:6:can_enable	2
 ../Core/Src/can.c:121:6:can_disable	2
 ../Core/Src/can.c:135:6:can_set_bitrate	10
 ../Core/Src/can.c:183:6:can_set_silent	2

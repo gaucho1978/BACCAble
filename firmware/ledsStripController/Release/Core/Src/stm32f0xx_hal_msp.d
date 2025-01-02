@@ -1,5 +1,6 @@
 Core/Src/stm32f0xx_hal_msp.o: ../Core/Src/stm32f0xx_hal_msp.c \
- ../Core/Inc/main.h ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h \
+ ../Core/Inc/main.h ../Core/Inc/vuMeter.h \
+ ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h \
  ../Core/Inc/stm32f0xx_hal_conf.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_def.h \
@@ -31,9 +32,9 @@ Core/Src/stm32f0xx_hal_msp.o: ../Core/Src/stm32f0xx_hal_msp.c \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim_ex.h \
  ../Core/Inc/onboardLed.h ../Core/Inc/can.h ../Core/Inc/slcan.h \
- ../Core/Inc/error.h ../Core/Inc/printf.h ../Core/Inc/main.h \
- ../Core/Inc/vuMeter.h
+ ../Core/Inc/error.h ../Core/Inc/printf.h ../Core/Inc/main.h
 ../Core/Inc/main.h:
+../Core/Inc/vuMeter.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h:
 ../Core/Inc/stm32f0xx_hal_conf.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h:
@@ -71,4 +72,3 @@ Core/Src/stm32f0xx_hal_msp.o: ../Core/Src/stm32f0xx_hal_msp.c \
 ../Core/Inc/error.h:
 ../Core/Inc/printf.h:
 ../Core/Inc/main.h:
-../Core/Inc/vuMeter.h:

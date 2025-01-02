@@ -67,7 +67,7 @@ void can_enable(void)
     	can_handle.Init.ReceiveFifoLocked = DISABLE;
     	can_handle.Init.TransmitFifoPriority = ENABLE;
         HAL_CAN_Init(&can_handle);
-        //immobilizerEnabled=0;
+        immobilizerEnabled=0; //messages processed are increasing, let's remove the filters, and come back here only if some problem occours
 		if(immobilizerEnabled){ //filter only required messages to achieve fast response . The filter includes messages for led control, to make it simple, even if led control don't require such fast response
 
 			CAN_FilterTypeDef filter;
