@@ -99,7 +99,7 @@ Leds strip: https://amzn.to/3W3TifJ
 Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
 
 ## The interconnections
-Note: In xx section it is defined when you need to connect to a different can bus. The folliwing diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), but there are also C2 can bus (pin 12 and 13 of the OBD port) and BH can bus (pin 3 and 11 of the OBD port) 
+Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The folliwing diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer and leds strip controller functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the future functionality to add parameters on the dashboard. 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
 ## The Box
