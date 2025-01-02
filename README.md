@@ -29,6 +29,9 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 
 - start&stop car function disabler (more detailes in the dedicated subparagraph),
 - immobilizer (more details in the dedicated subparagraph)
+- SHIFT warning indicator on dashboard (more detailes in the dedicated subparagraph),
+- ESC and TC controller (more detailes in the dedicated subparagraph)
+
 ## Folders content
 - Subfolder firmware contains the firmware
 - Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
