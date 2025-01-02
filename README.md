@@ -8,6 +8,7 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - automatically disable start&stop car functionality
 - act as Immobilizer, by injecting can bus messages when required.
 - show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
+- enable and disable ESC and TC with left stalk button press
 
 BACCABLE overview (click on the following image to see the video)
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
@@ -59,22 +60,25 @@ This projet was tested on alfaromeo Giulia. Each one of you, if dealing with oth
 ## Shift Warning Indicator
 The SHIFT warning indicator function allows you to show on dashboard the SHIFT warning label when configurable motor rpm speed is overcomed (3 levels of warning).
 The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JYUBBTW4WRo/0.jpg)](https://www.youtube.com/watch?v=JYUBBTW4WRo)
-
+## ESC & TC enabler/disabler functionality
+By pressing left stalk button (LANE indicator) for 2 seconds, in D,N,A modes the ESC and TC will be disabled. Changing DNA mode or pressing again the same button, it is possible to revert the change. In Race mode, where ESC and TC ar tipicalliy disabled, this functionality allows to enable ESC and TC.
+The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/I1GHFjOmpOs/0.jpg)](https://www.youtube.com/watch?v=I1GHFjOmpOs)
 
 ## Usage Instructions
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
-- If you want to use the device as leds strip controller you shall comment the line " #define ACT_AS_CANABLE " and uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h
+- If you want to use the device as leds strip controller you shall comment the line " #define ACT_AS_CANABLE " and uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h (this was tested only connected to C1 can bus)
 - If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h
-- If you want to disable IMMOBILIZER functionality, you shall comment #define IMMOBILIZER_ENABLED in main.h
+- If you want to disable IMMOBILIZER functionality, you shall comment #define IMMOBILIZER_ENABLED in main.h (this works only if connected to C1 can bus)
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
-- If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (5000rpm by default)
- 
+- If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (2000rpm by default) (works only in race mode, and was tested only connected to C1 can bus)
+- If  you want the capability to enable and disable TC with left stalk button, you shall uncomment #define ESC_TC_CUSTOMIZATOR_ENABLED in main.h and connect the baccable to C2 can bus (pin 12 and 13 of the OBD port)
+  
 Software to use:
 - use stm32CubeIde to compile on windows
 - use stm32CubeProgrammer to flash the firmware elf file contained in subfolder firmware\ledsStripController\Release 
 
-Note: i downloaded previous version of the programmer (v.2.15.0) since last available revision had some bug that won't allow me to flash canable.
+Note: i downloaded previous version of the programmer (v.2.15.0) since last available revision had some bug that won't allow me to flash canable. Edit: now also last version can be used.
 
 Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
@@ -95,6 +99,7 @@ Leds strip: https://amzn.to/3W3TifJ
 Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
 
 ## The interconnections
+Note: In xx section it is defined when you need to connect to a different can bus. The folliwing diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), but there are also C2 can bus (pin 12 and 13 of the OBD port) and BH can bus (pin 3 and 11 of the OBD port) 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
 ## The Box
@@ -110,7 +115,7 @@ note: the video doesn't show the connection from usb +5V required to use immobil
 ## Firmware description
 The following video will show the structure of the firmware.
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zmMgXUu2TZM/0.jpg)](https://www.youtube.com/watch?v=zmMgXUu2TZM)
-Note: the video was made before to update the method to send rfhub reset message for 10 seconds, and before of the code optimization in the main loop.
+Note: the video was made before to update the method to send rfhub reset message for 10 seconds, and before of the code optimization in the main loop, and before latest functionalities were added.
 
 ## Usage when configured to act as Canable
 when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
