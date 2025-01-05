@@ -18,7 +18,7 @@
 #endif
 
 
-char *FW_VERSION="BACCA CANable V.1.0";  //this is used to store FW version, also shown on usb when used as slcan
+char *FW_VERSION="BACCABLE      V.2.0";  //this is used to store FW version, also shown on usb when used as slcan
 float scaledVolume;
 uint8_t scaledColorSet;
 
@@ -88,20 +88,48 @@ CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId
 uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
 uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
 uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
+uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
+uint8_t telematic_display_info_field_totalFrameNumber=5; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+uint8_t telematic_display_info_field_infoCode=0x0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+uint8_t paramsStringArray[10][18]={ {'B', 'A', 'C', 'C', 'A', 'B', 'L', 'E', ' ', 'V', '.', '2', '.', '0', },
+									{'P', 'a', 'g', 'e', ' ', '1', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '2', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '3', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '4', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '5', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '6', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '7', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '8', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
+									{'P', 'a', 'g', 'e', ' ', '9', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', }};//string array to show on dashboard - Second dimension shall be 3 x (telematic_display_info_field_totalFrameNumber +1 ). Example: 3x(11+1)=36  //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
+
+uint8_t paramsStringArrayIndex=0; //indice del messaggio da spedire - potremo cambiare indice con i pulsanti del cruise control) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
+uint8_t paramsStringCharIndex=0; //indice del prossimo carattere della stringa corrente da spedire //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
+CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
+uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+uint8_t sentMsgCounter=0;//--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+int8_t SHOW_PARAMS_Command=0; //user command to show another parameter //--// 1=next, -1=previous, 0=no command  //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+
 int main(void){
 	SystemClock_Config(); //set system clocks
 	onboardLed_init(); //initialize onboard leds for debug purposes
 	can_init(); //initialize can interface
-	onboardLed_red_on();
-	onboardLed_blue_on();
+	//onboardLed_red_on(); This line doesn't work cause hardware is still initiating
+
 
 	#if defined(ACT_AS_CANABLE)
 		MX_USB_DEVICE_Init();
 	#endif
 
-	#if (defined(DISABLE_START_STOP) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED))  //if required, let's automatically open the can bus
+	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED))  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
+		can_enable(); //enable can port
+	#endif
+
+	#if (defined(SHOW_PARAMS_ON_DASHBOARD))
+		//let's open the can bus because we may need data
+		can_set_bitrate(CAN_BITRATE_125K);//set can speed to 125kpbs
 		can_enable(); //enable can port
 	#endif
 
@@ -201,6 +229,144 @@ int main(void){
 			}
 		#endif
 
+		#if defined(SHOW_PARAMS_ON_DASHBOARD)
+			//send one msg to write something on the dashboard each 50msec (one frame each 550msec)
+			if (lastSentTelematic_display_info_msg_Time+200<HAL_GetTick()){
+				lastSentTelematic_display_info_msg_Time=HAL_GetTick();
+
+
+				if(telematic_display_info_field_frameNumber==0){
+					//IF THERE IS A USER REQUEST TO SHOW ANOTHER PARAMETER PAGE, DO IT
+					if(SHOW_PARAMS_Command==-1 || SHOW_PARAMS_Command==1){ //-1=previous 1=next
+						SHOW_PARAMS_Command=0; //no command to execute
+						//clear screen
+						telematic_display_info_msg_data[0]= 0;
+						telematic_display_info_msg_data[1]=0x11;
+						telematic_display_info_msg_data[2]=0;
+						telematic_display_info_msg_data[3]= 0x20;
+						telematic_display_info_msg_data[4]=0;
+						telematic_display_info_msg_data[5]=0;
+						telematic_display_info_msg_data[6]=0;
+						telematic_display_info_msg_data[7]=0;
+						//send it
+						can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
+
+						//set index
+						paramsStringArrayIndex += SHOW_PARAMS_Command;
+						// make a rotative menu
+						if(paramsStringArrayIndex==255) paramsStringArrayIndex=9;
+						if(paramsStringArrayIndex==10)  paramsStringArrayIndex=0;
+					}
+
+					//update values TO SHOW each time we are in frame 0, by means of previously extracted parameters
+					//we should update values here, and fix names in array declaration
+					//but now I don't know which parameters to print
+					switch(paramsStringArrayIndex){
+						case 1:
+							paramsStringArray[paramsStringArrayIndex][0]='P';
+							paramsStringArray[paramsStringArrayIndex][1]='a';
+							paramsStringArray[paramsStringArrayIndex][2]='r' ;
+							paramsStringArray[paramsStringArrayIndex][3]='1';
+							paramsStringArray[paramsStringArrayIndex][4]=':';
+							paramsStringArray[paramsStringArrayIndex][5]='0';
+							paramsStringArray[paramsStringArrayIndex][6]='0';
+							paramsStringArray[paramsStringArrayIndex][7]='1';
+							paramsStringArray[paramsStringArrayIndex][8]='%';
+							paramsStringArray[paramsStringArrayIndex][9]='|';
+							paramsStringArray[paramsStringArrayIndex][10]='P';
+							paramsStringArray[paramsStringArrayIndex][11]='a';
+							paramsStringArray[paramsStringArrayIndex][12]='r';
+							paramsStringArray[paramsStringArrayIndex][13]='2';
+							paramsStringArray[paramsStringArrayIndex][14]=':';
+							paramsStringArray[paramsStringArrayIndex][15]='0';
+							paramsStringArray[paramsStringArrayIndex][16]='0';
+							paramsStringArray[paramsStringArrayIndex][17]='2';
+							break;
+						case 2:
+							paramsStringArray[paramsStringArrayIndex][0]='P';
+							paramsStringArray[paramsStringArrayIndex][1]='a';
+							paramsStringArray[paramsStringArrayIndex][2]='r' ;
+							paramsStringArray[paramsStringArrayIndex][3]='3';
+							paramsStringArray[paramsStringArrayIndex][4]=':';
+							paramsStringArray[paramsStringArrayIndex][5]='0';
+							paramsStringArray[paramsStringArrayIndex][6]='0';
+							paramsStringArray[paramsStringArrayIndex][7]='2';
+							paramsStringArray[paramsStringArrayIndex][8]='%';
+							paramsStringArray[paramsStringArrayIndex][9]='|';
+							paramsStringArray[paramsStringArrayIndex][10]='P';
+							paramsStringArray[paramsStringArrayIndex][11]='a';
+							paramsStringArray[paramsStringArrayIndex][12]='r';
+							paramsStringArray[paramsStringArrayIndex][13]='4';
+							paramsStringArray[paramsStringArrayIndex][14]=':';
+							paramsStringArray[paramsStringArrayIndex][15]='0';
+							paramsStringArray[paramsStringArrayIndex][16]='0';
+							paramsStringArray[paramsStringArrayIndex][17]='3';
+							break;
+						case 3:
+							paramsStringArray[paramsStringArrayIndex][0]='P';
+							paramsStringArray[paramsStringArrayIndex][1]='a';
+							paramsStringArray[paramsStringArrayIndex][2]='r' ;
+							paramsStringArray[paramsStringArrayIndex][3]='5';
+							paramsStringArray[paramsStringArrayIndex][4]=':';
+							paramsStringArray[paramsStringArrayIndex][5]='0';
+							paramsStringArray[paramsStringArrayIndex][6]='0';
+							paramsStringArray[paramsStringArrayIndex][7]='3';
+							paramsStringArray[paramsStringArrayIndex][8]='%';
+							paramsStringArray[paramsStringArrayIndex][9]='|';
+							paramsStringArray[paramsStringArrayIndex][10]='P';
+							paramsStringArray[paramsStringArrayIndex][11]='a';
+							paramsStringArray[paramsStringArrayIndex][12]='r';
+							paramsStringArray[paramsStringArrayIndex][13]='6';
+							paramsStringArray[paramsStringArrayIndex][14]=':';
+							paramsStringArray[paramsStringArrayIndex][15]='0';
+							paramsStringArray[paramsStringArrayIndex][16]='0';
+							paramsStringArray[paramsStringArrayIndex][17]='4';
+							break;
+						default:
+					}
+				}
+
+				//prepare msg to send
+
+				//total frame number is on byte 0 from bit 7 to 3
+				telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0xF8) | ((telematic_display_info_field_totalFrameNumber<<3) & 0xF8);
+
+				//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
+				telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0x07) | ((telematic_display_info_field_frameNumber>>2) & 0x07);
+				telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0xC0) | ((telematic_display_info_field_frameNumber<<6) & 0xC0);
+
+				//infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
+				telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0x3F) | ((telematic_display_info_field_infoCode) & 0x3F);
+
+				//UTF text 1 is on byte 2 and byte 3
+				telematic_display_info_msg_data[2]=0;
+				telematic_display_info_msg_data[3]=paramsStringArray[paramsStringArrayIndex][paramsStringCharIndex];
+				paramsStringCharIndex++; //prepare to send next char
+
+				//UTF text 2 is on byte 4 and byte 5
+				telematic_display_info_msg_data[4]=0;
+				telematic_display_info_msg_data[5]=paramsStringArray[paramsStringArrayIndex][paramsStringCharIndex];
+				paramsStringCharIndex++; //prepare to send next char
+
+				//UTF text 3 is on byte 6 and byte 7
+				telematic_display_info_msg_data[6]=0;
+				telematic_display_info_msg_data[7]=paramsStringArray[paramsStringArrayIndex][paramsStringCharIndex];
+				paramsStringCharIndex++; //prepare to send next char
+
+				//send it
+				can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
+				onboardLed_blue_on();
+
+				if( paramsStringCharIndex==(telematic_display_info_field_totalFrameNumber+1) * 3) { //if we sent the entire string
+					paramsStringCharIndex=0; //prepare to send first char of the string
+
+				}
+				telematic_display_info_field_frameNumber++; //prepare for next frame to send
+				if (telematic_display_info_field_frameNumber>telematic_display_info_field_totalFrameNumber){//if we sent all the frames
+					telematic_display_info_field_frameNumber=0; //prepare to send first frame
+				}
+			}
+		#endif
 
 		// If CAN message receive is pending, process the message
 		if(is_can_msg_pending(CAN_RX_FIFO0)){
@@ -236,6 +402,7 @@ int main(void){
 
 								case 0x00000090:
 									//on BH can bus, slow bus at 125kbps, this message contains:
+
 									//total frame number is on byte 0 from bit 7 to 3
 									//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
 									//infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
@@ -270,6 +437,16 @@ int main(void){
 									//analog cluch is on byte 1 from bit 4 to 0 and byte 2 from bit 7 to 5.
 
 									break;
+								case 0x000001FC: //received on C2 can bus
+									//Rear Diff. Warning La. is on byte0 bit7
+									//Rear Diff, Control Status is on byte0 bit6
+									//Active Dumping Control Status (the suspensions) is on byte0 from bit 5 to 4 (0x0=Mid, 0x1=Soft, 0x2=Firm [only on QV])
+									//Rd. Asp. Ind. is on byte 0 from bit3 to 0 and byte 1 from bit 7 to 4
+									//Active Dumping Control Fail status is on byte 1 bit3
+									//Aero. Fail Status is on byte 1 bit2
+									//Front Aero. status is on byte 1 bit1 to bit0
+									//CDCM warning lamp is on byte 2 bit5
+									break;
 								case 0x000002ED: //message to dashboard containing shift indicator
 									#if defined(SHIFT_INDICATOR_ENABLED)
 										if(rx_msg_header.DLC==8){
@@ -298,6 +475,15 @@ int main(void){
 										//EngineWaterTemperature is on byte0
 										//fuel consumption is on byte 4 bit 0 to 3, byte 5, and byte 6 from bit 7 to 3
 									break;
+								case 0x000002EE: // presente solo su BH can bus a 125kbps
+									//this message contains the following radio buttons on the steering wheel:
+									//radio right button is on byte 3 bit6 (1=button pressed)
+									//radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
+									//radio Voice command button is on byte 3 bit2 (1= button pressed)
+									//phone call button is on byte3 bit0(1=button pressed)
+									//volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
+									//volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
+
 								case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
 									#if defined(LED_STRIP_CONTROLLER_ENABLED)
 										if(rx_msg_header.DLC==8){
@@ -373,13 +559,14 @@ int main(void){
 									break;
 								case 0x00000384:
 									#if defined(ESC_TC_CUSTOMIZATOR_ENABLED)
-										//byte3, bit6 contains left stalk button press status (LANE indicator button)
+										//on C2 can bus, msg 0x384 contains, in byte3, bit6 contains left stalk button press status (LANE indicator button)
 										if((rx_msg_data[3] & 0x40) ==0x40){ // left stalk button was pressed (lane following indicator)
+
 											LANEbuttonPressLastTimeSeen=HAL_GetTick();//save current time it was pressed as LANEbuttonPressLastTimeSeen
 											LANEbuttonPressCount++;
 											if (LANEbuttonPressCount>8){ //8 is more or less 2 seconds
 												ESCandTCinversion=!ESCandTCinversion; //toggle the status
-												onboardLed_red_on();
+												//onboardLed_red_on();
 												LANEbuttonPressCount=0; //reset the count
 											}
 										}else{
@@ -388,21 +575,35 @@ int main(void){
 											}
 										}
 
-										if(currentDNAmode!=rx_msg_data[1]){ //RDNA mode was changed, reset the ESCandTCinversion
+										if(currentDNAmode!=(rx_msg_data[1]& 0x7C)){ //RDNA mode was changed, reset the ESCandTCinversion
 											ESCandTCinversion=0;
 										}
-										currentDNAmode=rx_msg_data[1];
+										//current DNA mode, also called "Drive Style Status" (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural [shifted by 2 bits becomes 0x00], 0x2=dynamic [shifted by 2 bits becomes 0x08], 0x4=AllWeather [shifted by 2 bits becomes 0x10], 0xC=race [shifted by 2 bits becomes 0x30]
+										currentDNAmode=rx_msg_data[1] & 0x7C; //7C is the mask from bit 6 to 2
 										if (ESCandTCinversion){
 											memcpy(&DNA_msg_data, &rx_msg_data, 8);
-											if(currentDNAmode==0x31){
-												DNA_msg_data[1]=0x09;  //set Dynamic mode to enable ESC and TC
+											if(currentDNAmode==0x30){ //race
+												DNA_msg_data[1]= (DNA_msg_data[1] & ~0x7C) | (0x08 & 0x7C); //set Dynamic mode (0x08) to enable ESC and TC
 											}else{
-												DNA_msg_data[1]=0x31;  //set Race mode to disable ESC and TC
+												DNA_msg_data[1] = (DNA_msg_data[1] & ~0x7C) | (0x30 & 0x7C);  //set Race mode (0x30) to disable ESC and TC
 											}
 											can_tx(&DNA_msg_header, DNA_msg_data); //transmit the modified packet
-											onboardLed_blue_on();
+											//onboardLed_blue_on();
 										}
 									#endif
+
+									//Command Ignition Status is on byte0 from bit 3 to 1.
+									//Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
+									//Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
+									//External temperature is on byte 1 from bit 1 to 0 and on byte 2 from bit 7 to bit 1.
+									//External temperature fail is on byte2 bit0
+									//Low Beam Status is on byte3 bit7
+									//Lane Indicator button status (left stalk button) is on byte 3 bit6.
+									//Power Mode Status is on byte 3 from bit 5 to 4.
+									//Park Brake Status is on byte 3 bit 3.
+									//Int. Relay Fail Status is on byte 4 from bit 7 to 6
+									//SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
+
 									break;
 								case 0x00000412: //se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
 									#if defined(LED_STRIP_CONTROLLER_ENABLED)
