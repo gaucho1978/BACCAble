@@ -182,29 +182,112 @@ DMA controllers in STM32s support various operations, one of them being super ha
 We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
 
 ## Alfa Romeo Giulia Protocol Reverse Engineering 
-Note (added on 29/12/2024): apart what i wrote in this paragraph, more message decoding was detailed inside main.c file, as comments for now, in order to be able to decode more messages in the near future. I don't have time to update this section now.
 
-These are PART OF information that I found (more inside main.c, as comments). Use everything this at your own risk.
+These areinformation that I found. Use everything this at your own risk.
+      
+1. msg id 0x90  prints text on dashboard (on BH can bus) and contains:
+    - total frame number is on byte 0 from bit 7 to 3
+    - frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
+    - infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
+    - /UTF text 1 is on byte 2 and byte 3
+    - UTF text 2 is on byte 4 and byte 5
+    - UTF text 3 is on byte 6 and byte 7
 
-1. These messages changes when you move accelerator pedal:
+2. msg id 0x0ed  (Thanks to SniZ - https://alfatuning.app ) contains: 
+   - shift warning lamp directed to dashboard in byte6 , bit 1 and 0(lsb) -  Value 0= no indicator, 1=urgency level1, 2=urgency level2, 3=urgency level3 (the one with shift label)
+   - EngineWaterTemperature is on byte0
+   - fuel consumption is on byte 4 bit 0 to 3, byte 5, and byte 6 from bit 7 to 3
+   
+3. msg id 0xFC (Thanks to SniZ - a famous guru - https://alfatuning.app ) contains: 
+   - motor rpm speed is in byte 0 and 1 (the least significant 2 bits of byte 1 are not related to rpm speed, and should not be used)
+   - engine speed fail is on byte1 bit 1
+   - engine StopStart Status is on byte 1 bit 0 and byte 2 bit 7
+   - engine Status is on byte 2 bit 6 and bit 5.
+   - gas pedal position is on byte 2 from bit 4 to 0 and byte 3 from bit 7 to 5.
+   - gas pedal position fail is on byte3 bit 4.
+   - .....
+   - alternator fail is on byte 3, bit1.
+   - stopStart status is on byte3 bit 0 and byte4 bit7.
+   - CC brake intervention request is on byte 4, bit5
+   - bank deactivation status is on byte5, bit 7 and 6
+   - CC brake intervention is on byte 5 from bit 5 to 0 and byte 6 from bit 7 to 4.
+
+4. msg id 0x1F0 contains:
+    - clutch interlock is on byte 0 bit 7
+    - clutch upstop is on byte0 bit 6
+    - actual pedal position is on byte0 from bit 4 to 0 and byte 1 from bit7 to 5
+    - analog cluch is on byte 1 from bit 4 to 0 and byte 2 from bit 7 to 5.
+
+5. msg id 0x1FC is received on C2 can bus and it contains:
+    - Rear Diff. Warning La. is on byte0 bit7
+    - Rear Diff, Control Status is on byte0 bit6 (it is 0 with car engine off and 1 with car engine on)
+    - Active Dumping Control Status (the suspensions) is on byte0 from bit 5 to 4 (0x0=Mid, 0x1=Soft, 0x2=Firm [only on QV])
+    - Rd. Asp. Ind. is on byte 0 from bit3 to 0 and byte 1 from bit 7 to 4
+    - Active Dumping Control Fail status is on byte 1 bit3
+    - Aero. Fail Status is on byte 1 bit2
+    - Front Aero. status is on byte 1 bit1 to bit0
+    - CDCM warning lamp is on byte 2 bit5
+
+6. msg id 0x2EE contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
+    - radio right button is on byte 3 bit6 (1=button pressed)
+    - radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
+    - radio Voice command button is on byte 3 bit2 (1= button pressed)
+    - phone call button is on byte3 bit0(1=button pressed)
+    - volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
+    - volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
+
+7. msg id 0x2EF contains:
+   - actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
+   - suggested gear status is on byte 0 from bit 3 to 0 (decoded as actual gear status field)
+   - DPF Regeneration mode is on byte 1 bit 7
+   - SAM info is on byte 1 from bit 3 to 0
+   - stop start fault status is on byte 2 bit 7
+   - ..
+   - boost pressure indication is on byte 3 bit from 6 to 0 and byte 4  bit 7
+
+8. msg id 0x2FA contains, in byte0, the Button pressed on left area of the wheel - These Buttons are detected only if the main panel of the car is on. (WARNING1: when you press cruise control strong up, before and after it, also cruise control gently up message is fired) Possible values are:
+   - 0x90=RES,
+   - 0x10= ?? This is sometimes found on the bus, unknown
+   - 0x12=Cruise control on/off,
+   - 0x08=Cruise control speed gently up,
+   - 0x00=Cruise control speed strong up,
+   - 0x18=Cruise control speed gently down
+   - 0x20=Cruise control speed strong down
+
+   
+9. msg id 0x384 (periodically sent on the bus when ecu is on - example of this message with dna selection dynamic: t38480809DA080004XXYY where XX= counter from 00 to 0F and YY=checksum):
+   - Command Ignition Status is on byte0 from bit 3 to 1.
+   - Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
+   - Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
+   - External temperature is on byte 1 from bit 1 to 0 and on byte 2 from bit 7 to bit 1.
+   - External temperature fail is on byte2 bit0
+   - Low Beam Status is on byte3 bit7
+   - Lane Indicator button status (left stalk button) is on byte 3 bit6. (populated only on C2 can bus) (1 when pressed)
+   - Power Mode Status is on byte 3 from bit 5 to 4.
+   - Park Brake Status is on byte 3 bit 3.
+   - Int. Relay Fail Status is on byte 4 from bit 7 to 6
+   - SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
+
+10. msg id 0x4B2 contains:
+    - engine oil level is in byte 0 from bit 7 to 3.
+    - engine oil over fill status is on byte 0, bit 2.
+    - engine oil min. is on byte 0 bit 1
+    - engine oil pressure is on byte 0, bit 0 and on byte 1 from bit 7 to 1.
+    - power mode status is on byte 1 bit 0 and on byte 2 bit 7.
+    - engine water level is on byte 2 bit 6.
+    - engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
+    - engine oil temperature warning light is on byte 3 bit 5.
+     
+11. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
+   - T18DAC7F180211010000000000 
+
+12. These messages changes when you move accelerator pedal:
    - message id 0ff, second and third byte, changes from 1D33 to 39f3
    - message id 1f0, first 3 nibble changes from 000 to 1f2
    - message id 412 , fourth byte, changes from 33 to E6. I use this one!!
    - message id 736, second and third byte, changes from 3319 to E772
 
-2. The following message identifies gear selection (I use this too):
-   - Message id 2ef, first byte (first nibble) contains current gear selection: 0x7X=Reverse , 0x0X=Neutral, 0xfX=Undefined (in example pressed clutch), 0x1X=first gear, 0x2X=second gear ...and so on up to sixt gear
-   - Message id 2ef, first byte (second nibble)contains suggested gear: 0xX7=Reverse , 0xX0=Neutral, 0xXf=Undefined, 0xX1=first gear, 0xX2=second gear ...and so on up to sixt gear
-
-
-3. Thanks to SniZ (a famous guru - https://alfatuning.app ), we know that message id 0x0fc contains motor rpm speed in first and second byte (the least significant 2 bits of the second byte are not related to rpm speed, and should not be used)
-
-4. Thanks to SniZ ( https://alfatuning.app ) , we know that message id 0x0ed contains the shift warning lamp directed to dashboard. The information is contained in byte6 of the message data (zero based), first 2 bits. Value 0= no indicator, 1=urgency level1, 2=urgency level2, 3=urgency level3 (the one with shift label)
-   
-2. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
-   - T18DAC7F180211010000000000 
-
-3. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
+13. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
    - T1E340041488201500  //this message it is like a wake up sequence
    - T1E340041488201500
    - T1E340041488201500
@@ -221,125 +304,7 @@ These are PART OF information that I found (more inside main.c, as comments). Us
    - T1E340041488201500
    - T1E340041488201500
    - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm. If the alarm was on, it goes off.
-    
-   
-   
-4. msg id 0x384 (periodically sent on the bus when ecu is on):
-   - byte 1 indicates current DNA mode selection: 0x01=Natural, 0x09=Dynamic, 0x11=AllWeather, 0x31=Race (to tell the tru
-   - byte 3, bit 6 indicates lane alarm enabling button, available on left stalk (1 when pressed)
-   - example of this message with dna selection dynamic: t38480809DA080004XXYY (XX= counter from 00 to 0F , YY=checksum)
 
-5. You can Send these messages to emulate the following key Press (or you can detect when they have been pressed, by filtering received messages):
-   - t2FA390XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - RES
-   - t2FA312XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control on/off
-   - t2FA308XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed gently up
-   - t2FA300XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed strong up
-   - t2FA318XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed gently down
-   - t2FA320XXYY (XX= counter from 00 to 0F , YY=checksum) Steering wheel button - Cruise control speed strong down
-   
-6. Experiments: 
+14. Experiments: 
    - t2EE47FE00000 This on my car, if the panel is on, temporary resets main panel ad you can ear relays switch sound
    - t0FA8A0200000200400F1 this on my car, if the panel is on, generates animation on the panel like switch off and on
-7. message 0x1fc (generated by CDCM) (should be on can bus C2)
-    byte0, bit 6 is 0 with car engine off and 1 with car engine on
-    byte0, bit 5 and 4 indicates suspension mode (0x0=mid, 0x1=soft, 0x2=firm (only on QV)
-
-   EDIT 05/01/2025:
-   Updated message decoding section (only standard id):
-   
-- message 0x90 // prints text on dashboard (on BH can bus) and contains:
-									//total frame number is on byte 0 from bit 7 to 3
-									//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
-									//infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
-									//UTF text 1 is on byte 2 and byte 3
-									//UTF text 2 is on byte 4 and byte 5
-									//UTF text 3 is on byte 6 and byte 7
-
-- message 0xFC: //message to dashboard containing rpm speed and not only
-									//engine speed fail is on byte1 bit 1.
-									//engine StopStart Status is on byte 1 bit 0 and byte 2 bit 7
-									//engine Status is on byte 2 bit 6 and bit 5.
-									//gas pedal position is on byte 2 from bit 4 to 0 and byte 3 from bit 7 to 5.
-									//gas pedal position fail is on byte3 bit 4.
-									//.....
-									//alternator fail is on byte 3, bit1.
-									//stopStart status is on byte3 bit 0 and byte4 bit7.
-									//CC brake intervention request is on byte 4, bit5
-									//bank deactivation status is on byte5, bit 7 and 6
-									//CC brake intervention is on byte 5 from bit 5 to 0 and byte 6 from bit 7 to 4.
-
-- message 0x1F0:
-									//clutch interlock is on byte 0 bit 7
-									//clutch upstop is on byte0 bit 6
-									//actual pedal position is on byte0 from bit 4 to 0 and byte 1 from bit7 to 5
-									//analog cluch is on byte 1 from bit 4 to 0 and byte 2 from bit 7 to 5.
-
-- message 0x1FC: //received on C2 can bus
-									//Rear Diff. Warning La. is on byte0 bit7
-									//Rear Diff, Control Status is on byte0 bit6
-									//Active Dumping Control Status (the suspensions) is on byte0 from bit 5 to 4 (0x0=Mid, 0x1=Soft, 0x2=Firm [only on QV])
-									//Rd. Asp. Ind. is on byte 0 from bit3 to 0 and byte 1 from bit 7 to 4
-									//Active Dumping Control Fail status is on byte 1 bit3
-									//Aero. Fail Status is on byte 1 bit2
-									//Front Aero. status is on byte 1 bit1 to bit0
-									//CDCM warning lamp is on byte 2 bit5
-
-- message 0x2ED: //message to dashboard containing shift indicator
-										// the shift light indicator on dashboard is on byte6, bit 1 and 0(lsb) ( 1= "gear shift urgency level 1",2= "gear shift urgency level 2", 3= "gear shift urgency level 3" )
-										//EngineWaterTemperature is on byte0
-										//fuel consumption is on byte 4 bit 0 to 3, byte 5, and byte 6 from bit 7 to 3
-
-- message 0x2EE: // contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
-									//radio right button is on byte 3 bit6 (1=button pressed)
-									//radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
-									//radio Voice command button is on byte 3 bit2 (1= button pressed)
-									//phone call button is on byte3 bit0(1=button pressed)
-									//volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
-									//volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
-
-- message 0x2EF: 
-									//actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
-									//suggested gear status is on byte 0 from bit 3 to 0
-									//DPF Regeneration mode is on byte 1 bit 7.
-									//SAM info is on byte 1 from bit 3 to 0
-									//stop start fault status is on byte 2 bit 7
-									//..
-									//boost pressure indication is on byte 3 bit from 6 to 0 and byte 4  bit 7
-
-- message 0x2FA: // Button is pressed on left area of the wheel - These Buttons are detected only if the main panel of the car is on.
-									//byte 0 contains button press on the steering wheel (left side, cruise control area)
-									// These are possible values:
-									//  0x90=RES,
-									//  0x10= ?? This is sometimes found on the bus, unknown 
-									//	0x12=Cruise control on/off,
-									//  0x08=Cruise control speed gently up,
-									//  0x00=Cruise control speed strong up,
-									//  0x18=Cruise control speed gently down,
-									//  0x20=Cruise control speed strong down
-									// WARNING1: when you press cruise control strong up, before and after it, also cruise control gently up message is fired
-									
-- message 0x384: 
-									//Command Ignition Status is on byte0 from bit 3 to 1.
-									//Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
-									//Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
-									//External temperature is on byte 1 from bit 1 to 0 and on byte 2 from bit 7 to bit 1.
-									//External temperature fail is on byte2 bit0
-									//Low Beam Status is on byte3 bit7
-									//Lane Indicator button status (left stalk button) is on byte 3 bit6. (populated only on C2 can bus)
-									//Power Mode Status is on byte 3 from bit 5 to 4.
-									//Park Brake Status is on byte 3 bit 3.
-									//Int. Relay Fail Status is on byte 4 from bit 7 to 6
-									//SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
-
-- message 0x412: 
-									//a value coherent with accelerator position is found on byte 3 
-
-- message 0x4B2:
-									//engine oil level is in byte 0 from bit 7 to 3.
-									//engine oil over fill status is on byte 0, bit 2.
-									//engine oil min. is on byte 0 bit 1
-									//engine oil pressure is on byte 0, bit 0 and on byte 1 from bit 7 to 1.
-									//power mode status is on byte 1 bit 0 and on byte 2 bit 7.
-									//engine water level is on byte 2 bit 6.
-									//engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
-									//engine oil temperature warning light is on byte 3 bit 5.
