@@ -80,13 +80,14 @@ This first implementation is on BH can bus both for write on IPC and to detect w
 
 ## Usage Instructions
 You should perform some preliminary settings inside firmware:
-- If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
+- If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge)
 - If you want to use the device as leds strip controller you shall comment the line " #define ACT_AS_CANABLE " and uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h (this was tested only connected to C1 can bus)
 - If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h
 - If you want to disable IMMOBILIZER functionality, you shall comment #define IMMOBILIZER_ENABLED in main.h (this works only if connected to C1 can bus)
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 - If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (2000rpm by default) (works only in race mode, and was tested only connected to C1 can bus)
 - If  you want the capability to enable and disable TC with left stalk button, you shall uncomment #define ESC_TC_CUSTOMIZATOR_ENABLED in main.h and connect the baccable to C2 can bus (pin 12 and 13 of the OBD port)
+- If you want to add menu on the dashboard to display additional parameters, you shall uncomment #define SHOW_PARAMS_ON_DASHBOARD in main.h, and connect Baccable to BH can bus (in example on OBD port, pins 3 and 11)
 
 Note: compile the code in Release version and not debug since Release version is much more light (smaller elf file size). Some of BACCABLE videos shows how to compile. 
 
