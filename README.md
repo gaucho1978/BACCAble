@@ -9,8 +9,9 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - act as Immobilizer, by injecting can bus messages when required.
 - show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
 - enable and disable ESC and TC with left stalk button press
+- add a menu to dashboard in order to show additional parameters like dpf occlusion percentage (under development) 
 
-BACCABLE overview (click on the following image to see the video)
+BACCABLE overview (click on the following image to see the video) (note: video not updated. do not includes all the functionalities added to the device last months)
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
 
 Link to youtube videos playlist:
@@ -70,6 +71,13 @@ The following video explains the behavious and the code description: [![IMAGE AL
 
 The following video shows tests performed on this functionality on the road: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
 
+## DASHBOARD MENU functionality
+Adds a menu to the dashboard allowing the user to show additional parameters. the menu pages are changed with buttons on the steering wheel.
+See following video for a preview of the functionality, realized during first development phase.
+This first implementation is on BH can bus both for write on IPC and to detect wheel button press.
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-_93Q_ZlYxc/0.jpg)](https://www.youtube.com/watch?v=-_93Q_ZlYxc)
+
+
 ## Usage Instructions
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h
@@ -79,7 +87,9 @@ You should perform some preliminary settings inside firmware:
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 - If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (2000rpm by default) (works only in race mode, and was tested only connected to C1 can bus)
 - If  you want the capability to enable and disable TC with left stalk button, you shall uncomment #define ESC_TC_CUSTOMIZATOR_ENABLED in main.h and connect the baccable to C2 can bus (pin 12 and 13 of the OBD port)
-  
+
+Note: compile the code in Release version and not debug since Release version is much more light (smaller elf file size). Some of BACCABLE videos shows how to compile. 
+
 Software to use:
 - use stm32CubeIde to compile on windows
 - use stm32CubeProgrammer to flash the firmware elf file contained in subfolder firmware\ledsStripController\Release 
@@ -228,6 +238,9 @@ These areinformation that I found. Use everything this at your own risk.
     - Front Aero. status is on byte 1 bit1 to bit0
     - CDCM warning lamp is on byte 2 bit5
 
+6. msg id 0x226:
+   - status of start & stop lamp (or function) is on byte 2 (0xF1= S&S lamp off, 0x05= S&S lamp on )  
+   
 6. msg id 0x2EE contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
     - radio right button is on byte 3 bit6 (1=button pressed)
     - radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
