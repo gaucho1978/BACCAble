@@ -108,7 +108,7 @@ uint8_t paramsStringCharIndex=0; //indice del prossimo carattere della stringa c
 CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 uint8_t sentMsgCounter=0;//--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-int8_t SHOW_PARAMS_Command=0; //user command to show another parameter //--// 1=next, -1=previous, 0=no command  //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+uint8_t SHOW_PARAMS_Command=0; //user command to show another parameter //--// 2=next, 1=previous, 0=no command  //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 
 int main(void){
 	SystemClock_Config(); //set system clocks
@@ -237,8 +237,7 @@ int main(void){
 
 				if(telematic_display_info_field_frameNumber==0){
 					//IF THERE IS A USER REQUEST TO SHOW ANOTHER PARAMETER PAGE, DO IT
-					if(SHOW_PARAMS_Command==-1 || SHOW_PARAMS_Command==1){ //-1=previous 1=next
-						SHOW_PARAMS_Command=0; //no command to execute
+					if(SHOW_PARAMS_Command==1 || SHOW_PARAMS_Command==2){ //1=previous 2=next
 						//clear screen
 						telematic_display_info_msg_data[0]= 0;
 						telematic_display_info_msg_data[1]=0x11;
@@ -252,10 +251,13 @@ int main(void){
 						can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
 
 						//set index
-						paramsStringArrayIndex += SHOW_PARAMS_Command;
+						if(SHOW_PARAMS_Command==1) paramsStringArrayIndex -= 1;
+						if(SHOW_PARAMS_Command==2) paramsStringArrayIndex += 1;
+						SHOW_PARAMS_Command=0; //no command to execute
 						// make a rotative menu
 						if(paramsStringArrayIndex==255) paramsStringArrayIndex=9;
 						if(paramsStringArrayIndex==10)  paramsStringArrayIndex=0;
+
 					}
 
 					//update values TO SHOW each time we are in frame 0, by means of previously extracted parameters
@@ -483,7 +485,12 @@ int main(void){
 									//phone call button is on byte3 bit0(1=button pressed)
 									//volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
 									//volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
-
+									#if defined(SHOW_PARAMS_ON_DASHBOARD)
+										//Set command
+										uint8_t tmpCmd=rx_msg_data[5] >>6; //1=volume was increased rotation, 2=volume decreased rotation
+										//if volume was changed, and previous command was applied with success (value 0), then set a new command to be applied on the dashboard visualization
+										if ((tmpCmd==1 || tmpCmd==2) && (SHOW_PARAMS_Command==0)) SHOW_PARAMS_Command=tmpCmd; //
+									#endif
 								case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
 									#if defined(LED_STRIP_CONTROLLER_ENABLED)
 										if(rx_msg_header.DLC==8){
