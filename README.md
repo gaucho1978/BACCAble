@@ -292,7 +292,9 @@ These areinformation that I found. Use everything this at your own risk.
     - engine water level is on byte 2 bit 6.
     - engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
     - engine oil temperature warning light is on byte 3 bit 5.
-     
+
+12. msg id 0x5A5 contains:
+    - cruise control ON/OFF status is on byte0 bit7 (0=disabled, 1=enabled)
 12. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
    - T18DAC7F180211010000000000 
 
