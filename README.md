@@ -40,7 +40,7 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - Subfolder hardware/system interconnection contains interconnection diagram to connect required components
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 ## Start&Stop car functionality Disabler
-The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor, in order to simulate Start&Stop button press on the car panel, with a delay after the device was switched on. The used resistor is suitable for my car. 
+The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor (if the motor is rotating), in order to simulate Start&Stop button press on the car panel, with a delay after the device was switched on. I avoid to do anything if a specific can bus message tells me that the the Start&Stop was still manually disabled by the pilot. The used resistor is suitable for my car. 
 This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
 - perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button. 
 ## Immobilizer functionality
@@ -82,7 +82,7 @@ This first implementation is on BH can bus both for write on IPC and to detect w
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge)
 - If you want to use the device as leds strip controller you shall comment the line " #define ACT_AS_CANABLE " and uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h (this was tested only connected to C1 can bus)
-- If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h
+- If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h (this works only if connected to C1 can bus because I check motor speed. If someone wants it on another can bus, he shall remove the motor speed check)
 - If you want to disable IMMOBILIZER functionality, you shall comment #define IMMOBILIZER_ENABLED in main.h (this works only if connected to C1 can bus)
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 - If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (2000rpm by default) (works only in race mode, and was tested only connected to C1 can bus)
@@ -241,9 +241,9 @@ These areinformation that I found. Use everything this at your own risk.
     - CDCM warning lamp is on byte 2 bit5
 
 6. msg id 0x226:
-   - status of start & stop lamp (or function) is on byte 2 (0xF1= S&S lamp off, 0x05= S&S lamp on )  
+    - status of start & stop lamp (or function) is on byte 2 (0xF1= S&S lamp off, 0x05= S&S lamp on ). Lamp on means Start&Stop disabled
    
-6. msg id 0x2EE contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
+7. msg id 0x2EE contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
     - radio right button is on byte 3 bit6 (1=button pressed)
     - radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
     - radio Voice command button is on byte 3 bit2 (1= button pressed)
@@ -251,7 +251,7 @@ These areinformation that I found. Use everything this at your own risk.
     - volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
     - volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
 
-7. msg id 0x2EF contains:
+8. msg id 0x2EF contains:
    - actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
    - suggested gear status is on byte 0 from bit 3 to 0 (decoded as actual gear status field)
    - DPF Regeneration mode is on byte 1 bit 7
@@ -260,9 +260,9 @@ These areinformation that I found. Use everything this at your own risk.
    - ..
    - boost pressure indication is on byte 3 bit from 6 to 0 and byte 4  bit 7
 
-8. msg id 0x2FA contains, in byte0, the Button pressed on left area of the wheel - These Buttons are detected only if the main panel of the car is on. (WARNING1: when you press cruise control strong up, before and after it, also cruise control gently up message is fired) Possible values are:
+9. msg id 0x2FA contains, in byte0, the Button pressed on left area of the wheel - These Buttons are detected only if the main panel of the car is on. (WARNING1: when you press cruise control strong up, before and after it, also cruise control gently up message is fired) Possible values are:
    - 0x90=RES,
-   - 0x10= ?? This is sometimes found on the bus, unknown
+   - 0x10=Buttons released
    - 0x12=Cruise control on/off,
    - 0x08=Cruise control speed gently up,
    - 0x00=Cruise control speed strong up,
@@ -270,7 +270,7 @@ These areinformation that I found. Use everything this at your own risk.
    - 0x20=Cruise control speed strong down
 
    
-9. msg id 0x384 (periodically sent on the bus when ecu is on - example of this message with dna selection dynamic: t38480809DA080004XXYY where XX= counter from 00 to 0F and YY=checksum):
+10. msg id 0x384 (periodically sent on the bus when ecu is on - example of this message with dna selection dynamic: t38480809DA080004XXYY where XX= counter from 00 to 0F and YY=checksum):
    - Command Ignition Status is on byte0 from bit 3 to 1.
    - Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
    - Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
@@ -283,7 +283,7 @@ These areinformation that I found. Use everything this at your own risk.
    - Int. Relay Fail Status is on byte 4 from bit 7 to 6
    - SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
 
-10. msg id 0x4B2 contains:
+11. msg id 0x4B2 contains:
     - engine oil level is in byte 0 from bit 7 to 3.
     - engine oil over fill status is on byte 0, bit 2.
     - engine oil min. is on byte 0 bit 1
@@ -293,16 +293,16 @@ These areinformation that I found. Use everything this at your own risk.
     - engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
     - engine oil temperature warning light is on byte 3 bit 5.
      
-11. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
+12. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
    - T18DAC7F180211010000000000 
 
-12. These messages changes when you move accelerator pedal:
+13. These messages changes when you move accelerator pedal:
    - message id 0ff, second and third byte, changes from 1D33 to 39f3
    - message id 1f0, first 3 nibble changes from 000 to 1f2
    - message id 412 , fourth byte, changes from 33 to E6. I use this one!!
    - message id 736, second and third byte, changes from 3319 to E772
 
-13. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
+14. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
    - T1E340041488201500  //this message it is like a wake up sequence
    - T1E340041488201500
    - T1E340041488201500
@@ -320,6 +320,6 @@ These areinformation that I found. Use everything this at your own risk.
    - T1E340041488201500
    - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm. If the alarm was on, it goes off.
 
-14. Experiments: 
+15. Experiments: 
    - t2EE47FE00000 This on my car, if the panel is on, temporary resets main panel ad you can ear relays switch sound
    - t0FA8A0200000200400F1 this on my car, if the panel is on, generates animation on the panel like switch off and on
