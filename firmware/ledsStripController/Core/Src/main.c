@@ -37,7 +37,7 @@
 	const uint8_t led_light_on_bit=0;
 #endif
 
-const char *FW_VERSION="BACCABLE V.2.1";  //this is used to store FW version, also shown on usb when used as slcan
+const char *FW_VERSION="BACCABLE V.2.2";  //this is used to store FW version, also shown on usb when used as slcan
 float scaledVolume;
 uint8_t scaledColorSet;
 
@@ -218,7 +218,8 @@ int main(void){
 
 	//uint16_t tmpVar2=readFromFlash(1);
 	#if defined(IMMOBILIZER_ENABLED)
-		immobilizerEnabled = (uint8_t)readFromFlash(1); //parameter1 stored in ram, so that we can get it. By default Immo is enabled
+		immobilizerEnabled = (uint8_t)readFromFlash(1);  //parameter1 stored in ram, so that we can get it. By default Immo is enabled
+		if(immobilizerEnabled) executeDashboardBlinks=2; //shows the user that the immobilizer is active (or not)
 	#endif
 
 
@@ -314,12 +315,13 @@ int main(void){
 				if((last_sent_dashboard_blink_msg_time+500)<HAL_GetTick()){ //enter here once each halfsecond
 					last_sent_dashboard_blink_msg_time=HAL_GetTick();//return here after half second
 					//change the message
-					if(executeDashboardBlinks %2==0){ //select one time reduced brightness and one time high brightness, so that in any condition the change is visible on the dashboard
+					if(executeDashboardBlinks % 2==0){ //select one time reduced brightness and one time high brightness, so that in any condition the change is visible on the dashboard
 						dashboardBlinkMsgData[4]=0x00; //max bright
 					}else{
 						dashboardBlinkMsgData[4]=0xF0; //reduced bright
 					}
-					executeDashboardBlinks--;//decrease blinks counter
+					executeDashboardBlinks = executeDashboardBlinks -1 ;//decrease blinks counter
+					onboardLed_blue_on();
 					//send the message
 					can_tx(&dashboardBlinkMsgHeader, dashboardBlinkMsgData);
 				}
@@ -721,7 +723,7 @@ int main(void){
 												if(currentGear==0){ //gear is neutral
 													if(rx_msg_data[0]==0x08 && (wheelPressedButtonID==0x10 || wheelPressedButtonID==0x08)){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
 														lastPressedSpeedUpWheelButtonDuration++;
-														if(lastPressedSpeedUpWheelButtonDuration>1500){ //around 28 seconds
+														if(lastPressedSpeedUpWheelButtonDuration>3000){ //around 30 seconds
 															//avoid to return here
 															wheelPressedButtonID=0xF8; //invent a new status to differentiate it from 0x08 used in baccable menu few lines of code up here
 															immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status
