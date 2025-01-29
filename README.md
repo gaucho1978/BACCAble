@@ -12,9 +12,11 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - add a menu to dashboard in order to show additional parameters like dpf occlusion percentage (under development) 
 
 BACCABLE overview (click on the following image to see the video) (note: video not updated. do not includes all the functionalities added to the device last months)
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
 
 Link to youtube videos playlist:
+
 https://www.youtube.com/playlist?list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X
 
 ## General Description
@@ -54,7 +56,9 @@ The functionality IMMOBILIZER performs the following:
 3. Continuously Resets the RFHUB in order to reset the thief connection, with this message for 10 seconds
 4. after 10 seconds stops to send messages and stops alarm, and return listening for thief messages
 
-Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
+Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: 
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
 
 Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. Therefore, if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the canable to the 5V usb voltage taken from the connector of the USB interface in the central area, close to cigarette lighter socket. In fact, usb voltage is switched on as soon as the thief wakes up the rfhub. 
 
@@ -73,7 +77,10 @@ Note: this works only if baccable is connected to C1 can bus.
 
 ## Shift Warning Indicator
 The SHIFT warning indicator function allows you to show on dashboard (only if you are in race mode) the SHIFT warning label when configurable motor rpm speed is overcomed (3 levels of warning).
-The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JYUBBTW4WRo/0.jpg)](https://www.youtube.com/watch?v=JYUBBTW4WRo)
+The following video explains the behavious and the code description:
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JYUBBTW4WRo/0.jpg)](https://www.youtube.com/watch?v=JYUBBTW4WRo)
+
 Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
 Note2: this works only if baccable is connected to C1 can bus.
 
@@ -82,9 +89,13 @@ Note2: this works only if baccable is connected to C1 can bus.
 By pressing left stalk button (LANE indicator) for 2 seconds, in D,N,A modes the ESC and TC will be disabled. Changing DNA mode or pressing again the same button, it is possible to revert the change. In Race mode, where ESC and TC ar tipicalliy disabled, this functionality allows to enable ESC and TC.
 Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
 Note2: this works only if baccable is connected to C2 can bus.
-The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/I1GHFjOmpOs/0.jpg)](https://www.youtube.com/watch?v=I1GHFjOmpOs)
+The following video explains the behavious and the code description: 
 
-The following video shows tests performed on this functionality on the road: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/I1GHFjOmpOs/0.jpg)](https://www.youtube.com/watch?v=I1GHFjOmpOs)
+
+The following video shows tests performed on this functionality on the road:
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
 
 ## DASHBOARD MENU functionality
 Adds a menu to the dashboard allowing the user to show additional parameters. the menu pages in the first released version was changed   with buttons on the right side of the steering wheel (volume buttons). 
@@ -101,6 +112,7 @@ by default the menu on dashboard is disabled
 To test the slave baccable, currently under development, for now you shall connect to usb open a terminal window and send a string followed by carriage return character like "ciao" and you will see it printed on the dashboard.
 
 The following old video shows the first implementation that I uploaded on github to test the population of the dashboard string and to detect wheel button press. This is not applicable to the current repository.
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-_93Q_ZlYxc/0.jpg)](https://www.youtube.com/watch?v=-_93Q_ZlYxc)
 
 
@@ -136,17 +148,22 @@ Flash procedure:
 
 ## The hardware
 click on the following image to see the full hardware and interconnections video:
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
 
 Used hardware:
 
-Canable: https://a.aliexpress.com/_Ev1yBz1
-		Original MKS Canable
-		Canable DykbRadio Nano
-		Fysect ucan
-		It is important that the chip is a stm32F072
+Canable: This is the first I purchased (https://a.aliexpress.com/_Ev1yBz1 )
+Generally speaking I found these compatible devices (It is important that the chip is a stm32F072):
 
-Leds Strip ws2811 ip65: https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
+    - Original MKS Canable
+    - Canable DykbRadio Nano
+    - Fysect ucan
+	- candlelight small board ( https://github.com/linux-automation/candleLightFD )
+		
+
+Leds Strip ws2811 ip65:  https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
+
 Amazon alternatives:
 Canable: https://amzn.to/3zzeNMq
 Leds strip: https://amzn.to/3W3TifJ
@@ -159,6 +176,7 @@ If you enable the function to control a led strip, the usb data shall be connect
 
 Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the future functionality to add parameters on the dashboard). 
 This is the old original wiring diagram:
+
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 
 Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket. As alterinative for immobilizer,  use the DCDC connected to a 12V of the car always available, to ensure roper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
@@ -173,9 +191,11 @@ New single case for original canable or DykbRadio Nano canable:
 
 New single case for Fysect Ucan:
 (uses same case of dual ucan with a dedicated cap)
+
 ![Box with Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/single_fysect_ucan/single_fysect_ucan/preview.png)
 
 New Dual case for Fysect Ucan:
+
 ![Box With Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/dual_fysect_ucan/)
 
 Old box to accomodate DCDC, termination board and original canable or DykbRadio Nano canable.
@@ -191,7 +211,9 @@ note: the video doesn't show the connection from usb +5V required to use immobil
 
 ## Firmware description
 The following video will show the structure of the firmware.
+
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zmMgXUu2TZM/0.jpg)](https://www.youtube.com/watch?v=zmMgXUu2TZM)
+
 Note: the video was made before to update the method to send rfhub reset message for 10 seconds, and before of the code optimization in the main loop, and before latest functionalities were added.
 
 ## Usage when configured to act as Canable
