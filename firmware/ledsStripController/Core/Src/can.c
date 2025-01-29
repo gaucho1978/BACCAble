@@ -67,8 +67,8 @@ void can_enable(void)
     	can_handle.Init.ReceiveFifoLocked = DISABLE;
     	can_handle.Init.TransmitFifoPriority = ENABLE;
         HAL_CAN_Init(&can_handle);
-        immobilizerEnabled=0; //messages processed are increasing, let's remove the filters, and come back here only if some problem occours
-		if(immobilizerEnabled){ //filter only required messages to achieve fast response . The filter includes messages for led control, to make it simple, even if led control don't require such fast response
+        /*
+        if(immobilizerEnabled){ //filter only required messages to achieve fast response . The filter includes messages for led control, to make it simple, even if led control don't require such fast response
 
 			CAN_FilterTypeDef filter;
 			filter.FilterIdHigh = ID3<<5u;
@@ -96,6 +96,7 @@ void can_enable(void)
 
 			onboardLed_red_on();
 		}else{ //default filter
+		*/
 			CAN_FilterTypeDef filter;
 			filter.FilterIdHigh = 0;
 			filter.FilterIdLow = 0;
@@ -107,7 +108,7 @@ void can_enable(void)
 			filter.FilterScale = CAN_FILTERSCALE_32BIT;
 			filter.FilterActivation = ENABLE;
 			HAL_CAN_ConfigFilter( &can_handle, &filter);
-		}
+		//}
 
         HAL_CAN_Start(&can_handle);
         bus_state = ON_BUS;
@@ -218,7 +219,7 @@ void can_set_autoretransmit(uint8_t autoretransmit)
 
 
 // Send a message on the CAN bus
-uint32_t can_tx(CAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
+uint32_t can_tx( CAN_TxHeaderTypeDef *tx_msg_header, uint8_t* tx_msg_data)
 {
 	// Check if space available in the buffer (FIXME: wastes 1 item)
 	if( ((txqueue.head + 1) % TXQUEUE_LEN) == txqueue.tail)

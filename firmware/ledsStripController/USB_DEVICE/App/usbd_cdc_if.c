@@ -16,6 +16,9 @@ static int8_t CDC_DeInit_FS(void);
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 
+extern uint8_t dashboardPageStringArray[19];
+uint8_t zeroArray[18]={0};
+extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
 
 // CDC Interface
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
@@ -162,38 +165,58 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 }
 
 // Process incoming USB-CDC messages from RX FIFO
-void cdc_process(void)
-{
+void cdc_process(void){
 	system_irq_disable();
-	if(UserRxBufferFS.tail != UserRxBufferFS.head)
-	{
+	//onboardLed_blue_on();
+	if(UserRxBufferFS.tail != UserRxBufferFS.head){
 		//  Process one whole buffer
-		for (uint32_t i = 0; i < UserRxBufferFS.msglen[UserRxBufferFS.tail]; i++)
-		{
-		   if (UserRxBufferFS.buf[UserRxBufferFS.tail][i] == '\r')
-		   {
-			   int8_t result = slcan_parse_str(slcan_str, slcan_str_index);
-			   UNUSED(result); //avoid the warning of unused variable
-			   // Success
-			   //if(result == 0)
-			   //    CDC_Transmit_FS("\n", 1);
-			   // Failure
-			   //else
-			   //    CDC_Transmit_FS("\a", 1);
+		onboardLed_red_on();
+		for (uint32_t i = 0; i < UserRxBufferFS.msglen[UserRxBufferFS.tail]; i++){
 
-			   slcan_str_index = 0;
-		   }
-		   else
-		   {
-			   // Check for overflow of buffer
-			   if(slcan_str_index >= SLCAN_MTU)
-			   {
-				   // TODO: Return here and discard this CDC buffer?
-				   slcan_str_index = 0;
-			   }
+			if (UserRxBufferFS.buf[UserRxBufferFS.tail][i] == '\r'){
+				#if defined(ACT_AS_CANABLE)
+					int8_t result = slcan_parse_str(slcan_str, slcan_str_index);
+					UNUSED(result); //avoid the warning of unused variable
+				#endif
+				#if defined(SHOW_PARAMS_ON_DASHBOARD)
+					onboardLed_blue_on();
+					// Elaboriamo la stringa ricevuta dal Baccable Master, contenente la stringa della pagina da visualizzare
+					if(slcan_str_index<=18){ //se l'array ha massimo 18 elementi (dashboardPageStringArray ha 18 caratteri + carattere di chiusura /r)
+						//copia l'array nella destinazione
+						memcpy(&dashboardPageStringArray[0], &slcan_str[0], slcan_str_index);
+						//finisci di riempire di zeri
+						memcpy(&dashboardPageStringArray[slcan_str_index], &zeroArray, 18-slcan_str_index);
+						if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 
-			   slcan_str[slcan_str_index++] = UserRxBufferFS.buf[UserRxBufferFS.tail][i];
-		   }
+						//this is how to clear the screen (I save it here just to remember how to do it):
+						//telematic_display_info_msg_data[0]= 0;
+						//telematic_display_info_msg_data[1]=0x11;
+						//telematic_display_info_msg_data[2]=0;
+						//telematic_display_info_msg_data[3]= 0x20;
+						//telematic_display_info_msg_data[4]=0;
+						//telematic_display_info_msg_data[5]=0;
+						//telematic_display_info_msg_data[6]=0;
+						//telematic_display_info_msg_data[7]=0;
+						//can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
+					}
+				#endif
+
+				// Success
+				//if(result == 0)
+				//    CDC_Transmit_FS("\n", 1);
+				// Failure
+				//else
+				//    CDC_Transmit_FS("\a", 1);
+
+				slcan_str_index = 0;
+			}else{
+				// Check for overflow of buffer
+				if(slcan_str_index >= SLCAN_MTU){
+					// TODO: Return here and discard this CDC buffer?
+					slcan_str_index = 0;
+				}
+				slcan_str[slcan_str_index++] = UserRxBufferFS.buf[UserRxBufferFS.tail][i];
+			}
 		}
 
 		// Move on to next buffer

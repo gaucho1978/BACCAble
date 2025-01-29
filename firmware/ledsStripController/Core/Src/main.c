@@ -1,24 +1,43 @@
 // the definition of ACT_AS_CANABLE shall be placed in main.h
 #include "main.h"
 
-#if defined(ACT_AS_CANABLE)
-
+#if defined(ACT_AS_CANABLE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 	#include "usb_device.h"
 	#include "usbd_cdc_if.h"
 	#include "string.h"
 #endif
 
+#if defined(SHOW_PARAMS_ON_DASHBOARD)
+	#include "usb_device.h"
+	#include "usbd_cdc_if.h"
+	#include "string.h"
+
+	//extern USBH_HandleTypeDef hUsbHostFS;
+	//extern ApplicationTypeDef Appli_state;
+	//extern USBH_StatusTypeDef usbresult;
+
+
+#endif
+
+#if defined(LED_STRIP_CONTROLLER_ENABLED)
+	#include "vuMeter.h" //this is used to control led strip through usb pin
+#endif
 
 
 
 #if defined(IMMOBILIZER_ENABLED)
-	uint8_t immobilizerEnabled=1; //used to set filter in can.c
+	uint8_t immobilizerEnabled=1; //parameter stored in ram, so that we can change it dinamically
 #else
 	uint8_t immobilizerEnabled=0;
 #endif
 
+#if defined(UCAN_BOARD_LED_INVERSION)
+	const uint8_t led_light_on_bit=1;
+#else
+	const uint8_t led_light_on_bit=0;
+#endif
 
-char *FW_VERSION="BACCABLE      V.2.0";  //this is used to store FW version, also shown on usb when used as slcan
+const char *FW_VERSION="BACCABLE V.2.1";  //this is used to store FW version, also shown on usb when used as slcan
 float scaledVolume;
 uint8_t scaledColorSet;
 
@@ -26,33 +45,43 @@ uint32_t debugTimer0;
 uint32_t timeSinceLastReceivedAcceleratorMessage=0;
 
 uint8_t ledsStripIsOn=0; //indicates if leds strip is on
-uint8_t panicAlarmActivated=0; //indicates if the panic alarm was activated during last 10 minutes
+uint8_t panicAlarmActivated=0; //indicates if the panic alarm was activated during last... 10 minutes (ToBeVerified)
 
 //the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
 CAN_TxHeaderTypeDef panicAlarmStartMsgHeader[5]={ 	{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAC7F1, .DLC=3},
-													{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},
-													{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},
-													{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},
-												};
+															{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x1E340041, .DLC=4},
+															{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},
+															{.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8},
+														};
 uint8_t panicAlarmStartMsgData[5][8]={	{0x02,0x11,0x01,0x00,},
 										{0x88,0x20,0x15,0x00,},
 										{0x42,0x02,0xE2,0x00,0x00,0x00,0x01,0x56},
 										{0x00,0x00,0xE2,0x00,0x00,0x00,0x00,0x00},
 									 };
 
-uint8_t startAndStopEnabled=1;
+CAN_TxHeaderTypeDef dashboardBlinkMsgHeader={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x545, .DLC=8};
+uint8_t dashboardBlinkMsgData[8]= {0x88, 0x20, 0xC3, 0x24, 0x00, 0x14, 0x30, 0x00};
+uint32_t last_sent_dashboard_blink_msg_time=0;
+
+
+CAN_TxHeaderTypeDef disableStartAndStopMsgHeader={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x4B1, .DLC=8};
+uint8_t disableStartAndStopMsgData[8]= {0x04, 0x00, 0x00, 0x10, 0xA0, 0x08, 0x08, 0x00}; //byte 5 shall be set to 0x08
+
+
+uint8_t startAndStopEnabled=1; //this is the status of my internal logic. If=0 the function goes to sleep up to next reboot
+uint8_t startAndstopCarStatus=1; //this is the status of Start&stop received by the car. 1=enabled in car (this is the default status in giulias).
 uint32_t lastTimeStartAndstopDisablerButtonPressed=0;
 
 CAN_TxHeaderTypeDef shift_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2ED, .DLC=8}; //used when SHIFT_INDICATOR_ENABLED is defined
 uint8_t shift_msg_data[8]; //used when SHIFT_INDICATOR_ENABLED is defined
-uint32_t currentRpmSpeed=0;//used when SHIFT_INDICATOR_ENABLED is defined
-
+uint32_t currentRpmSpeed=0;//used when SHIFT_INDICATOR_ENABLED or IMMOBILIZER_ENABLED or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE or DISABLE_START_STOP is defined
+uint8_t currentGear=0; // used when IMMOBILIZER_ENABLED or LED_STRIP_CONTROLLER_ENABLED is defined
 // Storage for status and received message buffer
 CAN_RxHeaderTypeDef rx_msg_header;  //msg header
 uint8_t rx_msg_data[8] = {0};  //msg data
 uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
-//the following array stores buttons pressed password sequence
+//the following array stores buttons pressed password sequence (future growth now commented)
 //these are possible values 0x90=RES,
 //							0x12=Cruise control on/off,
 //                          0x08=Cruise control speed gently up,
@@ -76,6 +105,10 @@ uint8_t ButtonPressSequence2[8]={0x90,0x08,0x00,0x08,0x18,0x20,0x18,0x12}; //cur
 uint8_t  lastPressedWheelButton=0xff; //default value, means no button pressed on the wheel
 uint32_t lastPressedWheelButtonTime=0;//stores the last time a wheel button was pressed, in msec from boot
 uint32_t lastPressedWheelButtonDuration=0x00; //default value
+uint32_t lastPressedSpeedUpWheelButtonDuration=0x00; //default value
+
+//uint8_t wheelButtonReleased=1;//indicates if button was released (0x10 in byte0 of message 0x2FA)
+uint8_t wheelPressedButtonID=0x10; //0x10= released, 0x20=strong speed decrease, 0x18=speed decrease, 0x00=strong speed increase, 0x08=speed increase, 0x90=RES, CC on/off=0x12
 
 uint8_t floodTheBus=0;
 uint32_t floodTheBusStartTime=0;
@@ -88,40 +121,116 @@ CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId
 uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
 uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
 uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
+
+uint8_t executeDashboardBlinks=0; //executes the number of defined blinks, one each second.
+
+
+#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE))
+
+const	uds_param_element uds_params_array[60]={{.name={}, 															.reqId=0,           .reqLen=0,	.reqData=0,                 		.replyId=0,				.replyLen=0,    .replyOffset=0,	.replyValOffset=0,		.replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+												{.name={'P','O','W','E','R',':',' ',},								.reqId=0x18DA18F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221018),	.replyId=0x18DAF118,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
+												{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x18DA18F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221018),	.replyId=0x18DAF118,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
+												{.name={'D','P','F',':',' ',},										.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218E4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'D','P','F',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218DE),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'D','P','F',' ','R','E','G','E','N',':',' ', },				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322380B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.001525902,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'L','A','S','T',' ','R','E','G','E','N','.',':',},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223807),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
+												{.name={'T','O','T',' ','R','E','G','E','N',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218A4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,  			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+												{.name={'M','E','A','N',' ','R','E','G','E','N',':',' ',},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223809),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,  			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
+												{.name={'M','E','A','N',' ','R','E','G','E','N',':',' ',},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322380A),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01666666666,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','i','n',}					},
+												{.name={'B','A','T','T','.',':',},									.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221955),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0005,			.replyScaleOffset=0,	.replyDecimalDigits=3,	.replyMeasurementUnit={'V',}							},
+												{.name={'B','A','T','.','C','H','A','R','G','E',':',' ',},			.reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221005),	.replyId=0x18DAF140,	.replyLen=1,	.replyOffset=1,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'B','A','T','T',' ','I','B','S',':',' ',},					.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032219BD),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=3,	.replyMeasurementUnit={'%',}							},
+												{.name={'B','A','T','T',' ','I','B','S',':',' ',},					.reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221005),	.replyId=0x18DAF140,	.replyLen=2,	.replyOffset=9,	.replyValOffset=-32768,	.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'A',}							},
+												{.name={'B','A','T','T',' ','I','B','S',':',' ',},					.reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221005),	.replyId=0x18DAF140,	.replyLen=2,	.replyOffset=7,	.replyValOffset=0,		.replyScale=0.00125,		.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
+												{.name={'O','I','L',' ','D','E','G','R','.',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223813),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'O','I','L',' ','T','E','M','P','.',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221302),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=1,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'O','I','L',' ','P','R','E','S','.',':',},					.reqId=0x10,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'I','N','T','E','R','C','.','I','N',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A58),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyValOffset=-40,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'A','I','R',' ','I','N',' ','T','E','M','P','.',':',' ',},	.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221935),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192D),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+												{.name={'G','E','A','R',' ','O','I','L',':',' ',},					.reqId=0x18DA18F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032204FE),	.replyId=0x18DAF118,	.replyLen=1,	.replyOffset=0,	.replyValOffset=-40,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'W','A','T','E','R',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221003),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'F','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B1),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'F','-','R',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B2),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'R','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B3),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'R','-','R',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B4),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'E','G','R',' ','C','M','D','1',':',},						.reqId=0x18DB33F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322012C),	.replyId=0x18DBF133,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.3921568627,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'E','G','R',' ','C','M','D','2',':',},						.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322189B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=-32767,	.replyScale=0.00305185095,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'E','G','R',':',' ',},										.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322189A),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.1953125,		.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'E','G','R',' ','M','E','A','S','.', ':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322189C),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=-32767,	.replyScale=0.00305185095,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'P','A','R','T','I','C','U','L','.', ':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218AA),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'g',}							},
+												{.name={'T','U','R','B','O','1',':',},								.reqId=0x18DB33F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03220175),	.replyId=0x18DBF133,	.replyLen=2,	.replyOffset=5,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'T','U','R','B','O','2',':',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221935),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'T','U','R','B','O','3',':',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322195A),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=-32768, .replyScale=0.001,			.replyScaleOffset=-1,	.replyDecimalDigits=2,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'T','U','R','B','O','4',':',},								.reqId=0x18DB33F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322010B),	.replyId=0x18DBF133,	.replyLen=1,	.replyOffset=0,	.replyValOffset=-100,	.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'T','U','R','B','O',' ','R','E','Q',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.000030517578,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'T','U','R','B','O',' ','R','E','Q',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322189F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.00152590219,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'T','U','R','B','O','5',':',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221936),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
+												{.name={'T','U','R','B','O',' ','M','E','A','S','.',':',' ',},		.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218A0),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.00152590219,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'B','O','O','S','T',' ','R','E','Q','.',':',' ',},			.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221959),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-32768,	.replyScale=0.001,			.replyScaleOffset=-1,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'B','O','O','S','T',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322195B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
+												{.name={'R','A','I','L',':',' ',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221904),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','P','a',}					},
+												{.name={'O','D','O','M','.','L','A','S','T',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222002),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
+												{.name={'A','I','R',' ','C','O','N','D','.',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'F','U','E','L',':',' ',},									.reqId=0x18DB33F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03220123),	.replyId=0x18DBF133,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=10,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','P','a',}					},
+												{.name={'F','U','E','L',' ','C','O','N','S','.',':',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0000394789,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'L','/','h',}					},
+												{.name={'D','E','B','I','M','E','T','E','R',':',},					.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322193F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'D','I','E','S','E','L',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221900),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+												{.name={'D','I','E','S','E','L',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221947),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+
+
+
+
+											}; // initializes all the uds parameters request to send and reply to receive - it is initialized with data from the defines in main.h, in order to avoid to touch this declaration - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
+	CAN_TxHeaderTypeDef uds_parameter_request_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3}; //used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
+#endif
+
+uint8_t baccableDashboardMenuVisible=0;
+uint8_t cruiseControlDisabled=1;
+
+uint8_t oilPressure; //oil pressure without scaling (this value shall be multiplied by xx to obtain value in bar).
+
+uint8_t uds_parameter_request_msg_data[8];//used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
+uint8_t dashboardPageIndex=0; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
+uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
+
+uint8_t dashboardPageStringArray[19]; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
+
 uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 uint8_t telematic_display_info_field_totalFrameNumber=5; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 uint8_t telematic_display_info_field_infoCode=0x0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-uint8_t paramsStringArray[10][18]={ {'B', 'A', 'C', 'C', 'A', 'B', 'L', 'E', ' ', 'V', '.', '2', '.', '0', },
-									{'P', 'a', 'g', 'e', ' ', '1', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '2', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '3', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '4', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '5', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '6', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '7', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '8', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', },
-									{'P', 'a', 'g', 'e', ' ', '9', ' ', 'i', 's', ' ', 'E', 'm', 'p', 't', 'y', }};//string array to show on dashboard - Second dimension shall be 3 x (telematic_display_info_field_totalFrameNumber +1 ). Example: 3x(11+1)=36  //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 
-uint8_t paramsStringArrayIndex=0; //indice del messaggio da spedire - potremo cambiare indice con i pulsanti del cruise control) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
-uint8_t paramsStringCharIndex=0; //indice del prossimo carattere della stringa corrente da spedire //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
+uint8_t paramsStringCharIndex=0; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-uint8_t sentMsgCounter=0;//--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-uint8_t SHOW_PARAMS_Command=0; //user command to show another parameter //--// 2=next, 1=previous, 0=no command  //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+uint8_t requestToSendOneFrame=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
+
 
 int main(void){
+
+
+
 	SystemClock_Config(); //set system clocks
 	onboardLed_init(); //initialize onboard leds for debug purposes
 	can_init(); //initialize can interface
 	//onboardLed_red_on(); This line doesn't work cause hardware is still initiating
 
+	//uint16_t tmpVar2=readFromFlash(1);
+	#if defined(IMMOBILIZER_ENABLED)
+		immobilizerEnabled = (uint8_t)readFromFlash(1); //parameter1 stored in ram, so that we can get it. By default Immo is enabled
+	#endif
 
-	#if defined(ACT_AS_CANABLE)
+
+	#if defined(ACT_AS_CANABLE)  || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 		MX_USB_DEVICE_Init();
 	#endif
 
-	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED))  //if required, let's automatically open the can bus
+	#if defined(SHOW_PARAMS_ON_DASHBOARD)
+		MX_USB_DEVICE_Init();
+	#endif
+
+	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP))  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
 		can_enable(); //enable can port
@@ -131,13 +240,31 @@ int main(void){
 		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_125K);//set can speed to 125kpbs
 		can_enable(); //enable can port
+
+		//prepare msg to send:
+		//total frame number is on byte 0 from bit 7 to 3
+		telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0xF8) | ((telematic_display_info_field_totalFrameNumber<<3) & 0xF8);
+		//infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
+		telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0x3F) | ((telematic_display_info_field_infoCode) & 0x3F);
+		//I don't use UTF chars, but ascii, so bytes 2,4,6 can be set to zero
+		telematic_display_info_msg_data[2]=0;
+		telematic_display_info_msg_data[4]=0;
+		telematic_display_info_msg_data[6]=0;
+
 	#endif
 
+
+
 	while (1){
+
 		debugTimer0=HAL_GetTick();
 		onboardLed_process();
 		can_process();
-		#if defined(ACT_AS_CANABLE)
+
+		//onboardLed_red_blink(5);
+		//onboardLed_red_on();
+
+		#if defined(ACT_AS_CANABLE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 			cdc_process(); //processa dati usb
 			//just for test
 			//char *data = "Hello World from USB CDC\n";
@@ -166,6 +293,10 @@ int main(void){
 			//can_tx(&testMsgHeader, testMsgData);
 		#endif
 
+		#if defined(SHOW_PARAMS_ON_DASHBOARD)
+			cdc_process(); //processa dati usb
+		#endif
+
 		#if defined(LED_STRIP_CONTROLLER_ENABLED)
 			//don't act as canable. One USB port pin is used to control leds.
 			vuMeterInit(); //initialize leds strip controller - this is called many times to divide the operations on more loops
@@ -178,196 +309,148 @@ int main(void){
 
 		#endif
 
-		if(immobilizerEnabled){
-			//the following it is used only by IMMOBILIZER functionality
-			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE THIEF WILL NOT BE ABLE TO CONNECT TO RFHUB, AND CAR WILL NOT SWITCH ON.
-				if(floodTheBusLastTimeSent+10<HAL_GetTick()){
-					can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //sends the message on can bus that resets the connection to RFHUB
-					floodTheBusLastTimeSent=HAL_GetTick();
+		#if defined(IMMOBILIZER_ENABLED)
+			if(executeDashboardBlinks>0){ //if we shall execute a blink to give a feedback to the user
+				if((last_sent_dashboard_blink_msg_time+500)<HAL_GetTick()){ //enter here once each halfsecond
+					last_sent_dashboard_blink_msg_time=HAL_GetTick();//return here after half second
+					//change the message
+					if(executeDashboardBlinks %2==0){ //select one time reduced brightness and one time high brightness, so that in any condition the change is visible on the dashboard
+						dashboardBlinkMsgData[4]=0x00; //max bright
+					}else{
+						dashboardBlinkMsgData[4]=0xF0; //reduced bright
+					}
+					executeDashboardBlinks--;//decrease blinks counter
+					//send the message
+					can_tx(&dashboardBlinkMsgHeader, dashboardBlinkMsgData);
 				}
+			}
 
-				if(!panicAlarmActivated){ //if panic alarm is not activated, we shall activate it after 1 second (1 second to avoid stop and start simultaneous)
-					if(floodTheBusStartTime+1000<HAL_GetTick()){
+
+			if(immobilizerEnabled){
+				//the following it is used only by IMMOBILIZER functionality
+				if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE THIEF WILL NOT BE ABLE TO CONNECT TO RFHUB, AND CAR WILL NOT SWITCH ON.
+					if(floodTheBusLastTimeSent+10<HAL_GetTick()){
+						can_tx(&panicAlarmStartMsgHeader[0], panicAlarmStartMsgData[0]); //sends the message on can bus that resets the connection to RFHUB
+						floodTheBusLastTimeSent=HAL_GetTick();
+					}
+
+					if(!panicAlarmActivated){ //if panic alarm is not activated, we shall activate it after 1 second (1 second to avoid stop and start simultaneous)
+						if(floodTheBusStartTime+1000<HAL_GetTick()){
+							for (uint8_t i=0;i<15;i++){
+								can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
+							}
+							can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
+							panicAlarmActivated=1;
+						}
+					}
+					if(floodTheBusStartTime+10000 < HAL_GetTick()){ //if the bus is flooded since 10 seconds, stop flooding it
+						floodTheBus=0; //stop flooding
+						//stop the panic alarm
 						for (uint8_t i=0;i<15;i++){
 							can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
 						}
 						can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
-						panicAlarmActivated=1;
+						panicAlarmActivated=0;
 					}
-				}
-				if(floodTheBusStartTime+10000 < HAL_GetTick()){ //if the bus is flooded since 10 seconds, stop flooding it
-					floodTheBus=0; //stop flooding
-					//stop the panic alarm
-					for (uint8_t i=0;i<15;i++){
-						can_tx(&panicAlarmStartMsgHeader[1], panicAlarmStartMsgData[1]);
-					}
-					can_tx(&panicAlarmStartMsgHeader[2], panicAlarmStartMsgData[2]);
-					panicAlarmActivated=0;
-				}
 
 
+				}
 			}
-		}
-
-		#if defined(DISABLE_START_STOP)
+		#endif
+		#if defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP)
 			if(startAndStopEnabled){
-				if(HAL_GetTick()>60000){ //after one minute the car should be on
-					if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
-						// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
-						HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
-						lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
-						onboardLed_red_on();
-					}
+				if(HAL_GetTick()>30000){ //first 30 seconds don't do anything to avoid to disturb other startup functions or immobilizer
+					if(currentRpmSpeed>400){ //if motor is on
 
-					if(lastTimeStartAndstopDisablerButtonPressed+500<HAL_GetTick()){ //if pressed since 500msec
-						HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
-						startAndStopEnabled=0;
-						onboardLed_blue_on();
+						if(startAndstopCarStatus==0){//if start & stop was found disabled in car, we don't need to do enything. Avoid to enter here; We enter here in example if board is switched when the car is running and S&S was still manually disabled by the pilot
+							startAndStopEnabled=0;
+						}else{
+							if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
 
+								//if we are using smart function, try to disable it with can message
+								#if defined(SMART_DISABLE_START_STOP)
+									//set message data, byte 5, bits from 5 to 3 to binary 001.
+									disableStartAndStopMsgData[5]=(disableStartAndStopMsgData[5] & ~0x38) | ((0x01<<3) & 0x38);
+									can_tx(&disableStartAndStopMsgHeader, disableStartAndStopMsgData);
+									startAndStopEnabled=0; //done
+								#endif
+								#if defined(DISABLE_START_STOP)
+									// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
+									HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
+									lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
+									onboardLed_red_on();
+								#endif
+							}
+							#if defined(DISABLE_START_STOP)
+								if(lastTimeStartAndstopDisablerButtonPressed+500<HAL_GetTick()){ //if pressed since 500msec
+									HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
+									startAndStopEnabled=0;
+									onboardLed_blue_on();
+								}
+							#endif
+						}
 					}
 				}
 			}
 		#endif
 
-		#if defined(SHOW_PARAMS_ON_DASHBOARD)
-			//send one msg to write something on the dashboard each 50msec (one frame each 550msec)
-			if (lastSentTelematic_display_info_msg_Time+200<HAL_GetTick()){
-				lastSentTelematic_display_info_msg_Time=HAL_GetTick();
+		#if defined(SHOW_PARAMS_ON_DASHBOARD) //this is the baccable slave
+			if(requestToSendOneFrame>0){ //if requested by a message from usb
+				//send one msg to write something on the dashboard each 50msec (one frame each 300msec)
+				if (lastSentTelematic_display_info_msg_Time+50<HAL_GetTick()){
+					lastSentTelematic_display_info_msg_Time=HAL_GetTick();
+					//prepare msg to send:
+					//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
+					telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0x07) | ((telematic_display_info_field_frameNumber>>2) & 0x07);
+					telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0xC0) | ((telematic_display_info_field_frameNumber<<6) & 0xC0);
 
-
-				if(telematic_display_info_field_frameNumber==0){
-					//IF THERE IS A USER REQUEST TO SHOW ANOTHER PARAMETER PAGE, DO IT
-					if(SHOW_PARAMS_Command==1 || SHOW_PARAMS_Command==2){ //1=previous 2=next
-						//clear screen
-						telematic_display_info_msg_data[0]= 0;
-						telematic_display_info_msg_data[1]=0x11;
-						telematic_display_info_msg_data[2]=0;
-						telematic_display_info_msg_data[3]= 0x20;
-						telematic_display_info_msg_data[4]=0;
-						telematic_display_info_msg_data[5]=0;
-						telematic_display_info_msg_data[6]=0;
-						telematic_display_info_msg_data[7]=0;
-						//send it
-						can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
-
-						//set index
-						if(SHOW_PARAMS_Command==1) paramsStringArrayIndex -= 1;
-						if(SHOW_PARAMS_Command==2) paramsStringArrayIndex += 1;
-						SHOW_PARAMS_Command=0; //no command to execute
-						// make a rotative menu
-						if(paramsStringArrayIndex==255) paramsStringArrayIndex=9;
-						if(paramsStringArrayIndex==10)  paramsStringArrayIndex=0;
-
+					//UTF text 1 is on byte 2 and byte 3
+					telematic_display_info_msg_data[3]=dashboardPageStringArray[paramsStringCharIndex];
+					paramsStringCharIndex++; //prepare to send next char
+					//UTF text 2 is on byte 4 (set to zero ) and byte 5
+					telematic_display_info_msg_data[5]=dashboardPageStringArray[paramsStringCharIndex];
+					paramsStringCharIndex++; //prepare to send next char
+					//UTF text 3 is on byte 6 (set to zero) and byte 7
+					telematic_display_info_msg_data[7]=dashboardPageStringArray[paramsStringCharIndex];
+					paramsStringCharIndex++; //prepare to send next char
+					//send it
+					can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
+					onboardLed_blue_on();
+					telematic_display_info_field_frameNumber++; //prepare for next frame to send
+					if( paramsStringCharIndex>=18) { //if we sent the entire string
+						paramsStringCharIndex=0; //prepare to send first char of the string
+						telematic_display_info_field_frameNumber=0; //prepare to send first frame
+						requestToSendOneFrame -= 1;
 					}
-
-					//update values TO SHOW each time we are in frame 0, by means of previously extracted parameters
-					//we should update values here, and fix names in array declaration
-					//but now I don't know which parameters to print
-					switch(paramsStringArrayIndex){
-						case 1:
-							paramsStringArray[paramsStringArrayIndex][0]='P';
-							paramsStringArray[paramsStringArrayIndex][1]='a';
-							paramsStringArray[paramsStringArrayIndex][2]='r' ;
-							paramsStringArray[paramsStringArrayIndex][3]='1';
-							paramsStringArray[paramsStringArrayIndex][4]=':';
-							paramsStringArray[paramsStringArrayIndex][5]='0';
-							paramsStringArray[paramsStringArrayIndex][6]='0';
-							paramsStringArray[paramsStringArrayIndex][7]='1';
-							paramsStringArray[paramsStringArrayIndex][8]='%';
-							paramsStringArray[paramsStringArrayIndex][9]='|';
-							paramsStringArray[paramsStringArrayIndex][10]='P';
-							paramsStringArray[paramsStringArrayIndex][11]='a';
-							paramsStringArray[paramsStringArrayIndex][12]='r';
-							paramsStringArray[paramsStringArrayIndex][13]='2';
-							paramsStringArray[paramsStringArrayIndex][14]=':';
-							paramsStringArray[paramsStringArrayIndex][15]='0';
-							paramsStringArray[paramsStringArrayIndex][16]='0';
-							paramsStringArray[paramsStringArrayIndex][17]='2';
-							break;
-						case 2:
-							paramsStringArray[paramsStringArrayIndex][0]='P';
-							paramsStringArray[paramsStringArrayIndex][1]='a';
-							paramsStringArray[paramsStringArrayIndex][2]='r' ;
-							paramsStringArray[paramsStringArrayIndex][3]='3';
-							paramsStringArray[paramsStringArrayIndex][4]=':';
-							paramsStringArray[paramsStringArrayIndex][5]='0';
-							paramsStringArray[paramsStringArrayIndex][6]='0';
-							paramsStringArray[paramsStringArrayIndex][7]='2';
-							paramsStringArray[paramsStringArrayIndex][8]='%';
-							paramsStringArray[paramsStringArrayIndex][9]='|';
-							paramsStringArray[paramsStringArrayIndex][10]='P';
-							paramsStringArray[paramsStringArrayIndex][11]='a';
-							paramsStringArray[paramsStringArrayIndex][12]='r';
-							paramsStringArray[paramsStringArrayIndex][13]='4';
-							paramsStringArray[paramsStringArrayIndex][14]=':';
-							paramsStringArray[paramsStringArrayIndex][15]='0';
-							paramsStringArray[paramsStringArrayIndex][16]='0';
-							paramsStringArray[paramsStringArrayIndex][17]='3';
-							break;
-						case 3:
-							paramsStringArray[paramsStringArrayIndex][0]='P';
-							paramsStringArray[paramsStringArrayIndex][1]='a';
-							paramsStringArray[paramsStringArrayIndex][2]='r' ;
-							paramsStringArray[paramsStringArrayIndex][3]='5';
-							paramsStringArray[paramsStringArrayIndex][4]=':';
-							paramsStringArray[paramsStringArrayIndex][5]='0';
-							paramsStringArray[paramsStringArrayIndex][6]='0';
-							paramsStringArray[paramsStringArrayIndex][7]='3';
-							paramsStringArray[paramsStringArrayIndex][8]='%';
-							paramsStringArray[paramsStringArrayIndex][9]='|';
-							paramsStringArray[paramsStringArrayIndex][10]='P';
-							paramsStringArray[paramsStringArrayIndex][11]='a';
-							paramsStringArray[paramsStringArrayIndex][12]='r';
-							paramsStringArray[paramsStringArrayIndex][13]='6';
-							paramsStringArray[paramsStringArrayIndex][14]=':';
-							paramsStringArray[paramsStringArrayIndex][15]='0';
-							paramsStringArray[paramsStringArrayIndex][16]='0';
-							paramsStringArray[paramsStringArrayIndex][17]='4';
-							break;
-						default:
-					}
-				}
-
-				//prepare msg to send
-
-				//total frame number is on byte 0 from bit 7 to 3
-				telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0xF8) | ((telematic_display_info_field_totalFrameNumber<<3) & 0xF8);
-
-				//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
-				telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0x07) | ((telematic_display_info_field_frameNumber>>2) & 0x07);
-				telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0xC0) | ((telematic_display_info_field_frameNumber<<6) & 0xC0);
-
-				//infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
-				telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0x3F) | ((telematic_display_info_field_infoCode) & 0x3F);
-
-				//UTF text 1 is on byte 2 and byte 3
-				telematic_display_info_msg_data[2]=0;
-				telematic_display_info_msg_data[3]=paramsStringArray[paramsStringArrayIndex][paramsStringCharIndex];
-				paramsStringCharIndex++; //prepare to send next char
-
-				//UTF text 2 is on byte 4 and byte 5
-				telematic_display_info_msg_data[4]=0;
-				telematic_display_info_msg_data[5]=paramsStringArray[paramsStringArrayIndex][paramsStringCharIndex];
-				paramsStringCharIndex++; //prepare to send next char
-
-				//UTF text 3 is on byte 6 and byte 7
-				telematic_display_info_msg_data[6]=0;
-				telematic_display_info_msg_data[7]=paramsStringArray[paramsStringArrayIndex][paramsStringCharIndex];
-				paramsStringCharIndex++; //prepare to send next char
-
-				//send it
-				can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
-				onboardLed_blue_on();
-
-				if( paramsStringCharIndex==(telematic_display_info_field_totalFrameNumber+1) * 3) { //if we sent the entire string
-					paramsStringCharIndex=0; //prepare to send first char of the string
-
-				}
-				telematic_display_info_field_frameNumber++; //prepare for next frame to send
-				if (telematic_display_info_field_frameNumber>telematic_display_info_field_totalFrameNumber){//if we sent all the frames
-					telematic_display_info_field_frameNumber=0; //prepare to send first frame
 				}
 			}
+		#endif
+
+		#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+			//send a parameter request each xx msec if dashboard menu shall be visible
+			baccableDashboardMenuVisible=1;
+			if((last_sent_uds_parameter_request_Time+500<HAL_GetTick()) && baccableDashboardMenuVisible){
+				last_sent_uds_parameter_request_Time=HAL_GetTick();
+				if(uds_params_array[dashboardPageIndex].reqId>0xFF){ //if req id is less than FF do not send any message. we will use first FF values for special purposes
+					//request current parameter to ECU
+					uds_parameter_request_msg_header.ExtId=uds_params_array[dashboardPageIndex].reqId;
+
+
+					memcpy(&uds_parameter_request_msg_data[0],&uds_params_array[dashboardPageIndex].reqData,uds_params_array[dashboardPageIndex].reqLen );
+					uds_parameter_request_msg_header.DLC=uds_params_array[dashboardPageIndex].reqLen;
+					//uds_parameter_request_msg_header.ExtId=0x18DA40F1;
+					//uds_parameter_request_msg_header.DLC=4;
+					//uds_parameter_request_msg_data[0]=0x03;
+					//uds_parameter_request_msg_data[1]=0x22;
+					//uds_parameter_request_msg_data[2]=0x10;
+					//uds_parameter_request_msg_data[3]=0x05;
+					//onboardLed_blue_on();
+					can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
+				}else{ //page is 0,or custom internally calculated parameter send string to usb
+					sendDashboardPageToSlaveBaccable(-3400000000000000000);
+				}
+			}
+
 		#endif
 
 		// If CAN message receive is pending, process the message
@@ -397,6 +480,36 @@ int main(void){
 									}
 								}
 							} //end of immobilizer section
+
+							#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+								if ((rx_msg_header.ExtId==uds_params_array[dashboardPageIndex].replyId) && baccableDashboardMenuVisible){ //if we received udf message with current selected parameter, let's aquire it
+
+									onboardLed_blue_on();
+									if (rx_msg_header.DLC>=4+uds_params_array[dashboardPageIndex].replyOffset+uds_params_array[dashboardPageIndex].replyLen){
+
+										uint8_t numberOfBytesToRead=uds_params_array[dashboardPageIndex].replyLen;
+										// Limita il numero di byte a un massimo di 4 per evitare overflow
+										if (numberOfBytesToRead > 4) {
+											numberOfBytesToRead = 4;
+										}
+										uint32_t tmpVal=0; //take value of received parameter
+
+										// Costruisce il valore a partire dai byte ricevuti
+										for (size_t i = 0; i < numberOfBytesToRead; i++) {
+											tmpVal |= ((uint32_t)rx_msg_data[4+uds_params_array[dashboardPageIndex].replyOffset+i]) << (8 * (numberOfBytesToRead - 1 - i));
+										}
+
+										tmpVal+=uds_params_array[dashboardPageIndex].replyValOffset;
+										float tmpVal2 =tmpVal * uds_params_array[dashboardPageIndex].replyScale;
+										tmpVal2 +=uds_params_array[dashboardPageIndex].replyScaleOffset;
+										if(dashboardPageIndex==1) tmpVal2*= currentRpmSpeed; //if it is horsepower, multiply by rpm
+										sendDashboardPageToSlaveBaccable(tmpVal2);//send parameter via usb
+
+									}
+
+								}
+							#endif
+
 							break;
 						case CAN_ID_STD: //if standard ID
 
@@ -413,13 +526,19 @@ int main(void){
 									//UTF text 3 is on byte 6 and byte 7
 									break;
 								case 0x000000FC: //message to dashboard containing rpm speed and not only
-									#if defined(SHIFT_INDICATOR_ENABLED)
+									#if (defined(SHIFT_INDICATOR_ENABLED) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(IMMOBILIZER_ENABLED) )
 										if(rx_msg_header.DLC==8){
 											//extract rpm speed and set the variable currentRpmSpeed
 											currentRpmSpeed=(rx_msg_data[0] *256 + (rx_msg_data[1] & ~0x3) )/4;
 											//onboardLed_blue_on();
+
 										}
 									#endif
+
+									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+										if(currentRpmSpeed<400) baccableDashboardMenuVisible=0; //stop sending params request when motor is off
+									#endif
+
 									//engine speed fail is on byte1 bit 1.
 									//engine StopStart Status is on byte 1 bit 0 and byte 2 bit 7
 									//engine Status is on byte 2 bit 6 and bit 5.
@@ -448,6 +567,15 @@ int main(void){
 									//Aero. Fail Status is on byte 1 bit2
 									//Front Aero. status is on byte 1 bit1 to bit0
 									//CDCM warning lamp is on byte 2 bit5
+									break;
+								case 0x00000226:
+									#if defined(DISABLE_START_STOP)
+										if(rx_msg_header.DLC>=2){
+											//fill a variable with start&stop Status
+											if(rx_msg_data[2]==0xF1) startAndstopCarStatus=1; //start&stop enabled in car (fefault in giulias)
+											if(rx_msg_data[2]==0x05) startAndstopCarStatus=0; //start&stop disabled in car
+										}
+									#endif
 									break;
 								case 0x000002ED: //message to dashboard containing shift indicator
 									#if defined(SHIFT_INDICATOR_ENABLED)
@@ -485,18 +613,16 @@ int main(void){
 									//phone call button is on byte3 bit0(1=button pressed)
 									//volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
 									//volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
-									#if defined(SHOW_PARAMS_ON_DASHBOARD)
-										//Set command
-										uint8_t tmpCmd=rx_msg_data[5] >>6; //1=volume was increased rotation, 2=volume decreased rotation
-										//if volume was changed, and previous command was applied with success (value 0), then set a new command to be applied on the dashboard visualization
-										if ((tmpCmd==1 || tmpCmd==2) && (SHOW_PARAMS_Command==0)) SHOW_PARAMS_Command=tmpCmd; //
-									#endif
+									//sample: uint8_t tmpCmd=rx_msg_data[5] >>6; //1=volume was increased rotation, 2=volume decreased rotation
+									break;
 								case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
+									#if defined(LED_STRIP_CONTROLLER_ENABLED) || defined(IMMOBILIZER_ENABLED)
+										currentGear=rx_msg_data[0] & ~0xF;
+									#endif
+
 									#if defined(LED_STRIP_CONTROLLER_ENABLED)
-										if(rx_msg_header.DLC==8){
-											scaledColorSet=scaleColorSet(rx_msg_data[0] & ~0xF); //prima di tutto azzeriamo i primi 4 bit meno significativi, poi scala il dato con la funzione scaleColorSet, per prepararlo per l'invio alla classe vumeter
-											vuMeterUpdate(scaledVolume,scaledColorSet);
-										}
+										scaledColorSet=scaleColorSet(currentGear ); //prima di tutto azzeriamo i primi 4 bit meno significativi, poi scala il dato con la funzione scaleColorSet, per prepararlo per l'invio alla classe vumeter
+										vuMeterUpdate(scaledVolume,scaledColorSet);
 									#endif
 
 									//actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
@@ -511,6 +637,120 @@ int main(void){
 									break;
 								case 0x000002FA: // Button is pressed on left area of the wheel
 									// These Buttons are detected only if the main panel of the car is on.
+
+									//This is used if the SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
+
+									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+										if(cruiseControlDisabled){ //if we are allowed to press buttons, use them in baccable menu
+											switch(rx_msg_data[0]){
+												case 0x18://if cruise control speed reduction button was pressed, user wants to see next page
+													if(wheelPressedButtonID==0x10 && baccableDashboardMenuVisible){ //if button released, use pressed button
+														wheelPressedButtonID=0x18; //avoid to return here
+														dashboardPageIndex += 1; //set next page
+														if(dashboardPageIndex>=23)  dashboardPageIndex=0; // make a rotative menu
+														//onboardLed_blue_on();
+														sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+													}
+													break;
+												case 0x20://if cruise control speed strong reduction button was pressed, user wants to jump 10 pages forward
+														if(wheelPressedButtonID==0x18 && baccableDashboardMenuVisible){ //if button released, use pressed button
+															wheelPressedButtonID=0x20; //avoid to return here
+															dashboardPageIndex += 9; //set 9 pages forward (+1 in gentle command)
+															if(dashboardPageIndex>=23)  dashboardPageIndex=0; // make a rotative menu
+															//onboardLed_blue_on();
+															sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+														}
+														break;
+												case 0x08: //if cruise control speed increase button was pressed, user wants to see previous page
+													if(wheelPressedButtonID==0x10 && baccableDashboardMenuVisible){ //if button released, use pressed button
+														wheelPressedButtonID=0x08; //avoid to enter again here
+														dashboardPageIndex -= 1; //set previous page
+														if(dashboardPageIndex==255)  dashboardPageIndex=22; // make a rotative menu
+														//onboardLed_blue_on();
+														sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+													}
+													break;
+												case 0x00: //if cruise control speed strong increase button was pressed, user wants to jump 10 pages before
+														if(wheelPressedButtonID==0x08 && baccableDashboardMenuVisible){
+															wheelPressedButtonID=0x00; //avoid to return here
+															if(dashboardPageIndex<=9){
+																dashboardPageIndex=0;
+															}else{
+																dashboardPageIndex -= 9; //set 9 pages backward
+															}
+															//onboardLed_blue_on();
+															sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+														}
+														break;
+												case 0x10: // button released
+													wheelPressedButtonID=0x10; //button released
+													lastPressedWheelButtonDuration=0;
+													break;
+												case 0x90: //RES button was pressed
+
+													lastPressedWheelButtonDuration++;
+													if (wheelPressedButtonID==0x10 && (lastPressedWheelButtonDuration>50)){//we pressed RES for around 2 seconds, therefore we want to enable/disable Baccable menu on dashboard
+														wheelPressedButtonID=0x90; //avoid returning here until button is not released
+
+														baccableDashboardMenuVisible=!baccableDashboardMenuVisible; //toggle visualizazion of the menu
+
+														if(!baccableDashboardMenuVisible){ //if menu needs to be hidden, print spaces to clear the string on dashboard
+															for(uint8_t i=0;i<18;i++){
+																dashboardPageStringArray[i]=0x20; //space char
+															}
+															dashboardPageStringArray[18]='\r';
+
+															CDC_Transmit_FS(dashboardPageStringArray, 19);
+														}else{
+															dashboardPageIndex=0; //reset the page, just to be sure to show initial Baccable print
+														}
+
+
+													}
+													break;
+												case 0x12: //Cruise Control Disabled/Enabled
+													break;
+												default:
+											}
+										}
+									#endif
+
+									#if defined(IMMOBILIZER_ENABLED)
+										if(cruiseControlDisabled){ //if we are allowed to use the buttons of the cruise control
+											if (currentRpmSpeed>400){ //if motor is on
+												if(currentGear==0){ //gear is neutral
+													if(rx_msg_data[0]==0x08 && (wheelPressedButtonID==0x10 || wheelPressedButtonID==0x08)){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
+														lastPressedSpeedUpWheelButtonDuration++;
+														if(lastPressedSpeedUpWheelButtonDuration>1500){ //around 28 seconds
+															//avoid to return here
+															wheelPressedButtonID=0xF8; //invent a new status to differentiate it from 0x08 used in baccable menu few lines of code up here
+															immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status
+															floodTheBus=0; //ensure to reset this even if probably it is not needed
+															if(saveOnflash((uint16_t)immobilizerEnabled)>253){ //if we get error while permanently storeing the parameter on flash
+																immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status to the original status and avoid to report the user anything
+																onboardLed_red_on();
+															}else{
+																onboardLed_blue_on(); //everything goes fine
+																if (immobilizerEnabled==1){ //if immo enabled
+																	executeDashboardBlinks=6; //blinks the dashboard brightness 3 times
+																}else{
+																	executeDashboardBlinks=12; //blinks the dashboard brightness 6 times
+																}
+															}
+
+
+														}
+													}
+													if(rx_msg_data[0]==0x10){ //user released the button
+														lastPressedSpeedUpWheelButtonDuration=0;
+														wheelPressedButtonID=0x10; //button released
+													}
+												}
+
+											}
+										}
+
+									#endif
 
 									// We commented this section since we are not using it now. Uncomment to use it.
 									// The cycle duration could increase and make blink the red led onboard.
@@ -622,7 +862,41 @@ int main(void){
 										}
 									#endif
 									break;
+								case 0x000004B1:
+									#if defined(SMART_DISABLE_START_STOP)
+										//grab the message
+										if(rx_msg_header.DLC==8){
+											memcpy(&disableStartAndStopMsgData, &rx_msg_data, 8);
+										}
+									#endif
+									// Bonnet Status is on byte0 bit 4
+									// driver door Fail status is on byte0 bit 3
+									// FOB Search Request is on byte 0 bit from 2 to 1
+									// Driver door status is on byte 0 bit 0
+									//Passenger Door status is on byte1, bit 7
+									//Left  Rear Door status is on byte 1 bit 6
+									//Right Rear Door status is on byte 1 bit 5
+									//Rear Hatch Status is on byte 1 bit 4
+									//Rear Heated Window Status is on byte 1 bit 3
+									//Front Heated Window Status is on byte 1 bit 2
+									//Theft Alarm Status is on byte 2 from bit 6 to 4
+									//Remote start Inhibit Status is on byte 2 from bit 3 to 0 and byte 3 from bit 7 to 6
+									//Remote start Active status is on byte 3 bit 5
+									//Battery state of function is on byte 3 from bit 4 to 0 and byte 4 bit 7
+									//compressor Air Conditioner status is on byte 4 bit 5
+									//Recalibration is on byte 4 bit 3
+									//Exterior Rear Release Switch Status is on byte 4 bit 1
+									//Start&Stop Pad1 is on byte 5 from bit 5 to 3 (value 1 enables and disables Start& stop)
+
+									break;
 								case 0x000004B2:
+									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+
+										oilPressure =rx_msg_data[0]<<7;
+										oilPressure= oilPressure || (rx_msg_data[1]>>1);
+
+
+									#endif
 									//engine oil level is in byte 0 from bit 7 to 3.
 									//engine oil over fill status is on byte 0, bit 2.
 									//engine oil min. is on byte 0 bit 1
@@ -631,6 +905,32 @@ int main(void){
 									//engine water level is on byte 2 bit 6.
 									//engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
 									//engine oil temperature warning light is on byte 3 bit 5.
+									break;
+								case 0x00000545:
+									#if defined(IMMOBILIZER_ENABLED)
+										if(rx_msg_header.DLC==8){
+											memcpy(&dashboardBlinkMsgData, &rx_msg_data, 8);
+										}
+									#endif
+									//only if  lights are ON, and therefore the dashboard is  set to max brightness: setting byte 5 to 0x00, the brightness increases for around 100msec (this works for any value between 0x and 7x )
+									//only if lights are OFF, and therefore the dashboard is set to min brightness: setting byte 5 to 0xF0, the brightness reduces for around 100msec (this works for any value between Dx and Fx)
+									//this is the test message to increase brightness: 0x88 0x20 0xC3 0x24 0x00 0x14 0x30 0x00
+									break;
+								case 0x000005A5:
+									//cruise control ON/OFF status is on byte0 bit7 (0=disabled, 1=enabled)
+									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+										if((rx_msg_data[0]>>7)==1){
+											cruiseControlDisabled=0;//disable additional parameter menu commands
+										}else{
+											cruiseControlDisabled=1;//enable additional parameter menu commands
+										}
+									#endif
+									break;
+								case 0x0000073A:
+									//contains current date from byte 0 to 7.
+									//Hex values are used as characters in example 0x21 0x02 0x26 0x01 0x20 0x 25 represents
+									//the date h21 minutes 02 day 26 month 01 year 2025.
+									//last two bytes of the message are 00 00.
 									break;
 								default:
 							}
@@ -649,6 +949,55 @@ int main(void){
 	}
 }
 
+#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+	void sendDashboardPageToSlaveBaccable(float param){
+		uint8_t tmpStrLen=0;
+		uint8_t tmpStrLen2=0;
+		uint8_t tmpStrLen3=0;
+		switch(uds_params_array[dashboardPageIndex].reqId){
+
+			case 0: //print baccable menu
+				tmpStrLen=strlen(FW_VERSION);
+				if(tmpStrLen>18) tmpStrLen=18;
+				memcpy(&dashboardPageStringArray,FW_VERSION,tmpStrLen);
+				break;
+			case 0x10: //print oil pressure
+				param=(float) oilPressure * uds_params_array[dashboardPageIndex].replyScale;
+			default:
+				tmpStrLen=strlen((const char *)uds_params_array[dashboardPageIndex].name);
+				if(tmpStrLen>18) tmpStrLen=18; //truncate it. no space left
+				memcpy(&dashboardPageStringArray, &uds_params_array[dashboardPageIndex].name,tmpStrLen); //prepare name of parameter
+				if(param!=-3400000000000000000){ //if different than special value (since special value means no value to send)
+					//scale param still done, we don't need to do it here
+					//param += uds_params_array[dashboardPageIndex].replyValOffset;
+					//param *= uds_params_array[dashboardPageIndex].replyScale;
+					//param += uds_params_array[dashboardPageIndex].replyScaleOffset;
+					//convert param from float to string
+					char tmpfloatString[10];
+					floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+					//add param to the page String
+					tmpStrLen2=strlen(tmpfloatString);
+					if(tmpStrLen+tmpStrLen2>18) tmpStrLen2=18-tmpStrLen; //truncate it. no space left
+					memcpy(&dashboardPageStringArray[tmpStrLen],tmpfloatString,tmpStrLen2);
+
+					//float tmpVal9=200000.45601928209374; ///ADDED FOR TEST.......
+					//char *tmpStr9=(char*)malloc(10);
+
+					//floatToStr(tmpfloatString,param,2,sizeof(tmpfloatString));
+					//tmpStrLen2=strlen(tmpfloatString);
+					//memcpy(&dashboardPageStringArray[tmpStrLen],tmpfloatString,tmpStrLen2);
+				}
+				//add measurement unit
+				tmpStrLen3=strlen((const char *)uds_params_array[dashboardPageIndex].replyMeasurementUnit);
+				if(tmpStrLen+tmpStrLen2+tmpStrLen3>18) tmpStrLen3=18-tmpStrLen-tmpStrLen2; //truncate it. no space left
+				memcpy(&dashboardPageStringArray[tmpStrLen+tmpStrLen2],&uds_params_array[dashboardPageIndex].replyMeasurementUnit,tmpStrLen3);
+		}
+		dashboardPageStringArray[tmpStrLen+tmpStrLen2+tmpStrLen3]='\r';
+		CDC_Transmit_FS(dashboardPageStringArray, tmpStrLen+tmpStrLen2+tmpStrLen3+1); //send it over usb
+
+
+	}
+#endif
 // this function scales value received from can bus. It is assumed that pedal position (or motor rpm) will change vumeter volume represented with the leds strip
 float scaleVolume(uint8_t vol){
 	//Scale this value to get a percentage between 0 and 100
@@ -666,6 +1015,148 @@ uint8_t scaleColorSet(uint8_t col){
 	//onboardLed_red_blink(col);
 	// 7=backward, f=gear set but frizione premuta (undefined), 1=first gear , 2=second gear, ... , 6= sixt gear
 	return col;
+}
+
+uint8_t saveOnflash(uint16_t param1){ //store params permanently on flash
+	//last page to store on flash is 0x0801 F800 (we can store 2 bytes each time)
+	// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
+	HAL_FLASH_Unlock(); //unlock flash
+
+	//erase flash
+	FLASH_EraseInitTypeDef eraseInitStruct;
+	uint32_t pageError=0;
+	eraseInitStruct.TypeErase= FLASH_TYPEERASE_PAGES;
+	eraseInitStruct.PageAddress=LAST_PAGE_ADDRESS; //last page address begin
+	eraseInitStruct.NbPages=1;
+	if(HAL_FLASHEx_Erase(&eraseInitStruct,&pageError)!=HAL_OK){ //error during erase
+		HAL_FLASH_Lock();
+		onboardLed_red_blink(3);
+		return 254; //error
+	}
+
+	//write parameter
+	if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,LAST_PAGE_ADDRESS,param1)!=HAL_OK){ //error during write
+		HAL_FLASH_Lock();
+		onboardLed_red_blink(5);
+		return 255; //error
+	}
+
+	//lock the flash
+	HAL_FLASH_Lock();
+	return 0;
+}
+
+uint16_t readFromFlash(uint8_t paramId){
+	switch(paramId){
+	case 1:
+		return !(!( *((uint16_t*)LAST_PAGE_ADDRESS) )); //double negation to coerce to a boolean even when it is FFFF
+		break;
+	default:
+		return 0;
+		break;
+	}
+
+}
+void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
+    uint8_t i = 0;
+
+    // Gestione dei casi speciali NaN e Inf
+    if (num != num) {  // NaN check
+        if (maxLen > 3) {
+            str[0] = 'N'; str[1] = 'a'; str[2] = 'N'; str[3] = '\0';
+        }
+        return;
+    }
+    if (num == (float)INFINITY) {
+        if (maxLen > 3) {
+            str[0] = 'I'; str[1] = 'n'; str[2] = 'f'; str[3] = '\0';
+        }
+        return;
+    }
+    if (num == (float)-INFINITY) {
+        if (maxLen > 4) {
+            str[0] = '-'; str[1] = 'I'; str[2] = 'n'; str[3] = 'f'; str[4] = '\0';
+        }
+        return;
+    }
+
+    // Calcolo del fattore di arrotondamento corretto
+    float roundingFactor = 0.5f;
+    for (uint8_t j = 0; j < precision; j++) {
+        roundingFactor /= 10.0f;
+    }
+    if (num < 0) {
+        num -= roundingFactor;  // Arrotondamento corretto per numeri negativi
+    } else {
+        num += roundingFactor;  // Arrotondamento per numeri positivi
+    }
+
+    // Gestione del segno
+    if (num < 0) {
+        if (i < maxLen - 1) {
+            str[i++] = '-';
+        }
+        num = -num;
+    }
+
+    // Parte intera e parte decimale
+    uint32_t intPart = (uint32_t)num;
+    uint32_t scale = 1;
+    for (uint8_t j = 0; j < precision; j++) {
+        scale *= 10;
+    }
+    uint32_t decPart = (uint32_t)((num - intPart) * scale);
+
+    // Conversione della parte intera
+    uint8_t intStart = i;
+    if (intPart == 0) {
+        if (i < maxLen - 1) {
+            str[i++] = '0';
+        }
+    } else {
+        uint8_t count = 0;
+        uint32_t tmp = intPart;
+        while (tmp > 0) {
+            tmp /= 10;
+            count++;
+        }
+        for (uint8_t j = count; j > 0; j--) {
+            if (i < maxLen - 1) {
+                str[i + j - 1] = (intPart % 10) + '0';
+            }
+            intPart /= 10;
+        }
+        i += count;
+    }
+
+    // Conversione della parte decimale
+    if (precision > 0 && i < maxLen - 1) {
+        str[i++] = '.';
+        for (uint8_t j = 0; j < precision; j++) {
+            if (i < maxLen - 1) {
+                decPart *= 10;
+                str[i++] = (decPart / scale) + '0';
+                decPart %= scale;
+            }
+        }
+    }
+
+    // Rimuovere zeri finali superflui
+    if (precision > 0) {
+        while (i > intStart && str[i - 1] == '0') {
+            str[--i] = '\0';
+        }
+        if (i > intStart && str[i - 1] == '.') {
+            str[--i] = '\0';
+        }
+    }
+
+    // Aggiungere terminatore di stringa
+    if (i < maxLen) {
+        str[i] = '\0';
+    } else if (maxLen > 0) {
+        str[maxLen - 1] = '\0';
+    }
 }
 
 //System Clock Configuration
@@ -741,6 +1232,7 @@ void system_hex32(char *out, uint32_t val){
 		p--;
 	}
 }
+
 
 #ifdef  USE_FULL_ASSERT
 	/**
