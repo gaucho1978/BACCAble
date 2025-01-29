@@ -193,16 +193,17 @@ https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware
 New single case for Fysect Ucan:
 (uses same case of dual ucan with a dedicated cap)
 
-![Box with Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/single_fysect_ucan/single_fysect_ucan/preview.png)
+![Box with Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/single_fysect_ucan/preview.png)
 
-New Dual case for Fysect Ucan:
+New Dual case for Fysect Ucan (to accomodate 2 ucan, each one connected to a different can bus):
 
-![Box With Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/dual_fysect_ucan/preview.png)
+![dual box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/dual_fysect_ucan/preview.png)
 
 Old box to accomodate DCDC, termination board and original canable or DykbRadio Nano canable.
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
-![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
+![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableWithDcDcAndTB/box.png)
+
+![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableWithDcDcAndTB/cap.png)
 
 ## Installation 
 OLD: watch the following video to see installation procedure.
