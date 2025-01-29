@@ -159,7 +159,7 @@ Generally speaking I found these compatible devices (It is important that the ch
     - Original MKS Canable
     - Canable DykbRadio Nano
     - Fysect ucan
-	- candlelight small board ( https://github.com/linux-automation/candleLightFD )
+	- candlelight small board ( [https://github.com/linux-automation/candleLightFD](https://github.com/linux-automation/candleLight/) )
 		
 
 Leds Strip ws2811 ip65:  https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
