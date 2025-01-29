@@ -598,7 +598,7 @@ int main(void){
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x3 & 0x3);
 												}
 												can_tx(&shift_msg_header, shift_msg_data); //transmit the modified packet
-												//onboardLed_red_on();
+												onboardLed_blue_on();
 											}
 
 										}

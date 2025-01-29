@@ -3,6 +3,7 @@
 ../Core/Src/main.c:1022:9:saveOnflash	32	static
 ../Core/Src/main.c:1051:10:readFromFlash	0	static
 ../Core/Src/main.c:1062:6:floatToStr	56	static
+../Core/Src/main.c:955:7:sendDashboardPageToSlaveBaccable	56	static
 ../Core/Src/main.c:1165:6:SystemClock_Config	112	static,ignoring_inline_asm
 ../Core/Src/main.c:210:5:main	40	static
 ../Core/Src/main.c:1206:6:Error_Handler	0	static,ignoring_inline_asm
