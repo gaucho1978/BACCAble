@@ -32,21 +32,17 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - immobilizer (more details in the dedicated subparagraph)
 - SHIFT warning indicator on dashboard (more detailes in the dedicated subparagraph),
 - ESC and TC controller (more detailes in the dedicated subparagraph)
-- show parameters on dashboard (more detailes in the dedicated subparagraph)
 
 ## Folders content
 - Subfolder firmware contains the firmware
 - Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
-- Subfolder hardware/box contains the 3d model of the cases to accomodate required components.
+- Subfolder hardware/box contains the 3d model of the case to accomodate required components.
 - Subfolder hardware/system interconnection contains interconnection diagram to connect required components
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 ## Start&Stop car functionality Disabler
-The old functionality "car start&stop disabler" (#define DISABLE_START_STOP) is implemented by simply shorting a gpio to ground trough a resistor (if the motor is rotating), in order to simulate Start&Stop button press on the car panel, with a delay after the device was switched on. I avoid to do anything if a specific can bus message tells me that the the Start&Stop was still manually disabled by the pilot. The used resistor is suitable for my car. I left this function just in case of problems withe new smart developed function (see next point) 
-Note: This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
-- perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button.
-
-The new  functionality "car start&stop disabler" (#define SMART_DISABLE_START_STOP) is implemented by simply sending the expected message on C1 can bus. The function is fired after at least 30 seconds from the switch on and only if engine is on.
-
+The functionality "car start&stop disabler" is implemented by simply shorting a gpio to ground trough a resistor (if the motor is rotating), in order to simulate Start&Stop button press on the car panel, with a delay after the device was switched on. I avoid to do anything if a specific can bus message tells me that the the Start&Stop was still manually disabled by the pilot. The used resistor is suitable for my car. 
+This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
+- perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button. 
 ## Immobilizer functionality
 The functionality IMMOBILIZER performs the following:
 1. Detects if the thief is trying to connect to to RFHUB (they do it to add a key to the car)
@@ -55,71 +51,43 @@ The functionality IMMOBILIZER performs the following:
 4. after 10 seconds stops to send messages and stops alarm, and return listening for thief messages
 
 Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
-
 Note2: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. Therefore, if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the canable to the 5V usb voltage taken from the connector of the USB interface in the central area, close to cigarette lighter socket. In fact, usb voltage is switched on as soon as the thief wakes up the rfhub. 
 
-Note3: As alterinative for immobilizer, you can use the DCDC connected to a 12V of the car always available, to ensure roper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
-
-Note4: Once we start to send the rfhub reset message, neither the injition button will work. the car will appear as dead..
-
-Note5: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for  around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 3 times. If immo becomes activates, the dashboard will blink 6 times. The change is persistent after a power loss.
+Note3: Once we start to send the rfhub reset message, neither the injition button will work. the car will appear as dead..
 
 ## Leds Strip controller
 The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
 
 This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, should:
 - identify proprietary can bus messages, by sniffing data with savvycan.
-Note: this works only if baccable is connected to C1 can bus.
 
 ## Shift Warning Indicator
 The SHIFT warning indicator function allows you to show on dashboard (only if you are in race mode) the SHIFT warning label when configurable motor rpm speed is overcomed (3 levels of warning).
 The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JYUBBTW4WRo/0.jpg)](https://www.youtube.com/watch?v=JYUBBTW4WRo)
-Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
-Note2: this works only if baccable is connected to C1 can bus.
-
 
 ## ESC & TC enabler/disabler functionality
 By pressing left stalk button (LANE indicator) for 2 seconds, in D,N,A modes the ESC and TC will be disabled. Changing DNA mode or pressing again the same button, it is possible to revert the change. In Race mode, where ESC and TC ar tipicalliy disabled, this functionality allows to enable ESC and TC.
-Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
-Note2: this works only if baccable is connected to C2 can bus.
 The following video explains the behavious and the code description: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/I1GHFjOmpOs/0.jpg)](https://www.youtube.com/watch?v=I1GHFjOmpOs)
 
 The following video shows tests performed on this functionality on the road: [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
 
 ## DASHBOARD MENU functionality
-Adds a menu to the dashboard allowing the user to show additional parameters. the menu pages in the first released version was changed   with buttons on the right side of the steering wheel (volume buttons). 
-Now I'm changing approach. While in the video you see using volume buttons, now in the code I use cruise control button to move in the menu. I leave the video just for reference, waiting the completion of the new developement.
-At the end 2 baccable will be connected between them: the slave canable connected to BH can bus (in example on OBD port, pins 3 and 11) and  another canable to C1 can bus to act as the master. The master canable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE, while the slave shall be set with #define SHOW_PARAMS_ON_DASHBOARD. The slave receives data from master canable and display it on dashboard, while the master gets the parameters on C1 bus and sends them to slave canable. This is currently under development. Up to now the master sends via usb and the slave receives via usb, buth they both work as device and not host, therefore they can't communicate between them. I'm working on the communications.
-The new commands implemented on the master canable are the following:
-by default the menu on dashboard is disabled
-1. To enable it you shall be with engine on and cruise control disabled. Press RES button on the wheel for around 2 seconds and the menu will popup the the baccable version (currently under deveolpement therefore you just receive a string on the usb opened with a terminal window.
-2. To move inside menu use the cruise control up and down buttons (gentle press moves by 1 parameter, strong press moves by 9 parameters) in a rotational menu.
-3. when you enable cruise control the menu controls are disabled but the last set parameter remains on screen.
-4. parameters are updated each 500 msec
-5. to disable the menu just disable cruise control and press RES button for at least 2 seconds.
-
-To test the slave baccable, currently under development, for now you shall connect to usb open a terminal window and send a string followed by carriage return character like "ciao" and you will see it printed on the dashboard.
-
-The following old video shows the first implementation that I uploaded on github to test the population of the dashboard string and to detect wheel button press. This is not applicable to the current repository.
+Adds a menu to the dashboard allowing the user to show additional parameters. the menu pages are changed with buttons on the steering wheel.
+See following video for a preview of the functionality, realized during first development phase.
+This first implementation is on BH can bus both for write on IPC and to detect wheel button press.
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-_93Q_ZlYxc/0.jpg)](https://www.youtube.com/watch?v=-_93Q_ZlYxc)
 
 
 ## Usage Instructions
 You should perform some preliminary settings inside firmware:
-- If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge). Generally speaing if you use other functions, the ACT_AS_CANABLE shall remain commented otherwise the device  don't properly work in some situations.
-- If you want to use the device as leds strip controller you shall uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h (this was tested only connected to C1 can bus)
-- If you want to use the old piece of code that disables the car start&stop at the power on by means of an external resistor connected close to the button defined in the interconnection diagram, you shall uncomment #define DISABLE_START_STOP in main.h (this works only if connected to C1 can bus because I check motor speed. If someone wants it on another can bus, he shall remove the motor speed check)
-- if you want to disable new function start&stop disabler that acts only by sending a message on C1 can bus, comment the #define SMART_DISABLE_START_STOP in main.h
+- If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge)
+- If you want to use the device as leds strip controller you shall comment the line " #define ACT_AS_CANABLE " and uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h (this was tested only connected to C1 can bus)
+- If you don't want to use the piece of code that disables the car start&stop at the power on, you shall comment #define DISABLE_START_STOP in main.h (this works only if connected to C1 can bus because I check motor speed. If someone wants it on another can bus, he shall remove the motor speed check)
 - If you want to disable IMMOBILIZER functionality, you shall comment #define IMMOBILIZER_ENABLED in main.h (this works only if connected to C1 can bus)
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 - If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (2000rpm by default) (works only in race mode, and was tested only connected to C1 can bus)
 - If  you want the capability to enable and disable TC with left stalk button, you shall uncomment #define ESC_TC_CUSTOMIZATOR_ENABLED in main.h and connect the baccable to C2 can bus (pin 12 and 13 of the OBD port)
-- If you want to add menu on the dashboard to display additional parameters, you shall uncomment #define SHOW_PARAMS_ON_DASHBOARD in main.h, for the slave canable connected to BH can bus (in example on OBD port, pins 3 and 11) and connect another canable to C1 can bus to act as the master. The master canable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE. The slave receives data from master canable and display it on dashboard, while the master gets the parameters on C1 bus and sends them to slave canable. This is currently under development. Up to now the master sends via usb and the slave receives via usb, buth they both work as device and not host, therefore they can't communicate between them. I'm working on the communications.
-- I found that fysect ucan board has leds connecetd in a different manner so that a inversion on the control of the internal transistors are required. So if you use fysect ucan board don't forget to uncomment #define UCAN_BOARD_LED_INVERSION
-
-Note: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for at around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 3 times. If immo becomes activates, the dashboard will blink 6 times. change is permanent after a power loss.
-
-
+- If you want to add menu on the dashboard to display additional parameters, you shall uncomment #define SHOW_PARAMS_ON_DASHBOARD in main.h, and connect Baccable to BH can bus (in example on OBD port, pins 3 and 11)
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/IMG_3511.jpeg)
 
 Note: compile the code in Release version and not debug since Release version is much more light (smaller elf file size). Some of BACCABLE videos shows how to compile. 
@@ -141,11 +109,6 @@ click on the following image to see the full hardware and interconnections video
 Used hardware:
 
 Canable: https://a.aliexpress.com/_Ev1yBz1
-		Original MKS Canable
-		Canable DykbRadio Nano
-		Fysect ucan
-		It is important that the chip is a stm32F072
-
 Leds Strip ws2811 ip65: https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
 Amazon alternatives:
 Canable: https://amzn.to/3zzeNMq
@@ -154,37 +117,15 @@ Leds strip: https://amzn.to/3W3TifJ
 Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
 
 ## The interconnections
-Since I found how to disable Start&Stop by only sending can message, the new required connections are just: CAN bus from canable to car (termination board on canable) and power supply from usb hub 5V usb to the usb port of the canable.
-If you enable the function to control a led strip, the usb data shall be connected to led strip, as defined in the old schematic here reported for reference.
-
-Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the future functionality to add parameters on the dashboard). 
-This is the old original wiring diagram:
+Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The folliwing diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer and leds strip controller functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the future functionality to add parameters on the dashboard. 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
-
-Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket. As alterinative for immobilizer,  use the DCDC connected to a 12V of the car always available, to ensure roper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
-
-
+Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket.
 ## The Box
-I developed different cases.
-New single case for original canable or DykbRadio Nano canable:
-
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/canableDykbRadiooNanoBoxOnly3.stl)
-![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/canableDykbRadiooNanoCap3.stl)
-
-New single case for Fysect Ucan:
-(uses same case of dual ucan with a dedicated cap)
-![Box with Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/single_fysect_ucan/single_fysect_ucan/preview.png)
-
-New Dual case for Fysect Ucan:
-![Box With Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/dual_fysect_ucan/)
-
-Old box to accomodate DCDC, termination board and original canable or DykbRadio Nano canable.
-
 ![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/box.png)
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/cap.png)
 
 ## Installation 
-OLD: watch the following video to see installation procedure.
+watch the following video to see installation procedure.
 note: the video doesn't show the connection from usb +5V required to use immobilizer function.
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/aylwa35GtuU/0.jpg)](https://www.youtube.com/watch?v=aylwa35GtuU)
@@ -263,25 +204,25 @@ These areinformation that I found. Use everything this at your own risk.
     - /UTF text 1 is on byte 2 and byte 3
     - UTF text 2 is on byte 4 and byte 5
     - UTF text 3 is on byte 6 and byte 7
- 
+
 2. msg id 0x0ed  (Thanks to SniZ - https://alfatuning.app ) contains: 
-    - shift warning lamp directed to dashboard in byte6 , bit 1 and 0(lsb) -  Value 0= no indicator, 1=urgency level1, 2=urgency level2, 3=urgency level3 (the one with shift label)
-    - EngineWaterTemperature is on byte0
-    - fuel consumption is on byte 4 bit 0 to 3, byte 5, and byte 6 from bit 7 to 3
+   - shift warning lamp directed to dashboard in byte6 , bit 1 and 0(lsb) -  Value 0= no indicator, 1=urgency level1, 2=urgency level2, 3=urgency level3 (the one with shift label)
+   - EngineWaterTemperature is on byte0
+   - fuel consumption is on byte 4 bit 0 to 3, byte 5, and byte 6 from bit 7 to 3
    
 3. msg id 0xFC (Thanks to SniZ - a famous guru - https://alfatuning.app ) contains: 
-    - motor rpm speed is in byte 0 and 1 (the least significant 2 bits of byte 1 are not related to rpm speed, and should not be used)
-    - engine speed fail is on byte1 bit 1
-    - engine StopStart Status is on byte 1 bit 0 and byte 2 bit 7
-    - engine Status is on byte 2 bit 6 and bit 5.
-    - gas pedal position is on byte 2 from bit 4 to 0 and byte 3 from bit 7 to 5.
-    - gas pedal position fail is on byte3 bit 4.
-    - .....
-    - alternator fail is on byte 3, bit1.
-    - stopStart status is on byte3 bit 0 and byte4 bit7.
-    - CC brake intervention request is on byte 4, bit5
-    - bank deactivation status is on byte5, bit 7 and 6
-    - CC brake intervention is on byte 5 from bit 5 to 0 and byte 6 from bit 7 to 4.
+   - motor rpm speed is in byte 0 and 1 (the least significant 2 bits of byte 1 are not related to rpm speed, and should not be used)
+   - engine speed fail is on byte1 bit 1
+   - engine StopStart Status is on byte 1 bit 0 and byte 2 bit 7
+   - engine Status is on byte 2 bit 6 and bit 5.
+   - gas pedal position is on byte 2 from bit 4 to 0 and byte 3 from bit 7 to 5.
+   - gas pedal position fail is on byte3 bit 4.
+   - .....
+   - alternator fail is on byte 3, bit1.
+   - stopStart status is on byte3 bit 0 and byte4 bit7.
+   - CC brake intervention request is on byte 4, bit5
+   - bank deactivation status is on byte5, bit 7 and 6
+   - CC brake intervention is on byte 5 from bit 5 to 0 and byte 6 from bit 7 to 4.
 
 4. msg id 0x1F0 contains:
     - clutch interlock is on byte 0 bit 7
@@ -302,7 +243,7 @@ These areinformation that I found. Use everything this at your own risk.
 6. msg id 0x226:
     - status of start & stop lamp (or function) is on byte 2 (0xF1= S&S lamp off, 0x05= S&S lamp on ). Lamp on means Start&Stop disabled
    
-7. msg id 0x2EE, on BH bus at 125kbps, contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
+7. msg id 0x2EE contains the following radio buttons on the steering wheel - only available on BH can bus at 125kbps
     - radio right button is on byte 3 bit6 (1=button pressed)
     - radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
     - radio Voice command button is on byte 3 bit2 (1= button pressed)
@@ -310,62 +251,37 @@ These areinformation that I found. Use everything this at your own risk.
     - volume  is on byte 4 (volume up increases the value, volume down reduces the value. once arrived to 255 restarts from 0 and under 0 goes to 255)
     - volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
 
-7A. msg id 0x2EE, on C1 bus, contains left stalk button press on first and second byte (to be confirmed):
-    - 0x80 0xA0 (o 0x82 0xA0) (o 0x82 0x00) = button press
-    -  0x80 0x40 (o 0x82 0xC0) (o 0x80 0x40) (o 0x82 0x40) = button release
-	
 8. msg id 0x2EF contains:
-    - actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
-    - suggested gear status is on byte 0 from bit 3 to 0 (decoded as actual gear status field)
-    - DPF Regeneration mode is on byte 1 bit 7
-    - SAM info is on byte 1 from bit 3 to 0
-    - stop start fault status is on byte 2 bit 7
-    - ..
-    - boost pressure indication is on byte 3 bit from 6 to 0 and byte 4  bit 7
+   - actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
+   - suggested gear status is on byte 0 from bit 3 to 0 (decoded as actual gear status field)
+   - DPF Regeneration mode is on byte 1 bit 7
+   - SAM info is on byte 1 from bit 3 to 0
+   - stop start fault status is on byte 2 bit 7
+   - ..
+   - boost pressure indication is on byte 3 bit from 6 to 0 and byte 4  bit 7
 
 9. msg id 0x2FA contains, in byte0, the Button pressed on left area of the wheel - These Buttons are detected only if the main panel of the car is on. (WARNING1: when you press cruise control strong up, before and after it, also cruise control gently up message is fired) Possible values are:
-    - 0x90=RES,
-    - 0x10=Buttons released
-    - 0x12=Cruise control on/off,
-    - 0x08=Cruise control speed gently up,
-    - 0x00=Cruise control speed strong up,
-    - 0x18=Cruise control speed gently down
-    - 0x20=Cruise control speed strong down
+   - 0x90=RES,
+   - 0x10=Buttons released
+   - 0x12=Cruise control on/off,
+   - 0x08=Cruise control speed gently up,
+   - 0x00=Cruise control speed strong up,
+   - 0x18=Cruise control speed gently down
+   - 0x20=Cruise control speed strong down
 
    
 10. msg id 0x384 (periodically sent on the bus when ecu is on - example of this message with dna selection dynamic: t38480809DA080004XXYY where XX= counter from 00 to 0F and YY=checksum):
-    - Command Ignition Status is on byte0 from bit 3 to 1.
-    - Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
-    - Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
-    - External temperature is on byte 1 from bit 1 to 0 and on byte 2 from bit 7 to bit 1.
-    - External temperature fail is on byte2 bit0
-    - Low Beam Status is on byte3 bit7
-    - Lane Indicator button status (left stalk button) is on byte 3 bit6. (populated only on C2 can bus) (1 when pressed)
-    - Power Mode Status is on byte 3 from bit 5 to 4.
-    - Park Brake Status is on byte 3 bit 3.
-    - Int. Relay Fail Status is on byte 4 from bit 7 to 6
-    - SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
-
-
-10B. msg id 4b1, contains:
-    - Bonnet Status is on byte0 bit 4
-    - driver door Fail status is on byte0 bit 3
-    - FOB Search Request is on byte 0 bit from 2 to 1
-    - Driver door status is on byte 0 bit 0
-    - Passenger Door status is on byte1, bit 7
-    - Left  Rear Door status is on byte 1 bit 6
-    - Right Rear Door status is on byte 1 bit 5
-    - Rear Hatch Status is on byte 1 bit 4
-    - Rear Heated Window Status is on byte 1 bit 3
-    - Front Heated Window Status is on byte 1 bit 2
-    - Theft Alarm Status is on byte 2 from bit 6 to 4
-    - Remote start Inhibit Status is on byte 2 from bit 3 to 0 and byte 3 from bit 7 to 6
-    - Remote start Active status is on byte 3 bit 5
-    - Battery state of function is on byte 3 from bit 4 to 0 and byte 4 bit 7
-    - compressor Air Conditioner status is on byte 4 bit 5
-    - Recalibration is on byte 4 bit 3
-    - Exterior Rear Release Switch Status is on byte 4 bit 1
-    - Start&Stop Pad1 is on byte 5 from bit 5 to 3 (value 1 enables and disables Start & stop like the button does)
+   - Command Ignition Status is on byte0 from bit 3 to 1.
+   - Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
+   - Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
+   - External temperature is on byte 1 from bit 1 to 0 and on byte 2 from bit 7 to bit 1.
+   - External temperature fail is on byte2 bit0
+   - Low Beam Status is on byte3 bit7
+   - Lane Indicator button status (left stalk button) is on byte 3 bit6. (populated only on C2 can bus) (1 when pressed)
+   - Power Mode Status is on byte 3 from bit 5 to 4.
+   - Park Brake Status is on byte 3 bit 3.
+   - Int. Relay Fail Status is on byte 4 from bit 7 to 6
+   - SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
 
 11. msg id 0x4B2 contains:
     - engine oil level is in byte 0 from bit 7 to 3.
@@ -376,44 +292,36 @@ These areinformation that I found. Use everything this at your own risk.
     - engine water level is on byte 2 bit 6.
     - engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
     - engine oil temperature warning light is on byte 3 bit 5.
-	
-11A. msg id 0x545, byte4 temporary changes brightness of the dashboard 
-	- only if  lights are ON, and therefore the dashboard is  set to max brightness: setting byte 5 to 0x00, the brightness increases for around 100msec (this works for any value between 0x and 7x )
-	- only if lights are OFF, and therefore the dashboard is set to min brightness: setting byte 5 to 0xF0, the brightness reduces for around 100msec (this works for any value between Dx and Fx)
-	- this is the test message to increase brightness: 0x88 0x20 0xC3 0x24 0x00 0x14 0x30 0x00
 
-11B: msg id 0x5A5 contains:
+12. msg id 0x5A5 contains:
     - cruise control ON/OFF status is on byte0 bit7 (0=disabled, 1=enabled)
-
-11C. msg id 0x73A contains current date from byte 0 to 7. Hex values are used as characters in example 0x21 0x02 0x26 0x01 0x20 0x 25 represents the date h21 minutes 02 day 26 month 01 year 2025. last two bytes of the message are 00 00.
-   
 12. Thanks to SniZ ( https://alfatuning.app ) , and to alfaobd developer, this is RFHUB Reset message. To make it work, this message shall be periodically sent (each 200msec should be ok, but i decided to send it each 10msec):
-    - T18DAC7F180211010000000000 
+   - T18DAC7F180211010000000000 
 
 13. These messages changes when you move accelerator pedal:
-    - message id 0ff, second and third byte, changes from 1D33 to 39f3
-    - message id 1f0, first 3 nibble changes from 000 to 1f2
-    - message id 412 , fourth byte, changes from 33 to E6. I use this one!!
-    - message id 736, second and third byte, changes from 3319 to E772
+   - message id 0ff, second and third byte, changes from 1D33 to 39f3
+   - message id 1f0, first 3 nibble changes from 000 to 1f2
+   - message id 412 , fourth byte, changes from 33 to E6. I use this one!!
+   - message id 736, second and third byte, changes from 3319 to E772
 
 14. The following message sequence starts (and stops) car Alarm, but it works only if the bus is not flooden with other messages:
-    - T1E340041488201500  //this message it is like a wake up sequence
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - T1E340041488201500
-    - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm. If the alarm was on, it goes off.
+   - T1E340041488201500  //this message it is like a wake up sequence
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - T1E340041488201500
+   - t1EF84202E20000000156 At this point of the sequence, on my car,  the main panel temporary resets, if it is on, and starts the panic alarm. If the alarm was on, it goes off.
 
 15. Experiments: 
-    - t2EE47FE00000 This on my car, if the panel is on, temporary resets main panel ad you can ear relays switch sound
-    - t0FA8A0200000200400F1 this on my car, if the panel is on, generates animation on the panel like switch off and on
+   - t2EE47FE00000 This on my car, if the panel is on, temporary resets main panel ad you can ear relays switch sound
+   - t0FA8A0200000200400F1 this on my car, if the panel is on, generates animation on the panel like switch off and on
