@@ -186,9 +186,10 @@ Note: if you use immobilizer function, you shall remove the voltage regulator th
 I developed different cases.
 New single case for original canable or DykbRadio Nano canable:
 
-https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/canableDykbRadiooNanoBoxOnly3.stl
 
-https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/canableDykbRadiooNanoCap3.stl
+![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/box.png)
+
+![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/cap.png)
 
 New single case for Fysect Ucan:
 (uses same case of dual ucan with a dedicated cap)
