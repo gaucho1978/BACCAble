@@ -1,5 +1,10 @@
 ## BACCAble 
 
+News: new telegram group for BACCABLE: https://t.me/baccable 
+Please read this page and watch all youtube playlist videos before ask.
+Plase continue to donate to allow me to do not loose interest on this project: https://www.paypal.me/tr3ma1
+
+
 ## Scope
 This project uses the famous CANABLE (the cheapest can bus device on the market) in order to:
 - sniff on the can bus (useful for debug and exploit purposes)
