@@ -571,7 +571,7 @@ int main(void){
 									//CDCM warning lamp is on byte 2 bit5
 									break;
 								case 0x00000226:
-									#if defined(DISABLE_START_STOP)
+									#if (defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP))
 										if(rx_msg_header.DLC>=2){
 											//fill a variable with start&stop Status
 											if(rx_msg_data[2]==0xF1) startAndstopCarStatus=1; //start&stop enabled in car (fefault in giulias)
@@ -721,19 +721,20 @@ int main(void){
 										if(cruiseControlDisabled){ //if we are allowed to use the buttons of the cruise control
 											if (currentRpmSpeed>400){ //if motor is on
 												if(currentGear==0){ //gear is neutral
-													if(rx_msg_data[0]==0x08 && (wheelPressedButtonID==0x10 || wheelPressedButtonID==0x08)){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
+													if((rx_msg_data[0]==0x08) && ((wheelPressedButtonID==0x10) || (wheelPressedButtonID==0x08))){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
 														lastPressedSpeedUpWheelButtonDuration++;
-														if(lastPressedSpeedUpWheelButtonDuration>3000){ //around 30 seconds
+														if(lastPressedSpeedUpWheelButtonDuration>1267){ //around 30 seconds
 															//avoid to return here
 															wheelPressedButtonID=0xF8; //invent a new status to differentiate it from 0x08 used in baccable menu few lines of code up here
+															lastPressedSpeedUpWheelButtonDuration=0; //unuseful here since it is done when button is released. just to be superstitious :-D.
 															immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status
 															floodTheBus=0; //ensure to reset this even if probably it is not needed
 															if(saveOnflash((uint16_t)immobilizerEnabled)>253){ //if we get error while permanently storeing the parameter on flash
 																immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status to the original status and avoid to report the user anything
-																onboardLed_red_on();
+																onboardLed_red_on(); //a problem occurred
 															}else{
-																onboardLed_blue_on(); //everything goes fine
-																if (immobilizerEnabled==1){ //if immo enabled
+																onboardLed_blue_on(); //everything goes fine. change saved on flash
+																if(immobilizerEnabled){ //if immo enabled
 																	executeDashboardBlinks=6; //blinks the dashboard brightness 3 times
 																}else{
 																	executeDashboardBlinks=12; //blinks the dashboard brightness 6 times
@@ -754,7 +755,7 @@ int main(void){
 
 									#endif
 
-									// We commented this section since we are not using it now. Uncomment to use it.
+									// We commented this section since we are not using it now. Uncomment to use it (this is old, revise it if required).
 									// The cycle duration could increase and make blink the red led onboard.
 									// The action of the button's sequence is left empty for you to add it.
 
@@ -1050,8 +1051,8 @@ uint8_t saveOnflash(uint16_t param1){ //store params permanently on flash
 
 uint16_t readFromFlash(uint8_t paramId){
 	switch(paramId){
-	case 1:
-		return !(!( *((uint16_t*)LAST_PAGE_ADDRESS) )); //double negation to coerce to a boolean even when it is FFFF
+	case 1: //immobilizer enable status (1=enabled 0=disabled)
+		return !(!( *((uint16_t*)LAST_PAGE_ADDRESS) )); //double negation to coerce to a boolean even when it is FFFF. default FFFF will mean immo enabled
 		break;
 	default:
 		return 0;
