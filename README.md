@@ -7,9 +7,7 @@ Plase continue to donate to allow me to do not loose interest on this project: h
 Now you can donate in Crypto too: 
 Bitcoin: bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth
 
-<img src="[https://media.geeksforgeeks.org/wp-content/uploads/20230501155143/Git-Tutorial.webp](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg)" alt="Bitcoin" width="300" height="300">
-
-
+<img src="https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg" alt="Immagine di esempio" width="300" height="400">
 
 ## DISCLAIMER
 
