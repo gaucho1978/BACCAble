@@ -77,7 +77,7 @@ Note: This projet was tested on alfaromeo Giulia. Each one of you, if dealing wi
 
 The following video shows the improvement from the old car start&stop to the new one:
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://youtu.be/mwHTq859ULE)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/mwHTq859ULE/0.jpg)](https://youtu.be/mwHTq859ULE)
 
 
 ## Immobilizer functionality
@@ -103,7 +103,7 @@ Note6: when you plug the power to baccable, if immobilizer is enabled,  the blue
 
 The following video shows the improvement to immobilizer functionality (second half of the video):
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://youtu.be/mwHTq859ULE)
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/mwHTq859ULE/0.jpg)](https://youtu.be/mwHTq859ULE)
 
 
 ## Leds Strip controller
