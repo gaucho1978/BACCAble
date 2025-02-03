@@ -3,7 +3,25 @@
 News: new telegram group for BACCABLE: https://t.me/baccable 
 Please read this page and watch all youtube playlist videos before ask.
 Plase continue to donate to allow me to do not loose interest on this project: https://www.paypal.me/tr3ma1
+Now you can donate in Crypto too: 
+Bitcoin: bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth
 
+![bitcoin](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg)
+
+
+#DISCLAIMER
+BACCABLE is a project developed exclusively for educational and research purposes. The use of this tool on vehicles operating on public roads or in any context that may cause harm to people, property, or violate applicable regulations is strictly prohibited.
+
+The author of this project assumes no responsibility for any damages, malfunctions, or consequences resulting from the use of BACCABLE. The end user bears full civil, criminal, and legal responsibility for its use.
+
+It is strongly recommended not to use this project in real-world vehicle applications.
+
+#DISCLAIMER (ITALIAN VERSION)
+BACCABLE è un progetto sviluppato esclusivamente a scopo didattico e di studio. È severamente vietato utilizzare questo strumento su veicoli in circolazione su strade pubbliche o in qualsiasi contesto che possa causare danni a persone, cose o violare normative vigenti.
+
+L'autore del progetto non si assume alcuna responsabilità per eventuali danni, malfunzionamenti o conseguenze derivanti dall'uso di BACCABLE. L'utilizzo di questo strumento è interamente a rischio dell'utente finale, che si assume ogni responsabilità civile, penale e legale.
+
+Si raccomanda di non impiegare questo progetto in applicazioni reali su veicoli.
 
 ## Scope
 This project uses the famous CANABLE (the cheapest can bus device on the market) in order to:
@@ -14,7 +32,7 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - act as Immobilizer, by injecting can bus messages when required.
 - show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
 - enable and disable ESC and TC with left stalk button press
-- add a menu to dashboard in order to show additional parameters like dpf occlusion percentage (under development) 
+- add a menu to dashboard in order to show additional parameters like dpf occlusion percentage, oil pressure and performance statistics 
 
 BACCABLE overview (click on the following image to see the video) (note: video not updated. do not includes all the functionalities added to the device last months)
 
@@ -48,11 +66,17 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - Subfolder hardware/system interconnection contains interconnection diagram to connect required components
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 ## Start&Stop car functionality Disabler
+The new  functionality "car start&stop disabler" (#define SMART_DISABLE_START_STOP) is implemented by simply sending the expected message on C1 can bus. The function is firedonly once, after at least 30 seconds from the switch on and only if engine is on and only if start&stop is active.
+
 The old functionality "car start&stop disabler" (#define DISABLE_START_STOP) is implemented by simply shorting a gpio to ground trough a resistor (if the motor is rotating), in order to simulate Start&Stop button press on the car panel, with a delay after the device was switched on. I avoid to do anything if a specific can bus message tells me that the the Start&Stop was still manually disabled by the pilot. The used resistor is suitable for my car. I left this function just in case of problems withe new smart developed function (see next point) 
+
 Note: This projet was tested on alfaromeo Giulia. Each one of you, if dealing with other car, different than Alfaromeo Giulia/Stelvio,  should:
 - perform some checks on the panel with a multimeter, in order to find the proper resistor value for the start&stop button.
 
-The new  functionality "car start&stop disabler" (#define SMART_DISABLE_START_STOP) is implemented by simply sending the expected message on C1 can bus. The function is fired after at least 30 seconds from the switch on and only if engine is on.
+The following video shows the improvement from the old car start&stop to the new one:
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://youtu.be/mwHTq859ULE)
+
 
 ## Immobilizer functionality
 The functionality IMMOBILIZER performs the following:
@@ -71,7 +95,14 @@ Note3: As alterinative for immobilizer, you can use the DCDC connected to a 12V 
 
 Note4: Once we start to send the rfhub reset message, neither the injition button will work. the car will appear as dead..
 
-Note5: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for  around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 3 times. If immo becomes activates, the dashboard will blink 6 times. The change is persistent after a power loss.
+Note5: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for  around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 5-6 times. If immo becomes activates, the dashboard will blink 3 times. The change is persistent after a power loss.
+
+Note6: when you plug the power to baccable, if immobilizer is enabled,  the blue led on canable (on fysect ucan leds are both red and we shall talk about the led far from usb port ) will blink twice and the dashboard will blink once. Thisis useful to understand how the immobilizer is set.
+
+The following video shows the improvement to immobilizer functionality (second half of the video):
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://youtu.be/mwHTq859ULE)
+
 
 ## Leds Strip controller
 The leds strip is lighted accordingly to the movement of the accelerator pedal and the gear selection. 
@@ -103,9 +134,22 @@ The following video shows tests performed on this functionality on the road:
  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
 
 ## DASHBOARD MENU functionality
-Adds a menu to the dashboard allowing the user to show additional parameters. the menu pages in the first released version was changed   with buttons on the right side of the steering wheel (volume buttons). 
-Now I'm changing approach. While in the video you see using volume buttons, now in the code I use cruise control button to move in the menu. I leave the video just for reference, waiting the completion of the new developement.
-At the end 2 baccable will be connected between them: the slave canable connected to BH can bus (in example on OBD port, pins 3 and 11) and  another canable to C1 can bus to act as the master. The master canable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE, while the slave shall be set with #define SHOW_PARAMS_ON_DASHBOARD. The slave receives data from master canable and display it on dashboard, while the master gets the parameters on C1 bus and sends them to slave canable. This is currently under development. Up to now the master sends via usb and the slave receives via usb, buth they both work as device and not host, therefore they can't communicate between them. I'm working on the communications.
+Adds a menu to the dashboard allowing the user to show additional parameters. 
+
+I made a first test using left wheels side buttons (radio volume buttons) (decoded on BH can bus) but now I changed it, and I'm using buttons on the left side of the wheel (cruise control buttons) (decoded on C1 can bus).
+This is the reason why in the following video you will see using volume buttons
+I leave the following video just for reference, to track the history.
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-_93Q_ZlYxc/0.jpg)](https://www.youtube.com/watch?v=-_93Q_ZlYxc)
+
+Now in the code I use cruise control button to move in the menu. 
+Two baccable shall be connected between them: the slave baccable shall be connected to BH can bus (in example on OBD port, pins 3 and 11) and  the master baccable shall be connected to C1 can bus. The master baccable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE, while the slave shall be set with #define SHOW_PARAMS_ON_DASHBOARD. The slave receives data from master baccable and displays messages on dashboard, while the master gets the parameters on C1 bus and sends them to slave baccable. Unfortunately st32f072 can not work as usb host but only as usb devce, therefore the communication between baccable is implemented with half duplex serial line (uart) on a single wire. it works really fine.
+
+This diagram shows the required connections for this function to work:
+
+![DashboardFunctionInterconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
+
+
+
 The new commands implemented on the master canable are the following:
 by default the menu on dashboard is disabled
 1. To enable it you shall be with engine on and cruise control disabled. Press RES button on the wheel for around 2 seconds and the menu will popup the the baccable version (currently under deveolpement therefore you just receive a string on the usb opened with a terminal window.
@@ -114,11 +158,7 @@ by default the menu on dashboard is disabled
 4. parameters are updated each 500 msec
 5. to disable the menu just disable cruise control and press RES button for at least 2 seconds.
 
-To test the slave baccable, currently under development, for now you shall connect to usb open a terminal window and send a string followed by carriage return character like "ciao" and you will see it printed on the dashboard.
 
-The following old video shows the first implementation that I uploaded on github to test the population of the dashboard string and to detect wheel button press. This is not applicable to the current repository.
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-_93Q_ZlYxc/0.jpg)](https://www.youtube.com/watch?v=-_93Q_ZlYxc)
 
 
 ## Usage Instructions
@@ -131,10 +171,10 @@ You should perform some preliminary settings inside firmware:
 - In vumeter.c you shall set the number of leds in your leds strip, by modifing the following line: #define MAX_LED 46
 - If you want to use SHIFT WARNING INDICATOR functionality, you shall uncomment #define SHIFT_INDICATOR_ENABLED in main.h and set the define SHIFT_THRESHOLD to the rpm speed at which the indicator will start to be shown (2000rpm by default) (works only in race mode, and was tested only connected to C1 can bus)
 - If  you want the capability to enable and disable TC with left stalk button, you shall uncomment #define ESC_TC_CUSTOMIZATOR_ENABLED in main.h and connect the baccable to C2 can bus (pin 12 and 13 of the OBD port)
-- If you want to add menu on the dashboard to display additional parameters, you shall uncomment #define SHOW_PARAMS_ON_DASHBOARD in main.h, for the slave canable connected to BH can bus (in example on OBD port, pins 3 and 11) and connect another canable to C1 can bus to act as the master. The master canable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE. The slave receives data from master canable and display it on dashboard, while the master gets the parameters on C1 bus and sends them to slave canable. This is currently under development. Up to now the master sends via usb and the slave receives via usb, buth they both work as device and not host, therefore they can't communicate between them. I'm working on the communications.
+- If you want to add menu on the dashboard to display additional parameters, you shall uncomment #define SHOW_PARAMS_ON_DASHBOARD in main.h, for the slave canable connected to BH can bus (in example on OBD port, pins 3 and 11) and connect another canable to C1 can bus to act as the master. The master canable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE. The slave receives data from master canable and display it on dashboard, while the master gets the parameters on C1 bus and sends them to slave canable. 
 - I found that fysect ucan board has leds connecetd in a different manner so that a inversion on the control of the internal transistors are required. So if you use fysect ucan board don't forget to uncomment #define UCAN_BOARD_LED_INVERSION
 
-Note: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for at around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 3 times. If immo becomes activates, the dashboard will blink 6 times. change is permanent after a power loss.
+Note: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for at around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 5-6 times. If immo becomes activates, the dashboard will blink 3 times. change is permanent after a power loss.
 
 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/IMG_3511.jpeg)
@@ -149,7 +189,7 @@ Note: i downloaded previous version of the programmer (v.2.15.0) since last avai
 
 Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
-- use stm32CubeProgrammer to flash the device
+- use stm32CubeProgrammer to flash the device using the file ...firmware\ledsStripController\Release\ledsStripController.elf
 
 ## The hardware
 click on the following image to see the full hardware and interconnections video:
@@ -178,13 +218,14 @@ Note: use recommended canable links cause some of them uses different st chip an
 ## The interconnections
 Since I found how to disable Start&Stop by only sending can message, the new required connections are just: CAN bus from canable to car (termination board on canable) and power supply from usb hub 5V usb to the usb port of the canable.
 If you enable the function to control a led strip, the usb data shall be connected to led strip, as defined in the old schematic here reported for reference.
+If you use the function to show params on dashboard, you have to add the wire between the 2 boards (watch the diagram in the DASHBOARD MENU functionality  section of this page.
 
-Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the future functionality to add parameters on the dashboard). 
+Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the  functionality to add parameters on the dashboard). 
 This is the old original wiring diagram:
 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 
-Note: if you use immobilizer function, you shall remove the voltage regulator that I use to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket. As alterinative for immobilizer,  use the DCDC connected to a 12V of the car always available, to ensure roper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
+Note: if you use immobilizer function, it is suggested to remove the voltage regulator that I used to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket. As alterinative for immobilizer,  use the DCDC connected to a 12V of the car always available, to ensure proper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
 
 
 ## The Box

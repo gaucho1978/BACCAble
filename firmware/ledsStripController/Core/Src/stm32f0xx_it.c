@@ -5,6 +5,7 @@
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 extern PCD_HandleTypeDef hpcd_USB_FS;
+extern UART_HandleTypeDef huart2;
 
 /******************************************************************************/
 /*           Cortex-M0 Processor Interruption and Exception Handlers          */
@@ -104,4 +105,9 @@ void USB_IRQHandler(void)
 
   /* USER CODE END USB_IRQn 1 */
 }
+
+void USART2_IRQHandler(void) {
+    HAL_UART_IRQHandler(&huart2);
+}
+
 

@@ -32,6 +32,8 @@ USB_DEVICE/App/usbd_desc.o: ../USB_DEVICE/App/usbd_desc.c \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_pwr_ex.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim.h \
  ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim_ex.h \
+ ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h \
+ ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart_ex.h \
  ../Core/Inc/onboardLed.h ../Core/Inc/can.h ../Core/Inc/slcan.h \
  ../Core/Inc/error.h ../Core/Inc/printf.h ../Core/Inc/main.h \
  ../USB_DEVICE/App/../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
@@ -74,6 +76,8 @@ USB_DEVICE/App/usbd_desc.o: ../USB_DEVICE/App/usbd_desc.c \
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_pwr_ex.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim.h:
 ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_tim_ex.h:
+../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h:
+../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart_ex.h:
 ../Core/Inc/onboardLed.h:
 ../Core/Inc/can.h:
 ../Core/Inc/slcan.h:

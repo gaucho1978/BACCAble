@@ -176,7 +176,7 @@ void can_set_bitrate(enum can_bitrate bitrate)
             break;
     }
 
-    onboardLed_red_on();
+    onboardLed_blue_on();
 }
 
 
