@@ -3,20 +3,22 @@
 News: new telegram group for BACCABLE: https://t.me/baccable 
 Please read this page and watch all youtube playlist videos before ask.
 Plase continue to donate to allow me to do not loose interest on this project: https://www.paypal.me/tr3ma1
+
 Now you can donate in Crypto too: 
 Bitcoin: bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth
 
 ![bitcoin](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg)
 
 
-#DISCLAIMER
+## DISCLAIMER
+
 BACCABLE is a project developed exclusively for educational and research purposes. The use of this tool on vehicles operating on public roads or in any context that may cause harm to people, property, or violate applicable regulations is strictly prohibited.
 
 The author of this project assumes no responsibility for any damages, malfunctions, or consequences resulting from the use of BACCABLE. The end user bears full civil, criminal, and legal responsibility for its use.
 
 It is strongly recommended not to use this project in real-world vehicle applications.
 
-#DISCLAIMER (ITALIAN VERSION)
+## DISCLAIMER (ITALIAN VERSION)
 BACCABLE è un progetto sviluppato esclusivamente a scopo didattico e di studio. È severamente vietato utilizzare questo strumento su veicoli in circolazione su strade pubbliche o in qualsiasi contesto che possa causare danni a persone, cose o violare normative vigenti.
 
 L'autore del progetto non si assume alcuna responsabilità per eventuali danni, malfunzionamenti o conseguenze derivanti dall'uso di BACCABLE. L'utilizzo di questo strumento è interamente a rischio dell'utente finale, che si assume ogni responsabilità civile, penale e legale.
