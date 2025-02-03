@@ -4,7 +4,8 @@ News: new telegram group for BACCABLE: https://t.me/baccable
 Please read this page and watch all youtube playlist videos before ask.
 Plase continue to donate to allow me to do not loose interest on this project: https://www.paypal.me/tr3ma1
 
-Now you can donate in Crypto too: 
+Now you can donate in Crypto too.
+
 Bitcoin: bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth
 
 <img src="https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg" alt="Immagine di esempio" width="300" height="400">
