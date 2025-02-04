@@ -151,7 +151,8 @@ This diagram shows the required connections for this function to work:
 ![DashboardFunctionInterconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
 
 this video shows the new functionality:
-  https://youtu.be/q5ryux2daeE?si=QtWNP4ClmFG99Ner
+  
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/QtWNP4ClmFG99Ner/0.jpg)](https://youtu.be/q5ryux2daeE?si=QtWNP4ClmFG99Ner)
 
 The new commands implemented on the master canable are the following:
 by default the menu on dashboard is disabled
