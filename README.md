@@ -138,8 +138,8 @@ The following video shows tests performed on this functionality on the road:
 ## DASHBOARD MENU functionality
 Adds a menu to the dashboard allowing the user to show additional parameters. 
 
-I made a first test using left wheels side buttons (radio volume buttons) (decoded on BH can bus) but now I changed it, and I'm using buttons on the left side of the wheel (cruise control buttons) (decoded on C1 can bus).
-This is the reason why in the following video you will see using volume buttons
+I made a first test using right wheel side buttons (radio volume buttons) (decoded on BH can bus) but then I changed it, and now I'm using buttons on the left side of the wheel (cruise control buttons) (decoded on C1 can bus).
+This is the reason why in the following old video you will see using volume buttons
 I leave the following video just for reference, to track the history.
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-_93Q_ZlYxc/0.jpg)](https://www.youtube.com/watch?v=-_93Q_ZlYxc)
 
@@ -150,7 +150,9 @@ This diagram shows the required connections for this function to work:
 
 ![DashboardFunctionInterconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
 
-
+this video shows the new functionality:
+  
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/q5ryux2daeE/0.jpg)](https://youtu.be/q5ryux2daeE?si=QtWNP4ClmFG99Ner)
 
 The new commands implemented on the master canable are the following:
 by default the menu on dashboard is disabled
