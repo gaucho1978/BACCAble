@@ -537,15 +537,15 @@ int main(void){
 
 								if (rx_msg_header.ExtId==0x18DABAF1){ //if route request and dashboard menu not shown to avoid conflicts
 									if (rx_msg_header.DLC>=8){
-										if (rx_msg_data[2]==0x00) { //if standard id msg route request
+										if (rx_msg_data[3]==0x00) { //if standard id msg route request
 											routeStdIdMsg=1;
 										}else{ //if ext id msg route request
 											routeStdIdMsg=0;
 										}
-										routeMsgId=	((uint32_t)rx_msg_data[2] << 24) |  // MSB
-								                 	((uint32_t)rx_msg_data[3] << 16) |
-													((uint32_t)rx_msg_data[4] << 8)  |
-													((uint32_t)rx_msg_data[5]);       	 // LSB
+										routeMsgId=	((uint32_t)rx_msg_data[4] << 24) |  // MSB
+								                 	((uint32_t)rx_msg_data[5] << 16) |
+													((uint32_t)rx_msg_data[6] << 8)  |
+													((uint32_t)rx_msg_data[7]);       	 // LSB
 										onboardLed_blue_on();
 									}
 								}
