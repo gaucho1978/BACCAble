@@ -181,6 +181,14 @@ const	uds_param_element uds_params_array[60]={
 	uint8_t requestToSendOneFrame=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
 #endif
 
+#if defined(ROUTE_MSG)
+	uint8_t routeStdIdMsg=0xff;
+	uint32_t routeMsgId=0;
+
+	CAN_TxHeaderTypeDef routeMsgHeader={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DAF1BA, .DLC=8};
+	uint8_t routeMsgData[8]= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+#endif
 
 	uint32_t debugTimer0;
 
@@ -525,8 +533,62 @@ int main(void){
 								}
 							#endif
 
+							#if defined(ROUTE_MSG)
+
+								if (rx_msg_header.ExtId==0x18DABAF1){ //if route request and dashboard menu not shown to avoid conflicts
+									if (rx_msg_header.DLC>=8){
+										if (rx_msg_data[2]==0x00) { //if standard id msg route request
+											routeStdIdMsg=1;
+										}else{ //if ext id msg route request
+											routeStdIdMsg=0;
+										}
+										routeMsgId=	((uint32_t)rx_msg_data[2] << 24) |  // MSB
+								                 	((uint32_t)rx_msg_data[3] << 16) |
+													((uint32_t)rx_msg_data[4] << 8)  |
+													((uint32_t)rx_msg_data[5]);       	 // LSB
+										onboardLed_blue_on();
+									}
+								}
+
+								#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+									if(baccableDashboardMenuVisible) routeStdIdMsg=0xff; //disables the route request, to avoid conflicts with show params functionality
+								#endif
+
+
+								if(routeStdIdMsg==0){ //if we have to do it (ext id route request)
+									if(rx_msg_header.ExtId==routeMsgId){ //received msg to route
+										routeStdIdMsg=0xFF; //set this to disable the request. only one message is routed to avoid bus flood
+										//copy data
+										uint8_t sizeToCopy=rx_msg_header.DLC;
+										if(sizeToCopy>8) sizeToCopy=8;
+										memcpy(routeMsgData,rx_msg_data,sizeToCopy);
+										if(sizeToCopy<8) memset(routeMsgData,sizeToCopy,8-sizeToCopy);
+
+										//send it
+										can_tx(&routeMsgHeader, routeMsgData);
+										onboardLed_blue_on();
+									}
+								}
+							#endif
+
 							break;
 						case CAN_ID_STD: //if standard ID
+							#if defined(ROUTE_MSG)
+								if(routeStdIdMsg==1){ //if we have to do it (std msg id route request
+									if(rx_msg_header.StdId==routeMsgId){ //received msg to route
+										routeStdIdMsg=0xFF; //set this to disable the request. only one message is routed to avoid bus flood
+										//copy data
+										uint8_t sizeToCopy=rx_msg_header.DLC;
+										if(sizeToCopy>8) sizeToCopy=8;
+										memcpy(routeMsgData,rx_msg_data,sizeToCopy);
+										if(sizeToCopy<8) memset(routeMsgData,sizeToCopy,8-sizeToCopy);
+
+										//send it
+										can_tx(&routeMsgHeader, routeMsgData);
+										onboardLed_blue_on();
+									}
+								}
+							#endif
 
 							switch(rx_msg_header.StdId){ //messages in this switch is on C can bus, only when on different bus, the comments explicitly tells if it is on another can bus
 
