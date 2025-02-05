@@ -249,7 +249,7 @@ int main(void){
 	//	MX_USB_DEVICE_Init();
 	//#endif
 
-	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) ||defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP))  //if required, let's automatically open the can bus
+	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) ||defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(ROUTE_MSG))  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
 		can_enable(); //enable can port
@@ -504,6 +504,7 @@ int main(void){
 									}
 								} //end of immobilizer section
 							#endif
+
 							#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 								if ((rx_msg_header.ExtId==uds_params_array[dashboardPageIndex].replyId) && baccableDashboardMenuVisible){ //if we received udf message with current selected parameter, let's aquire it
 
@@ -569,7 +570,7 @@ int main(void){
 										onboardLed_blue_on();
 									}
 								}
-							#endif
+							#endif //end define ROUTE_MSG
 
 							break;
 						case CAN_ID_STD: //if standard ID

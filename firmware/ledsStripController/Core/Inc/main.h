@@ -26,10 +26,11 @@
 		#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //this works only on C1 can bus (OBD port pins 6 and 14) //uncomment this if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
 
 		//#define ROUTE_MSG //this define performs the following:
-							// upon UDS request with message id 0x18DABAF1, with uds command 082201xxyyyyyyyy,
-							// it will route specified native message to the sender.
-							// it is done just one time to avoid bus flood
+							// upon receive of UDS request with message id 0x18DABAF1 having message data 072201xxyyyyyyyy,
+							// Baccable will route requested native message to the sender, as soon as it will be received by Baccable.
+							// It is done just one time to avoid bus flood
 							// xx is 0x00 for stdId, 0x01 for Ext Id. yyyyyyyy is the requested msg id right aligned.
+							//it will by default open a connection at 500kbps (for C1 or C2 bus)
 
 		//#define ESC_TC_CUSTOMIZATOR_ENABLED //this works only on C2 can bus (obd port pin 12 and 13) //--// uncomment this line if you want to be able to enable/disable ESC and Traction control (pressing LANE button (left stak) for 2 seconds it inverts current status of ESC and TC features, so if they are enabled, they will be disabled and viceversa)
 		//#define DYNO_MODE
@@ -49,22 +50,21 @@
 		// loop, the loop duration check)
 
 		//note: with the following we avoid some combinations of defines, but not all combinations are considered. some of them to avoid are up to you.
-		#if (defined(ACT_AS_CANABLE) &&									(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD) ))
+		#if (defined(ACT_AS_CANABLE) &&									(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(ROUTE_MSG) ))
 			#error "invalid combination of defines. ACT_AS_CANABLE can not be enabled because other fuctions are enabled"
 		#endif
 
-		#if (defined(SHOW_PARAMS_ON_DASHBOARD) &&						(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) ||defined(ACT_AS_CANABLE) ))  //if required, let's automatically open the can bus
+		#if (defined(SHOW_PARAMS_ON_DASHBOARD) &&						(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) ||defined(ACT_AS_CANABLE) || defined(ROUTE_MSG) ))  //if required, let's automatically open the can bus
 			#error "invalid combination of defines. Disable SHOW_PARAMS_ON_DASHBOARD (because it works on BH can bus) if you want to use other functionalities (that works on C1/C2 can bus)"
 		#endif
 
 		#if ((defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE)) &&	(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ACT_AS_CANABLE) || defined(SHOW_PARAMS_ON_DASHBOARD) ))
 			#error "invalid combination of defines. If you want ESC_TC_CUSTOMIZATOR_ENABLED or DYNO, disable the other functions"
 		#endif
+
 		#if (defined(SMART_DISABLE_START_STOP) && defined(DISABLE_START_STOP))
 			#error "invalid combination of defines. Choose SMART_DISABLE_START_STOP or DISABLE_START_STOP."
 		#endif
-
-
 
 
 		#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
