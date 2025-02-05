@@ -185,7 +185,7 @@ const	uds_param_element uds_params_array[60]={
 	uint8_t routeStdIdMsg=0xff;
 	uint32_t routeMsgId=0;
 
-	CAN_TxHeaderTypeDef routeMsgHeader={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DAF1BA, .DLC=8};
+	CAN_TxHeaderTypeDef routeMsgHeader={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAF1BA, .DLC=8};
 	uint8_t routeMsgData[8]= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 #endif
