@@ -26,11 +26,19 @@
 		#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //this works only on C1 can bus (OBD port pins 6 and 14) //uncomment this if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
 
 		//#define ROUTE_MSG //this define performs the following:
-							// upon receive of UDS request with message id 0x18DABAF1 having message data 072201xxyyyyyyyy,
-							// Baccable will route requested native message to the sender, as soon as it will be received by Baccable.
-							// It is done just one time to avoid bus flood
-							// xx is 0x00 for stdId, 0x01 for Ext Id. yyyyyyyy is the requested msg id right aligned.
-							//it will by default open a connection at 500kbps (for C1 or C2 bus)
+							// upon receive of UDS request with message id 0x18DABAF1 having message data 0622xzyyyyyyyy,
+							// Baccable will understand the following:
+							// 0x18DABAF1 identifies that the message is a Route request (request to route a native message to the diagnostic)
+							//          The route is done just one time (one packet) to avoid bus flood, and it routes only 5 bytes of the requested message
+							// x (first nibble of third byte of the can message) can be 0 (std Id) or 1 (Ext Id).
+							// y (second nibble of third byte of the can message) is the offset of the message to route. the number of bytes routed will be only 5. offset will set the part of the message to route
+							// yyyyyyyy is the requested msg id right aligned.
+							// If you uncomment this functionality, BACCABLE will by default open a connection at 500kbps (suitable for C1 and C2 bus)
+							//Example1: diagnostic sends msgID 0x18DABAF1 with data 062201000004B2
+							//			BACCABLE replies msgID 0x18DAF1BA with data 076201AABBCCDDEE  where AA is the second byte of the original 0x4b2 message
+							//Example2: diagnostic sends msgID 0x18DABAF1 with data 062210E10204B2
+							//			BACCABLE replies msgID 0x18DAF1BA with data 076210AABBCCDDEE  where AA is the first byte of the original 0xE10204B2 message
+
 
 		//#define ESC_TC_CUSTOMIZATOR_ENABLED //this works only on C2 can bus (obd port pin 12 and 13) //--// uncomment this line if you want to be able to enable/disable ESC and Traction control (pressing LANE button (left stak) for 2 seconds it inverts current status of ESC and TC features, so if they are enabled, they will be disabled and viceversa)
 		//#define DYNO_MODE

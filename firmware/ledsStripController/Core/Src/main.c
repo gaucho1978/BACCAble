@@ -183,10 +183,11 @@ const	uds_param_element uds_params_array[60]={
 
 #if defined(ROUTE_MSG)
 	uint8_t routeStdIdMsg=0xff;
+	uint8_t routeOffset=0;
 	uint32_t routeMsgId=0;
 
 	CAN_TxHeaderTypeDef routeMsgHeader={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DAF1BA, .DLC=8};
-	uint8_t routeMsgData[8]= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	uint8_t routeMsgData[8]= {0x07, 0x62, 0x01, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
 
 #endif
 
@@ -537,16 +538,18 @@ int main(void){
 							#if defined(ROUTE_MSG)
 
 								if (rx_msg_header.ExtId==0x18DABAF1){ //if route request and dashboard menu not shown to avoid conflicts
-									if (rx_msg_header.DLC>=8){
-										if (rx_msg_data[3]==0x00) { //if standard id msg route request
-											routeStdIdMsg=1;
-										}else{ //if ext id msg route request
-											routeStdIdMsg=0;
-										}
-										routeMsgId=	((uint32_t)rx_msg_data[4] << 24) |  // MSB
-								                 	((uint32_t)rx_msg_data[5] << 16) |
-													((uint32_t)rx_msg_data[6] << 8)  |
-													((uint32_t)rx_msg_data[7]);       	 // LSB
+									if (rx_msg_header.DLC>=7){
+										routeStdIdMsg=!(rx_msg_data[2]>>4); //standard or extended msgID route request
+										routeOffset=(rx_msg_data[2] & 0x0F); //offset from which start to copy
+										routeMsgData[2]=rx_msg_data[2]; //copy in the response
+
+										routeMsgId=	((uint32_t)rx_msg_data[3] << 24) |  // MSB
+								                 	((uint32_t)rx_msg_data[4] << 16) |
+													((uint32_t)rx_msg_data[5] << 8)  |
+													((uint32_t)rx_msg_data[6]);       	 // LSB
+
+
+
 										onboardLed_blue_on();
 									}
 								}
@@ -559,15 +562,17 @@ int main(void){
 								if(routeStdIdMsg==0){ //if we have to do it (ext id route request)
 									if(rx_msg_header.ExtId==routeMsgId){ //received msg to route
 										routeStdIdMsg=0xFF; //set this to disable the request. only one message is routed to avoid bus flood
-										//copy data
-										uint8_t sizeToCopy=rx_msg_header.DLC;
-										if(sizeToCopy>8) sizeToCopy=8;
-										memcpy(routeMsgData,rx_msg_data,sizeToCopy);
-										if(sizeToCopy<8) memset(routeMsgData,sizeToCopy,8-sizeToCopy);
+										if(routeOffset<rx_msg_header.DLC){ //send only if offset is correct
+											uint8_t sizeToCopy=5; //
+											if((rx_msg_header.DLC - routeOffset )<sizeToCopy) sizeToCopy=rx_msg_header.DLC - routeOffset;
+											memcpy(&routeMsgData[3],&rx_msg_data[routeOffset],sizeToCopy);
+											if(sizeToCopy<5) memset(&routeMsgData[3+sizeToCopy],0x00, 5-sizeToCopy);
 
-										//send it
-										can_tx(&routeMsgHeader, routeMsgData);
-										onboardLed_blue_on();
+											//send it
+											can_tx(&routeMsgHeader, routeMsgData);
+											onboardLed_blue_on();
+										}
+
 									}
 								}
 							#endif //end define ROUTE_MSG
@@ -576,17 +581,20 @@ int main(void){
 						case CAN_ID_STD: //if standard ID
 							#if defined(ROUTE_MSG)
 								if(routeStdIdMsg==1){ //if we have to do it (std msg id route request
+
+
 									if(rx_msg_header.StdId==routeMsgId){ //received msg to route
 										routeStdIdMsg=0xFF; //set this to disable the request. only one message is routed to avoid bus flood
-										//copy data
-										uint8_t sizeToCopy=rx_msg_header.DLC;
-										if(sizeToCopy>8) sizeToCopy=8;
-										memcpy(routeMsgData,rx_msg_data,sizeToCopy);
-										if(sizeToCopy<8) memset(routeMsgData,sizeToCopy,8-sizeToCopy);
+										if(routeOffset<rx_msg_header.DLC){ //send only if offset is correct
+											uint8_t sizeToCopy=5; //
+											if((rx_msg_header.DLC - routeOffset )<sizeToCopy) sizeToCopy=rx_msg_header.DLC - routeOffset;
+											memcpy(&routeMsgData[3],&rx_msg_data[routeOffset],sizeToCopy);
+											if(sizeToCopy<5) memset(&routeMsgData[3+sizeToCopy],0x00, 5-sizeToCopy);
 
-										//send it
-										can_tx(&routeMsgHeader, routeMsgData);
-										onboardLed_blue_on();
+											//send it
+											can_tx(&routeMsgHeader, routeMsgData);
+											onboardLed_blue_on();
+										}
 									}
 								}
 							#endif

@@ -35,6 +35,7 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
 - enable and disable ESC and TC with left stalk button press
 - add a menu to dashboard in order to show additional parameters like dpf occlusion percentage, oil pressure and performance statistics 
+- route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).  
 
 BACCABLE overview (click on the following image to see the video) (note: video not updated. do not includes all the functionalities added to the device last months)
 
@@ -162,10 +163,25 @@ by default the menu on dashboard is disabled
 4. parameters are updated each 500 msec
 5. to disable the menu just disable cruise control and press RES button for at least 2 seconds.
 
+## ROUTE Messages
 
+By uncommenting the #define ROUTE_MSG in main.h, you can route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).
+This functionality performs the following: 
+Upon receive of UDS request with message id 0x18DABAF1 having message data 0622xzyyyyyyyy,
+Baccable will understand the following:
+- 0x18DABAF1 identifies that the message is a Route request (request to route a native message to the diagnostic)
+- The route is done just one time (one packet) to avoid bus flood, and it routes only 5 bytes of the requested message
+- x (first nibble of third byte of the can message) can be 0 (std Id) or 1 (Ext Id).
+- y (second nibble of third byte of the can message) is the offset of the message to route. the number of bytes routed will be only 5. offset will set the part of the message to route
+- yyyyyyyy is the requested msg id right aligned.
+- If you uncomment this functionality, BACCABLE will by default open a connection at 500kbps (suitable for C1 and C2 bus)
 
+Example1:	diagnostic sends msgID 0x18DABAF1 with data 062201000004B2
+			BACCABLE replies msgID 0x18DAF1BA with data 076201AABBCCDDEE  where AA is the second byte of the original 0x4b2 message
+Example2: diagnostic sends msgID 0x18DABAF1 with data 062210E10204B2
+			BACCABLE replies msgID 0x18DAF1BA with data 076210AABBCCDDEE  where AA is the first byte of the original 0xE10204B2 message
 
-## Usage Instructions
+## BACCABLE Usage Instructions
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge). Generally speaing if you use other functions, the ACT_AS_CANABLE shall remain commented otherwise the device  don't properly work in some situations.
 - If you want to use the device as leds strip controller you shall uncomment the line " #define LED_STRIP_CONTROLLER_ENABLED " in main.h (this was tested only connected to C1 can bus)
