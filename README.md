@@ -177,8 +177,12 @@ Baccable will understand the following:
 - If you uncomment this functionality, BACCABLE will by default open a connection at 500kbps (suitable for C1 and C2 bus)
 
 Example1:	diagnostic sends msgID 0x18DABAF1 with data 062201000004B2
+
 			BACCABLE replies msgID 0x18DAF1BA with data 076201AABBCCDDEE  where AA is the second byte of the original 0x4b2 message
+- -
+
 Example2: diagnostic sends msgID 0x18DABAF1 with data 062210E10204B2
+
 			BACCABLE replies msgID 0x18DAF1BA with data 076210AABBCCDDEE  where AA is the first byte of the original 0xE10204B2 message
 
 ## BACCABLE Usage Instructions
