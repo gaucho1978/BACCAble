@@ -82,9 +82,12 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 
 #if(defined(DYNO_MODE))
 	uint8_t DynoModeEnabled=0;
-	uint8_t DYNO_msg_data[8]={0x05,0x2E,0x30,0x02,0x00,0x01,0x00,0x00}; //disable dyno now
-	CAN_TxHeaderTypeDef DYNO_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=8};
-	uint32_t ParkAssistButtonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when Park Assist button press was read last time
+	uint8_t DynoStateMachine=0xff; //State machine for dyno messages sequence. frm 00 to 03 = dyno message sequence is beeing transmitted. FF= inactive
+	uint16_t testerMsgSent=0;
+	uint8_t DYNO_msg_data[5][6]={{0x02,0x10,0x03,},{0x03,0x22,0x30,0x02,},{0x05,0x2E,0x30,0x02,0x00,0x01},{0x05,0x2E,0x30,0x02,0xFF,0x01}}; //index0=diagnostic session, index1=read status, index2=disable dyno, index3=enable dyno
+	CAN_TxHeaderTypeDef DYNO_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=6};
+
+	uint32_t DynoStateMachineLastUpdateTime=0; //stores time (in milliseconds from power on) when Park Assist button press was read last time
 	uint8_t ParkAssistButtonPressCount=0; //stores number of times this message field was received
 
 
@@ -476,6 +479,14 @@ int main(void){
 
 		#endif
 
+		#if defined(DYNO_MODE)
+			if(DynoStateMachine!=0xff){ //if state machine in progress
+				if(DynoStateMachineLastUpdateTime+4000< HAL_GetTick()){ //if older than 4 sec
+					DynoStateMachine=0xff; //timeout. stop any sequence
+				}
+			}
+		#endif
+
 		// If CAN message receive is pending, process the message
 		if(is_can_msg_pending(CAN_RX_FIFO0)){
 			// If message received from bus, parse the frame
@@ -577,6 +588,53 @@ int main(void){
 								}
 							#endif //end define ROUTE_MSG
 
+							#if defined(DYNO_MODE)
+								if (rx_msg_header.ExtId==0X18DAF128 && DynoStateMachine!=0xff ){ //if message from ABS ECU and Dyno state machine is in progress
+									if (DynoStateMachine==0 && rx_msg_header.DLC>=3){ //we received a reply to diagnostic session request msg
+										if(rx_msg_data[0]==0x06 && rx_msg_data[1]==0x50 && rx_msg_data[2]==0x03){ //if request was successful
+											DynoStateMachine++; //send dyno sts msg
+										}
+									}
+									if (DynoStateMachine==1 && rx_msg_header.DLC>=5){ //we received a reply to dyno status msg
+										if(rx_msg_data[0]==0x05 && rx_msg_data[1]==0x62 && rx_msg_data[2]==0x30 && rx_msg_data[3]==0x02){ //if request was successful
+											DynoStateMachine++; //send dyno disable
+											if(rx_msg_data[4]==0x00){ //if it is disabled, we shall enable it
+												DynoModeEnabled=0;//refresh current status
+												DynoStateMachine++;//send dyno enable
+											}else{ //it is enabled, we shall disable it
+												DynoModeEnabled=1;//refresh current status
+											}
+										}
+									}
+									if (DynoStateMachine==2 && rx_msg_header.DLC>=4){ //we received a reply to dyno disable msg
+										if(rx_msg_data[0]==0x03 && rx_msg_data[1]==0x6E && rx_msg_data[2]==0x30 && rx_msg_data[3]==0x02){ //if request was successful
+											DynoModeEnabled=0;//success change complete
+											DynoStateMachine=0xff; //disable state machine
+											onboardLed_blue_on();
+										}
+									}
+									if (DynoStateMachine==3 && rx_msg_header.DLC>=4){ //we received a reply to dyno enable msg
+										if(rx_msg_data[0]==0x03 && rx_msg_data[1]==0x6E && rx_msg_data[2]==0x30 && rx_msg_data[3]==0x02){ //if request was successful
+											DynoModeEnabled=1;//success change complete
+											DynoStateMachine=0xff; //disable state machine
+											onboardLed_blue_on();
+										}
+									}
+
+									if (DynoStateMachine!=0xff && rx_msg_header.DLC>=3){ //in any case
+										if( rx_msg_data[1]==0x7F ){ //if request refused, abort all
+											DynoStateMachine=0xff; //disable state machine
+											onboardLed_blue_on();
+										}
+									}
+									if(DynoStateMachine!=0xff){ //if we are running, send next message
+										DYNO_msg_header.DLC=DYNO_msg_data[DynoStateMachine][0]+1;
+										can_tx(&DYNO_msg_header, DYNO_msg_data[DynoStateMachine]); //add to the transmission queue
+										onboardLed_blue_on();
+										DynoStateMachineLastUpdateTime=HAL_GetTick();//save last time it was updated
+									}
+								}
+							#endif
 							break;
 						case CAN_ID_STD: //if standard ID
 							#if defined(ROUTE_MSG)
@@ -913,8 +971,8 @@ int main(void){
 											LANEbuttonPressCount++;
 											if (LANEbuttonPressCount>8 ){ //8 is more or less 2 seconds
 												ESCandTCinversion=!ESCandTCinversion; //toggle the status
-												#if defined(DYNO_MODE)
-													if(DynoModeEnabled) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
+												#if defined(DYNO_MODE) //if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
+													if(DynoModeEnabled || DynoStateMachine!=0xff) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
 												#endif
 												onboardLed_blue_on();
 												LANEbuttonPressCount=0; //reset the count
@@ -1042,27 +1100,23 @@ int main(void){
 									break;
 								case 0x000005B0:
 									#if defined(DYNO_MODE)
-										if(rx_msg_data[1] == 0x20){ // park assist button was pressed
-											ParkAssistButtonPressLastTimeSeen=HAL_GetTick();//save current time it was pressed
+										if((rx_msg_data[1] == 0x20) && ( DynoStateMachine == 0xff)){ // park assist button was pressed and there is no dyno Start sequence in progress
 											ParkAssistButtonPressCount++;
 											if (ParkAssistButtonPressCount>5){ // more or less 6 seconds
 												ParkAssistButtonPressCount=0; //reset the count
-												DynoModeEnabled=!DynoModeEnabled; //toggle the status
-												if(DynoModeEnabled){
-													DYNO_msg_data[4]=0xff; //on
-													#if defined(ESC_TC_CUSTOMIZATOR_ENABLED)
+												DynoStateMachine=0; //state machine
+												#if defined(ESC_TC_CUSTOMIZATOR_ENABLED)
 														ESCandTCinversion=0; //do not change ESC and TC if dynomode is requested
-													#endif
-												}else{
-													DYNO_msg_data[4]=0x00; //off
-												}
-												can_tx(&DYNO_msg_header, DYNO_msg_data); //transmit the packet
+												#endif
+												DYNO_msg_header.DLC=DYNO_msg_data[DynoStateMachine][0]+1; //length of DIAGNOSTIC SESSION msg
+												can_tx(&DYNO_msg_header, DYNO_msg_data[DynoStateMachine]); //add to the transmission queue
 												onboardLed_blue_on();
+												DynoStateMachineLastUpdateTime=HAL_GetTick();//save last time seen
+
+												//wait the feedback from ECU
 											}
 										}else{
-											if(ParkAssistButtonPressLastTimeSeen+1000<HAL_GetTick()){ // if ParkAssistbuttonPressLastTimeSeen, is older than 1 second ago, it means that button was released
-												ParkAssistButtonPressCount=0;// reset the count assigning it zero
-											}
+											ParkAssistButtonPressCount=0;// reset the count assigning it zero
 										}
 									#endif
 									//the park assistant button press event is on byte 1 bit 5 (1=pressed)

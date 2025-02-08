@@ -33,9 +33,10 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - automatically disable start&stop car functionality
 - act as Immobilizer, by injecting can bus messages when required.
 - show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
-- enable and disable ESC and TC with left stalk button press
 - add a menu to dashboard in order to show additional parameters like dpf occlusion percentage, oil pressure and performance statistics 
 - route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).  
+- enable and disable ESC and TC with left stalk button press
+- Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
 
 BACCABLE overview (click on the following image to see the video) (note: video not updated. do not includes all the functionalities added to the device last months)
 
@@ -123,19 +124,6 @@ The following video explains the behavious and the code description:
 Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
 Note2: this works only if baccable is connected to C1 can bus.
 
-
-## ESC & TC enabler/disabler functionality
-By pressing left stalk button (LANE indicator) for 2 seconds, in D,N,A modes the ESC and TC will be disabled. Changing DNA mode or pressing again the same button, it is possible to revert the change. In Race mode, where ESC and TC ar tipicalliy disabled, this functionality allows to enable ESC and TC.
-Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
-Note2: this works only if baccable is connected to C2 can bus.
-The following video explains the behavious and the code description: 
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/I1GHFjOmpOs/0.jpg)](https://www.youtube.com/watch?v=I1GHFjOmpOs)
-
-The following video shows tests performed on this functionality on the road:
-
- [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
-
 ## DASHBOARD MENU functionality
 Adds a menu to the dashboard allowing the user to show additional parameters. 
 
@@ -188,6 +176,26 @@ Example2:
 			Diagnostic sends msgID 0x18DABAF1 with data 062210E10204B2
 
 			BACCABLE replies msgID 0x18DAF1BA with data 076210AABBCCDDEE  where AA is the first byte of the original 0xE10204B2 message
+			
+The following image summarize the functionality:
+
+![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/route.png)
+
+## ESC & TC enabler/disabler functionality
+By pressing left stalk button (LANE indicator) for 2 seconds, in D,N,A modes the ESC and TC will be disabled. Changing DNA mode or pressing again the same button, it is possible to revert the change. In Race mode, where ESC and TC ar tipicalliy disabled, this functionality allows to enable ESC and TC.
+Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
+Note2: this works only if baccable is connected to C2 can bus.
+The following video explains the behavious and the code description: 
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/I1GHFjOmpOs/0.jpg)](https://www.youtube.com/watch?v=I1GHFjOmpOs)
+
+The following video shows tests performed on this functionality on the road:
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/hMO_yby04wI/0.jpg)](https://www.youtube.com/watch?v=hMO_yby04wI)
+
+## DYNO mode functionality
+Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
+It is activated and deactivated with park button pressed for few seconds.
 
 ## BACCABLE Usage Instructions
 You should perform some preliminary settings inside firmware:
