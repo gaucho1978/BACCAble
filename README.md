@@ -166,7 +166,8 @@ This is the structure of each element:
 Note: if you change number of elements in the array, you shall update total number of elements in the variable total_pages_in_dashboard_menu.
 
 The new commands implemented on the master canable are the following:
-by default the menu on dashboard is disabled
+
+0. By default the menu on dashboard is disabled
 1. To enable it you shall be with engine on and cruise control disabled. Press RES button on the wheel for around 2 seconds and the menu will popup the the baccable version (currently under deveolpement therefore you just receive a string on the usb opened with a terminal window.
 2. To move inside menu use the cruise control up and down buttons (gentle press moves by 1 parameter, strong press moves by 9 parameters) in a rotational menu.
 3. when you enable cruise control the menu controls are disabled but the last set parameter remains on screen.
