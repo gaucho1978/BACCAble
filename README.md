@@ -202,6 +202,10 @@ The following video shows tests performed on this functionality on the road:
 Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
 It is activated and deactivated with park button pressed for few seconds.
 
+The following video shows how to enable and disable it:
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Aphb4rLYlQo/0.jpg)](hhttps://youtu.be/Aphb4rLYlQo)
+
 ## BACCABLE Usage Instructions
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge). Generally speaing if you use other functions, the ACT_AS_CANABLE shall remain commented otherwise the device  don't properly work in some situations.
