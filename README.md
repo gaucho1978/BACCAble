@@ -142,6 +142,26 @@ This diagram shows the required connections for this function to work:
 this video shows the new functionality:
   
  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/q5ryux2daeE/0.jpg)](https://youtu.be/q5ryux2daeE?si=QtWNP4ClmFG99Ner)
+ 
+ The parameters array is customizable ,It resides in main.c. (search for uds_params_array array)
+ This is the structure of each element:
+	name[15] 				It is the name of the parameter. shall be short otherwise the string will be cutted and not entirely shown in dashoard 
+	reqId;					It is the msg id to request in UDS command. It Typically starts with 18DA....
+	reqLen;					It is the total length of the can message to send
+	reqData;				It is the entire can message to send. It follows the following UDS syntax:
+							First byte is the length of the following bytes, 
+							Second byte is the requested service (tipically 0x22, request parameter by ID)
+							Third and fourth byte are the DID (the requested parameter)
+	replyId;				It it the message ID of the received reply. Tipically if the reqID is 18DAAABB the replyID shall be 18DABBAA
+	replyLen;				It is the number of bytes of the parameter that we want to extract from the received message
+	replyOffset;			It defines where is located the parameter. 0 means that it is the first byte of the expected field of UDS message, 1 means that we shall start from second byte, and so on.
+	replyValOffset; 		Once the parameter is decoded as unsigned integer, the first calculation on the value will be + replyValOffset 
+	replyScale;				Once the parameter has been summed with replyValOffset, the result will be multiplied by replyScale
+	replyScaleOffset;		Once the parameter has been multiplied by replyScale, the result will be summed to replyScaleOffset
+	replyMeasurementUnit[7];	It is a string appended at the end of the parameter string to define measurement unit. Too long strings will have measurement unit cutted and not shown on the dashboard.
+	replyDecimalDigits;			The parameter, after previous calculations, will be converted to string, and rounded to the specified number of decimal digits. 
+
+Note: if you change number of elements in the array, you shall update total number of elements in the variable total_pages_in_dashboard_menu.
 
 The new commands implemented on the master canable are the following:
 by default the menu on dashboard is disabled
@@ -150,6 +170,7 @@ by default the menu on dashboard is disabled
 3. when you enable cruise control the menu controls are disabled but the last set parameter remains on screen.
 4. parameters are updated each 500 msec
 5. to disable the menu just disable cruise control and press RES button for at least 2 seconds.
+
 
 ## ROUTE Messages
 
@@ -201,6 +222,8 @@ The following video shows tests performed on this functionality on the road:
 ## DYNO mode functionality
 Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
 It is activated and deactivated with park button pressed for few seconds.
+
+Note: this works only if Baccable is connected to C2 can bus.
 
 The following video shows how to enable and disable it:
 
