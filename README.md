@@ -181,6 +181,11 @@ The following image summarize the functionality:
 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/route.png)
 
+The following video shows this functionality in use with carscanner and it explains in detail how it works:
+
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Nnd0JJYt9Dg/0.jpg)](https://youtu.be/Nnd0JJYt9Dg)
+
 ## ESC & TC enabler/disabler functionality
 By pressing left stalk button (LANE indicator) for 2 seconds, in D,N,A modes the ESC and TC will be disabled. Changing DNA mode or pressing again the same button, it is possible to revert the change. In Race mode, where ESC and TC ar tipicalliy disabled, this functionality allows to enable ESC and TC.
 Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
