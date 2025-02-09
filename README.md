@@ -401,8 +401,8 @@ These areinformation that I found. Use everything this at your own risk.
 1. msg id 0x90  prints text on dashboard (on BH can bus) and contains:
     - total frame number is on byte 0 from bit 7 to 3
     - frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
-    - infoCode is on byte1 from bit 5 to 0 (0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
-    - /UTF text 1 is on byte 2 and byte 3
+    - infoCode is on byte1 from bit 5 to 0 (0x02=FM radio, 0x03=AM Radio, 0x05=Aux, 0x06=left USB, 0x07=Right USB, 0x08=Center USB, 0x09=Bluetooth, 0x12=phone connected, 0x13=phone disconnected, 0x15=call in progress, 0x17=call in wait, 0x18=call terminated, 0x11=clear display, ...)
+    - UTF text 1 is on byte 2 and byte 3
     - UTF text 2 is on byte 4 and byte 5
     - UTF text 3 is on byte 6 and byte 7
  
@@ -468,6 +468,7 @@ These areinformation that I found. Use everything this at your own risk.
 9. msg id 0x2FA contains, in byte0, the Button pressed on left area of the wheel - These Buttons are detected only if the main panel of the car is on. (WARNING1: when you press cruise control strong up, before and after it, also cruise control gently up message is fired) Possible values are:
     - 0x90=RES,
     - 0x10=Buttons released
+	- 0x11=Adaptive Cruise control on/off
     - 0x12=Cruise control on/off,
     - 0x08=Cruise control speed gently up,
     - 0x00=Cruise control speed strong up,

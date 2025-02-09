@@ -2,11 +2,9 @@
 ../Core/Src/main.c:1255:9:scaleColorSet	1
 ../Core/Src/main.c:1263:9:saveOnflash	3
 ../Core/Src/main.c:1292:10:readFromFlash	2
-../Core/Src/main.c:1304:7:clearDashboardBaccableMenu	3
 ../Core/Src/main.c:1321:6:floatToStr	26
-../Core/Src/main.c:1163:7:sendDashboardPageToSlaveBaccable	17
 ../Core/Src/main.c:1424:6:SystemClock_Config	4
-../Core/Src/main.c:229:5:main	68
+../Core/Src/main.c:229:5:main	57
 ../Core/Src/main.c:1465:6:Error_Handler	1
 ../Core/Src/main.c:1471:6:system_irq_disable	1
 ../Core/Src/main.c:1479:6:system_irq_enable	1
