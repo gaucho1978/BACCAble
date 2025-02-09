@@ -207,6 +207,7 @@ const	uds_param_element uds_params_array[60]={
 
 	//the following array stores buttons pressed password sequence (future growth now commented)
 	//these are possible values 0x90=RES,
+	//							0x11=Adaptive Cruise control on/off
 	//							0x12=Cruise control on/off,
 	//                          0x08=Cruise control speed gently up,
 	//                          0x00=Cruise control speed strong up,
@@ -681,13 +682,16 @@ int main(void){
 									break;
 
 								case 0x000000FC: //message to dashboard containing rpm speed and not only
-									#if (defined(SHIFT_INDICATOR_ENABLED) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(IMMOBILIZER_ENABLED) )
+									#if (defined(SHIFT_INDICATOR_ENABLED) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP) || defined(IMMOBILIZER_ENABLED) )
 										if(rx_msg_header.DLC>=2){
 											currentRpmSpeed=(rx_msg_data[0] *256 + (rx_msg_data[1] & ~0x3) )/4; //extract rpm speed
 											//onboardLed_blue_on();
 										}
 									#endif
 
+									#if (defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP))
+										if(currentRpmSpeed< 400 ) startAndStopEnabled=1; //if motor off, re-enable start&stop
+									#endif
 									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 										if(currentRpmSpeed<400) baccableDashboardMenuVisible=0; //stop sending params request when motor is off
 									#endif
@@ -1127,6 +1131,17 @@ int main(void){
 									//the date h21 minutes 02 day 26 month 01 year 2025.
 									//last two bytes of the message are 00 00.
 									break;
+								case 0x0000073C:
+									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED)
+										if(rx_msg_header.DLC>=8){
+											if(((rx_msg_data[7]>>4) & 0x07) ==0){
+												cruiseControlDisabled=1;//enable additional parameter menu commands
+											}else{
+												cruiseControlDisabled=0;//disable additional parameter menu commands
+											}
+										}
+									#endif
+									//contains status of ACC on byte 7, from bit 6 to 4 (0=disabled, 1=enabled, 2=engaged 3=engaged brake only, 4=override, 5=cancel)
 								default:
 							}
 

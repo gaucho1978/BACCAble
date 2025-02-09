@@ -18,7 +18,7 @@
 		#define SMART_DISABLE_START_STOP //comment this if you don't want to use start&stop disabling with can message
 		//#define DISABLE_START_STOP //uncomment this if you want to use start&stop disabling with external resistor simulating button press. this is left just in case the smart approach on some cars dont't work.
 
-		#define IMMOBILIZER_ENABLED //this works only on C1 can bus (OBD port pins 6 and 14) //comment this if you don't want immobilizer functionality. This functionality waits for a thief to connect to RFHUB and if the connection message is found, it resets the rfhub and it starts the Panic alarm.
+		//#define IMMOBILIZER_ENABLED //this works only on C1 can bus (OBD port pins 6 and 14) //comment this if you don't want immobilizer functionality. This functionality waits for a thief to connect to RFHUB and if the connection message is found, it resets the rfhub and it starts the Panic alarm.
 		//#define LED_STRIP_CONTROLLER_ENABLED //this was tested only on C1 can bus (OBD port pins 6 and 14) //comment this if you don't want led strip controller functionality //NOTE: it can not be used with USE_AS_CANABLE cause both uses usb port
 		//#define SHIFT_INDICATOR_ENABLED //this was tested only on C1 can bus (OBD port pins 6 and 14) //comment this line if you don't want to show shift indicator when rpm motor goes over the configurable threshold SHIFT_THRESHOLD (in race mode)
 		//#define SHIFT_THRESHOLD 4500 //this is the configurable shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
