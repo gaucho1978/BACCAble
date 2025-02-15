@@ -1142,6 +1142,7 @@ int main(void){
 										}
 									#endif
 									//contains status of ACC on byte 7, from bit 6 to 4 (0=disabled, 1=enabled, 2=engaged 3=engaged brake only, 4=override, 5=cancel)
+									break;
 								default:
 							}
 
