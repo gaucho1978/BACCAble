@@ -814,24 +814,24 @@ int main(void){
 
 									//Future function ACC Virtual Pad under test
 									#if defined(ACC_VIRTUAL_PAD)
-										if (rx_msg_header.DLC==8){
+
 											switch (rx_msg_data[0]){
 												case 0x12: //CC on
-													memcpy(ACC_msg_data, &rx_msg_data, 8);
+													memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 													ACC_msg_data[0] = 0x11; //ACC On
 													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
 													break;
 												case 0x90:
 													if (ACC_engaged){
 														//simulate the distance button press
-														memcpy(ACC_msg_data, &rx_msg_data, 8);
+														memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 														ACC_msg_data[0] = 0x50; //ACC distance change
 														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
 													}
 													break;
 												default:
 											}
-										}
+
 									#endif
 
 									//This is used if the SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
