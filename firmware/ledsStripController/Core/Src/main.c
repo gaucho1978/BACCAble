@@ -210,7 +210,7 @@ const	uds_param_element uds_params_array[60]={
 	uint8_t currentGear=0; // used when IMMOBILIZER_ENABLED or LED_STRIP_CONTROLLER_ENABLED is defined
 	// Storage for status and received message buffer
 	CAN_RxHeaderTypeDef rx_msg_header;  //msg header
-	uint8_t rx_msg_data[8] = {0};  //msg data
+	uint8_t rx_msg_data[3] = {0,};  //msg data
 	uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
 	//the following array stores buttons pressed password sequence (future growth now commented)

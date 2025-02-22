@@ -2,11 +2,9 @@
 ../Core/Src/main.c:1294:9:scaleColorSet	0	static
 ../Core/Src/main.c:1302:9:saveOnflash	32	static
 ../Core/Src/main.c:1331:10:readFromFlash	0	static
-../Core/Src/main.c:1343:7:clearDashboardBaccableMenu	8	static,ignoring_inline_asm
 ../Core/Src/main.c:1360:6:floatToStr	56	static
-../Core/Src/main.c:1202:7:sendDashboardPageToSlaveBaccable	56	static,ignoring_inline_asm
 ../Core/Src/main.c:1463:6:SystemClock_Config	112	static,ignoring_inline_asm
-../Core/Src/main.c:237:5:main	40	static
+../Core/Src/main.c:237:5:main	24	static
 ../Core/Src/main.c:1504:6:Error_Handler	0	static,ignoring_inline_asm
 ../Core/Src/main.c:1510:6:system_irq_disable	0	static,ignoring_inline_asm
 ../Core/Src/main.c:1518:6:system_irq_enable	0	static,ignoring_inline_asm
