@@ -7,7 +7,7 @@
 	#include "string.h"
 #endif
 
-#if defined(SHOW_PARAMS_ON_DASHBOARD) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+#if (defined(SHOW_PARAMS_ON_DASHBOARD) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE))
 	#include "uart.h"
 #endif
 
@@ -16,6 +16,12 @@
 #endif
 
 const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, also shown on usb when used as slcan
+
+#if defined(ACC_VIRTUAL_PAD)
+	//function Virtual ACC Pad
+	CAN_TxHeaderTypeDef ACC_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2FA, .DLC=8};
+	uint8_t ACC_msg_data[8];
+#endif
 
 #if defined(UCAN_BOARD_LED_INVERSION)
 	const uint8_t led_light_on_bit=1;
@@ -31,7 +37,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint8_t ledsStripIsOn=0; //indicates if leds strip is on
 #endif
 
-#if(defined(IMMOBILIZER_ENABLED))
+#if defined(IMMOBILIZER_ENABLED)
 	uint8_t immobilizerEnabled=1; //parameter stored in ram, so that we can change it dinamically
 	uint8_t panicAlarmActivated=0; //indicates if the panic alarm was activated during last... 10 minutes (ToBeVerified)
 	//the following 2 arrays declares: RFHUB reset (first message) and panic alarm messages definition (the others)
@@ -66,12 +72,12 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint32_t lastTimeStartAndstopDisablerButtonPressed=0;
 #endif
 
-#if (defined(SHIFT_INDICATOR_ENABLED))
+#if defined(SHIFT_INDICATOR_ENABLED)
 	CAN_TxHeaderTypeDef shift_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2ED, .DLC=8}; //used when SHIFT_INDICATOR_ENABLED is defined
 	uint8_t shift_msg_data[8]; //used when SHIFT_INDICATOR_ENABLED is defined
 #endif
 
-#if(defined(ESC_TC_CUSTOMIZATOR_ENABLED))
+#if defined(ESC_TC_CUSTOMIZATOR_ENABLED)
 	uint8_t currentDNAmode; //used when ESC_TC_CUSTOMIZATOR_ENABLED is defined
 	uint8_t DNA_msg_data[8];//used when ESC_TC_CUSTOMIZATOR_ENABLED is defined
 	CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8}; //used when ESC_TC_CUSTOMIZATOR_ENABLED is defined
@@ -80,7 +86,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
 #endif
 
-#if(defined(DYNO_MODE))
+#if defined(DYNO_MODE)
 	uint8_t DynoModeEnabled=0;
 	uint8_t DynoStateMachine=0xff; //State machine for dyno messages sequence. frm 00 to 03 = dyno message sequence is beeing transmitted. FF= inactive
 	uint16_t testerMsgSent=0;
@@ -93,7 +99,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 
 #endif
 
-#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE))
+#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 uint8_t total_pages_in_dashboard_menu=34;
 const	uds_param_element uds_params_array[60]={
 								{.name={}, 															.reqId=0,       .reqLen=0,	.reqData=0,                 			.replyId=0,				.replyLen=0,    .replyOffset=0,	.replyValOffset=0,		.replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,	.replyMeasurementUnit={}								},
@@ -159,8 +165,10 @@ const	uds_param_element uds_params_array[60]={
 	uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
 #endif
 
-#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED)
+#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(ACC_VIRTUAL_PAD))
 	uint8_t cruiseControlDisabled=1;
+	uint8_t ACC_Disabled=1;
+	uint8_t ACC_engaged=0;
 	uint8_t wheelPressedButtonID=0x10; //0x10= released, 0x20=strong speed decrease, 0x18=speed decrease, 0x00=strong speed increase, 0x08=speed increase, 0x90=RES, CC on/off=0x12
 	uint8_t  lastPressedWheelButton=0xff; //default value, means no button pressed on the wheel
 	uint32_t lastPressedWheelButtonTime=0;//stores the last time a wheel button was pressed, in msec from boot
@@ -382,12 +390,12 @@ int main(void){
 				}
 			}
 		#endif
-		#if defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP)
+		#if (defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP))
 			if(startAndStopEnabled){
 				if(HAL_GetTick()>30000){ //first 30 seconds don't do anything to avoid to disturb other startup functions or immobilizer
 					if(currentRpmSpeed>400){ //if motor is on
 
-						if(startAndstopCarStatus==0){//if start & stop was found disabled in car, we don't need to do enything. Avoid to enter here; We enter here in example if board is switched when the car is running and S&S was still manually disabled by the pilot
+						if(startAndstopCarStatus==0){//if start & stop was found disabled in car, we don't need to do anything. Avoid to enter here; We enter here in example if board is switched when the car is running and S&S was still manually disabled by the pilot
 							startAndStopEnabled=0;
 						}else{
 							if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
@@ -738,7 +746,7 @@ int main(void){
 									#if (defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP))
 										if(rx_msg_header.DLC>=2){
 											//fill a variable with start&stop Status
-											if(rx_msg_data[2]==0xF1) startAndstopCarStatus=1; //start&stop enabled in car (fefault in giulias)
+											if(rx_msg_data[2]==0xF1) startAndstopCarStatus=1; //start&stop enabled in car (default in giulias)
 											if(rx_msg_data[2]==0x05) startAndstopCarStatus=0; //start&stop disabled in car
 										}
 									#endif
@@ -782,7 +790,7 @@ int main(void){
 									//sample: uint8_t tmpCmd=rx_msg_data[5] >>6; //1=volume was increased rotation, 2=volume decreased rotation
 									break;
 								case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
-									#if defined(LED_STRIP_CONTROLLER_ENABLED) || defined(IMMOBILIZER_ENABLED)
+									#if (defined(LED_STRIP_CONTROLLER_ENABLED) || defined(IMMOBILIZER_ENABLED))
 										currentGear=rx_msg_data[0] & ~0xF;
 									#endif
 
@@ -804,10 +812,32 @@ int main(void){
 								case 0x000002FA: // Button is pressed on left area of the wheel
 									// These Buttons are detected only if the main panel of the car is on.
 
+									//Future function ACC Virtual Pad under test
+									#if defined(ACC_VIRTUAL_PAD)
+										if (rx_msg_header.DLC==8){
+											switch (rx_msg_data[0]){
+												case 0x12: //CC on
+													memcpy(ACC_msg_data, &rx_msg_data, 8);
+													ACC_msg_data[0] = 0x11; //ACC On
+													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													break;
+												case 0x90:
+													if (ACC_engaged){
+														//simulate the distance button press
+														memcpy(ACC_msg_data, &rx_msg_data, 8);
+														ACC_msg_data[0] = 0x50; //ACC distance change
+														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													}
+													break;
+												default:
+											}
+										}
+									#endif
+
 									//This is used if the SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
 
 									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
-										if(cruiseControlDisabled){ //if we are allowed to press buttons, use them in baccable menu
+										if(cruiseControlDisabled && ACC_Disabled){ //if we are allowed to press buttons, use them in baccable menu
 											switch(rx_msg_data[0]){
 												case 0x18://if cruise control speed reduction button was pressed, user wants to see next page
 													if(wheelPressedButtonID==0x10 && baccableDashboardMenuVisible){ //if button released, use pressed button
@@ -877,7 +907,7 @@ int main(void){
 									#endif
 
 									#if defined(IMMOBILIZER_ENABLED)
-										if(cruiseControlDisabled){ //if we are allowed to use the buttons of the cruise control
+										if(cruiseControlDisabled && cruiseControlDisabled ){ //if we are allowed to use the buttons of the cruise control
 											if (currentRpmSpeed>400){ //if motor is on
 												if(currentGear==0){ //gear is neutral
 													if((rx_msg_data[0]==0x08) && ((wheelPressedButtonID==0x10) || (wheelPressedButtonID==0x08))){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
@@ -1094,11 +1124,13 @@ int main(void){
 									break;
 								case 0x000005A5:
 									//cruise control ON/OFF status is on byte0 bit7 (0=disabled, 1=enabled)
-									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED)
+									#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED))
 										if((rx_msg_data[0]>>7)==1){
 											cruiseControlDisabled=0;//disable additional parameter menu commands
+											//onboardLed_blue_on();
 										}else{
 											cruiseControlDisabled=1;//enable additional parameter menu commands
+											//onboardLed_red_on();
 										}
 									#endif
 									break;
@@ -1132,12 +1164,18 @@ int main(void){
 									//last two bytes of the message are 00 00.
 									break;
 								case 0x0000073C:
-									#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED)
+									#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(ACC_VIRTUAL_PAD))
 										if(rx_msg_header.DLC>=8){
-											if(((rx_msg_data[7]>>4) & 0x07) ==0){
-												cruiseControlDisabled=1;//enable additional parameter menu commands
-											}else{
-												cruiseControlDisabled=0;//disable additional parameter menu commands
+											switch ((rx_msg_data[7]>>4) & 0x07) {
+												case 0x00:
+													//onboardLed_red_on();
+													ACC_Disabled=1; //enable additional parameter menu commands
+													ACC_engaged=0; //used in ACC_VIRTUAL_PAD functionality
+													break;
+												case 0x02: //acc engaged
+													ACC_engaged=1; //do not break after this
+												default:
+													ACC_Disabled=0; //disable additional parameter menu commands
 											}
 										}
 									#endif
