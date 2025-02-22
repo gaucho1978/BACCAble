@@ -20,7 +20,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 #if defined(ACC_VIRTUAL_PAD)
 	//function Virtual ACC Pad
 	CAN_TxHeaderTypeDef ACC_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2FA, .DLC=8};
-	uint8_t ACC_msg_data[8];
+	uint8_t ACC_msg_data[3];
 #endif
 
 #if defined(UCAN_BOARD_LED_INVERSION)
@@ -210,7 +210,7 @@ const	uds_param_element uds_params_array[60]={
 	uint8_t currentGear=0; // used when IMMOBILIZER_ENABLED or LED_STRIP_CONTROLLER_ENABLED is defined
 	// Storage for status and received message buffer
 	CAN_RxHeaderTypeDef rx_msg_header;  //msg header
-	uint8_t rx_msg_data[3] = {0,};  //msg data
+	uint8_t rx_msg_data[8] = {0,};  //msg data
 	uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
 	//the following array stores buttons pressed password sequence (future growth now commented)
