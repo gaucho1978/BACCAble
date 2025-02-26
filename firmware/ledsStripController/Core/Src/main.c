@@ -758,16 +758,33 @@ int main(void){
 												//copy 8 bytes from msgdata rx (rx_msg_data) to msg data tx (shift_msg_data)
 												memcpy(&shift_msg_data, &rx_msg_data, 8);
 
+												#if defined(IPC_MY23_IS_INSTALLED) //on IPC 23 it is a little bit different
+													//change byte1, bit 6 and 5(lsb) to 10 (binary) meaning "Upshift suggestion"
+													shift_msg_data[1] = (shift_msg_data[1] & ~0x60) | (0x40 & 0x60);
+												#endif
+
 												if(currentRpmSpeed>(SHIFT_THRESHOLD-1) &&  currentRpmSpeed<(SHIFT_THRESHOLD+500)){ //set lamp depending on rpm speed
 													//change byte6, bit 1 and 0(lsb) to 01 (binary) meaning "gear shift urgency level 1"
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x1 & 0x3);
+													#if defined(IPC_MY23_IS_INSTALLED) //on IPC 23 it is a little bit different
+														//change byte6, bit 1 and 0(lsb) to 11 (binary) meaning "gear shift urgency level 1"
+														shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x3 & 0x3);
+													#endif
 												}
 												if(currentRpmSpeed>(SHIFT_THRESHOLD+500-1) &&  currentRpmSpeed<(SHIFT_THRESHOLD+1000)){ //set lamp depending on rpm speed
 													//change byte6, bit 1 and 0(lsb) of the message to 10 (binary) meaning "gear shift urgency level 2"
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x2 & 0x3);
+													#if defined(IPC_MY23_IS_INSTALLED) //on IPC 23 it is a little bit different
+														//change byte6, bit 1 and 0(lsb) to 00 (binary) meaning "gear shift urgency level 2"
+														shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x0 & 0x3);
+													#endif
 												}else if(currentRpmSpeed>(SHIFT_THRESHOLD+1000-1)){ //set lamp depending on rpm speed
 													//change byte6, bit 1 and 0(lsb) of the message to 11 (binary) meaning "gear shift urgency level 3"
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x3 & 0x3);
+													#if defined(IPC_MY23_IS_INSTALLED) //on IPC 23 it is a little bit different
+														//change byte6, bit 1 and 0(lsb) to 01 (binary) meaning "gear shift urgency level 3"
+														shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x1 & 0x3);
+													#endif
 												}
 												can_tx(&shift_msg_header, shift_msg_data); //transmit the modified packet
 												onboardLed_blue_on();
@@ -819,14 +836,38 @@ int main(void){
 												case 0x12: //CC on
 													memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 													ACC_msg_data[0] = 0x11; //ACC On
+													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
 													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
+													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
+													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
+													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+													onboardLed_blue_on();
 													break;
 												case 0x90:
 													if (ACC_engaged){
 														//simulate the distance button press
 														memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 														ACC_msg_data[0] = 0x50; //ACC distance change
+														ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
 														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
 													}
 													break;
 												default:
