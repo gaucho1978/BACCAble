@@ -117,6 +117,7 @@ Note: this works only if baccable is connected to C1 can bus.
 
 ## Shift Warning Indicator
 The SHIFT warning indicator function allows you to show on dashboard (only if you are in race mode) the SHIFT warning label when configurable motor rpm speed is overcomed (3 levels of warning).
+
 NOTE: if you are using IPC for My23 you shall uncomment the  #define IPC_MY23_IS_INSTALLED , otherwise it will not work
 
 The following video explains the behavious and the code description:
