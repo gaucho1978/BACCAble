@@ -100,8 +100,9 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 #endif
 
 #if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
-uint8_t total_pages_in_dashboard_menu=34;
-const	uds_param_element uds_params_array[60]={
+ #if defined(IS_DIESEL)
+	uint8_t total_pages_in_dashboard_menu=34;
+	const	uds_param_element uds_params_array[60]={
 								{.name={}, 															.reqId=0,       .reqLen=0,	.reqData=0,                 			.replyId=0,				.replyLen=0,    .replyOffset=0,	.replyValOffset=0,		.replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 								{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),		.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 								{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),		.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
@@ -151,6 +152,9 @@ const	uds_param_element uds_params_array[60]={
 								{.name={'D','E','B','I','M','E','T','E','R',':',},					.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322193F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
 
 		}; // initializes all the uds parameters request to send and reply to receive - it is initialized with data from the defines in main.h, in order to avoid to touch this declaration - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
+	#else
+
+	#endif
 
 	CAN_TxHeaderTypeDef uds_parameter_request_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3}; //used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
 	uint8_t baccableDashboardMenuVisible=0;
@@ -837,9 +841,9 @@ int main(void){
 													memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 													ACC_msg_data[0] = 0x11; //ACC On
 													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16); //increase the counter
-													//ToDo: update CRC
+													ACC_msg_data[2] = calculateCRC(ACC_msg_data,rx_msg_header.DLC); //update checksum
 													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//onboardLed_blue_on();
+													onboardLed_blue_on();
 													break;
 												case 0x90:
 													if (ACC_engaged){
@@ -847,8 +851,9 @@ int main(void){
 														memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 														ACC_msg_data[0] = 0x50; //ACC distance change
 														ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16); //increase the counter
-														//ToDo: update CRC
+														ACC_msg_data[2] = calculateCRC(ACC_msg_data,rx_msg_header.DLC); //update checksum
 														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
+														onboardLed_blue_on();
 													}
 													break;
 												default:
@@ -1482,6 +1487,21 @@ void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
     } else if (maxLen > 0) {
         str[maxLen - 1] = '\0';
     }
+}
+
+uint8_t calculateCRC(uint8_t* data, uint8_t arraySize) {
+	uint8_t crc = 0xFF;
+	if(arraySize>1){
+		//calculate sae_j1850 CRC-8 of the array (excluded last element, that will be used to store the final CRC
+		for (uint8_t i=0;i<arraySize-1;i++){
+			crc ^= data[i];
+			for (int i = 0; i < 8; ++i){
+				crc = (crc & 0x80) ? (crc << 1) ^ 0x1D : crc << 1;
+			}
+		}
+		return (crc ^ 0xFF); //return calculated checksum
+	}
+	return 0; //nothing to calculate
 }
 
 //System Clock Configuration
