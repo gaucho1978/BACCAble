@@ -19,7 +19,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 
 #if defined(ACC_VIRTUAL_PAD)
 	//function Virtual ACC Pad
-	CAN_TxHeaderTypeDef ACC_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2FA, .DLC=8};
+	CAN_TxHeaderTypeDef ACC_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2FA, .DLC=3};
 	uint8_t ACC_msg_data[3];
 #endif
 
@@ -758,7 +758,7 @@ int main(void){
 												//copy 8 bytes from msgdata rx (rx_msg_data) to msg data tx (shift_msg_data)
 												memcpy(&shift_msg_data, &rx_msg_data, 8);
 
-												#if defined(IPC_MY23_IS_INSTALLED) //on IPC 23 it is a little bit different
+												#if defined(IPC_MY23_IS_INSTALLED) //on IPC my23 it is a little bit different
 													//change byte1, bit 6 and 5(lsb) to 10 (binary) meaning "Upshift suggestion"
 													shift_msg_data[1] = (shift_msg_data[1] & ~0x60) | (0x40 & 0x60);
 												#endif
@@ -766,13 +766,25 @@ int main(void){
 												if(currentRpmSpeed>(SHIFT_THRESHOLD-1) &&  currentRpmSpeed<(SHIFT_THRESHOLD+500)){ //set lamp depending on rpm speed
 													//change byte6, bit 1 and 0(lsb) to 01 (binary) meaning "gear shift urgency level 1"
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x1 & 0x3);
+													#if defined(IPC_MY23_IS_INSTALLED) //on IPC my23 it is a little bit different
+														//change byte6, bit 1 and 0(lsb) of the message to 11 (binary) meaning "gear shift urgency level 1"
+														shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x3 & 0x3);
+													#endif
 												}
 												if(currentRpmSpeed>(SHIFT_THRESHOLD+500-1) &&  currentRpmSpeed<(SHIFT_THRESHOLD+1000)){ //set lamp depending on rpm speed
 													//change byte6, bit 1 and 0(lsb) of the message to 10 (binary) meaning "gear shift urgency level 2"
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x2 & 0x3);
+													#if defined(IPC_MY23_IS_INSTALLED) //on IPC my23 it is a little bit different
+														//change byte6, bit 1 and 0(lsb) of the message to 00 (binary) meaning "gear shift urgency level 2"
+														shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x0 & 0x3);
+													#endif
 												}else if(currentRpmSpeed>(SHIFT_THRESHOLD+1000-1)){ //set lamp depending on rpm speed
 													//change byte6, bit 1 and 0(lsb) of the message to 11 (binary) meaning "gear shift urgency level 3"
 													shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x3 & 0x3);
+													#if defined(IPC_MY23_IS_INSTALLED) //on IPC my23 it is a little bit different
+														//change byte6, bit 1 and 0(lsb) to 01 (binary) meaning "gear shift urgency level 1"
+														shift_msg_data[6] = (shift_msg_data[6] & ~0x3) | (0x1 & 0x3);
+													#endif
 												}
 												can_tx(&shift_msg_header, shift_msg_data); //transmit the modified packet
 												onboardLed_blue_on();
@@ -824,38 +836,19 @@ int main(void){
 												case 0x12: //CC on
 													memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 													ACC_msg_data[0] = 0x11; //ACC On
-													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
+													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16); //increase the counter
+													//ToDo: update CRC
 													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
-													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
-													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
-													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-													onboardLed_blue_on();
+													//onboardLed_blue_on();
 													break;
 												case 0x90:
 													if (ACC_engaged){
 														//simulate the distance button press
 														memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 														ACC_msg_data[0] = 0x50; //ACC distance change
-														ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16);
+														ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16); //increase the counter
+														//ToDo: update CRC
 														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
-														//can_tx(&ACC_msg_header, ACC_msg_data); //send msg
 													}
 													break;
 												default:
@@ -1196,15 +1189,18 @@ int main(void){
 									#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(ACC_VIRTUAL_PAD))
 										if(rx_msg_header.DLC>=8){
 											switch ((rx_msg_data[7]>>4) & 0x07) {
-												case 0x00:
+												case 0x00: //ACC is off
 													//onboardLed_red_on();
 													ACC_Disabled=1; //enable additional parameter menu commands
-													ACC_engaged=0; //used in ACC_VIRTUAL_PAD functionality
+													ACC_engaged=0; //acc not engaged
 													break;
 												case 0x02: //acc engaged
-													ACC_engaged=1; //do not break after this
+													ACC_engaged=1;
+													ACC_Disabled=0; //disable additional parameter menu commands
+													break;
 												default:
 													ACC_Disabled=0; //disable additional parameter menu commands
+													ACC_engaged=0; //acc not engaged
 											}
 										}
 									#endif

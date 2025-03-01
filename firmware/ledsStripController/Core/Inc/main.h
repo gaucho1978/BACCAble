@@ -22,10 +22,10 @@
 		//#define LED_STRIP_CONTROLLER_ENABLED //this was tested only on C1 can bus (OBD port pins 6 and 14) //comment this if you don't want led strip controller functionality //NOTE: it can not be used with USE_AS_CANABLE cause both uses usb port
 		//#define SHIFT_INDICATOR_ENABLED //this was tested only on C1 can bus (OBD port pins 6 and 14) //comment this line if you don't want to show shift indicator when rpm motor goes over the configurable threshold SHIFT_THRESHOLD (in race mode)
 		#define SHIFT_THRESHOLD 2500 //this is the configurable shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
-		//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My 32 Giulia/Stelvio
+		//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My23 Giulia/Stelvio
 		//#define SHOW_PARAMS_ON_DASHBOARD //this works only on BH can bus (obd port pin 3 and pin 11) //--// uncomment this if you connected another baccable to usb port and want this baccable to receive parameters from master baccable. Received parameter will be displaied on the dashboard.
 		//
-		#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //this works only on C1 can bus (OBD port pins 6 and 14) //uncomment this if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
+		//#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //this works only on C1 can bus (OBD port pins 6 and 14) //uncomment this if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
 
 		//#define ROUTE_MSG //this define performs the following:
 							// upon receive of UDS request with message id 0x18DABAF1 having message data 0622xzyyyyyyyy,
