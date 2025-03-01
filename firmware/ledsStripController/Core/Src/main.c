@@ -189,7 +189,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 	uint8_t telematic_display_info_field_totalFrameNumber=5; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t telematic_display_info_field_infoCode=0x08; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+	uint8_t telematic_display_info_field_infoCode=0x00; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t paramsStringCharIndex=0; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 	uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
@@ -673,6 +673,10 @@ int main(void){
 							switch(rx_msg_header.StdId){ //messages in this switch is on C can bus, only when on different bus, the comments explicitly tells if it is on another can bus
 
 								case 0x00000090:
+									#if defined(SHOW_PARAMS_ON_DASHBOARD) //the car is showing something (ie:radio name) on the dashboard
+										//override the displaied string, by sending one frame
+										if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
+									#endif
 									//on BH can bus, slow bus at 125kbps, this message contains:
 
 									//total frame number is on byte 0 from bit 7 to 3
