@@ -21,6 +21,8 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	//function Virtual ACC Pad
 	CAN_TxHeaderTypeDef ACC_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2FA, .DLC=3};
 	uint8_t ACC_msg_data[3];
+	uint8_t newWheelPressedButtonID=0x10; //button released
+	uint8_t ACC_WAS_ENGAGED_WHEN_RES_WAS_PRESSED=0;
 #endif
 
 #if defined(UCAN_BOARD_LED_INVERSION)
@@ -884,6 +886,7 @@ int main(void){
 
 											switch (rx_msg_data[0]){
 												case 0x12: //CC on
+													newWheelPressedButtonID=0x12;
 													memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 													ACC_msg_data[0] = 0x11; //ACC On
 													ACC_msg_data[1] = (ACC_msg_data[1] & 0xF0) | (((ACC_msg_data[1] & 0x0F) + 1) % 16); //increase the counter
@@ -891,8 +894,10 @@ int main(void){
 													can_tx(&ACC_msg_header, ACC_msg_data); //send msg
 													onboardLed_blue_on();
 													break;
-												case 0x90:
-													if (ACC_engaged){
+												case 0x90: //RES pressed
+													if (newWheelPressedButtonID==0x10 && ACC_engaged) ACC_WAS_ENGAGED_WHEN_RES_WAS_PRESSED=1; //if begin to press button RES and ACC is Engaged, set ACC_WAS_ENGAGED_WHEN_RES_WAS_PRESSED
+													newWheelPressedButtonID=0x90; //store the new RES button status (pressed)
+													if (ACC_engaged && ACC_WAS_ENGAGED_WHEN_RES_WAS_PRESSED){
 														//simulate the distance button press
 														memcpy(ACC_msg_data, &rx_msg_data, rx_msg_header.DLC);
 														ACC_msg_data[0] = 0x50; //ACC distance change
@@ -901,6 +906,10 @@ int main(void){
 														can_tx(&ACC_msg_header, ACC_msg_data); //send msg
 														onboardLed_blue_on();
 													}
+													break;
+												case 0x10: //button released
+													newWheelPressedButtonID=0x10; //button released (I use another variable to distinguish from the one used in show params function
+													ACC_WAS_ENGAGED_WHEN_RES_WAS_PRESSED=0;
 													break;
 												default:
 											}
