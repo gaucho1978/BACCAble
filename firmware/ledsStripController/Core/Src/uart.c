@@ -16,7 +16,6 @@ extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD 
 
 #if defined(SHOW_PARAMS_ON_DASHBOARD)
 	uint8_t xxBusId=BhBusID;
-	extern uint8_t parameterStringIsEmpty;
 #endif
 #if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 	uint8_t xxBusId=C1BusID;
@@ -80,11 +79,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					#if defined(SHOW_PARAMS_ON_DASHBOARD)
 						memcpy(&dashboardPageStringArray[0], &rxBuffer[1], 18); //copy array that we will use in the main
 						if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
-						//if string is empty
-						parameterStringIsEmpty=1;
-						for (uint8_t ind1=0;ind1<17;ind1++){
-							if((dashboardPageStringArray[ind1]!=' ') && (dashboardPageStringArray[ind1]!=0)) parameterStringIsEmpty=0;
-						}
+
 					#endif
 					#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 						//nothing to do for now

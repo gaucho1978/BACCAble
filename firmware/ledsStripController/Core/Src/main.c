@@ -233,12 +233,11 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 	uint8_t telematic_display_info_field_totalFrameNumber=5; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t telematic_display_info_field_infoCode=0x00; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+	uint8_t telematic_display_info_field_infoCode=0x05; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t paramsStringCharIndex=0; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 	uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t requestToSendOneFrame=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
-	uint8_t parameterStringIsEmpty=1; //stores if the string is empty (means parameters menu disabled)
 #endif
 
 #if defined(ROUTE_MSG)
@@ -719,8 +718,10 @@ int main(void){
 
 								case 0x00000090:
 									#if defined(SHOW_PARAMS_ON_DASHBOARD) //the car is showing something (ie:radio name) on the dashboard
-										//override the displaied string, by sending one frame
-										if (requestToSendOneFrame<=2 && parameterStringIsEmpty==0) requestToSendOneFrame +=1;//Send one frame
+										//override the displaied string, by restarting the frame
+										paramsStringCharIndex=0; //prepare to send first char of the string
+										telematic_display_info_field_frameNumber=0; //prepare to send first frame
+
 									#endif
 									//on BH can bus, slow bus at 125kbps, this message contains:
 

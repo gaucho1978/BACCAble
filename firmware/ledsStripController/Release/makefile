@@ -39,34 +39,34 @@ $(wildcard ../makefile.init) \
 $(wildcard ../makefile.targets) \
 
 
-BUILD_ARTIFACT_NAME := baccable
+BUILD_ARTIFACT_NAME := ledsStripController
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX :=
 BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME)$(if $(BUILD_ARTIFACT_EXTENSION),.$(BUILD_ARTIFACT_EXTENSION),)
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
-baccable.elf \
+ledsStripController.elf \
 
 MAP_FILES += \
-baccable.map \
+ledsStripController.map \
 
 SIZE_OUTPUT += \
 default.size.stdout \
 
 OBJDUMP_LIST += \
-baccable.list \
+ledsStripController.list \
 
 
 # All Target
 all: main-build
 
 # Main-build Target
-main-build: baccable.elf secondary-outputs
+main-build: ledsStripController.elf secondary-outputs
 
 # Tool invocations
-baccable.elf baccable.map: $(OBJS) $(USER_OBJS) E:\Dati\Documenti_Emanuele\Linguaggi_di_Programmazione\ST\ MCU\baccable\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "baccable.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"E:\Dati\Documenti_Emanuele\Linguaggi_di_Programmazione\ST MCU\baccable\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="baccable.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+ledsStripController.elf ledsStripController.map: $(OBJS) $(USER_OBJS) E:\Dati\Documenti_Emanuele\Linguaggi_di_Programmazione\ST\ MCU\baccable\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "ledsStripController.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"E:\Dati\Documenti_Emanuele\Linguaggi_di_Programmazione\ST MCU\baccable\canable\CANableAndLedsStripController\firmware\ledsStripController\STM32F072C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ledsStripController.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -75,14 +75,14 @@ default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-baccable.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "baccable.list"
+ledsStripController.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "ledsStripController.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) baccable.elf baccable.list baccable.map default.size.stdout
+	-$(RM) default.size.stdout ledsStripController.elf ledsStripController.list ledsStripController.map
 	-@echo ' '
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
