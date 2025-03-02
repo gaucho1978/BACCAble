@@ -81,7 +81,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 						//if string is empty
 						parameterStringIsEmpty=1;
-						for (uint8_t ind1=0;ind1<18;ind1++){
+						for (uint8_t ind1=0;ind1<17;ind1++){
 							if(dashboardPageStringArray[ind1]!=' ') parameterStringIsEmpty=0;
 						}
 					#endif

@@ -1348,7 +1348,7 @@ Disassembly of section .text:
  8000b7c:	d000      	beq.n	8000b80 <HAL_UART_RxCpltCallback+0x48>
  8000b7e:	0001      	movs	r1, r0
  8000b80:	3301      	adds	r3, #1
- 8000b82:	2b12      	cmp	r3, #18
+ 8000b82:	2b11      	cmp	r3, #17
  8000b84:	d1f8      	bne.n	8000b78 <HAL_UART_RxCpltCallback+0x40>
  8000b86:	2900      	cmp	r1, #0
  8000b88:	d001      	beq.n	8000b8e <HAL_UART_RxCpltCallback+0x56>
