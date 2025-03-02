@@ -12,10 +12,11 @@ extern UART_HandleTypeDef huart2;
 
 extern uint8_t dashboardPageStringArray[18];
 extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
-extern uint8_t parameterStringIsEmpty;
+
 
 #if defined(SHOW_PARAMS_ON_DASHBOARD)
 	uint8_t xxBusId=BhBusID;
+	extern uint8_t parameterStringIsEmpty;
 #endif
 #if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 	uint8_t xxBusId=C1BusID;
@@ -82,7 +83,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						//if string is empty
 						parameterStringIsEmpty=1;
 						for (uint8_t ind1=0;ind1<17;ind1++){
-							if(dashboardPageStringArray[ind1]!=' ') parameterStringIsEmpty=0;
+							if((dashboardPageStringArray[ind1]!=' ') && (dashboardPageStringArray[ind1]!=0)) parameterStringIsEmpty=0;
 						}
 					#endif
 					#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
