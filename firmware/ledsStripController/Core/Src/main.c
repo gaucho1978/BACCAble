@@ -238,6 +238,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 	uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t requestToSendOneFrame=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
+	uint8_t parameterStringIsEmpty=1; //stores if the string is empty (means parameters menu disabled)
 #endif
 
 #if defined(ROUTE_MSG)
@@ -298,7 +299,7 @@ int main(void){
 	#endif
 
 
-	#if defined(ACT_AS_CANABLE) //  || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+	#if defined(ACT_AS_CANABLE)
 		MX_USB_DEVICE_Init();
 	#endif
 
@@ -344,7 +345,7 @@ int main(void){
 		//onboardLed_red_blink(5);
 		//onboardLed_red_on();
 
-		#if defined(ACT_AS_CANABLE) // || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+		#if defined(ACT_AS_CANABLE)
 			cdc_process(); //processa dati usb
 			//just for test
 			//char *data = "Hello World from USB CDC\n";
@@ -719,7 +720,7 @@ int main(void){
 								case 0x00000090:
 									#if defined(SHOW_PARAMS_ON_DASHBOARD) //the car is showing something (ie:radio name) on the dashboard
 										//override the displaied string, by sending one frame
-										if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
+										if (requestToSendOneFrame<=2 && parameterStringIsEmpty==0) requestToSendOneFrame +=1;//Send one frame
 									#endif
 									//on BH can bus, slow bus at 125kbps, this message contains:
 
