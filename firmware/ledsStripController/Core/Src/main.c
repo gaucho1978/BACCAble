@@ -225,7 +225,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 #endif
 
 #if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(SHOW_PARAMS_ON_DASHBOARD))
-	uint8_t dashboardPageStringArray[18]; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
+	uint8_t dashboardPageStringArray[18]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
 	uint8_t uartTxMsg[UART_BUFFER_SIZE]; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to send over uart
 #endif
 
@@ -233,7 +233,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 	uint8_t telematic_display_info_field_totalFrameNumber=5; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t telematic_display_info_field_infoCode=0x05; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+	uint8_t telematic_display_info_field_infoCode=0x09; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t paramsStringCharIndex=0; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
 	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 	uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
@@ -721,7 +721,8 @@ int main(void){
 										//override the displaied string, by restarting the frame
 										paramsStringCharIndex=0; //prepare to send first char of the string
 										telematic_display_info_field_frameNumber=0; //prepare to send first frame
-										if(requestToSendOneFrame==0) requestToSendOneFrame++; //if required increment messages sequence to send, in order to send at least one
+										if((requestToSendOneFrame==0) && (dashboardPageStringArray[0]!=' ')) requestToSendOneFrame++; //if message is not empty (we check only first char) and if required, increment messages sequence to send, in order to send at least one
+										lastSentTelematic_display_info_msg_Time=0; //if required will immediately send a sequence
 									#endif
 									//on BH can bus, slow bus at 125kbps, this message contains:
 
