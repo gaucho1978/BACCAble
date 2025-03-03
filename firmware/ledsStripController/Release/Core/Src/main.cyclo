@@ -5,7 +5,7 @@
 ../Core/Src/main.c:1447:6:floatToStr	26
 ../Core/Src/main.c:1549:9:calculateCRC	5
 ../Core/Src/main.c:1565:6:SystemClock_Config	4
-../Core/Src/main.c:285:5:main	8
+../Core/Src/main.c:285:5:main	9
 ../Core/Src/main.c:1606:6:Error_Handler	1
 ../Core/Src/main.c:1612:6:system_irq_disable	1
 ../Core/Src/main.c:1620:6:system_irq_enable	1

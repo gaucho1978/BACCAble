@@ -721,7 +721,7 @@ int main(void){
 										//override the displaied string, by restarting the frame
 										paramsStringCharIndex=0; //prepare to send first char of the string
 										telematic_display_info_field_frameNumber=0; //prepare to send first frame
-
+										if(requestToSendOneFrame==0) requestToSendOneFrame++; //if required increment messages sequence to send, in order to send at least one
 									#endif
 									//on BH can bus, slow bus at 125kbps, this message contains:
 
