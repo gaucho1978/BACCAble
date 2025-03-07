@@ -15,6 +15,9 @@
 	#include "vuMeter.h" //this is used to control led strip through usb pin
 #endif
 
+#if defined(LOW_CONSUME)
+	#include "lowConsume.h"
+#endif
 const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, also shown on usb when used as slcan
 
 #if defined(ACC_VIRTUAL_PAD)
@@ -160,8 +163,8 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 			                            {.name={}, 															.reqId=0,           .reqLen=0,	.reqData=0,                 	    .replyId=0,				.replyLen=0,    .replyOffset=0,	.replyValOffset=0,		.replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 		  					            {.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 									    {.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
-							            {.name={'I','C',' ','A','i','r','O','u','t',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221935),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA INGRESSO INTERCOOLER
-									    {.name={'I','C',' ','A','i','r','I','n',':',' '},					.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A58),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA USCITA INERCOOLER
+							            {.name={'I','C',' ','A','i','r','O','u','t',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221935),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA uscita INTERCOOLER
+									    {.name={'I','C',' ','A','i','r','I','n',':',' '},					.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A58),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA ingresso INERCOOLER
 									    {.name={'B','O','O','S','T',' ','A','B','S',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}                     }, //PRESSIONE ASSOLUTA
 										{.name={'B','O','O','S','T',':',' '},								.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=-1,   .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}                     }, // PRESSIONE TURBO RICAVATA DALLA PRESIONE ASSOLUTA
 	                    		        {.name={'T','U','R','B','O',':',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221936),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
@@ -170,7 +173,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	    					 	        {.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322130A),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.039215686,    .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'B','a','r',}                    },
 										{.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221302),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=1, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={0xB0,'C',}                       },
 										{.name={'O','I','L',' ','Q','U','A','L','Y',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223813),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
-	     								{.name={'O','I','L',' ','U','n','A','i','r',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322198E),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-40,    .replyScale=0.02,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={0xB0,'C',}                       },
+	     								{.name={'O','I','L',' ','U','n','A','i','r',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322198E),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-40,    .replyScale=0.02,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={0xB0,'C',}                       }, //Temperatura olio mel modulo multiair
 										{.name={'G','E','A','R','B','O','X',':',' '},                       .reqId=0x18DA18F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032204FE),   .replyId=0x18DAF118,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        },
 		    						    {.name={'B','A','T','T','.',':',},									.reqId=0x13, 		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 										{.name={'B','A','T','T','.',':',},									.reqId=0x14,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=-250,	.replyDecimalDigits=2,	.replyMeasurementUnit={'A',}							},
@@ -291,6 +294,10 @@ int main(void){
 	can_init(); //initialize can interface
 	//onboardLed_red_on(); This line doesn't work cause hardware is still initiating
 
+	#if defined(LOW_CONSUME)
+		lowConsume_init();
+	#endif
+
 	//uint16_t tmpVar2=readFromFlash(1);
 	#if defined(IMMOBILIZER_ENABLED)
 		immobilizerEnabled = (uint8_t)readFromFlash(1);  //parameter1 stored in ram, so that we can get it. By default Immo is enabled
@@ -310,7 +317,7 @@ int main(void){
 	//	MX_USB_DEVICE_Init();
 	//#endif
 
-	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) ||defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(ROUTE_MSG))  //if required, let's automatically open the can bus
+	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) ||defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP) || defined(ROUTE_MSG) || defined(ACC_VIRTUAL_PAD))  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
 		can_set_bitrate(CAN_BITRATE_500K);//set can speed to 500kpbs
 		can_enable(); //enable can port
@@ -340,6 +347,10 @@ int main(void){
 		debugTimer0=HAL_GetTick();
 		onboardLed_process();
 		can_process();
+
+		#if defined(LOW_CONSUME)
+			lowConsume_process();
+		#endif
 
 		//onboardLed_red_blink(5);
 		//onboardLed_red_on();

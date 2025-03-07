@@ -1,5 +1,6 @@
 "./Core/Src/can.o"
 "./Core/Src/error.o"
+"./Core/Src/lowConsume.o"
 "./Core/Src/main.o"
 "./Core/Src/onboardLed.o"
 "./Core/Src/printf.o"
