@@ -13,20 +13,15 @@ extern UART_HandleTypeDef huart2;
 extern uint8_t dashboardPageStringArray[18];
 extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
 
-
-#if defined(SHOW_PARAMS_ON_DASHBOARD)
-	uint8_t xxBusId=BhBusID;
-#endif
-#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
-	uint8_t xxBusId=C1BusID;
-#endif
-
-#if (!defined(SHOW_PARAMS_ON_DASHBOARD) && !defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE))
-	uint8_t xxBusId=0xFF; //impossible value, just to avoid compilation errors
-#endif
-
+uint8_t xxBusId=AllSleep;
 
 void uart_init(){
+	#if defined(SHOW_PARAMS_ON_DASHBOARD)
+		xxBusId=BhBusID;
+	#endif
+	#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+		xxBusId=C1BusID;
+	#endif
 
     __HAL_RCC_USART2_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -74,17 +69,25 @@ void uart_init(){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
 		// evaluate received message
-			if (rxBuffer[0] == xxBusId){ //if we received the expected begin byte
+			if ((rxBuffer[0] == xxBusId) || (rxBuffer[0]==AllSleep)){ //if we received the expected begin byte
 				if(syncObtained){
-					#if defined(SHOW_PARAMS_ON_DASHBOARD)
-						memcpy(&dashboardPageStringArray[0], &rxBuffer[1], 18); //copy array that we will use in the main
-						if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
+					if(rxBuffer[0]==AllSleep){ //if we received a sleep msg
+						//answer to serial message and put this chip to sleep
+						//todo
+						//to do
+					}else{ //if we received a message for this board
+						#if defined(SHOW_PARAMS_ON_DASHBOARD)
+							memcpy(&dashboardPageStringArray[0], &rxBuffer[1], 18); //copy array that we will use in the main
+							if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 
-					#endif
-					#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
-						//nothing to do for now
-					#endif
+						#endif
+						#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+							//nothing to do for now
+						#endif
+
+					}
 					HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 19); //receive next frame
+
 				}else{
 					syncObtained=1;
 					HAL_UART_Receive_IT(&huart2, &rxBuffer[1], 18); //receive remaining part of the frame

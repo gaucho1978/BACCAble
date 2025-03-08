@@ -6,9 +6,11 @@
 	//#include "error.h"
 		
 	
-	#define C1BusID 0x01 //identifies the first byte sent over uart to identify destinator baccable connected to C1 Can Bus
-	#define C2BusID 0x02 //identifies the first byte sent over uart to identify destinator baccable connected to C2 Can Bus
-	#define BhBusID 0x03 //identifies the first byte sent over uart to identify destinator baccable connected to BH Can Bus
+	#define C1BusID		0x01 //identifies the first byte sent over uart to identify destinator baccable connected to C1 Can Bus
+	#define C2BusID		0x02 //identifies the first byte sent over uart to identify destinator baccable connected to C2 Can Bus
+	#define BhBusID		0x03 //identifies the first byte sent over uart to identify destinator baccable connected to BH Can Bus
+	#define AllSleep	0xFF //identifies the first byte sent over uart to tell anyone connecter to go to sleep (or low consumption).
+
 	#define UART_BUFFER_SIZE 19
 
 	

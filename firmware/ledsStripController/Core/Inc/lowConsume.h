@@ -19,5 +19,7 @@
 	void CAN_LOW_CONSUME_On();
 	void CAN_LOW_CONSUME_Off();
 	void lowConsume_process();
+	void reduceConsumption(void);
+	void wakeUpAllProcessorsAndTransceivers(void);
 
 #endif /* INC_LOWCONSUME_H_ */

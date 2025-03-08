@@ -7,7 +7,7 @@
 	#include "string.h"
 #endif
 
-#if (defined(SHOW_PARAMS_ON_DASHBOARD) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE))
+#if (defined(SHOW_PARAMS_ON_DASHBOARD) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(LOW_CONSUME) )
 	#include "uart.h"
 #endif
 
@@ -227,7 +227,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 	uint32_t lastPressedSpeedUpWheelButtonDuration=0x00; //default value
 #endif
 
-#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(SHOW_PARAMS_ON_DASHBOARD))
+#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(LOW_CONSUME))
 	uint8_t dashboardPageStringArray[18]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
 	uint8_t uartTxMsg[UART_BUFFER_SIZE]; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to send over uart
 #endif
@@ -255,7 +255,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 
 	uint32_t debugTimer0;
 
-	UART_HandleTypeDef huart2; // this is the serial line between baccables -- used with SHOW_PARAMS_ON_DASHBOARD and SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionalities
+	UART_HandleTypeDef huart2; // this is the serial line between baccables -- used with SHOW_PARAMS_ON_DASHBOARD and SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE and low consumption define functionalities
 
 	uint32_t currentRpmSpeed=0;//used when SHIFT_INDICATOR_ENABLED or IMMOBILIZER_ENABLED or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE or DISABLE_START_STOP is defined
 	uint8_t currentGear=0; // used when IMMOBILIZER_ENABLED or LED_STRIP_CONTROLLER_ENABLED is defined
@@ -309,7 +309,7 @@ int main(void){
 		MX_USB_DEVICE_Init();
 	#endif
 
-	#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(SHOW_PARAMS_ON_DASHBOARD))
+	#if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(LOW_CONSUME) )
 		uart_init();
 	#endif
 
@@ -451,7 +451,7 @@ int main(void){
 		#endif
 		#if (defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP))
 			if(startAndStopEnabled){
-				if(HAL_GetTick()>30000){ //first 30 seconds don't do anything to avoid to disturb other startup functions or immobilizer
+				if(HAL_GetTick()>10000){ //first 10 seconds don't do anything to avoid to disturb other startup functions or immobilizer
 					if(currentRpmSpeed>400){ //if motor is on
 
 						if(startAndstopCarStatus==0){//if start & stop was found disabled in car, we don't need to do anything. Avoid to enter here; We enter here in example if board is switched when the car is running and S&S was still manually disabled by the pilot
@@ -574,13 +574,53 @@ int main(void){
 								if(immobilizerEnabled){
 									//if it is a message of connection to RFHUB, reset the connection periodically, but start the panic alarm only once
 									if(floodTheBus==0){ //if we are not flooding the bus
-										if ((rx_msg_header.ExtId==0x18DAC7F1) ||( (rx_msg_header.ExtId==0x18DAF1C7) && (floodTheBusStartTime==0)) ){  // If msg from thief or (reply from rfhub && it is the first time that it occurs)
-											//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
-											//start to flood the bus with the rfhub disconnect message
-											floodTheBus=1;
-											floodTheBusStartTime=HAL_GetTick();
-											onboardLed_blue_on();
+										uint8_t responseOffset=rx_msg_data[0]>>4; //0=single frame , 1=first fragmented frame 2=fragmented frame, 3=frame ack
+										if((rx_msg_header.ExtId & 0xFFFFFFF0)==0x18DAC7F0){ 		//if it is message from the thief
+											if(responseOffset<2){ //we pass this if, in case of single frame and first fragmented frame
+												switch(rx_msg_data[responseOffset+1]){
+													case 0x10: //diagnostic session
+													case 0x27: //security access
+													case 0x29: //authentication
+													case 0x3E: //tester presence
+													//case 0x1A: //??
+													case 0x2E: //write data by identifier
+													case 0x3D: //write memory by address
+														floodTheBus=1; //reset the RFHUB and start the alarm
+														break;
+													default:
+														break;
+												}
+											}
+										}else if((rx_msg_header.ExtId & 0xFFFFF0FF)==0x18DAF0C7) { 	//if it is a reply from rfhub
+											//if(floodTheBusStartTime==0){ //this allows to read rfhub messages only if it was the first time
+												if(responseOffset<2){ //we pass this if, in case of single frame and first fragmented frame
+													switch(rx_msg_data[responseOffset+1]){
+														case 0x50: //diagnostic session	//
+														case 0x67: //security access
+														case 0x69: //authentication
+														case 0x7E: //tester presence 	//
+														//case 0x1A: //??
+														case 0x6E: //write data by identifier
+														case 0x7D: //write memory by address
+															floodTheBus=1; //reset the RFHUB and start the alarm
+															break;
+														default:
+															break;
+													}
+												}
+											//}
 										}
+										if(floodTheBus==1){ //if we engaged the immobilizer
+											floodTheBusStartTime=HAL_GetTick(); //set initial time we started to flood the bus
+											onboardLed_blue_on(); //light a led
+										}
+										//if ((rx_msg_header.ExtId==0x18DAC7F1) ||( (rx_msg_header.ExtId==0x18DAF1C7) && (floodTheBusStartTime==0)) ){  // If msg from thief or (reply from rfhub && it is the first time that it occurs)
+										//	//thief connected to RFHUB: we shall reset the RFHUB and start the alarm
+										//	//start to flood the bus with the rfhub disconnect message
+										//	floodTheBus=1;
+										//	floodTheBusStartTime=HAL_GetTick();
+										//	onboardLed_blue_on();
+										//}
 									}
 								} //end of immobilizer section
 							#endif
@@ -657,7 +697,7 @@ int main(void){
 							#endif //end define ROUTE_MSG
 
 							#if defined(DYNO_MODE)
-								if (rx_msg_header.ExtId==0X18DAF128 && DynoStateMachine!=0xff ){ //if message from ABS ECU and Dyno state machine is in progress
+								if (rx_msg_header.ExtId==0x18DAF128 && DynoStateMachine!=0xff ){ //if message from ABS ECU and Dyno state machine is in progress
 									if (DynoStateMachine==0 && rx_msg_header.DLC>=3){ //we received a reply to diagnostic session request msg
 										if(rx_msg_data[0]==0x06 && rx_msg_data[1]==0x50 && rx_msg_data[2]==0x03){ //if request was successful
 											DynoStateMachine++; //send dyno sts msg
@@ -703,6 +743,17 @@ int main(void){
 									}
 								}
 							#endif
+
+							#if defined(LOW_CONSUME)
+								if (rx_msg_header.ExtId==0x1E340000){ //if we received the "Wake" message from BCM
+									if((rx_msg_data[0]>>7)==1){ // if the "Main wakeup status from BCM" field is active
+										wakeUpAllProcessorsAndTransceivers();
+									}else{ //else, we should go to sleep
+										reduceConsumption();
+									}
+								}
+							#endif
+
 							break;
 						case CAN_ID_STD: //if standard ID
 							#if defined(ROUTE_MSG)

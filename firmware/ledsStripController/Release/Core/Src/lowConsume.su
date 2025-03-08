@@ -1,0 +1,8 @@
+../Core/Src/lowConsume.c:12:6:lowConsume_init	40	static
+../Core/Src/lowConsume.c:29:6:Reset_Other_Chips	8	static
+../Core/Src/lowConsume.c:36:6:Remove_Reset_From_Other_Chips	8	static
+../Core/Src/lowConsume.c:40:6:CAN_LOW_CONSUME_On	8	static
+../Core/Src/lowConsume.c:44:6:CAN_LOW_CONSUME_Off	8	static
+../Core/Src/lowConsume.c:50:6:lowConsume_process	8	static
+../Core/Src/lowConsume.c:61:6:reduceConsumption	8	static
+../Core/Src/lowConsume.c:76:6:wakeUpAllProcessorsAndTransceivers	8	static
