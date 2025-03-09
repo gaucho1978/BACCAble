@@ -1354,7 +1354,7 @@ int main(void){
 		uint8_t tmpStrLen2=0;
 		uint8_t tmpStrLen3=0;
 
-		uartTxMsg[0]= BhBusID;//first char shall be a # to talk with slave canable connected to BH can bus
+		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 
 		switch(uds_params_array[dashboardPageIndex].reqId){ //do preliminary additional stuff for special parameters (not uds)
 			case 0x10: //print oil pressure
@@ -1492,7 +1492,7 @@ uint16_t readFromFlash(uint8_t paramId){
 #if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
 	void clearDashboardBaccableMenu(){
 		//prepare empty message
-		uartTxMsg[0]=BhBusID; //# to send message to baccable slave connected to BH can bus
+		uartTxMsg[0]=BhBusIDparamString; //# to send message to baccable slave connected to BH can bus
 		for(uint8_t i=1;i<UART_BUFFER_SIZE;i++){
 			uartTxMsg[i]=0x20; //space char
 		}

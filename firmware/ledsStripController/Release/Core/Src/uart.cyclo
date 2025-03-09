@@ -1,4 +1,7 @@
-../Core/Src/uart.c:18:6:uart_init	2
-../Core/Src/uart.c:69:6:HAL_UART_RxCpltCallback	5
-../Core/Src/uart.c:103:6:HAL_UART_TxCpltCallback	2
-../Core/Src/uart.c:111:6:HAL_UART_ErrorCallback	1
+../Core/Src/uart.c:25:6:uart_init	2
+../Core/Src/uart.c:76:6:HAL_UART_RxCpltCallback	6
+../Core/Src/uart.c:152:6:HAL_UART_TxCpltCallback	2
+../Core/Src/uart.c:160:6:HAL_UART_ErrorCallback	1
+../Core/Src/uart.c:164:6:enter_standby_mode	1
+../Core/Src/uart.c:178:6:resetOtherProcessorsSleepStatus	1
+../Core/Src/uart.c:183:9:getOtherProcessorsSleepingStatus	2

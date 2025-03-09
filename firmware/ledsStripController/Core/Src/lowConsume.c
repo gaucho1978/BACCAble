@@ -30,6 +30,7 @@ void Reset_Other_Chips(void){
 	HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 0); // resets the other chips
 	lastChipResetTime= HAL_GetTick();
 	chipResetRequest=1;
+	resetOtherProcessorsSleepStatus(); //reset the stored status
 }
 
 
@@ -69,7 +70,7 @@ void reduceConsumption(void){
 				//Error_Handler(); //manage error in case of fail
 			}
 		}
-		lowConsumeIsActive=1; //it is better to move this line in serial line message receive
+		//lowConsumeIsActive=1; //it is better to move this line in serial line message receive
 	}
 }
 
