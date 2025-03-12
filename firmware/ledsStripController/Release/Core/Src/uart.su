@@ -1,7 +1,0 @@
-../Core/Src/uart.c:25:6:uart_init	40	static
-../Core/Src/uart.c:76:6:HAL_UART_RxCpltCallback	8	static
-../Core/Src/uart.c:152:6:HAL_UART_TxCpltCallback	8	static
-../Core/Src/uart.c:160:6:HAL_UART_ErrorCallback	8	static
-../Core/Src/uart.c:164:6:enter_standby_mode	0	static,ignoring_inline_asm
-../Core/Src/uart.c:178:6:resetOtherProcessorsSleepStatus	0	static
-../Core/Src/uart.c:183:9:getOtherProcessorsSleepingStatus	0	static
