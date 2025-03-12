@@ -2,6 +2,7 @@
 .metadata
 .settings
 *.ld
+.launch
 
 # outputs
 Debug
