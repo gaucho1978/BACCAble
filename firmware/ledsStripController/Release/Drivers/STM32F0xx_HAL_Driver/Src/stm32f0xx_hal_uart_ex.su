@@ -1,9 +1,0 @@
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:179:19:HAL_RS485Ex_Init	32	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:254:19:HAL_LIN_Init	16	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:442:14:HAL_UARTEx_WakeupCallback	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:354:6:HAL_UART_IRQHandler	8	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:490:19:HAL_UARTEx_StopModeWakeUpSourceConfig	32	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:542:19:HAL_UARTEx_EnableStopMode	8	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:568:19:HAL_UARTEx_DisableStopMode	8	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:603:19:HAL_MultiProcessorEx_AddressLength_Set	16	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_uart_ex.c:636:19:HAL_LIN_SendBreak	8	static
