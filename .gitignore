@@ -6,3 +6,8 @@
 # outputs
 Debug
 Release
+SavvyCAN-Windows_x64
+
+# temp files
+~*
+
