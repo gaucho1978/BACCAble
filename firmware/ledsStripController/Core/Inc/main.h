@@ -12,7 +12,7 @@
 		#include "math.h"
 
 		//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
-		#define SMART_DISABLE_START_STOP //comment this if you don't want to use start&stop disabling with can message
+		#define SMART_DISABLE_START_STOP //this works only on C1 can bus (OBD port pins 6 and 14) - comment this if you don't want to use start&stop disabling with can message
 		//#define DISABLE_START_STOP //uncomment this if you want to use start&stop disabling with external resistor simulating button press. this is left just in case the smart approach on some cars dont't work.
 
 		#define IMMOBILIZER_ENABLED //this works only on C1 can bus (OBD port pins 6 and 14) //comment this if you don't want immobilizer functionality. This functionality waits for a thief to connect to RFHUB and if the connection message is found, it resets the rfhub and it starts the Panic alarm.
@@ -65,15 +65,15 @@
 		// loop, the loop duration check)
 
 		//note: with the following we avoid some combinations of defines, but not all combinations are considered. some of them to avoid are up to you.
-		#if (defined(ACT_AS_CANABLE) &&									(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(ROUTE_MSG) || defined(ACC_VIRTUAL_PAD) ))
+		#if (defined(ACT_AS_CANABLE) &&					(defined(SMART_DISABLE_START_STOP) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(ROUTE_MSG) || defined(ACC_VIRTUAL_PAD) ))
 			#error "invalid combination of defines. ACT_AS_CANABLE can not be enabled because other fuctions are enabled"
 		#endif
 
-		#if (defined(SHOW_PARAMS_ON_DASHBOARD) &&		(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) ||defined(ACT_AS_CANABLE) || defined(ROUTE_MSG) || defined(ACC_VIRTUAL_PAD) || defined(LOW_CONSUME) ) )  //if required, let's automatically open the can bus
+		#if (defined(SHOW_PARAMS_ON_DASHBOARD) &&		(defined(SMART_DISABLE_START_STOP) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) ||defined(ACT_AS_CANABLE) || defined(ROUTE_MSG) || defined(ACC_VIRTUAL_PAD) || defined(LOW_CONSUME) ) )  //if required, let's automatically open the can bus
 			#error "invalid combination of defines. Disable SHOW_PARAMS_ON_DASHBOARD (because it works on BH can bus) if you want to use other functionalities (that works on C1/C2 can bus)"
 		#endif
 
-		#if ((defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE)) &&	(defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ACT_AS_CANABLE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(ACC_VIRTUAL_PAD)  || defined(LOW_CONSUME)))
+		#if ((defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE)) &&	(defined(SMART_DISABLE_START_STOP) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ACT_AS_CANABLE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(ACC_VIRTUAL_PAD)  || defined(LOW_CONSUME)))
 			#error "invalid combination of defines. If you want ESC_TC_CUSTOMIZATOR_ENABLED or DYNO, disable the other functions"
 		#endif
 
