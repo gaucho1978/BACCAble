@@ -103,7 +103,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#if (defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD) )
 							if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC)){
 								if (HAL_UART_Transmit_IT(&huart2, uartTxMsg, UART_BUFFER_SIZE) != HAL_OK){ //send it asyncronously (with interrupt) over uart
-									onboardLed_blue_on();
+									onboardLed_red_on();
 									//Error_Handler(); //manage error in case of fail
 								}
 							}
@@ -162,6 +162,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 }
 
 void enter_standby_mode(void) {
+	//onboardLed_blue_on();
     // Abilita SLEEPDEEP nel registro SCR
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 

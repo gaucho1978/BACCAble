@@ -7,9 +7,9 @@
 	#include "string.h"
 #endif
 
-#if (defined(SHOW_PARAMS_ON_DASHBOARD) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(LOW_CONSUME) )
+//#if (defined(SHOW_PARAMS_ON_DASHBOARD) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(LOW_CONSUME) )
 	#include "uart.h"
-#endif
+//#endif
 
 #if defined(LED_STRIP_CONTROLLER_ENABLED)
 	#include "vuMeter.h" //this is used to control led strip through usb pin
@@ -229,7 +229,7 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 
 #if (defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(SHOW_PARAMS_ON_DASHBOARD) || defined(LOW_CONSUME))
 	uint8_t dashboardPageStringArray[18]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
-	uint8_t uartTxMsg[UART_BUFFER_SIZE]; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to send over uart
+
 #endif
 
 #if (defined(SHOW_PARAMS_ON_DASHBOARD))
@@ -253,37 +253,49 @@ const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, al
 
 #endif
 
-	uint32_t debugTimer0;
+#if defined(REMOTE_START_ENABLED)
+	uint8_t engineRemoteStartRequest=0;
+	uint32_t doorOpenTime=0;
+	CAN_TxHeaderTypeDef REMOTE_START_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8};
+	uint8_t REMOTE_START_msg_data[8]={0x42,0x04,0x96,0,};
+	uint8_t RF_fob_number=0;
+	uint8_t pressStartButton=0;
+	CAN_TxHeaderTypeDef BODY4_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
 
-	UART_HandleTypeDef huart2; // this is the serial line between baccables -- used with SHOW_PARAMS_ON_DASHBOARD and SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE and low consumption define functionalities
+#endif
 
-	uint32_t currentRpmSpeed=0;//used when SHIFT_INDICATOR_ENABLED or IMMOBILIZER_ENABLED or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE or DISABLE_START_STOP is defined
-	uint8_t currentGear=0; // used when IMMOBILIZER_ENABLED or LED_STRIP_CONTROLLER_ENABLED is defined
-	// Storage for status and received message buffer
-	CAN_RxHeaderTypeDef rx_msg_header;  //msg header
-	uint8_t rx_msg_data[8] = {0,};  //msg data
-	uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
+uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
+uint32_t debugTimer0;
 
-	//the following array stores buttons pressed password sequence (future growth now commented)
-	//these are possible values 0x90=RES,
-	//							0x11=Adaptive Cruise control on/off
-	//							0x12=Cruise control on/off,
-	//                          0x08=Cruise control speed gently up,
-	//                          0x00=Cruise control speed strong up,
-	//                          0x18=Cruise control speed gently down,
-	//                          0x20=Cruise control speed strong down
-	// WARNING: when you press cruise control strong up, before and after it, also cruise control gently up
-	//          message is fired, therefore your sequence will be altered. A workaround
-	//          is to use both messages in the sequence, or to use just the gently up/down message.
+UART_HandleTypeDef huart2; // this is the serial line between baccables -- used with SHOW_PARAMS_ON_DASHBOARD and SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE and low consumption define functionalities
 
-	//uint32_t buttonPressedTimeArray[20] = {0};  //0=RES, 1=Cruise control on/off, 2=Cruise control speed gently up, 3=Cruise control speed strong up, 4=Cruise control speed gently down, 5=Cruise control speed strong down
-	//uint8_t ButtonPressSequence1Index=0;
-	//uint8_t ButtonPressSequence1Len=5;
-	//uint8_t ButtonPressSequence1[5]={0x90,0x08,0x00,0x08,0x90}; //current password: RES - CC gently up  - CC strong up - CC gently up - RES
+uint32_t currentRpmSpeed=0;//used when SHIFT_INDICATOR_ENABLED or IMMOBILIZER_ENABLED or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE or DISABLE_START_STOP is defined
+uint8_t currentGear=0; // used when IMMOBILIZER_ENABLED or LED_STRIP_CONTROLLER_ENABLED is defined
+// Storage for status and received message buffer
+CAN_RxHeaderTypeDef rx_msg_header;  //msg header
+uint8_t rx_msg_data[8] = {0,};  //msg data
+uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
-	//uint8_t ButtonPressSequence2Index=0;
-	//uint8_t ButtonPressSequence2Len=8;
-	//uint8_t ButtonPressSequence2[8]={0x90,0x08,0x00,0x08,0x18,0x20,0x18,0x12}; //current password: RES - CC gently up - CC strong up - CC gently up - CC gently down - CC strong down - CC gently down - CC on/off
+//the following array stores buttons pressed password sequence (future growth now commented)
+//these are possible values 0x90=RES,
+//							0x11=Adaptive Cruise control on/off
+//							0x12=Cruise control on/off,
+//                          0x08=Cruise control speed gently up,
+//                          0x00=Cruise control speed strong up,
+//                          0x18=Cruise control speed gently down,
+//                          0x20=Cruise control speed strong down
+// WARNING: when you press cruise control strong up, before and after it, also cruise control gently up
+//          message is fired, therefore your sequence will be altered. A workaround
+//          is to use both messages in the sequence, or to use just the gently up/down message.
+
+//uint32_t buttonPressedTimeArray[20] = {0};  //0=RES, 1=Cruise control on/off, 2=Cruise control speed gently up, 3=Cruise control speed strong up, 4=Cruise control speed gently down, 5=Cruise control speed strong down
+//uint8_t ButtonPressSequence1Index=0;
+//uint8_t ButtonPressSequence1Len=5;
+//uint8_t ButtonPressSequence1[5]={0x90,0x08,0x00,0x08,0x90}; //current password: RES - CC gently up  - CC strong up - CC gently up - RES
+
+//uint8_t ButtonPressSequence2Index=0;
+//uint8_t ButtonPressSequence2Len=8;
+//uint8_t ButtonPressSequence2[8]={0x90,0x08,0x00,0x08,0x18,0x20,0x18,0x12}; //current password: RES - CC gently up - CC strong up - CC gently up - CC gently down - CC strong down - CC gently down - CC on/off
 
 int main(void){
 
@@ -554,6 +566,8 @@ int main(void){
 				}
 			}
 		#endif
+
+
 
 		// If CAN message receive is pending, process the message
 		if(is_can_msg_pending(CAN_RX_FIFO0)){
@@ -832,6 +846,56 @@ int main(void){
 									//CC brake intervention request is on byte 4, bit5
 									//bank deactivation status is on byte5, bit 7 and 6
 									//CC brake intervention is on byte 5 from bit 5 to 0 and byte 6 from bit 7 to 4.
+									break;
+								case 0x000001EF:
+									#if defined(REMOTE_START_ENABLED)
+										if(rx_msg_header.DLC==8){
+											if(rx_msg_data[2]>>4==0x4){ //it is the message to open the car. THIS IS JUST FOR TEST!!!!!
+											RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obrainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message
+											//within 2 seconds, send remote start
+											doorOpenTime=HAL_GetTick();
+											engineRemoteStartRequest=3;
+											}
+
+											if(engineRemoteStartRequest){
+												if(doorOpenTime+2000<HAL_GetTick()){ //we have to start the engine
+													memcpy(&REMOTE_START_msg_data, &rx_msg_data, 8);
+													REMOTE_START_msg_data[0]= (REMOTE_START_msg_data[0] & 0x0F ) | 0x80; //set custom key ignition status= custom key in ignition
+
+													REMOTE_START_msg_data[1]=RF_fob_number;//update the fob number
+													if(engineRemoteStartRequest==3){ //first message let's close the doors
+														REMOTE_START_msg_data[2]=0x16;//update the function request (1= lock ports) and requestor (6=remote_start)
+														doorOpenTime=HAL_GetTick()-1000; //refresh time, so that we will wait 2 more seconds
+
+													}else{
+														//REMOTE_START_msg_data[2]=0x96;//update the function request (9= remote start) and requestor (6=remote_start)
+														REMOTE_START_msg_data[2]=0x92;//update the function request (9= remote start) and requestor (2=original keyless)
+													}
+													REMOTE_START_msg_data[6] ++; //update the counter
+													if(REMOTE_START_msg_data[6]>0x0F) REMOTE_START_msg_data[6]=0; //check the counter
+
+													REMOTE_START_msg_data[7] = calculateCRC(REMOTE_START_msg_data,REMOTE_START_msg_header.DLC); //update checksum
+													//can_tx(&REMOTE_START_msg_header, REMOTE_START_msg_data); //send msg
+
+													//transmit one more message
+													if(engineRemoteStartRequest==2){
+														REMOTE_START_msg_data[6] ++; //update the counter
+														if(REMOTE_START_msg_data[6]>0x0F) REMOTE_START_msg_data[6]=0; //check the counter
+														REMOTE_START_msg_data[7] = calculateCRC(REMOTE_START_msg_data,REMOTE_START_msg_header.DLC); //update checksum
+														can_tx(&REMOTE_START_msg_header, REMOTE_START_msg_data); //send msg
+														doorOpenTime=HAL_GetTick()+5000; //set the trigger in order to enter next 10 seconds
+													}
+
+													if(engineRemoteStartRequest==1){
+
+														pressStartButton=1;
+													}
+													onboardLed_blue_on();
+													if (engineRemoteStartRequest>0) engineRemoteStartRequest--; //avoid to return here after the required messages were sent
+												}
+											}
+										}
+									#endif
 									break;
 								case 0x000001F0:
 									//clutch interlock is on byte 0 bit 7
@@ -1144,6 +1208,23 @@ int main(void){
 									*/
 									break;
 								case 0x00000384:
+									// pressStartButton
+									#if defined(REMOTE_START_ENABLED)
+										if(pressStartButton){
+											if(rx_msg_header.DLC==8){
+												// alter and send message to press car start button (maybe)
+												rx_msg_data[0]=(rx_msg_data[0] & 0xF0) | 0x08; //set command ignition status=run
+												uint8_t tmpCounter=(rx_msg_data[6]>>4)+1; //increment counter
+												if (tmpCounter>0x0F) tmpCounter=0; //check counter
+												rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter; //assign counter
+												rx_msg_data[7] = calculateCRC(rx_msg_data,8); //update checksum
+
+												can_tx(&BODY4_msg_header, rx_msg_data); //send msg
+												pressStartButton=0;
+												onboardLed_blue_on();
+											}
+										}
+									#endif
 									#if defined(ESC_TC_CUSTOMIZATOR_ENABLED)
 										//on C2 can bus, msg 0x384 contains, in byte3, bit6 contains left stalk button press status (LANE indicator button)
 										if((rx_msg_data[3] & 0x40) ==0x40){ // left stalk button was pressed (lane following indicator)

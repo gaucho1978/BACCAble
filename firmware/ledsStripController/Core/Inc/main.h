@@ -21,8 +21,8 @@
 		#define SHIFT_THRESHOLD 2500 //this is the configurable shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
 		//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My23 Giulia/Stelvio
 		//#define SHOW_PARAMS_ON_DASHBOARD //this works only on BH can bus (obd port pin 3 and pin 11) //--// uncomment this if you connected another baccable to usb port and want this baccable to receive parameters from master baccable. Received parameter will be displaied on the dashboard.
-		//
-		//#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //this works only on C1 can bus (OBD port pins 6 and 14) //uncomment this if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
+
+		#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //this works only on C1 can bus (OBD port pins 6 and 14) //uncomment this if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
 		#define IS_DIESEL //if uncommented uses parameters for DIESEL engine, otherwise it uses parameters for GASOLINE engine
 
 		//#define ROUTE_MSG //this define performs the following:
@@ -45,9 +45,12 @@
 
 		//#define ACC_VIRTUAL_PAD //simulate the presence of ACC button pad. When the user press button to enable/disable CC, the BACCABLE sends message to enable/disable ACC
 
-		//#define UCAN_BOARD_LED_INVERSION //on ucan fysect board the led onboard are physically connected differently (status is inverted)
+		#define UCAN_BOARD_LED_INVERSION //on ucan fysect board the led onboard are physically connected differently (status is inverted)
 
 		//#define LOW_CONSUME //used only by new Baccable PCB. If defined, the master board on C1 bus will put other 2 chips and the other 2 can transceivers to sleep.
+
+		//experimental: it still do not work. don't use it!
+		//#define REMOTE_START_ENABLED //if uncommented, the car can be powered on by remote by means of the original key
 
 		//WARNING: ACT_AS_CANABLE takes a lot of time to buffer and send packets to usb, therefore the main
 		//         loop time duration increases. If you have IMMOBILIZER_ENABLED therefore can messages will
