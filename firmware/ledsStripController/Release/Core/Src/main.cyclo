@@ -1,4 +1,3 @@
-../Core/Src/main.c:1693:9:calculateCRC.part.0	5
 ../Core/Src/main.c:1515:7:scaleVolume	2
 ../Core/Src/main.c:1525:9:scaleColorSet	1
 ../Core/Src/main.c:1533:9:saveOnflash	3
@@ -6,9 +5,9 @@
 ../Core/Src/main.c:1574:7:clearDashboardBaccableMenu	3
 ../Core/Src/main.c:1591:6:floatToStr	26
 ../Core/Src/main.c:1433:7:sendDashboardPageToSlaveBaccable	17
-../Core/Src/main.c:1693:9:calculateCRC	2
+../Core/Src/main.c:1693:9:calculateCRC	5
 ../Core/Src/main.c:1709:6:SystemClock_Config	4
-../Core/Src/main.c:300:5:main	122
+../Core/Src/main.c:300:5:main	107
 ../Core/Src/main.c:1750:6:Error_Handler	1
 ../Core/Src/main.c:1756:6:system_irq_disable	1
 ../Core/Src/main.c:1764:6:system_irq_enable	1

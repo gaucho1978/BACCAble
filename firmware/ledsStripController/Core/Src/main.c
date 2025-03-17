@@ -860,7 +860,7 @@ int main(void){
 											if(engineRemoteStartRequest){
 												if(doorOpenTime+2000<HAL_GetTick()){ //we have to start the engine
 													memcpy(&REMOTE_START_msg_data, &rx_msg_data, 8);
-													REMOTE_START_msg_data[0]= (REMOTE_START_msg_data[0] & 0x0F ) | 0x80; //set custom key ignition status= custom key in ignition
+													//REMOTE_START_msg_data[0]= (REMOTE_START_msg_data[0] & 0x0F ) | 0x80; //set custom key ignition status= custom key in ignition
 
 													REMOTE_START_msg_data[1]=RF_fob_number;//update the fob number
 													if(engineRemoteStartRequest==3){ //first message let's close the doors
@@ -868,28 +868,28 @@ int main(void){
 														doorOpenTime=HAL_GetTick()-1000; //refresh time, so that we will wait 2 more seconds
 
 													}else{
-														//REMOTE_START_msg_data[2]=0x96;//update the function request (9= remote start) and requestor (6=remote_start)
-														REMOTE_START_msg_data[2]=0x92;//update the function request (9= remote start) and requestor (2=original keyless)
+														REMOTE_START_msg_data[2]=0x96;//update the function request (9= remote start) and requestor (6=remote_start)
+														//REMOTE_START_msg_data[2]=0x92;//update the function request (9= remote start) and requestor (2=original keyless)
 													}
 													REMOTE_START_msg_data[6] ++; //update the counter
 													if(REMOTE_START_msg_data[6]>0x0F) REMOTE_START_msg_data[6]=0; //check the counter
 
 													REMOTE_START_msg_data[7] = calculateCRC(REMOTE_START_msg_data,REMOTE_START_msg_header.DLC); //update checksum
-													//can_tx(&REMOTE_START_msg_header, REMOTE_START_msg_data); //send msg
+													can_tx(&REMOTE_START_msg_header, REMOTE_START_msg_data); //send msg
 
 													//transmit one more message
-													if(engineRemoteStartRequest==2){
-														REMOTE_START_msg_data[6] ++; //update the counter
-														if(REMOTE_START_msg_data[6]>0x0F) REMOTE_START_msg_data[6]=0; //check the counter
-														REMOTE_START_msg_data[7] = calculateCRC(REMOTE_START_msg_data,REMOTE_START_msg_header.DLC); //update checksum
-														can_tx(&REMOTE_START_msg_header, REMOTE_START_msg_data); //send msg
-														doorOpenTime=HAL_GetTick()+5000; //set the trigger in order to enter next 10 seconds
-													}
+													//if(engineRemoteStartRequest==2){
+													//	REMOTE_START_msg_data[6] ++; //update the counter
+													//	if(REMOTE_START_msg_data[6]>0x0F) REMOTE_START_msg_data[6]=0; //check the counter
+													//	REMOTE_START_msg_data[7] = calculateCRC(REMOTE_START_msg_data,REMOTE_START_msg_header.DLC); //update checksum
+													//	can_tx(&REMOTE_START_msg_header, REMOTE_START_msg_data); //send msg
+													//	doorOpenTime=HAL_GetTick()+5000; //set the trigger in order to enter next 10 seconds
+													//}
 
-													if(engineRemoteStartRequest==1){
+													//if(engineRemoteStartRequest==1){
 
-														pressStartButton=1;
-													}
+													//	pressStartButton=1;
+													//}
 													onboardLed_blue_on();
 													if (engineRemoteStartRequest>0) engineRemoteStartRequest--; //avoid to return here after the required messages were sent
 												}
