@@ -1,8 +1,0 @@
-../Core/Src/onboardLed.c:38:6:onboardLed_red_on	8	static
-../Core/Src/onboardLed.c:49:6:onboardLed_red_off	8	static
-../Core/Src/onboardLed.c:55:6:onboardLed_blue_blink	24	static
-../Core/Src/onboardLed.c:65:6:onboardLed_red_blink	24	static
-../Core/Src/onboardLed.c:77:6:onboardLed_blue_on	8	static
-../Core/Src/onboardLed.c:87:6:onboardLed_blue_off	8	static
-../Core/Src/onboardLed.c:17:6:onboardLed_init	48	static
-../Core/Src/onboardLed.c:92:6:onboardLed_process	8	static
