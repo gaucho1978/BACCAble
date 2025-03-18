@@ -1,4 +1,0 @@
-../Core/Src/error.c:16:6:error_assert	2
-../Core/Src/error.c:27:10:error_timestamp	2
-../Core/Src/error.c:36:9:error_occurred	2
-../Core/Src/error.c:45:10:error_reg	1

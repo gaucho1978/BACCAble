@@ -1,9 +1,0 @@
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:107:6:HAL_PWR_ConfigPVD	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:149:6:HAL_PWR_EnablePVD	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:158:6:HAL_PWR_DisablePVD	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:185:13:HAL_PWR_PVDCallback	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:168:6:HAL_PWR_PVD_IRQHandler	16	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:206:6:HAL_PWREx_EnableVddio2Monitor	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:216:6:HAL_PWREx_DisableVddio2Monitor	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:245:13:HAL_PWREx_Vddio2MonitorCallback	0	static
-../Drivers/STM32F0xx_HAL_Driver/Src/stm32f0xx_hal_pwr_ex.c:228:6:HAL_PWREx_Vddio2Monitor_IRQHandler	8	static

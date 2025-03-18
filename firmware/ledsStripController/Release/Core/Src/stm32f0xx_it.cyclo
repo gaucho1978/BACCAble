@@ -1,8 +1,0 @@
-../Core/Src/stm32f0xx_it.c:16:6:NMI_Handler	1
-../Core/Src/stm32f0xx_it.c:31:6:HardFault_Handler	1
-../Core/Src/stm32f0xx_it.c:46:6:SVC_Handler	1
-../Core/Src/stm32f0xx_it.c:59:6:PendSV_Handler	1
-../Core/Src/stm32f0xx_it.c:72:6:SysTick_Handler	1
-../Core/Src/stm32f0xx_it.c:87:6:DMA1_Channel4_5_6_7_IRQHandler	1
-../Core/Src/stm32f0xx_it.c:98:6:USB_IRQHandler	1
-../Core/Src/stm32f0xx_it.c:109:6:USART2_IRQHandler	1
