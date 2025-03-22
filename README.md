@@ -306,11 +306,9 @@ The board can be used directly connected to obd port (recent veichles requires S
 
 available documentation is the following:
 
-![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_WITH_P1.pdf)
+![3D views](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf)
 
-![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf)
-
-![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf)
+![Schematic](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf)
 
 
 
