@@ -17,8 +17,9 @@
 
 #if defined(LOW_CONSUME)
 	#include "lowConsume.h"
+	extern uint32_t lastReceivedCanMsgTime;
 #endif
-const char *FW_VERSION="BACCABLE V.2.3";  //this is used to store FW version, also shown on usb when used as slcan
+const char *FW_VERSION="BACCABLE V.2.4";  //this is used to store FW version, also shown on usb when used as slcan
 
 #if defined(ACC_VIRTUAL_PAD)
 	//function Virtual ACC Pad
@@ -325,9 +326,6 @@ int main(void){
 		uart_init();
 	#endif
 
-	//#if defined(SHOW_PARAMS_ON_DASHBOARD)
-	//	MX_USB_DEVICE_Init();
-	//#endif
 
 	#if (defined(IMMOBILIZER_ENABLED) || defined(LED_STRIP_CONTROLLER_ENABLED) || defined(SHIFT_INDICATOR_ENABLED) || defined(ESC_TC_CUSTOMIZATOR_ENABLED) ||defined(DYNO_MODE) || defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE) || defined(DISABLE_START_STOP) || defined(SMART_DISABLE_START_STOP) || defined(ROUTE_MSG) || defined(ACC_VIRTUAL_PAD))  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
@@ -363,7 +361,10 @@ int main(void){
 		#if defined(LOW_CONSUME)
 			lowConsume_process();
 		#endif
-
+			//if(debugTimer0>10000 && debugTimer0<10005) reduceConsumption();
+			//if(debugTimer0>0) baccableDashboardMenuVisible=1;
+			//if(debugTimer0>15000) enter_standby_mode();
+			//baccableDashboardMenuVisible=1;
 		//onboardLed_red_blink(5);
 		//onboardLed_red_on();
 
@@ -395,10 +396,6 @@ int main(void){
 			//testMsgData[4]=0xE6; //pedal position
 			//can_tx(&testMsgHeader, testMsgData);
 		#endif
-
-		//#if defined(SHOW_PARAMS_ON_DASHBOARD)
-		//	cdc_process(); //processa dati usb
-		//#endif
 
 		#if defined(LED_STRIP_CONTROLLER_ENABLED)
 			//don't act as canable. One USB port pin is used to control leds.
@@ -581,6 +578,9 @@ int main(void){
 					}
 				#endif
 
+				#if defined(LOW_CONSUME)
+					lastReceivedCanMsgTime=HAL_GetTick();
+				#endif
 				if (rx_msg_header.RTR == CAN_RTR_DATA){
 					switch(rx_msg_header.IDE){
 						case CAN_ID_EXT:
@@ -757,7 +757,7 @@ int main(void){
 									}
 								}
 							#endif
-
+							/*
 							#if defined(LOW_CONSUME)
 								if (rx_msg_header.ExtId==0x1E340000){ //if we received the "Wake" message from BCM
 									if((rx_msg_data[0]>>7)==1){ // if the "Main wakeup status from BCM" field is active
@@ -767,7 +767,7 @@ int main(void){
 									}
 								}
 							#endif
-
+							*/
 							break;
 						case CAN_ID_STD: //if standard ID
 							#if defined(ROUTE_MSG)

@@ -1,12 +1,13 @@
 #include "stm32f0xx_hal.h"
 #include "lowConsume.h"
 #include "uart.h"
-uint32_t lastChipResetTime=0;
-uint8_t chipResetRequest=0;
+//uint32_t lastChipResetTime=0;
+//uint8_t chipResetRequest=0;
 uint8_t lowConsumeIsActive=0; //0=false, 1=true
+uint32_t lastReceivedCanMsgTime=0;
 
-extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
-extern UART_HandleTypeDef huart2; // this is the serial line between baccables
+//extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
+//extern UART_HandleTypeDef huart2; // this is the serial line between baccables
 
 // Initialize GPIOs
 void lowConsume_init(){
@@ -17,20 +18,26 @@ void lowConsume_init(){
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    Remove_Reset_From_Other_Chips();
+
 
     GPIO_InitStruct.Pin = CAN_LOW_CONSUME_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; //we need to be able to set it to 3,3V
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    CAN_LOW_CONSUME_Off();
 
+
+    //HAL_GPIO_WritePin(CAN_LOW_CONSUME, 1);
+    //HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 0);
 }
 
 
 void Reset_Other_Chips(void){
 	HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 0); // resets the other chips
-	lastChipResetTime= HAL_GetTick();
-	chipResetRequest=1;
-	resetOtherProcessorsSleepStatus(); //reset the stored status
+	//lastChipResetTime= HAL_GetTick();
+	//chipResetRequest=1;
+	//resetOtherProcessorsSleepStatus(); //reset the stored status
 }
 
 
@@ -50,6 +57,7 @@ void CAN_LOW_CONSUME_Off(void){
 // Process time-based events
 void lowConsume_process(void){
 	// If GPIO has been on for long enough, turn it off
+	/*
 	if(chipResetRequest){
 		if(HAL_GetTick() - lastChipResetTime > CHIP_RESET_DURATION){
 			Remove_Reset_From_Other_Chips();
@@ -57,11 +65,29 @@ void lowConsume_process(void){
 			lowConsumeIsActive=0; //we completed the wakeup process (wakeUpAllProcessorsAndTransceivers function), therefore store it in this variable
 		}
 	}
+	*/
+
+	if(lowConsumeIsActive){ //se siamo in basso consumo
+		//se l'ultimo messaggio ricevuto é meno vecchio di un minuto, risveglia gli altri chip
+		if(HAL_GetTick()-lastReceivedCanMsgTime<60000){
+			wakeUpAllProcessorsAndTransceivers();
+			lowConsumeIsActive=0;
+		}
+	}else{ //altrimenti se non siamo in basso consumo
+		//se l'ultimo messaggio ricevuto é piú vecchio di un minuto, riduci i consumi
+		if(HAL_GetTick()-lastReceivedCanMsgTime>60000){
+			reduceConsumption();
+			lowConsumeIsActive=1;
+		}
+	}
+
 }
 
 void reduceConsumption(void){
 	if(!lowConsumeIsActive){
 		CAN_LOW_CONSUME_On(); //reduce consumption of other can transceivers (set then as only RX)
+		Reset_Other_Chips(); //reduce consumption of other chips (left under reset)
+		/*
 		//send a message via serial line to inform other chips
 		uartTxMsg[0]= AllSleep;//we will communicate with all chips on the serial bus to tell them to sleep
 		if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC)){
@@ -70,14 +96,17 @@ void reduceConsumption(void){
 				//Error_Handler(); //manage error in case of fail
 			}
 		}
-		//lowConsumeIsActive=1; //it is better to move this line in serial line message receive
+		*/
+		lowConsumeIsActive=1;
+		onboardLed_blue_on();
 	}
 }
 
 void wakeUpAllProcessorsAndTransceivers(void){
 	if(lowConsumeIsActive){
-		Reset_Other_Chips(); //reset Processors
+		//Reset_Other_Chips(); //reset Processors
 		CAN_LOW_CONSUME_Off(); //wake up transceivers
+		Remove_Reset_From_Other_Chips(); //wake up other processors
 		onboardLed_blue_on();
 	}
 }
