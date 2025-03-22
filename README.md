@@ -331,7 +331,9 @@ I developed different cases.
 
 I recently added a case for the new PCB board:
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview)
+![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview.jpg)
+![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview2.jpg)
+
 
 
 Single case for original canable or DykbRadio Nano canable:
