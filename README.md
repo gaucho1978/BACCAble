@@ -26,7 +26,9 @@ L'autore del progetto non si assume alcuna responsabilità per eventuali danni, 
 Si raccomanda di non impiegare questo progetto in applicazioni reali su veicoli.
 
 ## Scope
-This project uses the famous CANABLE (the cheapest can bus device on the market) in order to:
+This project is able to use the famous CANABLE (the cheapest can bus device on the market).
+Now it is also available a dedicated PCB board for the baccable, including, in a single board, 3 canable, more efficient power consumption and additional I/O for future espansion (You can find more details in the dedicated subparagraph).
+Current available functions are:
 - sniff on the can bus (useful for debug and exploit purposes)
 - decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip by means of the decoded can bus data, then lighting the leds strip according to accelerator pedal position and gear selection.
@@ -37,7 +39,9 @@ This project uses the famous CANABLE (the cheapest can bus device on the market)
 - route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).  
 - enable and disable ESC and TC with left stalk button press
 - Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
-
+- ACC_VIRTUAL_PAD allows to enable Adaptive Cruise Control without the need to thange the wheel buttons pad: baccable will detect Cruise Control buttons press and it will send Adaptive Cruise Control messages to ECU.  
+- LOW consumpption, used to reduce current consumption if using the new Baccable pcb board.
+    
 BACCABLE overview (click on the following image to see the video) (note: video not updated. do not includes all the functionalities added to the device last months)
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/HStaXDe9asQ/0.jpg)](https://www.youtube.com/watch?v=HStaXDe9asQ)
@@ -62,6 +66,11 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - SHIFT warning indicator on dashboard (more detailes in the dedicated subparagraph),
 - ESC and TC controller (more detailes in the dedicated subparagraph)
 - show parameters on dashboard (more detailes in the dedicated subparagraph)
+- DYNO mode (more detailes in the dedicated subparagraph)
+- ACC_VIRTUAL_PAD (more detailes in the dedicated subparagraph)
+- LOW consumpption, used to reduce current consumption if using the new Baccable pcb board  (more detailes in the dedicated subparagraph)
+
+Now I developed a custom Board for Baccable, including 3 canable in a small factor form. You can find more details in the dedicated subparagraph.
 
 ## Folders content
 - Subfolder firmware contains the firmware
@@ -69,6 +78,8 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - Subfolder hardware/box contains the 3d model of the cases to accomodate required components.
 - Subfolder hardware/system interconnection contains interconnection diagram to connect required components
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
+- Subfolder hardware/newBaccableDedicatedPcb contains the new pcb for Baccable
+
 ## Start&Stop car functionality Disabler
 The new  functionality "car start&stop disabler" (#define SMART_DISABLE_START_STOP) is implemented by simply sending the expected message on C1 can bus. The function is firedonly once, after at least 30 seconds from the switch on and only if engine is on and only if start&stop is active.
 
@@ -124,8 +135,13 @@ The following video explains the behavious and the code description:
 
  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/JYUBBTW4WRo/0.jpg)](https://www.youtube.com/watch?v=JYUBBTW4WRo)
 
-Note1: this works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
-Note2: this works only if baccable is connected to C1 can bus.
+The following video show the improvement obtained to let it work on my23 Giulias/Stelvios too
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Nnbfoa0MM6g/0.jpg)](https://www.youtube.com/watch?v=Nnbfoa0MM6g)
+
+
+Note1: Shilft functionality works only if you previously enabled race mode with proxy alignment (or if you have a Quadrifoglio)
+Note2: Shilft functionality works only if baccable is connected to C1 can bus.
 
 ## DASHBOARD MENU functionality
 Adds a menu to the dashboard allowing the user to show additional parameters. 
@@ -235,6 +251,15 @@ The following video shows how to enable and disable it:
 
  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/Aphb4rLYlQo/0.jpg)](hhttps://youtu.be/Aphb4rLYlQo)
 
+## ACC_VIRTUAL PAD
+If your automatic gear Giulia/Stelvio has Cruise control and you want adaptive cruise control, you can enable the function with a proxy align procedure. Then you need to buy a ACC buttons pad to be mounted on the wheel. Now with Baccable you don't need to buy the buttons pad because Baccable will listen to CC mesages and overwrite them with ACC messages.
+Look at this video to better understand:
+
+ [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-KmsRbXVeG8/0.jpg)](hhttps://youtu.be/-KmsRbXVeG8)
+
+## LOW CONSUME
+this function, if using the new Baccable PCB Board (it includes 3 baccable), will allow the master baccable, to reset the other 2 chips and to put can transiceivers in low consumption, by means of 2 dedicated GPIO. Low consume is activated after one minute without messages on the bus, and it will wake up as soon as messages start to flow again on the bus.
+
 ## BACCABLE Usage Instructions
 You should perform some preliminary settings inside firmware:
 - If you want to use the device as usb can bus sniffer you shall uncomment #define ACT_AS_CANABLE in main.h (better if you comment the other functionalities defines to reduce computational charge). Generally speaing if you use other functions, the ACT_AS_CANABLE shall remain commented otherwise the device  don't properly work in some situations.
@@ -247,6 +272,7 @@ You should perform some preliminary settings inside firmware:
 - If  you want the capability to enable and disable TC with left stalk button, you shall uncomment #define ESC_TC_CUSTOMIZATOR_ENABLED in main.h and connect the baccable to C2 can bus (pin 12 and 13 of the OBD port)
 - If you want to add menu on the dashboard to display additional parameters, you shall uncomment #define SHOW_PARAMS_ON_DASHBOARD in main.h, for the slave canable connected to BH can bus (in example on OBD port, pins 3 and 11) and connect another canable to C1 can bus to act as the master. The master canable shall be set with the #define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE. The slave receives data from master canable and display it on dashboard, while the master gets the parameters on C1 bus and sends them to slave canable. 
 - I found that fysect ucan board has leds connecetd in a different manner so that a inversion on the control of the internal transistors are required. So if you use fysect ucan board don't forget to uncomment #define UCAN_BOARD_LED_INVERSION
+- if you want to use ACC_virtual_pad functionality you shall uncomment, on the baccable connected to C1 bus, the #define ACC_VIRTUAL_PAD
 
 Note: immobilizer at the beginning is enabled by default. To permanently toggle the status you shall be with motor on, cruise control disabled, neutral gear, press  cruise control gentle speed up for at around 30 seconds. If the immo becomes disabled, it will be blink the  dashboard brightness for 5-6 times. If immo becomes activates, the dashboard will blink 3 times. change is permanent after a power loss.
 
@@ -258,8 +284,6 @@ Note: compile the code in Release version and not debug since Release version is
 Software to use:
 - use stm32CubeIde to compile on windows
 - use stm32CubeProgrammer to flash the firmware elf file contained in subfolder firmware\ledsStripController\Release 
-
-Note: i downloaded previous version of the programmer (v.2.15.0) since last available revision had some bug that won't allow me to flash canable. Edit: now also last version can be used.
 
 Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
@@ -289,7 +313,7 @@ Leds strip: https://amzn.to/3W3TifJ
 
 Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
 
-## The interconnections
+## The interconnections (CANABLE connections to the CAR)
 Since I found how to disable Start&Stop by only sending can message, the new required connections are just: CAN bus from canable to car (termination board on canable) and power supply from usb hub 5V usb to the usb port of the canable.
 If you enable the function to control a led strip, the usb data shall be connected to led strip, as defined in the old schematic here reported for reference.
 If you use the function to show params on dashboard, you have to add the wire between the 2 boards (watch the diagram in the DASHBOARD MENU functionality  section of this page.
@@ -304,19 +328,24 @@ Note: if you use immobilizer function, it is suggested to remove the voltage reg
 
 ## The Box
 I developed different cases.
-New single case for original canable or DykbRadio Nano canable:
 
+I recently added a case for the new PCB board:
+
+![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview)
+
+
+Single case for original canable or DykbRadio Nano canable:
 
 ![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/box.png)
 
 ![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/cap.png)
 
-New single case for Fysect Ucan:
+Single case for Fysect Ucan:
 (uses same case of dual ucan with a dedicated cap)
 
 ![Box with Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/single_fysect_ucan/preview.png)
 
-New Dual case for Fysect Ucan (to accomodate 2 ucan, each one connected to a different can bus):
+Dual case for Fysect Ucan (to accomodate 2 ucan, each one connected to a different can bus):
 
 ![dual box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/dual_fysect_ucan/preview.png)
 
@@ -397,9 +426,9 @@ DMA controllers in STM32s support various operations, one of them being super ha
 
 We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
 
-## Alfa Romeo Giulia Protocol Reverse Engineering 
+## Alfa Romeo Giulia/Stelvio Protocol Reverse Engineering 
 
-These areinformation that I found. Use everything this at your own risk.
+These are some of the information that I found. Use everything this at your own risk. Inside code you will find more.
       
 1. msg id 0x90  prints text on dashboard (on BH can bus) and contains:
     - total frame number is on byte 0 from bit 7 to 3
