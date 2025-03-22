@@ -70,7 +70,7 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - ACC_VIRTUAL_PAD (more detailes in the dedicated subparagraph)
 - LOW consumpption, used to reduce current consumption if using the new Baccable pcb board  (more detailes in the dedicated subparagraph)
 
-Now I developed a custom Board for Baccable, including 3 cnable in a small factor form. You can find more details in the dedicated subparagraph.
+Now I developed a custom Board for Baccable, including 3 canable in a small factor form. You can find more details in the dedicated subparagraph.
 
 ## Folders content
 - Subfolder firmware contains the firmware
