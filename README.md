@@ -161,6 +161,11 @@ This diagram shows the required connections for this function to work:
 This video shows the new functionality:
   
  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/q5ryux2daeE/0.jpg)](https://youtu.be/q5ryux2daeE?si=QtWNP4ClmFG99Ner)
+
+ Now there is a define "(IS_DIESEL) to choose if show diesel or gasoline parameters (if IS_DIESEL is commented it will use gasoline parameters). The following video shows the gasoline parameters:
+ 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/WeFWKNaOOpQ/0.jpg)](https://youtu.be/WeFWKNaOOpQ)
+
  
 The parameters array is customizable ,It resides in main.c. (search for uds_params_array array)
  
@@ -289,8 +294,28 @@ Flash procedure:
 - press reset button on the canable, then connect usb to pc (the canable will be detected as serial device named "stm32 bootloader"
 - use stm32CubeProgrammer to flash the device using the file ...firmware\ledsStripController\Release\ledsStripController.elf
 
-## The hardware
-click on the following image to see the full hardware and interconnections video:
+## The hardware using NEW BACCABLE BOARD
+The following video describes the new pcb board. 
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/9D86vWsAVG8/0.jpg)](https://www.youtube.com/watch?v=9D86vWsAVG8)
+
+In the Box section you will find the box usable with this board.
+The board can be used directly connected to obd port (recent veichles requires SGW bypass to use obd devices) , or connected to the cabling by means of a cable with obd female connector on one side, and free wires on the other side, like the following one:
+
+![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/cable.jpg)
+
+available documentation is the following:
+
+![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_WITH_P1.pdf)
+
+![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf)
+
+![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf)
+
+
+
+## The hardware using CANABLE
+click on the following image to see the full hardware and interconnections video FOR CANABLE:
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
 
