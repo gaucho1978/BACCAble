@@ -161,6 +161,11 @@ This diagram shows the required connections for this function to work:
 This video shows the new functionality:
   
  [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/q5ryux2daeE/0.jpg)](https://youtu.be/q5ryux2daeE?si=QtWNP4ClmFG99Ner)
+
+ Now there is a define "(IS_DIESEL) to choose if show diesel or gasoline parameters (if IS_DIESEL is commented it will use gasoline parameters). The following video shows the gasoline parameters:
+ 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/WeFWKNaOOpQ/0.jpg)](https://youtu.be/WeFWKNaOOpQ)
+
  
 The parameters array is customizable ,It resides in main.c. (search for uds_params_array array)
  
