@@ -310,6 +310,10 @@ available documentation is the following:
 
 ![Schematic](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf)
 
+This is the connector pinout, including color of the obd cable that I selected:
+
+![pinout](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/pinout.png)
+
 
 
 ## The hardware using CANABLE
