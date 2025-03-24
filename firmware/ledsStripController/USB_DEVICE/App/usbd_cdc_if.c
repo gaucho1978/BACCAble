@@ -16,10 +16,6 @@ static int8_t CDC_DeInit_FS(void);
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 
-//extern uint8_t dashboardPageStringArray[19];
-//uint8_t zeroArray[18]={0};
-//extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
-
 // CDC Interface
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 {

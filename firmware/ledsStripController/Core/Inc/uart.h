@@ -14,7 +14,7 @@
 	#define BHBusIDAllSleepAck		0x06 //first byte sent over uart by BH baccable in order to communicate that the sleep was received and executed
 
 
-	#define UART_BUFFER_SIZE 19
+	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
 	
 	void uart_init();
