@@ -39,6 +39,8 @@
 							//Example2: diagnostic sends msgID 0x18DABAF1 with data 062210E10204B2
 							//			BACCABLE replies msgID 0x18DAF1BA with data 076210AABBCCDDEE  where AA is the first byte of the original 0xE10204B2 message
 
+		#define SMALL_DISPLAY
+
 
 		//#define ESC_TC_CUSTOMIZATOR_ENABLED //this works only on C2 can bus (obd port pin 12 and 13) //--// uncomment this line if you want to be able to enable/disable ESC and Traction control (pressing LANE button (left stak) for 2 seconds it inverts current status of ESC and TC features, so if they are enabled, they will be disabled and viceversa)
 		//#define DYNO_MODE
@@ -100,6 +102,12 @@
 			} uds_param_element;
 
 			void sendDashboardPageToSlaveBaccable(float param);
+		#endif
+
+		#ifdef SMALL_DISPLAY
+		#define DASHBOARD_MESSAGE_MAX_LENGTH 18
+		#else
+		#define DASHBOARD_MESSAGE_MAX_LENGTH 26
 		#endif
 
 
