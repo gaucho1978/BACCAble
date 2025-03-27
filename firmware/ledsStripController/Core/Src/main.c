@@ -106,6 +106,7 @@ const char *FW_VERSION="BACCABLE V.2.4";  //this is used to store FW version, al
 #endif
 
 #if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+ const uint32_t CURR_GEAR_REQ_DATA = SWAP_UINT32(0x0322192D);
  #if defined(IS_DIESEL)
 	uint8_t total_pages_in_dashboard_menu=34;
 	const	uds_param_element uds_params_array[60]={
@@ -126,7 +127,7 @@ const char *FW_VERSION="BACCABLE V.2.4";  //this is used to store FW version, al
 								{.name={'O','I','L',':',' ',},										.reqId=0x15,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x4B2,			.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=-40,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 								{.name={'O','I','L',':',' ',},										.reqId=0x10,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
 								{.name={'A','I','R',' ','I','N',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221935),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
-								{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192D),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+								{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=CURR_GEAR_REQ_DATA,		.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 //may be not received.			{.name={'G','E','A','R',':',' ',},									.reqId=0x16,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000001F7,	.replyLen=1,	.replyOffset=0,	.replyValOffset=0,		.replyScale=3,				.replyScaleOffset=-40,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 								{.name={'W','A','T','E','R',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221003),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
 //	tyres commented since		{.name={'F','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B1),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
@@ -184,7 +185,7 @@ const char *FW_VERSION="BACCABLE V.2.4";  //this is used to store FW version, al
 	// immobilizer, therefore  			{.name={'T', 'Y', 'R', 'E', ' ', 'L', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B2),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
 	// IMMOBILIZER starts  	            {.name={'T', 'Y', 'R', 'E', ' ', 'L', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B1),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
 									    {.name={'A','I','R',' ','C','O','N','D','.',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
-										{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192D),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+										{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=CURR_GEAR_REQ_DATA,		.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 										{.name={'T','-','O','N',':',' '},                                   .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221009),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.25,           .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'m',}                            }, // TEMPO TRASCORSO DALL'ACCENZIONE
 	// unit grams/km (wrong?)			{.name={'P','A','R','T','I','C','U','L','.', ':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218AA),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0,001,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'g','/','k','m'}					}, // GRAMMI PER KM
 										{.name={'O','V','E','R',' ','R','P','M',' ',':',' '},               .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03222006),   .replyId=0xDA18F110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.01,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'s',}                            }, // PER QUANTO TEMPO SI è ANDATI FUORI RPM
@@ -1480,7 +1481,28 @@ int main(void){
 					//param += uds_params_array[dashboardPageIndex].replyScaleOffset;
 					//convert param from float to string
 					char tmpfloatString[10];
-					floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+
+					if (uds_params_array[dashboardPageIndex].reqData == CURR_GEAR_REQ_DATA) {
+						switch ((int)param) {
+						case 0:
+							tmpfloatString[0] = 'N';
+							break;
+						case 10:// seems like 10 can also be 'R'
+						case 16:
+							tmpfloatString[0] = 'R';
+							break;
+						default:
+							if (param > 0 && param < 9)
+								tmpfloatString[0] = 48 + param;
+							else {
+								tmpfloatString[0] = '-';
+							}
+						}
+						tmpfloatString[1] = '\0';
+					} else {
+						floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+					}
+
 					//add param to the page String
 					tmpStrLen2=strlen(tmpfloatString);
 					if(tmpStrLen+tmpStrLen2>18) tmpStrLen2=18-tmpStrLen; //truncate it. no space left
