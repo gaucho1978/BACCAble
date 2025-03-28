@@ -1431,6 +1431,7 @@ int main(void){
 }
 
 #if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+
 	void sendDashboardPageToSlaveBaccable(float param){
 		uint8_t tmpStrLen=0;
 		uint8_t tmpStrLen2=0;
@@ -1483,22 +1484,7 @@ int main(void){
 					char tmpfloatString[10];
 
 					if (uds_params_array[dashboardPageIndex].reqData == CURR_GEAR_REQ_DATA) {
-						switch ((int)param) {
-						case 0:
-							tmpfloatString[0] = 'N';
-							break;
-						case 10:// seems like 10 can also be 'R'
-						case 16:
-							tmpfloatString[0] = 'R';
-							break;
-						default:
-							if (param > 0 && param < 9)
-								tmpfloatString[0] = 48 + param;
-							else {
-								tmpfloatString[0] = '-';
-							}
-						}
-						tmpfloatString[1] = '\0';
+						floatToGear(tmpfloatString, param);
 					} else {
 						floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 					}
@@ -1609,6 +1595,25 @@ uint16_t readFromFlash(uint8_t paramId){
 		}
 	}
 #endif
+
+void floatToGear(char* str, float num) {
+	switch ((int) num) {
+	case 0:
+		str[0] = 'N';
+		break;
+	case 10: // seems like 10 can also be 'R'
+	case 16:
+		str[0] = 'R';
+		break;
+	default:
+		if (num > 0 && num < 9)
+			str[0] = 48 + num;
+		else {
+			str[0] = '-';
+		}
+	}
+	str[1] = '\0';
+}
 
 void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
     uint8_t i = 0;
