@@ -120,6 +120,7 @@
 	void Error_Handler(void);
 
 	float scaleVolume(uint8_t vol);
+	void floatToGear(char* str, float num);
 	void floatToStr(char* str, float num, uint8_t precision,uint8_t maxLen);
 	uint8_t scaleColorSet(uint8_t col);
 	uint8_t saveOnflash(uint16_t param1);
