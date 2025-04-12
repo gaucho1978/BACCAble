@@ -24,9 +24,9 @@
 		//---------------------------------------------------------------------------------------------------------------------------
 
 		//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
-		#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
+		//#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
 		//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
-		//#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
+		#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
 
 
 
