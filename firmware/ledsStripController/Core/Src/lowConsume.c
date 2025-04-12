@@ -8,6 +8,7 @@ uint32_t lastReceivedCanMsgTime=0;
 
 //extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
 //extern UART_HandleTypeDef huart2; // this is the serial line between baccables
+extern uint8_t front_brake_forced;
 
 // Initialize GPIOs
 void lowConsume_init(){
@@ -87,6 +88,8 @@ void reduceConsumption(void){
 	if(!lowConsumeIsActive){
 		CAN_LOW_CONSUME_On(); //reduce consumption of other can transceivers (set then as only RX)
 		Reset_Other_Chips(); //reduce consumption of other chips (left under reset)
+		front_brake_forced=0;//ensure we disabled relative functions status in master baccable
+
 		/*
 		//send a message via serial line to inform other chips
 		uartTxMsg[0]= AllSleep;//we will communicate with all chips on the serial bus to tell them to sleep

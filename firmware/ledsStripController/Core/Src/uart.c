@@ -3,6 +3,23 @@
 #include "main.h"
 extern void Error_Handler(void);
 
+#define QUEUE_SIZE 10  // max queue size
+
+typedef struct {
+    uint8_t tx_buffer[QUEUE_SIZE][UART_BUFFER_SIZE];
+    uint8_t head;
+    uint8_t tail;
+    uint8_t count;
+} SendQueue;
+
+SendQueue queue_instance= {0};
+SendQueue *tx_queue = &queue_instance;
+
+
+
+uint32_t last_sent_serial_msg_time=0;
+uint32_t lastMsgSentToC2Time=0;
+uint32_t lastMsgSentToBHTime=0;
 
 uint8_t rxBuffer[UART_BUFFER_SIZE]; //buffer to receive the message from uart
 uint8_t rxIndex = 0;
@@ -11,12 +28,29 @@ uint8_t syncObtained=0;
 //uint8_t baccableC2_IsSleeping=0;
 //uint8_t baccableBH_IsSleeping=0;
 
+extern uint32_t weCanSendAMessageReply; //identifies last time a message was received by BH and C2 baccable (used by BH and C2 baccable)
+
+extern uint8_t front_brake_forced;
+
 extern UART_HandleTypeDef huart2;
-#if defined(SHOW_PARAMS_ON_DASHBOARD)
+#if defined(BHbaccable)
+	//SHOW_PARAMS_ON_DASHBOARD
 	extern uint8_t dashboardPageStringArray[18];
 	extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
-	extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
+	//extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
 #endif
+
+extern uint8_t clearFaultsRequest; //if enabled, sends  messages to clear faults
+
+#if defined(C2baccable)
+	//DYNO
+	extern uint8_t DynoModeEnabled;
+	extern uint8_t DynoStateMachine;
+
+	//ESC_TC_CUSTOMIZATOR_ENABLED
+	extern uint8_t ESCandTCinversion;
+#endif
+
 //#if defined(LOW_CONSUME)
 //	extern uint8_t lowConsumeIsActive; //this variable comes from lowConsume.c
 //#endif
@@ -44,7 +78,7 @@ void uart_init(){
 
     // Configure USART2 in Half-Duplex mode
     huart2.Instance = USART2;
-    huart2.Init.BaudRate = 9600;
+    huart2.Init.BaudRate = 38400;
     huart2.Init.WordLength = UART_WORDLENGTH_8B;
     huart2.Init.StopBits = UART_STOPBITS_1;
     huart2.Init.Parity = UART_PARITY_NONE;
@@ -76,20 +110,57 @@ void uart_init(){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
 		// evaluate received message
-    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=BHBusIDAllSleepAck)){ //if the received char indicates the beginning of a message
+    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=BhBusIDgetStatus)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
 				switch(rxBuffer[0]){
 					case C1BusID: //message directed to baccable connected to C1 bus
 						//not used up to today
+						#if defined(C1baccable)
+							switch(rxBuffer[1]){
+								case C2cmdForceFrontBrake:
+									front_brake_forced=1; //update status
+									break;
+								case C2cmdNormalFrontBrake:
+									front_brake_forced=0;
+									break;
+								default:
+									break;
+							}
+						#endif
 						break;
 					case C2BusID: //message directed to baccable connected to C2 bus
 						//not used up to today
+						#if (defined(C2baccable))
+							if(rxBuffer[1]==C2cmdtoggleDyno){ //dyno request
+								if(front_brake_forced==0) dynoToggle();
+							}
+
+							if(rxBuffer[1]==C2cmdtoggleEscTc){ // ESC/TC request
+								//if we can, enable it
+								if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
+							}
+							if(rxBuffer[1]==C2cmdForceFrontBrake){ front_brake_forced=5;}; //force front brake
+							if(rxBuffer[1]==C2cmdNormalFrontBrake){ front_brake_forced=255;}; //release the brake - we set it to 255, just to trigger serial msg sending in the main (sync) and not here (async), since async may cause concurrent variables write
+							//if(rxBuffer[1]==C2cmdGetStatus){};//nothing to do, since we just need to set weCanSendAMessageReply
+
+							onboardLed_blue_on();
+							weCanSendAMessageReply=HAL_GetTick();
+						#endif
+
 						break;
 					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
-							#if defined(SHOW_PARAMS_ON_DASHBOARD)
+							#if defined(BHbaccable)
+								weCanSendAMessageReply=HAL_GetTick();
 								memcpy(&dashboardPageStringArray[0], &rxBuffer[1], 18); //copy array that we will use in the main
+
 								if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
+
 							#endif
+						break;
+					case BhBusIDgetStatus:
+						#if defined(BHbaccable)
+							weCanSendAMessageReply=HAL_GetTick();
+						#endif
 						break;
 					case AllSleep: //message directed to all the modules, in order to request low consumption
 						//#if (defined(ESC_TC_CUSTOMIZATOR_ENABLED) || defined(DYNO_MODE) ) //if we are the baccable on C2 bus
@@ -131,6 +202,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						//	#endif
 						//#endif
 
+						break;
+					case AllResetFaults: //message received by baccable on BH and C2 bus. we shall reset all faults
+						#if (defined(C2baccable) || defined(BHbaccable))
+							clearFaultsRequest=255;
+						#endif
 						break;
 					default:
 						//not exptected to end up here
@@ -185,3 +261,82 @@ uint8_t getOtherProcessorsSleepingStatus(){
 	return (baccableC2_IsSleeping && baccableBH_IsSleeping);
 }
 */
+
+
+void addToUARTSendQueue(const uint8_t *data, size_t length) {
+
+	if (tx_queue->count < QUEUE_SIZE) {  // Controlla se la coda è piena
+		memset(tx_queue->tx_buffer[tx_queue->tail], 0x20, UART_BUFFER_SIZE);
+		if (length>UART_BUFFER_SIZE) length= UART_BUFFER_SIZE;
+		memcpy(tx_queue->tx_buffer[tx_queue->tail], data, length);
+		tx_queue->tail = (tx_queue->tail + 1) % QUEUE_SIZE;
+		tx_queue->count++;
+	} else {
+		// queue full, ignore the request
+	}
+
+}
+
+
+
+
+
+
+void processUART() {
+    if (tx_queue->count == 0) {
+        // queue empty
+        return;
+    }
+
+    //if we are C2 or BH baccable, we can reply only if we received a message directed to us few milliseconds ago
+	#if (defined(C2baccable) || defined(BHbaccable))
+		if(HAL_GetTick()-weCanSendAMessageReply<200){ //if less than 200msec has passed since last message received from master baccable, send a message
+			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
+				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
+					// update head index in a circular way
+					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;
+					tx_queue->count--;
+				}else{
+					onboardLed_red_on();
+				}
+			}
+		}
+	#endif
+
+    //if we are C1 baccable, we can send a message each 250msec
+	#if defined(C1baccable)
+    	if(HAL_GetTick()-last_sent_serial_msg_time>250){ //each 250msec send a message (so that we left the time to receiver to reply)
+			last_sent_serial_msg_time=HAL_GetTick();
+			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
+				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
+					//save time
+					if(tx_queue->tx_buffer[tx_queue->head][0]== C2BusID){lastMsgSentToC2Time=HAL_GetTick();}
+					if((tx_queue->tx_buffer[tx_queue->head][0]== BhBusIDparamString) || (tx_queue->tx_buffer[tx_queue->head][0])==BhBusIDgetStatus){lastMsgSentToBHTime=HAL_GetTick();}
+
+					// update head index in a circular way
+					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;
+					tx_queue->count--;
+				}else{
+					onboardLed_red_on();
+				}
+			}
+		}
+
+
+    	if(HAL_GetTick()-lastMsgSentToC2Time>1000){
+			lastMsgSentToC2Time=HAL_GetTick();
+			//get status from C2
+			//send request thu serial line
+			uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
+			addToUARTSendQueue(tmpArr1, 2);
+		}
+		if(HAL_GetTick()-lastMsgSentToBHTime>1000){
+			lastMsgSentToBHTime=HAL_GetTick();
+			//get status from BH
+			//send request thu serial line
+			uint8_t tmpArr2[1]={BhBusIDgetStatus};
+			addToUARTSendQueue(tmpArr2, 1);
+		}
+
+	#endif
+}
