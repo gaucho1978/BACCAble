@@ -101,8 +101,6 @@ CFLAGS += -DGIT_REMOTE=\"$(GIT_REMOTE)\"
 # default action: build the user application
 all: $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).hex
 
-build: all
-
 flash: all
 	sudo dfu-util -d 0483:df11 -c 1 -i 0 -a 0 -s 0x08000000:leave -D $(BUILD_DIR)/$(TARGET).bin
 
