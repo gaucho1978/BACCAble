@@ -98,7 +98,6 @@
 			#endif
 //#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
 
-
 		#endif
 
 		#if defined(C2baccable) //this works only on C2 can bus (obd port pin 12 and 13)
