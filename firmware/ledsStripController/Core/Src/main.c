@@ -1730,7 +1730,7 @@ int main(void){
 																		if(currentSpeed_km_h==0){
 																			function_front_brake_forcer_master=!function_front_brake_forcer_master;
 																		}else{
-																			printStopTheCar=1;;//print message "stop the car"
+																			printStopTheCar=1;//print message "stop the car"
 																		}
 																		break;
 																	case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
