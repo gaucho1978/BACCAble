@@ -35,6 +35,7 @@
 
 #include "printf.h"
 
+
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
 // printf_config.h header file
 // default: undefined
@@ -149,9 +150,7 @@ static inline void _out_char(char character, void* buffer, size_t idx, size_t ma
 {
   (void)buffer; (void)idx; (void)maxlen;
   if (character) {
-#ifndef RELEASE_FLAVOR
     _putchar(character);
-#endif
   }
 }
 
