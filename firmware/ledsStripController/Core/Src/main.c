@@ -81,6 +81,8 @@ uint16_t indiceTmp=33;
 
 #if defined(C1baccable)
 	//
+	uint8_t gearArray[11]={'N','1','2','3','4','5','6','R','7','8','9'};
+
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
 	uint8_t dashboard_main_menu_array_len=10;
@@ -2304,23 +2306,13 @@ int main(void){
 					char tmpfloatString[10];
 
 					if (uds_params_array[dashboardPageIndex].reqId == 0x17) { //if Current gear request data - currentGear
-						switch ((uint8_t)param) {
-							case 0:
-								tmpfloatString[0] = 'N';
-								break;
-							case 7:
-								tmpfloatString[0] = 'R';
-								break;
-							case 0x0F:
-								tmpfloatString[0] = '-';
-								break;
-							default:
-								if (((uint8_t)param > 0) && ((uint8_t)param < 9)){
-									tmpfloatString[0] = 48 + (uint8_t)param;
-								}else{
-									tmpfloatString[0] = '?';
-								}
+
+						if ((uint8_t)param<11){
+							tmpfloatString[0]=gearArray[(uint8_t)param];
+						}else{
+							tmpfloatString[0] = '-';
 						}
+
 						tmpfloatString[1] =0;
 					}else{
 						floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
