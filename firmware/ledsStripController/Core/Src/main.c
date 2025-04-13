@@ -75,11 +75,8 @@ uint16_t indiceTmp=33;
 	uint8_t startAndStopEnabled=1; //this is the status of my internal logic. If=0 the function goes to sleep up to next reboot
 	uint8_t startAndstopCarStatus=1; //this is the status of Start&stop received by the car. 1=enabled in car (this is the default status in giulias).
 	uint32_t lastTimeStartAndstopDisablerButtonPressed=0;
-#endif
 
 
-
-#if defined(C1baccable)
 	//
 	uint8_t gearArray[11]={'N','1','2','3','4','5','6','R','7','8','9'};
 
@@ -101,34 +98,75 @@ uint16_t indiceTmp=33;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=18;
+	uint8_t total_pages_in_setup_dashboard_menu=19;
 	uint8_t dashboard_setup_menu_array[25][18]={
-				{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
-				{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
-				{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
-				{'O',' ',' ','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',' '},
-				{'O',' ',' ','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
-				{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',' ',' ',' ',' '},
-				{'O',' ',' ','M','y','2','3',' ','I','P','C',' ',' ',' ',' ',' ',' ',' '},
-				{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
-				{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
-				{'O',' ',' ','R','o','u','t','e',' ','M','e','s','s','a','g','e','s',' '},
-				{'O',' ',' ','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',' '},
-				{'O',' ',' ','D','y','n','o',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '},
-				{'O',' ',' ','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
-				{'O',' ',' ','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
-				{'O',' ',' ','4','W','D',' ','D','i','s','a','b','l','e','r',' ',' ',' '},
-				{'O',' ',' ','C','l','e','a','r',' ','F','a','u','l','t','s',' ',' ',' '},
-				{'O',' ',' ','R','e','a','d',' ',' ','F','a','u','l','t','s',' ',' ',' '},
-				{'O',' ',' ','R','e','m','o','t','e',' ','S','t','a','r','t',' ',' ',' '},
-
-
+			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
+			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
+			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
+			{'O',' ',' ','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',' '},
+			{'O',' ',' ','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
+			{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',' ',' ',' ',' '},
+			{'O',' ',' ','M','y','2','3',' ','I','P','C',' ',' ',' ',' ',' ',' ',' '},
+			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
+			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
+			{'O',' ',' ','R','o','u','t','e',' ','M','e','s','s','a','g','e','s',' '},
+			{'O',' ',' ','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',' '},
+			{'O',' ',' ','D','y','n','o',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '},
+			{'O',' ',' ','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
+			{'O',' ',' ','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
+			{'O',' ',' ','4','W','D',' ','D','i','s','a','b','l','e','r',' ',' ',' '},
+			{'O',' ',' ','C','l','e','a','r',' ','F','a','u','l','t','s',' ',' ',' '},
+			{'O',' ',' ','R','e','a','d',' ',' ','F','a','u','l','t','s',' ',' ',' '},
+			{'O',' ',' ','R','e','m','o','t','e',' ','S','t','a','r','t',' ',' ',' '},
+			{0xD8,' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 		};
-	#if defined(IS_DIESEL)
 
-		uint8_t total_pages_in_dashboard_menu=34;
-		const	uds_param_element uds_params_array[60]={
-											{.name={}, 															.reqId=0,       .reqLen=0,	.reqData=0,                 			.replyId=0,				.replyLen=0,    .replyOffset=0,	.replyValOffset=0,		.replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+		uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
+		uint8_t total_pages_in_dashboard_menu_diesel=33;
+		uint8_t total_pages_in_dashboard_menu_gasoline=33;
+		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
+		const	uds_param_element uds_params_array[2][60]={
+										{
+												{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
+												{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
+												{.name={'I','C',' ','A','i','r','O','u','t',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221935),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA uscita INTERCOOLER
+												{.name={'I','C',' ','A','i','r','I','n',':',' '},					.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A58),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA ingresso INERCOOLER
+												{.name={'B','O','O','S','T',' ','A','B','S',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}                     }, //PRESSIONE ASSOLUTA
+												{.name={'B','O','O','S','T',':',' '},								.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=-1,   .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}                     }, // PRESSIONE TURBO RICAVATA DALLA PRESIONE ASSOLUTA
+												{.name={'T','U','R','B','O',':',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221936),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
+												{.name={'O','D','O','M','.','L','A','S','T',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222002),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
+												{.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A41),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.001,          .replyScaleOffset=0,    .replyDecimalDigits=3,   .replyMeasurementUnit = {'L',},                        }, //QUANTITA' OLIO
+												{.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322130A),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.039215686,    .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'B','a','r',}                    },
+												{.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221302),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=1, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={0xB0,'C',}                       },
+												{.name={'O','I','L',' ','Q','U','A','L','Y',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223813),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'O','I','L',' ','U','n','A','i','r',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322198E),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-40,    .replyScale=0.02,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={0xB0,'C',}                       }, //Temperatura olio mel modulo multiair
+												{.name={'G','E','A','R','B','O','X',':',' '},                       .reqId=0x18DA18F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032204FE),   .replyId=0x18DAF118,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        },
+												{.name={'B','A','T','T','.',':',},									.reqId=0x13, 		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
+												{.name={'B','A','T','T','.',':',},									.reqId=0x14,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=-250,	.replyDecimalDigits=2,	.replyMeasurementUnit={'A',}							},
+												{.name={'B','A','T','T','.',':',},									.reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221004),   .replyId=0x18DAF140,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.1,            .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'V',}                            },
+			//									{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B3),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
+			//									{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'R', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022230B4),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
+			//									{.name={'T', 'Y', 'R', 'E', ' ', 'L', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B2),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
+			//									{.name={'T', 'Y', 'R', 'E', ' ', 'L', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B1),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
+												{.name={'A','I','R',' ','C','O','N','D','.',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+												{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x17,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000002EF,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
+												{.name={'T','-','O','N',':',' '},                                   .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221009),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.25,           .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'m',}                            }, // TEMPO TRASCORSO DALL'ACCENZIONE
+			// unit grams/km (wrong?)			{.name={'P','A','R','T','I','C','U','L','.', ':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218AA),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0,001,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'g','/','k','m'}					}, // GRAMMI PER KM
+												{.name={'O','V','E','R',' ','R','P','M',' ',':',' '},               .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03222006),   .replyId=0xDA18F110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.01,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'s',}                            }, // PER QUANTO TEMPO SI è ANDATI FUORI RPM
+												{.name={'E','X','A','U','S','T',' ','G','A','S',':',' '},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218BA),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=4.52,           .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={0xB0,'C',}                       }, // TEMPERATURA GAS DI SCARICO
+												{.name={'C','A','T','A','L','.',':',' '},                                       .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221837),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-50,    .replyScale=5,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C',}                       }, // TEMPERATURA SONDA CATALIZZATORE
+												{.name={'W','A','T','E','R',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221003),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,			    .replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						}, // TEMPERATURA LIQUIDO REFRIGERANTE
+												{.name={'K','N','O','C','K',':',' ',},                              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221841),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.125,          .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'m','V',}                        }, // BATTITO IN TESTA
+												{.name={'K','E','Y',' ','I','G','N',':',' ',},                      .reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03220131),   .replyId=0x18DAF140,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={}                                }, //ID della chiave inserita
+												{.name={'O','V','E','R',' ','R','P','M',':',' ',},	                .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03222004),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={}                                }, // NUMERO DI VOLTE CHE SI è ANDATI FUORI RPM
+												{.name={'S','P','A','R','K','C','Y','L','1',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186C),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
+												{.name={'S','P','A','R','K','C','Y','L','2',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186D),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
+												{.name={'S','P','A','R','K','C','Y','L','3',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186E),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
+												{.name={'S','P','A','R','K','C','Y','L','4',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186F),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
+												{.name={'R','-','D','N','A',':',' ',},                              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218F0),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={}                                }, // DATI POSIZIONE R-DNA/DNA
+												{.name={'S','P','E','E','D',':',},									.reqId=0x18,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000101,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0625,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'k','m','/','h', }				},
+										},
+										{
 											{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),		.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 											{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),		.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
 											{.name={'D','P','F',':',' ',},										.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218E4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
@@ -144,13 +182,11 @@ uint16_t indiceTmp=33;
 											{.name={'O','I','L',' ','Q','U','A','L','Y',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223813),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 											{.name={'O','I','L',':',' ',},										.reqId=0x15,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=-40,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 											{.name={'O','I','L',':',' ',},										.reqId=0x10,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
-											{.name={'A','I','R',' ','I','N',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221935),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
 											{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x17,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000002EF,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
-			//may be not received.			{.name={'G','E','A','R',':',' ',},									.reqId=0x16,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000001F7,	.replyLen=1,	.replyOffset=0,	.replyValOffset=0,		.replyScale=3,				.replyScaleOffset=-40,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 											{.name={'W','A','T','E','R',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221003),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
-			//	tyres commented since		{.name={'F','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B1),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
-			//	they connect to rfhub		{.name={'F','-','R',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B2),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
-			//	and immobilizer starts		{.name={'R','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B3),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+			//								{.name={'F','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B1),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+			//								{.name={'F','-','R',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B2),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
+			//								{.name={'R','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B3),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 			//								{.name={'R','-','R',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B4),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 			//may be not received			{.name={'E','G','R',' ','C','M','D','1',':',},						.reqId=0x18DB33F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322012C),	.replyId=0x18DBF133,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.3921568627,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 											{.name={'E','G','R',' ','C','M','D',':',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322189B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=-32767,	.replyScale=0.00305185095,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
@@ -167,7 +203,7 @@ uint16_t indiceTmp=33;
 											{.name={'T','U','R','B','O',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218A0),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.00152590219,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 											{.name={'B','O','O','S','T',' ','R','E','Q','.',':',' ',},			.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221959),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-32768,	.replyScale=0.001,			.replyScaleOffset=-1,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
 											{.name={'B','O','O','S','T',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322195B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
-											{.name={'R','A','I','L',':',' ',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221904),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','P','a',}					},
+											{.name={'R','A','I','L',':',' ',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221904),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'b','a','r',}					},
 			//redundant(same as rail maybe)	{.name={'D','I','E','S','E','L',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221947),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
 											{.name={'D','I','E','S','E','L',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221900),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
 											{.name={'O','D','O','M','.','L','A','S','T',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222002),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
@@ -175,54 +211,11 @@ uint16_t indiceTmp=33;
 			//may be not received			{.name={'F','U','E','L',':',' ',},									.reqId=0x18DB33F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03220123),	.replyId=0x18DBF133,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=10,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','P','a',}					},
 											{.name={'F','U','E','L',' ','C','O','N','S','.',':',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0000394789,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'L','/','h',}					},
 											{.name={'D','E','B','I','M','E','T','E','R',':',},					.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322193F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
+											{.name={'S','P','E','E','D',':',},									.reqId=0x18,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000101,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0625,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'k','m','/','h', }				},
 
+										}
 
-		}; // initializes all the uds parameters request to send and reply to receive - it is initialized with data from the defines in main.h, in order to avoid to touch this declaration - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
-	#else
-		uint8_t total_pages_in_dashboard_menu=33;
-		const	uds_param_element uds_params_array[60]={
-			                            {.name={}, 															.reqId=0,           .reqLen=0,	.reqData=0,                 	    .replyId=0,				.replyLen=0,    .replyOffset=0,	.replyValOffset=0,		.replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,	.replyMeasurementUnit={}								},
-		  					            {.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
-									    {.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
-							            {.name={'I','C',' ','A','i','r','O','u','t',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221935),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA uscita INTERCOOLER
-									    {.name={'I','C',' ','A','i','r','I','n',':',' '},					.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A58),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA ingresso INERCOOLER
-									    {.name={'B','O','O','S','T',' ','A','B','S',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}                     }, //PRESSIONE ASSOLUTA
-										{.name={'B','O','O','S','T',':',' '},								.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=-1,   .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}                     }, // PRESSIONE TURBO RICAVATA DALLA PRESIONE ASSOLUTA
-	                    		        {.name={'T','U','R','B','O',':',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221936),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
-									    {.name={'O','D','O','M','.','L','A','S','T',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222002),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
-									    {.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223A41),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.001,          .replyScaleOffset=0,    .replyDecimalDigits=3,   .replyMeasurementUnit = {'L',},                        }, //QUANTITA' OLIO
-	    					 	        {.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322130A),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.039215686,    .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'B','a','r',}                    },
-										{.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221302),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=1, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={0xB0,'C',}                       },
-										{.name={'O','I','L',' ','Q','U','A','L','Y',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223813),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
-	     								{.name={'O','I','L',' ','U','n','A','i','r',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322198E),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-40,    .replyScale=0.02,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={0xB0,'C',}                       }, //Temperatura olio mel modulo multiair
-										{.name={'G','E','A','R','B','O','X',':',' '},                       .reqId=0x18DA18F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032204FE),   .replyId=0x18DAF118,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        },
-		    						    {.name={'B','A','T','T','.',':',},									.reqId=0x13, 		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
-										{.name={'B','A','T','T','.',':',},									.reqId=0x14,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=-250,	.replyDecimalDigits=2,	.replyMeasurementUnit={'A',}							},
-										{.name={'B','A','T','T','.',':',},									.reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221004),   .replyId=0x18DAF140,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.1,            .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'V',}                            },
-	// tyres commented since	        {.name={'T', 'Y', 'R', 'E', ' ', 'R', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B3),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
-	// it conflicts with				{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'R', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022230B4),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
-	// immobilizer, therefore  			{.name={'T', 'Y', 'R', 'E', ' ', 'L', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B2),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
-	// IMMOBILIZER starts  	            {.name={'T', 'Y', 'R', 'E', ' ', 'L', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B1),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
-									    {.name={'A','I','R',' ','C','O','N','D','.',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
-										{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x17,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000002EF,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
-										{.name={'T','-','O','N',':',' '},                                   .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221009),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.25,           .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'m',}                            }, // TEMPO TRASCORSO DALL'ACCENZIONE
-	// unit grams/km (wrong?)			{.name={'P','A','R','T','I','C','U','L','.', ':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218AA),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0,001,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'g','/','k','m'}					}, // GRAMMI PER KM
-										{.name={'O','V','E','R',' ','R','P','M',' ',':',' '},               .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03222006),   .replyId=0xDA18F110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.01,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'s',}                            }, // PER QUANTO TEMPO SI è ANDATI FUORI RPM
-						     			{.name={'E','X','A','U','S','T',' ','G','A','S',':',' '},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218BA),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=4.52,           .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={0xB0,'C',}                       }, // TEMPERATURA GAS DI SCARICO
-										{.name={'C','A','T','A','L','.',':',' '},                                       .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221837),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-50,    .replyScale=5,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C',}                       }, // TEMPERATURA SONDA CATALIZZATORE
-										{.name={'W','A','T','E','R',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221003),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,			    .replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						}, // TEMPERATURA LIQUIDO REFRIGERANTE
-										{.name={'K','N','O','C','K',':',' ',},                              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221841),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.125,          .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'m','V',}                        }, // BATTITO IN TESTA
-										{.name={'K','E','Y',' ','I','G','N',':',' ',},                      .reqId=0x18DA40F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03220131),   .replyId=0x18DAF140,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={}                                }, //ID della chiave inserita
-										{.name={'O','V','E','R',' ','R','P','M',':',' ',},	                .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03222004),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={}                                }, // NUMERO DI VOLTE CHE SI è ANDATI FUORI RPM
-										{.name={'S','P','A','R','K','C','Y','L','1',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186C),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
-	  									{.name={'S','P','A','R','K','C','Y','L','2',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186D),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
-	  									{.name={'S','P','A','R','K','C','Y','L','3',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186E),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
-										{.name={'S','P','A','R','K','C','Y','L','4',':',' ',},              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322186F),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.0625,         .replyScaleOffset=0,    .replyDecimalDigits=3,  .replyMeasurementUnit={'d','e','g',}                    }, // CORREZZIONE CILINDRO
-			 						    {.name={'R','-','D','N','A',':',' ',},                              .reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218F0),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={}                                }, // DATI POSIZIONE R-DNA/DNA
-
-		}; // initializes all the uds parameters request to send and reply to receive - it is initialized with data from the defines in main.h, in order to avoid to touch this declaration - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
-
-	#endif
+		}; // initializes all the uds parameters request to send and reply to receive
 
 	CAN_TxHeaderTypeDef uds_parameter_request_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3}; //used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
 	uint8_t baccableDashboardMenuVisible=0;
@@ -417,7 +410,7 @@ int main(void){
 		function_clear_faults_enabled=(uint8_t)readFromFlash(13);
 		function_esc_tc_customizator_enabled=(uint8_t)readFromFlash(14);
 		function_read_faults_enabled=(uint8_t)readFromFlash(15);
-
+		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
 	#endif
 
 
@@ -783,13 +776,13 @@ int main(void){
 						case 1:
 							if(main_dashboardPageIndex==1){ //we are in show params submenu
 								clearFaultsRequest=0; //ensure we don't perform more tasks simoultaneously
-								if(uds_params_array[dashboardPageIndex].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
+								if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
 									//request current parameter to ECU
-									uds_parameter_request_msg_header.ExtId=uds_params_array[dashboardPageIndex].reqId;
+									uds_parameter_request_msg_header.ExtId=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId;
 
 
-									memcpy(&uds_parameter_request_msg_data[0],&uds_params_array[dashboardPageIndex].reqData,uds_params_array[dashboardPageIndex].reqLen );
-									uds_parameter_request_msg_header.DLC=uds_params_array[dashboardPageIndex].reqLen;
+									memcpy(&uds_parameter_request_msg_data[0],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqData,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen );
+									uds_parameter_request_msg_header.DLC=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen;
 									//uds_parameter_request_msg_header.ExtId=0x18DA40F1;
 									//uds_parameter_request_msg_header.DLC=4;
 									//uds_parameter_request_msg_data[0]=0x03;
@@ -938,11 +931,11 @@ int main(void){
 									}
 								} //end of immobilizer section
 
-								if ((rx_msg_header.ExtId==uds_params_array[dashboardPageIndex].replyId) && baccableDashboardMenuVisible){ //if we received udf message with current selected parameter, let's aquire it
+								if ((rx_msg_header.ExtId==uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyId) && baccableDashboardMenuVisible){ //if we received udf message with current selected parameter, let's aquire it
 									if(dashboard_menu_indent_level==1 && main_dashboardPageIndex==1){ //if we are in show params menu
 										onboardLed_blue_on();
-										if (rx_msg_header.DLC>=4+uds_params_array[dashboardPageIndex].replyOffset+uds_params_array[dashboardPageIndex].replyLen){
-											uint8_t numberOfBytesToRead=uds_params_array[dashboardPageIndex].replyLen;
+										if (rx_msg_header.DLC>=4+uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyOffset+uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyLen){
+											uint8_t numberOfBytesToRead=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyLen;
 											// Limita il numero di byte a un massimo di 4 per evitare overflow
 											if (numberOfBytesToRead > 4) {
 												numberOfBytesToRead = 4;
@@ -951,12 +944,12 @@ int main(void){
 
 											// Costruisce il valore a partire dai byte ricevuti
 											for (size_t i = 0; i < numberOfBytesToRead; i++) {
-												tmpVal |= ((uint32_t)rx_msg_data[4+uds_params_array[dashboardPageIndex].replyOffset+i]) << (8 * (numberOfBytesToRead - 1 - i));
+												tmpVal |= ((uint32_t)rx_msg_data[4+uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyOffset+i]) << (8 * (numberOfBytesToRead - 1 - i));
 											}
 
-											tmpVal+=uds_params_array[dashboardPageIndex].replyValOffset;
-											float tmpVal2 =tmpVal * uds_params_array[dashboardPageIndex].replyScale;
-											tmpVal2 +=uds_params_array[dashboardPageIndex].replyScaleOffset;
+											tmpVal+=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyValOffset;
+											float tmpVal2 =tmpVal * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
+											tmpVal2 +=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
 
 											sendDashboardPageToSlaveBaccable(tmpVal2);//send parameter
 										}
@@ -1396,9 +1389,12 @@ int main(void){
 																case 1:
 																	if(main_dashboardPageIndex==1){ //we are in show params submenu
 																		dashboardPageIndex += 1; //set next page
-
-																		if(dashboardPageIndex>=total_pages_in_dashboard_menu)  dashboardPageIndex=0; // make a rotative menu
-																		//onboardLed_blue_on();
+																		if(function_is_diesel_enabled==1){
+																			if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // make a rotative menu
+																		}else{
+																			if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // make a rotative menu
+																		}
+																			//onboardLed_blue_on();
 																		sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 																	}
 																	if(main_dashboardPageIndex==9){ //we are in setup menu
@@ -1454,8 +1450,12 @@ int main(void){
 																	case 1:
 																		if(main_dashboardPageIndex==1){ //we are in show params submenu
 																			dashboardPageIndex += 10; //set 9 pages forward (+1 in gentle command)
-																			if(dashboardPageIndex>=total_pages_in_dashboard_menu)  dashboardPageIndex=0; // make a rotative menu
-																			//onboardLed_blue_on();
+																			if(function_is_diesel_enabled==1){
+																				if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // make a rotative menu
+																			}else{
+																				if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // make a rotative menu
+																			}
+																				//onboardLed_blue_on();
 																			sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 																		}
 																		if(main_dashboardPageIndex==9){ //we are in setup menu
@@ -1510,7 +1510,11 @@ int main(void){
 																case 1:
 																	if(main_dashboardPageIndex==1){ //we are in show params submenu
 																		dashboardPageIndex -= 1; //set previous page
-																		if(dashboardPageIndex>=total_pages_in_dashboard_menu)  dashboardPageIndex=total_pages_in_dashboard_menu-1; // make a rotative menu
+																		if(function_is_diesel_enabled==1){
+																			if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=total_pages_in_dashboard_menu_diesel-1; // make a rotative menu
+																		}else{
+																			if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=total_pages_in_dashboard_menu_gasoline-1; // make a rotative menu
+																		}
 																		//onboardLed_blue_on();
 																		sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 																	}
@@ -1566,7 +1570,11 @@ int main(void){
 																	case 1:
 																		if(main_dashboardPageIndex==1){ //we are in show params submenu
 																			dashboardPageIndex -= 10; //set 10 pages backward
-																			if(dashboardPageIndex>=total_pages_in_dashboard_menu)  dashboardPageIndex=0; // stay at zero.
+																			if(function_is_diesel_enabled==1){
+																				if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // stay at zero.
+																			}else{
+																				if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // stay at zero.
+																			}
 																			//onboardLed_blue_on();
 																			sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 																		}
@@ -1673,9 +1681,10 @@ int main(void){
 																			((uint16_t)function_remote_start_Enabled				!= readFromFlash(12))	|| //REMOTE_START_ENABLED
 																			((uint16_t)function_clear_faults_enabled				!= readFromFlash(13))	|| //CLEAR_FAULTS_ENABLED
 																			((uint16_t)function_esc_tc_customizator_enabled			!= readFromFlash(14))	|| //ESC_TC_CUSTOMIZATOR_MASTER
-																			((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	){ //READ_FAULTS_ENABLED
-																			//save it on flash
-																			saveOnflash();
+																			((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
+																			((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	){ //IS_DIESEL
+																				//save it on flash
+																				saveOnflash();
 																		}
 																		dashboard_menu_indent_level=0;
 																		break;
@@ -1739,6 +1748,9 @@ int main(void){
 																		break;
 																	case 17: //{'[',' ',']','R','e','m','o','t','e',' ','S','t','a','r','t',},
 																		function_remote_start_Enabled=!function_remote_start_Enabled;
+																		break;
+																	case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
+																		function_is_diesel_enabled=!function_is_diesel_enabled;
 																		break;
 																	default:
 																		break;
@@ -2239,6 +2251,28 @@ int main(void){
 			case 17: //{'[',' ',']','R','e','m','o','t','e',' ','S','t','a','r','t',},
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_remote_start_Enabled];
 				break;
+			case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
+				if(function_is_diesel_enabled){
+					dashboard_setup_menu_array[setup_dashboardPageIndex][3] ='D';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][4] ='i';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][5] ='e';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][6] ='s';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][7] ='e';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][8] ='l';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][9] =' ';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][10]=' ';
+				}else{
+					dashboard_setup_menu_array[setup_dashboardPageIndex][3] ='G';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][4] ='a';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][5] ='s';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][6] ='o';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][7] ='l';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][8] ='i';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][9] ='n';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][10]='e';
+				}
+				break;
+
 			default:
 				break;
 		}
@@ -2257,55 +2291,56 @@ int main(void){
 
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 
-		switch(uds_params_array[dashboardPageIndex].reqId){ //do preliminary additional stuff for special parameters (not uds)
+		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){ //do preliminary additional stuff for special parameters (not uds)
 			case 0x10: //print oil pressure
-				param=(float) oilPressure * uds_params_array[dashboardPageIndex].replyScale;
+				param=(float) oilPressure * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
 				break;
 			case 0x11: //power in CV
-				param=((float)torque + uds_params_array[dashboardPageIndex].replyValOffset) * (float)currentRpmSpeed * uds_params_array[dashboardPageIndex].replyScale ;
+				param=((float)torque + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyValOffset) * (float)currentRpmSpeed * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale ;
 				break;
 			case 0x12: //torque in NM
-				param=((float)torque  * uds_params_array[dashboardPageIndex].replyScale) + uds_params_array[dashboardPageIndex].replyScaleOffset;
+				param=((float)torque  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
 				break;
 			case 0x13: //battery state of charge (%)
-				param=(float)batteryStateOfCharge  * uds_params_array[dashboardPageIndex].replyScale;
+				param=(float)batteryStateOfCharge  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
 				break;
 			case 0x14: //battery current (A)
-				param=((float)batteryCurrent  * uds_params_array[dashboardPageIndex].replyScale) + uds_params_array[dashboardPageIndex].replyScaleOffset;
+				param=((float)batteryCurrent  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
 				break;
 			case 0x15: //engine oil temperature
-				param=((float)oilTemperature * uds_params_array[dashboardPageIndex].replyScale) + uds_params_array[dashboardPageIndex].replyScaleOffset;
+				param=((float)oilTemperature * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
 				break;
 			case 0x16: //transmission temperature
-				param=((float)transmissionTemperature * uds_params_array[dashboardPageIndex].replyScale) + uds_params_array[dashboardPageIndex].replyScaleOffset;
+				param=((float)transmissionTemperature * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
 				break;
 			case 0x17: //current gear
 				param=(float)(currentGear>>4);
+				break;
+			case 0x18: //current speed (km/h)
+				param=currentSpeed_km_h;
 				break;
 			default:
 				break;
 		}
 
 
-		switch(uds_params_array[dashboardPageIndex].reqId){
+		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){
 			case 0: //print baccable menu
 				tmpStrLen=strlen(FW_VERSION);
 				if(tmpStrLen>18) tmpStrLen=18;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
 				break;
 			default:
-				tmpStrLen=strlen((const char *)uds_params_array[dashboardPageIndex].name);
+				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
 				if(tmpStrLen>18) tmpStrLen=18; //truncate it. no space left
-				memcpy(&uartTxMsg[1], &uds_params_array[dashboardPageIndex].name,tmpStrLen); //prepare name of parameter
+				memcpy(&uartTxMsg[1], &uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name,tmpStrLen); //prepare name of parameter
 				if(param!=-3400000000000000000){ //if different than special value (since special value means no value to send)
 					//scale param still done, we don't need to do it here
-					//param += uds_params_array[dashboardPageIndex].replyValOffset;
-					//param *= uds_params_array[dashboardPageIndex].replyScale;
-					//param += uds_params_array[dashboardPageIndex].replyScaleOffset;
+
 					//convert param from float to string
 					char tmpfloatString[10];
 
-					if (uds_params_array[dashboardPageIndex].reqId == 0x17) { //if Current gear request data - currentGear
+					if (uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId == 0x17) { //if Current gear request data - currentGear
 
 						if ((uint8_t)param<11){
 							tmpfloatString[0]=gearArray[(uint8_t)param];
@@ -2315,10 +2350,9 @@ int main(void){
 
 						tmpfloatString[1] =0;
 					}else{
-						floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+						floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 					}
 
-					//floatToStr(tmpfloatString,param,uds_params_array[dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 					//add param to the page String
 					tmpStrLen2=strlen(tmpfloatString);
 					if(tmpStrLen+tmpStrLen2>18) tmpStrLen2=18-tmpStrLen; //truncate it. no space left
@@ -2332,9 +2366,9 @@ int main(void){
 					//memcpy(&dashboardPageStringArray[tmpStrLen],tmpfloatString,tmpStrLen2);
 				}
 				//add measurement unit
-				tmpStrLen3=strlen((const char *)uds_params_array[dashboardPageIndex].replyMeasurementUnit);
+				tmpStrLen3=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit);
 				if(tmpStrLen+tmpStrLen2+tmpStrLen3>18) tmpStrLen3=18-tmpStrLen-tmpStrLen2; //truncate it. no space left
-				memcpy(&uartTxMsg[1+tmpStrLen+tmpStrLen2],&uds_params_array[dashboardPageIndex].replyMeasurementUnit,tmpStrLen3);
+				memcpy(&uartTxMsg[1+tmpStrLen+tmpStrLen2],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit,tmpStrLen3);
 		}
 		if (tmpStrLen+tmpStrLen2+tmpStrLen3 < 18) { //if required pad with zeros
 			memset(&uartTxMsg[1+tmpStrLen+tmpStrLen2+tmpStrLen3], ' ', UART_BUFFER_SIZE-(1+tmpStrLen+tmpStrLen2+tmpStrLen3)); //set to zero remaining chars
@@ -2398,9 +2432,10 @@ int main(void){
 		  function_clear_faults_enabled,
 		  function_esc_tc_customizator_enabled,
 		  function_read_faults_enabled,
+		  function_is_diesel_enabled,
 		};
 
-		for (uint8_t i = 0; i < 15; i++) {
+		for (uint8_t i = 0; i < 16; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -2552,6 +2587,15 @@ int main(void){
 					#endif
 				}
 				break;
+			case 16: //IS_DIESEL  (1=enabled 0=disabled)
+					if(tmpParam>1){
+						#if defined(IS_DIESEL)
+							return 1;
+						#else
+							return 0;
+						#endif
+					}
+					break;
 			default:
 				return 0;
 				break;

@@ -35,7 +35,6 @@
 
 		#if defined(C1baccable) //this works only on C1 can bus (OBD port pins 6 and 14)
 
-			#define IS_DIESEL //Uses parameters for DIESEL engine. If commented uses parameters for GASOLINE engine
 			#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
 			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
@@ -61,6 +60,8 @@
 
 			//experimental: it still do not work. don't use it!
 			//#define REMOTE_START_ENABLED //the car can be powered on by remote by means of the original key
+
+			#define IS_DIESEL //Uses parameters for DIESEL engine. If commented uses parameters for GASOLINE engine
 
 		#endif
 
