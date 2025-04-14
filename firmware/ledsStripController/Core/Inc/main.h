@@ -48,10 +48,10 @@
 			//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My23 Giulia/Stelvio
 			#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //Used if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
 			//#define ROUTE_MSG // allows communication with  commercial diagnostic tools to supply internal bus parameters. better described in the manual
-			#define DYNO_MODE_MASTER //allows to request DYNO in master baccable
-			#define ESC_TC_CUSTOMIZATOR_MASTER //used to activate ESC/TC in master baccable
+			//#define DYNO_MODE_MASTER //allows to request DYNO in master baccable
+			//#define ESC_TC_CUSTOMIZATOR_MASTER //used to activate ESC/TC in master baccable
 			//#define ACC_VIRTUAL_PAD //simulate the presence of ACC button pad. When the user press button to enable/disable CC, the BACCABLE sends message to enable/disable ACC
-			#define FRONT_BRAKE_FORCER_MASTER //used to activate FRONT_BRAKE_FORCER in master baccable
+			//#define FRONT_BRAKE_FORCER_MASTER //used to activate FRONT_BRAKE_FORCER in master baccable
 			//#define _4WD_DISABLER //disables 4WD
 			#define CLEAR_FAULTS_ENABLED //baccable menu will allow to reset faults on all 3 baccable
 

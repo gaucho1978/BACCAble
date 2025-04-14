@@ -1603,7 +1603,7 @@ int main(void){
 													if(wheelPressedButtonID==0x89){ //we pressed RES for at least one instant, then we released before 2 seconds, therefore we want to enter inside dashboard menu
 
 														if(dashboard_menu_indent_level==0){
-
+															uint8_t printStopTheCar=0; //if enabled prints a message to screen for half second
 															switch(main_dashboardPageIndex){
 																case 1: //show params
 																	dashboard_menu_indent_level++;
@@ -1620,8 +1620,12 @@ int main(void){
 																	break;
 																case 5: // toggle dyno status
 																	//send request thu serial line
-																	uint8_t tmpArr1[2]={C2BusID,C2cmdtoggleDyno};
-																	addToUARTSendQueue(tmpArr1, 2);
+																	if(currentSpeed_km_h==0){
+																		uint8_t tmpArr1[2]={C2BusID,C2cmdtoggleDyno};
+																		addToUARTSendQueue(tmpArr1, 2);
+																	}else{
+																		printStopTheCar=1;//print message "stop the car"
+																	}
 																	break;
 																case 6: //toggle ESC/TC
 																	//send request thu serial line
@@ -1629,15 +1633,21 @@ int main(void){
 																	addToUARTSendQueue(tmpArr2, 2);
 																	break;
 																case 7: //toggle front brake
+
 																	if(front_brake_forced>0){ //toggle front brake
 																		//send serial message to C2 baccable, to set front brakes to normal
 																		uint8_t tmpArr3[2]={C2BusID,C2cmdNormalFrontBrake};
 																		addToUARTSendQueue(tmpArr3, 2);
 																	}else{
-																		//send serial message to C2 baccable, to force front brakes
-																		uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
-																		addToUARTSendQueue(tmpArr4, 2);
+																		if(currentSpeed_km_h==0){
+																			//send serial message to C2 baccable, to force front brakes
+																			uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
+																			addToUARTSendQueue(tmpArr4, 2);
+																		}else{
+																			printStopTheCar=1;//print message "stop the car"
+																		}
 																	}
+
 
 																	break;
 																case 8: //toggle 4wd
@@ -1649,13 +1659,16 @@ int main(void){
 																		dashboard_main_menu_array[main_dashboardPageIndex][6]='n';
 																		commandsMenuEnabled=1;//enable menu commands
 																	}else{
-																		_4wd_disabled=4;
-																		//update text
-																		dashboard_main_menu_array[main_dashboardPageIndex][4]='D'; //disabled
-																		dashboard_main_menu_array[main_dashboardPageIndex][5]='i';
-																		dashboard_main_menu_array[main_dashboardPageIndex][6]='s';
-																		commandsMenuEnabled=0;//disable menu commands
-
+																		if(currentSpeed_km_h==0){
+																			_4wd_disabled=4;
+																			//update text
+																			dashboard_main_menu_array[main_dashboardPageIndex][4]='D'; //disabled
+																			dashboard_main_menu_array[main_dashboardPageIndex][5]='i';
+																			dashboard_main_menu_array[main_dashboardPageIndex][6]='s';
+																			commandsMenuEnabled=0;//disable menu commands
+																		}else{
+																			printStopTheCar=1;//print message "stop the car"
+																		}
 																	}
 																	break;
 																case 9: //setup menu
@@ -1666,10 +1679,15 @@ int main(void){
 																	break;
 															}
 
+															if(printStopTheCar==1){
+																uint8_t stopTheCarMsg[13]={BhBusIDparamString,'S','T','O','P',' ','T','H','E',' ','C','A','R'};
+																addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
+															}
+
 														}else{ //indent level >0
 															if(main_dashboardPageIndex==9){ //setup menu
 																//uint8_t tmpArr[19];
-																uint8_t printStopTheCar=0; //if enabled prints a message to screen for half second
+
 																switch(setup_dashboardPageIndex){
 																	case 0: //{'S','A','V','E','&','E','X','I','T',},
 																		//if some change occurred
@@ -1722,28 +1740,16 @@ int main(void){
 																		function_esc_tc_customizator_enabled = !function_esc_tc_customizator_enabled;
 																		break;
 																	case 11: //{'[',' ',']','D','y','n','o',},
-																		if(currentSpeed_km_h==0){
-																			function_dyno_mode_master_enabled=!function_dyno_mode_master_enabled;
-																		}else{
-																			printStopTheCar=1;//print message "stop the car"
-																		}
+																		function_dyno_mode_master_enabled=!function_dyno_mode_master_enabled;
 																		break;
 																	case 12: //{'[',' ',']','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
 																		function_acc_virtual_pad_enabled=!function_acc_virtual_pad_enabled;
 																		break;
 																	case 13: //{'[',' ',']','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
-																		if(currentSpeed_km_h==0){
-																			function_front_brake_forcer_master=!function_front_brake_forcer_master;
-																		}else{
-																			printStopTheCar=1;//print message "stop the car"
-																		}
+																		function_front_brake_forcer_master=!function_front_brake_forcer_master;
 																		break;
 																	case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
-																		if(currentSpeed_km_h==0){
-																			function_4wd_disabler_enabled=!function_4wd_disabler_enabled;
-																		}else{
-																			printStopTheCar=1;;//print message "stop the car"
-																		}
+																		function_4wd_disabler_enabled=!function_4wd_disabler_enabled;
 																		break;
 																	case 15: //{'[',' ',']','C','l','e','a','r',' ','F','a','u','l','t','s',},
 																		function_clear_faults_enabled=!function_clear_faults_enabled;
@@ -1761,12 +1767,8 @@ int main(void){
 																		break;
 																}
 
-																if(printStopTheCar==1){
-																	uint8_t stopTheCarMsg[13]={BhBusIDparamString,'S','T','O','P',' ','T','H','E',' ','C','A','R'};
-																	addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
-																}else{
-																	sendSetupDashboardPageToSlaveBaccable();
-																}
+																sendSetupDashboardPageToSlaveBaccable();
+
 															}else{ //we want to return main menu
 																dashboard_menu_indent_level=0;
 																sendMainDashboardPageToSlaveBaccable(); //print menu
