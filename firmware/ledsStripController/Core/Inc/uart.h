@@ -23,7 +23,7 @@
 	#define C2cmdGetStatus			0x23 //second byte of the message to C2 bus, identifies the request to getStatus
 	#define C2cmdtoggleEscTc		0x24 //second byte of the message to C2 bus, identifies the request to toggle ESC/TC
 
-	#define UART_BUFFER_SIZE 19
+	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
 
 	

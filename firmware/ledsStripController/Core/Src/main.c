@@ -83,7 +83,7 @@ uint16_t indiceTmp=33;
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
 	uint8_t dashboard_main_menu_array_len=10;
-	uint8_t dashboard_main_menu_array[10][18]={
+	uint8_t dashboard_main_menu_array[10][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
 			{'S','H','O','W',' ','P','A','R','A','M','S',' ',' ',' ',' ',' ',' ',' '},
 			{'R','E','A','D',' ','F','A','U','L','T','S',' ',' ',' ',' ',' ',' ',' '},
@@ -99,7 +99,7 @@ uint16_t indiceTmp=33;
 
 	uint8_t setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_setup_dashboard_menu=19;
-	uint8_t dashboard_setup_menu_array[25][18]={
+	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
@@ -345,7 +345,7 @@ uint8_t clearFaults_msg_data[5]={0x04,0x14,0xff,0xff,0xff}; //message to clear D
 CAN_TxHeaderTypeDef clearFaults_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA00F1, .DLC=5};
 
 //
-uint8_t dashboardPageStringArray[18]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
+uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
 
 float currentSpeed_km_h=0; //current vehicle speed
 
@@ -735,7 +735,7 @@ int main(void){
 					can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
 
 					telematic_display_info_field_frameNumber++; //prepare for next frame to send
-					if( paramsStringCharIndex>=18) { //if we sent the entire string
+					if( paramsStringCharIndex>=DASHBOARD_MESSAGE_MAX_LENGTH) { //if we sent the entire string
 						paramsStringCharIndex=0; //prepare to send first char of the string
 						telematic_display_info_field_frameNumber=0; //prepare to send first frame
 						requestToSendOneFrame -= 1;
@@ -2179,9 +2179,9 @@ int main(void){
 		switch(main_dashboardPageIndex){
 			case 0:
 				tmpStrLen=strlen(FW_VERSION);
-				if(tmpStrLen>18) tmpStrLen=18;
+				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
-				if (tmpStrLen < 18) { //if required pad with spaces
+				if (tmpStrLen < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with spaces
 					memset(&uartTxMsg[1+tmpStrLen], ' ', UART_BUFFER_SIZE-(1+tmpStrLen)); //set to zero remaining chars
 				}
 				break;
@@ -2334,12 +2334,12 @@ int main(void){
 		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){
 			case 0: //print baccable menu
 				tmpStrLen=strlen(FW_VERSION);
-				if(tmpStrLen>18) tmpStrLen=18;
+				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
 				break;
 			default:
 				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
-				if(tmpStrLen>18) tmpStrLen=18; //truncate it. no space left
+				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH; //truncate it. no space left
 				memcpy(&uartTxMsg[1], &uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name,tmpStrLen); //prepare name of parameter
 				if(param!=-3400000000000000000){ //if different than special value (since special value means no value to send)
 					//scale param still done, we don't need to do it here
@@ -2362,7 +2362,7 @@ int main(void){
 
 					//add param to the page String
 					tmpStrLen2=strlen(tmpfloatString);
-					if(tmpStrLen+tmpStrLen2>18) tmpStrLen2=18-tmpStrLen; //truncate it. no space left
+					if(tmpStrLen+tmpStrLen2>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen2=DASHBOARD_MESSAGE_MAX_LENGTH-tmpStrLen; //truncate it. no space left
 					memcpy(&uartTxMsg[1+tmpStrLen],tmpfloatString,tmpStrLen2);
 
 					//float tmpVal9=200000.45601928209374; ///ADDED FOR TEST.......
@@ -2374,10 +2374,10 @@ int main(void){
 				}
 				//add measurement unit
 				tmpStrLen3=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit);
-				if(tmpStrLen+tmpStrLen2+tmpStrLen3>18) tmpStrLen3=18-tmpStrLen-tmpStrLen2; //truncate it. no space left
+				if(tmpStrLen+tmpStrLen2+tmpStrLen3>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen3=DASHBOARD_MESSAGE_MAX_LENGTH-tmpStrLen-tmpStrLen2; //truncate it. no space left
 				memcpy(&uartTxMsg[1+tmpStrLen+tmpStrLen2],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit,tmpStrLen3);
 		}
-		if (tmpStrLen+tmpStrLen2+tmpStrLen3 < 18) { //if required pad with zeros
+		if (tmpStrLen+tmpStrLen2+tmpStrLen3 < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with zeros
 			memset(&uartTxMsg[1+tmpStrLen+tmpStrLen2+tmpStrLen3], ' ', UART_BUFFER_SIZE-(1+tmpStrLen+tmpStrLen2+tmpStrLen3)); //set to zero remaining chars
 		}
 		addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
