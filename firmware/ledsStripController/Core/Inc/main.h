@@ -99,7 +99,7 @@
 		#endif
 
 
-		#if defined(SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE)
+		#if defined(C1baccable)
 			typedef struct{
 				uint8_t		name[15];
 				uint32_t 	reqId;
@@ -132,7 +132,7 @@
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
 			//la flash inizia a 0x08000000  e finisce a 0x0801FFFF, -0x800 +1 di una pagina fa 0x0801F800
 
-	#if defined(DYNO_MODE)
+	#if defined(C2baccable)
 		void dynoToggle(void);
 	#endif
 

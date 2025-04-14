@@ -275,7 +275,12 @@ uint16_t indiceTmp=33;
 	uint8_t function_shift_indicator_enabled=0; //saved in flash.
 	CAN_TxHeaderTypeDef shift_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2ED, .DLC=8};
 	uint8_t shift_msg_data[8];
+
+#if defined(SHIFT_THRESHOLD)
 	uint16_t shift_threshold=SHIFT_THRESHOLD;
+#else
+	uint16_t shift_threshold=1500;
+#endif
 
 	//LED_STRIP_CONTROLLER_ENABLED
 	uint8_t function_led_strip_controller_enabled=0; //defines is not enough, by default leds are disabled.stored in ram
