@@ -1723,7 +1723,7 @@ int main(void){
 																		function_shift_indicator_enabled=!function_shift_indicator_enabled;
 																		break;
 																	case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',},
-																		shift_threshold=shift_threshold+500;
+																		shift_threshold=shift_threshold+250;
 																		if(shift_threshold>6000) shift_threshold=1500;
 																		break;
 																	case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
