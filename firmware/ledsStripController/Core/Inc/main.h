@@ -106,7 +106,7 @@
 
 		#if defined(C1baccable)
 			typedef struct{
-				uint8_t		name[15];
+				uint8_t		name[DASHBOARD_MESSAGE_MAX_LENGTH - 3];
 				uint32_t 	reqId;
 				uint8_t		reqLen;
 				uint32_t 	reqData;
