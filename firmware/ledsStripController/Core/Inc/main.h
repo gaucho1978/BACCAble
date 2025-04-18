@@ -28,6 +28,8 @@
 		//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
 		//#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
 
+		//#define LARGE_DISPLAY //uncomment this to compile firmware for large displays; ideally you should use -D compiler args
+		
 		#ifndef LARGE_DISPLAY
 		#define DASHBOARD_MESSAGE_MAX_LENGTH 18
 		#else
