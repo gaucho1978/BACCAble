@@ -83,7 +83,7 @@ uint16_t indiceTmp=33;
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
 	uint8_t dashboard_main_menu_array_len=10;
-	uint8_t dashboard_main_menu_array[10][18]={
+	uint8_t dashboard_main_menu_array[10][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
 			{'S','H','O','W',' ','P','A','R','A','M','S',' ',' ',' ',' ',' ',' ',' '},
 			{'R','E','A','D',' ','F','A','U','L','T','S',' ',' ',' ',' ',' ',' ',' '},
@@ -99,7 +99,7 @@ uint16_t indiceTmp=33;
 
 	uint8_t setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_setup_dashboard_menu=19;
-	uint8_t dashboard_setup_menu_array[25][18]={
+	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
@@ -107,7 +107,7 @@ uint16_t indiceTmp=33;
 			{'O',' ',' ','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
 			{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',' ',' ',' ',' '},
 			{'O',' ',' ','M','y','2','3',' ','I','P','C',' ',' ',' ',' ',' ',' ',' '},
-			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
+			{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
 			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
 			{'O',' ',' ','R','o','u','t','e',' ','M','e','s','s','a','g','e','s',' '},
 			{'O',' ',' ','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',' '},
@@ -271,16 +271,25 @@ uint16_t indiceTmp=33;
 	//IPC_MY23_IS_INSTALLED
 	uint8_t function_ipc_my23_is_installed=1;
 
+	//REGENERATION_ALERT_ENABLED
+	uint8_t function_regeneration_alert_enabled=0;
+	uint8_t regenerationInProgress=0;
+	uint8_t STATUS_ECM_msg_data[8];
+	CAN_TxHeaderTypeDef STATUS_ECM_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5AE, .DLC=8};
+	uint8_t CHIME_msg_data[8];
+	CAN_TxHeaderTypeDef CHIME_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x226, .DLC=8};
+	uint8_t requestToPlayChime=0;
+
 	//SHIFT_INDICATOR_ENABLED
 	uint8_t function_shift_indicator_enabled=0; //saved in flash.
 	CAN_TxHeaderTypeDef shift_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x2ED, .DLC=8};
 	uint8_t shift_msg_data[8];
 
-#if defined(SHIFT_THRESHOLD)
-	uint16_t shift_threshold=SHIFT_THRESHOLD;
-#else
-	uint16_t shift_threshold=1500;
-#endif
+	#if defined(SHIFT_THRESHOLD)
+		uint16_t shift_threshold=SHIFT_THRESHOLD;
+	#else
+		uint16_t shift_threshold=1500;
+	#endif
 
 	//LED_STRIP_CONTROLLER_ENABLED
 	uint8_t function_led_strip_controller_enabled=0; //defines is not enough, by default leds are disabled.stored in ram
@@ -328,7 +337,7 @@ uint16_t indiceTmp=33;
 
 #if defined(BHbaccable)
 	uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
-	uint8_t telematic_display_info_field_totalFrameNumber=5; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
+	uint8_t telematic_display_info_field_totalFrameNumber=(DASHBOARD_MESSAGE_MAX_LENGTH / 3) - 1; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t telematic_display_info_field_infoCode=0x09; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t paramsStringCharIndex=0; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
@@ -345,7 +354,7 @@ uint8_t clearFaults_msg_data[5]={0x04,0x14,0xff,0xff,0xff}; //message to clear D
 CAN_TxHeaderTypeDef clearFaults_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA00F1, .DLC=5};
 
 //
-uint8_t dashboardPageStringArray[18]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
+uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
 
 float currentSpeed_km_h=0; //current vehicle speed
 
@@ -416,6 +425,7 @@ int main(void){
 		function_esc_tc_customizator_enabled=(uint8_t)readFromFlash(14);
 		function_read_faults_enabled=(uint8_t)readFromFlash(15);
 		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
+		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
 	#endif
 
 
@@ -735,7 +745,7 @@ int main(void){
 					can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
 
 					telematic_display_info_field_frameNumber++; //prepare for next frame to send
-					if( paramsStringCharIndex>=18) { //if we sent the entire string
+					if( paramsStringCharIndex>=DASHBOARD_MESSAGE_MAX_LENGTH) { //if we sent the entire string
 						paramsStringCharIndex=0; //prepare to send first char of the string
 						telematic_display_info_field_frameNumber=0; //prepare to send first frame
 						requestToSendOneFrame -= 1;
@@ -1243,11 +1253,24 @@ int main(void){
 									break;
 								case 0x00000226:
 									#if defined(C1baccable)
-										if(rx_msg_header.DLC>=2){
-											//fill a variable with start&stop Status
-											if(rx_msg_data[2]==0xF1) startAndstopCarStatus=1; //start&stop enabled in car (default in giulias)
-											if(rx_msg_data[2]==0x05) startAndstopCarStatus=0; //start&stop disabled in car
+										if(rx_msg_header.DLC>=4){
+											//fill a variable with start&stop Status (byte2 bit 3 and 2 = 1 means S&S disabled)
+											if(((rx_msg_data[2]>>2) & 0x03) ==0x01){
+												startAndstopCarStatus=0; //S&S disabled in car
+											}else{
+												startAndstopCarStatus=1;//S&S enabled in car (default in giulias)
+											}
+
+											if(requestToPlayChime==1){  //if there is a request to play sound
+												requestToPlayChime=0;
+												//copy message
+												memcpy(CHIME_msg_data, &rx_msg_data, rx_msg_header.DLC);
+												CHIME_msg_data[3] |= 0x04; //enable chime, byte 3, bit 2
+												can_tx(&CHIME_msg_header, CHIME_msg_data); //send msg
+												onboardLed_blue_on();
+											}
 										}
+
 									#endif
 									break;
 								case 0x000002ED: //message to dashboard containing shift indicator
@@ -1303,6 +1326,14 @@ int main(void){
 											scaledColorSet=scaleColorSet(currentGear); //prima di tutto azzeriamo i primi 4 bit meno significativi, poi scala il dato con la funzione scaleColorSet, per prepararlo per l'invio alla classe vumeter
 											vuMeterUpdate(scaledVolume,scaledColorSet);
 										}
+
+										if(function_regeneration_alert_enabled){
+											if((rx_msg_data[1] >>7)==1 && regenerationInProgress==0){
+												requestToPlayChime=1;
+											}
+										}
+										regenerationInProgress=rx_msg_data[1] >>7; //DPF Regeneration mode is on byte 1 bit 7.
+
 									#endif
 
 									//actual gear status is on byte 0 from bit 7 to 4 (0x0=neutral, 0x1 to 0x6=gear 1 to 6, 0x07=reverse gear, 0x8 to 0xA=gear 7 to 9, 0xF=SNA)
@@ -1405,7 +1436,7 @@ int main(void){
 																	if(main_dashboardPageIndex==9){ //we are in setup menu
 																		setup_dashboardPageIndex+=1;//set next page
 																		if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
-																		if(setup_dashboardPageIndex==7) setup_dashboardPageIndex++; //future growth
+
 																		if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
 
 																		if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
@@ -1466,7 +1497,6 @@ int main(void){
 																		if(main_dashboardPageIndex==9){ //we are in setup menu
 																			setup_dashboardPageIndex+=10;//set next page
 																			if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
-																			if(setup_dashboardPageIndex==7) setup_dashboardPageIndex++; //future growth
 																			if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
 																			if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 																			//onboardLed_blue_on();
@@ -1526,7 +1556,6 @@ int main(void){
 																	if(main_dashboardPageIndex==9){ //we are in setup menu
 																		setup_dashboardPageIndex-=1;//set next page
 																		if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
-																		if(setup_dashboardPageIndex==7) setup_dashboardPageIndex--; //future growth
 																		if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
 
 																		if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=total_pages_in_setup_dashboard_menu-1; // make a rotative menu
@@ -1586,7 +1615,6 @@ int main(void){
 																		if(main_dashboardPageIndex==9){ //we are in setup menu
 																			setup_dashboardPageIndex-=10;//set prev page
 																			if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
-																			if(setup_dashboardPageIndex==7) setup_dashboardPageIndex--; //future growth
 																			if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
 																			if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 																			//onboardLed_blue_on();
@@ -1705,7 +1733,8 @@ int main(void){
 																			((uint16_t)function_clear_faults_enabled				!= readFromFlash(13))	|| //CLEAR_FAULTS_ENABLED
 																			((uint16_t)function_esc_tc_customizator_enabled			!= readFromFlash(14))	|| //ESC_TC_CUSTOMIZATOR_MASTER
 																			((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
-																			((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	){ //IS_DIESEL
+																			((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
+																			((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	){
 																				//save it on flash
 																				saveOnflash();
 																		}
@@ -1729,7 +1758,8 @@ int main(void){
 																	case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
 																		function_ipc_my23_is_installed=!function_ipc_my23_is_installed;
 																		break;
-																	case 7: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
+																	case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
+																		function_regeneration_alert_enabled=!function_regeneration_alert_enabled;
 																		break;
 																	case 8: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
 																		break;
@@ -2056,6 +2086,24 @@ int main(void){
 										}
 									#endif
 									break;
+								case 0x000005AE:
+									#if defined(C1baccable)
+										//this message is directed to IPC once per second. DPF status is on byte 4 bit 2. (1=dirty, 0=clean)
+										if(function_regeneration_alert_enabled){  //if out function was enabled in setup menu
+											if(rx_msg_header.DLC>=5){
+												if(regenerationInProgress){ //if regeneration is in progress
+													if(((rx_msg_data[4]>>2) & 0x01 )==0){ //if the message needs to be changed
+														//change message and send it again
+														memcpy(STATUS_ECM_msg_data, &rx_msg_data, rx_msg_header.DLC); //copy message
+														STATUS_ECM_msg_data[4] |= 0x04; //DPF Dirty (bit 2) set to ON
+														can_tx(&STATUS_ECM_msg_header, STATUS_ECM_msg_data); //send msg
+														onboardLed_blue_on();
+													}
+
+												}
+											}
+										}
+									#endif
 								case 0x000005B0:
 									#if defined(C2baccable)
 										if((rx_msg_data[1] == 0x20) && ( DynoStateMachine == 0xff)){ // park assist button was pressed and there is no dyno Start sequence in progress
@@ -2179,9 +2227,9 @@ int main(void){
 		switch(main_dashboardPageIndex){
 			case 0:
 				tmpStrLen=strlen(FW_VERSION);
-				if(tmpStrLen>18) tmpStrLen=18;
+				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
-				if (tmpStrLen < 18) { //if required pad with spaces
+				if (tmpStrLen < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with spaces
 					memset(&uartTxMsg[1+tmpStrLen], ' ', UART_BUFFER_SIZE-(1+tmpStrLen)); //set to zero remaining chars
 				}
 				break;
@@ -2227,7 +2275,8 @@ int main(void){
 			case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_ipc_my23_is_installed];
 				break;
-			case 7: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
+			case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_ipc_my23_is_installed];
 				break;
 			case 8: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
 				break;
@@ -2334,12 +2383,12 @@ int main(void){
 		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){
 			case 0: //print baccable menu
 				tmpStrLen=strlen(FW_VERSION);
-				if(tmpStrLen>18) tmpStrLen=18;
+				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
 				break;
 			default:
 				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
-				if(tmpStrLen>18) tmpStrLen=18; //truncate it. no space left
+				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH; //truncate it. no space left
 				memcpy(&uartTxMsg[1], &uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name,tmpStrLen); //prepare name of parameter
 				if(param!=-3400000000000000000){ //if different than special value (since special value means no value to send)
 					//scale param still done, we don't need to do it here
@@ -2362,7 +2411,7 @@ int main(void){
 
 					//add param to the page String
 					tmpStrLen2=strlen(tmpfloatString);
-					if(tmpStrLen+tmpStrLen2>18) tmpStrLen2=18-tmpStrLen; //truncate it. no space left
+					if(tmpStrLen+tmpStrLen2>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen2=DASHBOARD_MESSAGE_MAX_LENGTH-tmpStrLen; //truncate it. no space left
 					memcpy(&uartTxMsg[1+tmpStrLen],tmpfloatString,tmpStrLen2);
 
 					//float tmpVal9=200000.45601928209374; ///ADDED FOR TEST.......
@@ -2374,10 +2423,10 @@ int main(void){
 				}
 				//add measurement unit
 				tmpStrLen3=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit);
-				if(tmpStrLen+tmpStrLen2+tmpStrLen3>18) tmpStrLen3=18-tmpStrLen-tmpStrLen2; //truncate it. no space left
+				if(tmpStrLen+tmpStrLen2+tmpStrLen3>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen3=DASHBOARD_MESSAGE_MAX_LENGTH-tmpStrLen-tmpStrLen2; //truncate it. no space left
 				memcpy(&uartTxMsg[1+tmpStrLen+tmpStrLen2],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit,tmpStrLen3);
 		}
-		if (tmpStrLen+tmpStrLen2+tmpStrLen3 < 18) { //if required pad with zeros
+		if (tmpStrLen+tmpStrLen2+tmpStrLen3 < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with zeros
 			memset(&uartTxMsg[1+tmpStrLen+tmpStrLen2+tmpStrLen3], ' ', UART_BUFFER_SIZE-(1+tmpStrLen+tmpStrLen2+tmpStrLen3)); //set to zero remaining chars
 		}
 		addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
@@ -2440,9 +2489,10 @@ int main(void){
 		  function_esc_tc_customizator_enabled,
 		  function_read_faults_enabled,
 		  function_is_diesel_enabled,
+		  function_regeneration_alert_enabled,
 		};
 
-		for (uint8_t i = 0; i < 16; i++) {
+		for (uint8_t i = 0; i < 17; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -2597,6 +2647,15 @@ int main(void){
 			case 16: //IS_DIESEL  (1=enabled 0=disabled)
 					if(tmpParam>1){
 						#if defined(IS_DIESEL)
+							return 1;
+						#else
+							return 0;
+						#endif
+					}
+					break;
+			case 17: //REGENERATION_ALERT_ENABLED  (1=enabled 0=disabled)
+					if(tmpParam>1){
+						#if defined(REGENERATION_ALERT_ENABLED)
 							return 1;
 						#else
 							return 0;

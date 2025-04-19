@@ -35,7 +35,7 @@ extern uint8_t front_brake_forced;
 extern UART_HandleTypeDef huart2;
 #if defined(BHbaccable)
 	//SHOW_PARAMS_ON_DASHBOARD
-	extern uint8_t dashboardPageStringArray[18];
+	extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH];
 	extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
 	//extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
 #endif
@@ -151,7 +151,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
 							#if defined(BHbaccable)
 								weCanSendAMessageReply=HAL_GetTick();
-								memcpy(&dashboardPageStringArray[0], &rxBuffer[1], 18); //copy array that we will use in the main
+								memcpy(&dashboardPageStringArray[0], &rxBuffer[1], DASHBOARD_MESSAGE_MAX_LENGTH); //copy array that we will use in the main
 
 								if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 
@@ -212,10 +212,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						//not exptected to end up here
 						break;
 				}
-				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 19); //receive next frame
+				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE); //receive next frame
 			}else{ //otherwise we were not sync, therefore we need to receive the remaining part of the message
 				syncObtained=1;
-				HAL_UART_Receive_IT(&huart2, &rxBuffer[1], 18); //receive remaining part of the frame
+				HAL_UART_Receive_IT(&huart2, &rxBuffer[1], UART_BUFFER_SIZE-1); //receive remaining part of the frame
 			}
     	}else { //we did not receive the begin of the message. discard it
 			syncObtained=0; //we lost sync
@@ -234,7 +234,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
-	onboardLed_red_on();
+	//onboardLed_red_on();
+	onboardLed_red_blink(2);
 }
 /*
 void enter_standby_mode(void) {
@@ -310,8 +311,12 @@ void processUART() {
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
 					//save time
-					if(tx_queue->tx_buffer[tx_queue->head][0]== C2BusID){lastMsgSentToC2Time=HAL_GetTick();}
-					if((tx_queue->tx_buffer[tx_queue->head][0]== BhBusIDparamString) || (tx_queue->tx_buffer[tx_queue->head][0])==BhBusIDgetStatus){lastMsgSentToBHTime=HAL_GetTick();}
+					if(tx_queue->tx_buffer[tx_queue->head][0]== C2BusID){
+						lastMsgSentToC2Time=HAL_GetTick();
+					}
+					if((tx_queue->tx_buffer[tx_queue->head][0]== BhBusIDparamString) || (tx_queue->tx_buffer[tx_queue->head][0])==BhBusIDgetStatus){
+						lastMsgSentToBHTime=HAL_GetTick();
+					}
 
 					// update head index in a circular way
 					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;
@@ -327,15 +332,15 @@ void processUART() {
 			lastMsgSentToC2Time=HAL_GetTick();
 			//get status from C2
 			//send request thu serial line
-			uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
-			addToUARTSendQueue(tmpArr1, 2);
+			uint8_t tmpArr1[UART_BUFFER_SIZE]={C2BusID,C2cmdGetStatus,' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '};
+			addToUARTSendQueue(tmpArr1, 2); //commented for test
 		}
 		if(HAL_GetTick()-lastMsgSentToBHTime>1000){
 			lastMsgSentToBHTime=HAL_GetTick();
 			//get status from BH
 			//send request thu serial line
-			uint8_t tmpArr2[1]={BhBusIDgetStatus};
-			addToUARTSendQueue(tmpArr2, 1);
+			uint8_t tmpArr2[UART_BUFFER_SIZE]={BhBusIDgetStatus,' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '};
+			addToUARTSendQueue(tmpArr2, UART_BUFFER_SIZE);
 		}
 
 	#endif

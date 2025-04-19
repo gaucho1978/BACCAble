@@ -23,20 +23,47 @@
 		// NEW
 		//---------------------------------------------------------------------------------------------------------------------------
 
-		//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
-		#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
-		//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
-		//#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
+		//#define LARGE_DISPLAY //uncomment this to compile firmware for large displays; ideally you should use -D compiler args
+		#ifndef LARGE_DISPLAY
+			#define DASHBOARD_MESSAGE_MAX_LENGTH 18
+		#else
+			#define DASHBOARD_MESSAGE_MAX_LENGTH 24
+		#endif
 
+		// RELEASE_FLAVOR  is defined if compiling with eclipse
+		#ifndef RELEASE_FLAVOR
 
+			//If compiling with STM cube IDE, you will have to comment and uncomment these 4 lines:
+			//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
+			//#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
+			//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
+			#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
+		#else
+			#if RELEASE_FLAVOR == CAN_FLAVOR
+				#define ACT_AS_CANABLE
+			#elif RELEASE_FLAVOR == C1_FLAVOR
+				#define C1baccable
+			#elif RELEASE_FLAVOR == C2_FLAVOR
+				#define C2baccable
+			#elif RELEASE_FLAVOR == BH_FLAVOR
+				#define BHbaccable
+			#endif
+		#endif
 
+		//This section sets ACT_AS_CANABLE if no option was selected
+		#if !defined(ACT_AS_CANABLE) && !defined(C1baccable) && !defined(C2baccable) && !defined(BHbaccable)
+			#define ACT_AS_CANABLE
+		#endif
 
-
+		#if defined(ACT_AS_CANABLE)
+			#pragma message("Building CANable") //adds a message in the compilation log
+		#endif
 
 		#if defined(C1baccable) //this works only on C1 can bus (OBD port pins 6 and 14)
+			#pragma message("Building C1 BACCAble") //adds a message in the compilation log
 
 			#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
-			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+			//#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			//if one of the following will be uncommented, its default status will be enabled. It will be possible to change the status inside SETUP menu.
 			#define IMMOBILIZER_ENABLED //immobilizer will be enabled.
@@ -61,11 +88,21 @@
 			//experimental: it still do not work. don't use it!
 			//#define REMOTE_START_ENABLED //the car can be powered on by remote by means of the original key
 
-			#define IS_DIESEL //Uses parameters for DIESEL engine. If commented uses parameters for GASOLINE engine
+			// IS_GASOLINE  is defined if compiling with eclipse (on stm cube it will be not defined)
+			#ifndef IS_GASOLINE
+				#pragma message("Will select default diesel engine parameters")
+				//If compiling with STM cube IDE, you will have to comment and uncomment the following line:
+				#define IS_DIESEL //if uncommented sets by default diesel parameters (you can change it in setup menu), otherwise Gasoline will be default setting.
+			#else
+				#pragma message("Will select default gasoline engine parameters")
+			#endif
+//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
+
 
 		#endif
 
 		#if defined(C2baccable) //this works only on C2 can bus (obd port pin 12 and 13)
+			#pragma message("Building C2 BACCAble")
 			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			#define ESC_TC_CUSTOMIZATOR_ENABLED // enable/disable ESC and Traction control (also controlled by C1 baccable) (by pressing LANE button (left stak) for 2 seconds it inverts current enabling status of ESC and TC features). it works only in race mode
@@ -75,6 +112,7 @@
 		#endif
 
 		#if defined(BHbaccable) //this works only on BH can bus (obd port pin 3 and pin 11)
+			#pragma message("Building BH BACCAble")
 			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			#define SHOW_PARAMS_ON_DASHBOARD // used on new board to print text on dashboard (or if you connected together another baccable)
@@ -101,7 +139,7 @@
 
 		#if defined(C1baccable)
 			typedef struct{
-				uint8_t		name[15];
+				uint8_t		name[DASHBOARD_MESSAGE_MAX_LENGTH - 3];
 				uint32_t 	reqId;
 				uint8_t		reqLen;
 				uint32_t 	reqData;

@@ -2,10 +2,12 @@
 .metadata
 .settings
 .launch
+.vscode
 
 # outputs
 Debug
-Release
+Release*
+build
 SavvyCAN-Windows_x64
 
 # temp files
