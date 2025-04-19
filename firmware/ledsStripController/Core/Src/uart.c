@@ -234,8 +234,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
-	//onboardLed_red_on();
-	onboardLed_red_blink(2);
+	onboardLed_red_on();
+	onboardLed_blue_on();
+	//onboardLed_red_blink(2);
 }
 /*
 void enter_standby_mode(void) {
