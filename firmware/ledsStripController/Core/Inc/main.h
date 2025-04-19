@@ -36,8 +36,8 @@
 			//If compiling with STM cube IDE, you will have to comment and uncomment these 4 lines:
 			//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
 			//#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
-			//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
-			#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
+			#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
+			//#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
 		#else
 			#if RELEASE_FLAVOR == CAN_FLAVOR
 				#define ACT_AS_CANABLE
@@ -113,7 +113,7 @@
 
 		#if defined(BHbaccable) //this works only on BH can bus (obd port pin 3 and pin 11)
 			#pragma message("Building BH BACCAble")
-			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+			//#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			#define SHOW_PARAMS_ON_DASHBOARD // used on new board to print text on dashboard (or if you connected together another baccable)
 			#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too
