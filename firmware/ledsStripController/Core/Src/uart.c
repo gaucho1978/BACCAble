@@ -78,7 +78,7 @@ void uart_init(){
 
     // Configure USART2 in Half-Duplex mode
     huart2.Instance = USART2;
-    huart2.Init.BaudRate = 38400;
+    huart2.Init.BaudRate = 38400; //38400;
     huart2.Init.WordLength = UART_WORDLENGTH_8B;
     huart2.Init.StopBits = UART_STOPBITS_1;
     huart2.Init.Parity = UART_PARITY_NONE;
@@ -112,6 +112,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 		// evaluate received message
     	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=BhBusIDgetStatus)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
+				#if defined(ACT_AS_CANABLE)
+					onboardLed_blue_on();
+				#endif
+
 				switch(rxBuffer[0]){
 					case C1BusID: //message directed to baccable connected to C1 bus
 						//not used up to today
@@ -206,12 +210,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					case AllResetFaults: //message received by baccable on BH and C2 bus. we shall reset all faults
 						#if (defined(C2baccable) || defined(BHbaccable))
 							clearFaultsRequest=255;
+							onboardLed_blue_on();
 						#endif
 						break;
 					default:
 						//not exptected to end up here
 						break;
 				}
+
 				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE); //receive next frame
 			}else{ //otherwise we were not sync, therefore we need to receive the remaining part of the message
 				syncObtained=1;
@@ -219,12 +225,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			}
     	}else { //we did not receive the begin of the message. discard it
 			syncObtained=0; //we lost sync
+			//onboardLed_blue_on();
 			HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //receive one char
 		}
     }
 }
 
-// interrput called when message send is complete
+// interrupt called when message send is complete
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
     if (huart->Instance == USART2){
         //message sent. what do we do?
@@ -235,8 +242,26 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	onboardLed_red_on();
-	onboardLed_blue_on();
 	//onboardLed_red_blink(2);
+	if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
+		// Overrun error (buffer pieno, dati persi)
+		//onboardLed_blue_on();
+	}
+	if (huart->ErrorCode & HAL_UART_ERROR_FE) {
+		// Framing error
+		//onboardLed_blue_on();
+	}
+	if (huart->ErrorCode & HAL_UART_ERROR_NE) {
+		// Noise detected
+
+	}
+	if (huart->ErrorCode & HAL_UART_ERROR_PE) {
+		// Parity error
+
+	}
+
+	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);
+
 }
 /*
 void enter_standby_mode(void) {
@@ -333,15 +358,18 @@ void processUART() {
 			lastMsgSentToC2Time=HAL_GetTick();
 			//get status from C2
 			//send request thu serial line
-			uint8_t tmpArr1[UART_BUFFER_SIZE]={C2BusID,C2cmdGetStatus,' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '};
+
+			//to correct after solving uart framing error
+			uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
 			addToUARTSendQueue(tmpArr1, 2); //commented for test
 		}
 		if(HAL_GetTick()-lastMsgSentToBHTime>1000){
 			lastMsgSentToBHTime=HAL_GetTick();
 			//get status from BH
 			//send request thu serial line
-			uint8_t tmpArr2[UART_BUFFER_SIZE]={BhBusIDgetStatus,' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '};
-			addToUARTSendQueue(tmpArr2, UART_BUFFER_SIZE);
+			//to correct after solving uart framing error
+			uint8_t tmpArr2[1]={BhBusIDgetStatus};
+			addToUARTSendQueue(tmpArr2, 1);
 		}
 
 	#endif

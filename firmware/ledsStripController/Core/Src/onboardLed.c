@@ -24,13 +24,15 @@ void onboardLed_init(){
     GPIO_InitStruct.Alternate = 0;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_14  ; //PA14 is used to disable start &stop car functionality
-    GPIO_InitStruct.Pull = GPIO_NOPULL; //removed GPIO_PULLUP to let it work start&stop car command disabler
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
+    //it doesn't work anymore. we have to work on it if we need it
+	//#if defined(DISABLE_START_STOP)
+	//	GPIO_InitStruct.Pin = GPIO_PIN_14  ; //PA14 is used to disable start &stop car functionality
+	//	GPIO_InitStruct.Pull = GPIO_NOPULL; //removed GPIO_PULLUP to let it work start&stop car command disabler
+	//	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	//    HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //outputs High signal at PA14, used to disable start&stop car functionality
+	//#endif
     onboardLed_red_off(); //shut down red led
     onboardLed_blue_off(); //shut down blue led
-    HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //outputs High signal at PA14, used to disable start&stop car functionality
 }
 
 

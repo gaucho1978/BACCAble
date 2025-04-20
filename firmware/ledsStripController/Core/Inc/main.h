@@ -5,7 +5,10 @@
 	extern "C" {
 #endif
 
+
 		#include "stm32f0xx_hal.h"
+
+
 		#include "onboardLed.h"
 		#include "can.h"
 		#include "slcan.h"
@@ -35,8 +38,8 @@
 
 			//If compiling with STM cube IDE, you will have to comment and uncomment these 4 lines:
 			//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
-			//#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
-			#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
+			#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
+			//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
 			//#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
 		#else
 			#if RELEASE_FLAVOR == CAN_FLAVOR
@@ -57,6 +60,7 @@
 
 		#if defined(ACT_AS_CANABLE)
 			#pragma message("Building CANable") //adds a message in the compilation log
+			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 		#endif
 
 		#if defined(C1baccable) //this works only on C1 can bus (OBD port pins 6 and 14)
@@ -103,7 +107,7 @@
 
 		#if defined(C2baccable) //this works only on C2 can bus (obd port pin 12 and 13)
 			#pragma message("Building C2 BACCAble")
-			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+			//#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			#define ESC_TC_CUSTOMIZATOR_ENABLED // enable/disable ESC and Traction control (also controlled by C1 baccable) (by pressing LANE button (left stak) for 2 seconds it inverts current enabling status of ESC and TC features). it works only in race mode
 			#define DYNO_MODE //disables all the controls (roll bench mode of MES) (also controlled by C1 baccable).

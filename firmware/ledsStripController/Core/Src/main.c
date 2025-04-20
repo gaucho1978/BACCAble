@@ -429,14 +429,15 @@ int main(void){
 	#endif
 
 
-	#if defined(ACT_AS_CANABLE)
-		MX_USB_DEVICE_Init();
-	#endif
 
-	#if (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable))
+
+	#if (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable) || defined(ACT_AS_CANABLE))
 		uart_init();
 	#endif
 
+	#if defined(ACT_AS_CANABLE)
+		MX_USB_DEVICE_Init();
+	#endif
 
 	#if (defined(C1baccable) || defined(C2baccable) )  //if required, let's automatically open the can bus
 		//let's open the can bus because we may need data
@@ -461,7 +462,9 @@ int main(void){
 
 	#endif
 
-
+	#if defined(DEBUG)
+		uint8_t firstExecution=0;
+	#endif
 
 	while (1){
 
@@ -472,6 +475,19 @@ int main(void){
 		//if(function_led_strip_controller_enabled>1){
 		//	onboardLed_red_on();
 		//}
+		#if defined(DEBUG)
+			if(debugTimer0>10000){
+				//baccableDashboardMenuVisible=1;
+			}
+			if(debugTimer0>10000 && firstExecution==0){
+				//clearFaultsRequest=255;
+				//firstExecution=1;
+				baccableDashboardMenuVisible=1;
+				dashboard_menu_indent_level=1;
+				main_dashboardPageIndex=1;
+				dashboardPageIndex=20;
+			}
+		#endif
 		#if defined(ACT_AS_CANABLE)
 			cdc_process(); //processa dati usb
 			//just for test
@@ -755,27 +771,27 @@ int main(void){
 			}
 		#endif
 
+		#if (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable))
+			if(clearFaultsRequest>0){
+				//clear faults if requested
+				if(HAL_GetTick()-last_sent_clear_faults_msg>25){
+					last_sent_clear_faults_msg= HAL_GetTick();
 
-		if(clearFaultsRequest>0){
-			//clear faults if requested
-			if(HAL_GetTick()-last_sent_clear_faults_msg>25){
-				last_sent_clear_faults_msg= HAL_GetTick();
+					#if defined(C1baccable)
+						if(clearFaultsRequest==255){
+							//ask to Baccable on C2 and bH bus, to reset faults //to be done
+							uint8_t tmpArr[1]={AllResetFaults};
+							addToUARTSendQueue(tmpArr, 1);
+						}
+					#endif
+					//send a reset request
+					clearFaults_msg_header.ExtId= 0x18DA00F1 | ((uint32_t)clearFaultsRequest<<8);
+					can_tx(&clearFaults_msg_header, clearFaults_msg_data); //transmit the request
 
-				#if defined(C1baccable)
-					if(clearFaultsRequest==255){
-						//ask to Baccable on C2 and bH bus, to reset faults //to be done
-						uint8_t tmpArr[1]={AllResetFaults};
-						addToUARTSendQueue(tmpArr, 1);
-					}
-				#endif
-				//send a reset request
-				clearFaults_msg_header.ExtId= 0x18DA00F1 & ((uint32_t)clearFaultsRequest<<8);
-				can_tx(&clearFaults_msg_header, clearFaults_msg_data); //transmit the request
-
-				clearFaultsRequest--;
+					clearFaultsRequest--;
+				}
 			}
-		}
-
+		#endif
 
 		#if defined(C1baccable)
 
@@ -881,6 +897,7 @@ int main(void){
 
 				#if defined(ACT_AS_CANABLE)
 					uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
+					onboardLed_blue_on();
 					if(msg_len){
 						CDC_Transmit_FS(msg_buf, msg_len); //transmit data via usb
 					}
@@ -2104,6 +2121,7 @@ int main(void){
 											}
 										}
 									#endif
+									break;
 								case 0x000005B0:
 									#if defined(C2baccable)
 										if((rx_msg_data[1] == 0x20) && ( DynoStateMachine == 0xff)){ // park assist button was pressed and there is no dyno Start sequence in progress
