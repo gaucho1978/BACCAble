@@ -31,6 +31,8 @@ uint16_t indiceTmp=33;
 
 #if defined(C1baccable)
 
+	uint32_t shutdownDashboardMenuRequestTime=0; //used to shutdown display after one minute from motor off event
+
 	uint8_t checkbox_symbols[2] = {0x4F, 0xD8}; // O (0x4F= not selected), Ø (0xD8= selected)
 
 	//ACC_VIRTUAL_PAD
@@ -75,7 +77,7 @@ uint16_t indiceTmp=33;
 	uint8_t startAndStopEnabled=1; //this is the status of my internal logic. If=0 the function goes to sleep up to next reboot
 	uint8_t startAndstopCarStatus=1; //this is the status of Start&stop received by the car. 1=enabled in car (this is the default status in giulias).
 	uint32_t lastTimeStartAndstopDisablerButtonPressed=0;
-
+	uint8_t requestToDisableStartAndStop=0; //if set to 1 sends message simulating s&s button press
 
 	//
 	uint8_t gearArray[11]={'N','1','2','3','4','5','6','R','7','8','9'};
@@ -276,9 +278,6 @@ uint16_t indiceTmp=33;
 	uint8_t regenerationInProgress=0;
 	uint8_t STATUS_ECM_msg_data[8];
 	CAN_TxHeaderTypeDef STATUS_ECM_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5AE, .DLC=8};
-	uint8_t CHIME_msg_data[8];
-	CAN_TxHeaderTypeDef CHIME_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x226, .DLC=8};
-	uint8_t requestToPlayChime=0;
 
 	//SHIFT_INDICATOR_ENABLED
 	uint8_t function_shift_indicator_enabled=0; //saved in flash.
@@ -344,6 +343,12 @@ uint16_t indiceTmp=33;
 	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
 	uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
 	uint8_t requestToSendOneFrame=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
+
+	//Message to generate sound indication (chime)
+	uint8_t CHIME_msg_data[8];
+	CAN_TxHeaderTypeDef CHIME_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5AC, .DLC=8};
+	uint8_t requestToPlayChime=0;
+
 #endif
 
 //CLEAR_FAULTS_ENABLED
@@ -601,13 +606,7 @@ int main(void){
 								startAndStopEnabled=0;
 							}else{
 								if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
-
-									//if we are using smart function, try to disable it with can message
-									//set message data, byte 5, bits from 5 to 3 to binary 001.
-									disableStartAndStopMsgData[5]=(disableStartAndStopMsgData[5] & ~0x38) | ((0x01<<3) & 0x38);
-									can_tx(&disableStartAndStopMsgHeader, disableStartAndStopMsgData);
-									onboardLed_blue_on();
-									startAndStopEnabled=0; //done
+									requestToDisableStartAndStop=1;
 
 									#if defined(DISABLE_START_STOP)
 										// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
@@ -628,216 +627,57 @@ int main(void){
 					}
 				}
 			}
-		#endif
 
-		#if defined(BHbaccable) //this is the baccable slave
-			if(requestToSendOneFrame>0){ //if requested by a message received from master baccable
-				//send one msg to write something on the dashboard each 50msec (one frame each 300msec)
-				if (lastSentTelematic_display_info_msg_Time+50<HAL_GetTick()){
-					lastSentTelematic_display_info_msg_Time=HAL_GetTick();
-					//prepare msg to send:
-					//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
-					telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0x07) | ((telematic_display_info_field_frameNumber>>2) & 0x07);
-					telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0xC0) | ((telematic_display_info_field_frameNumber<<6) & 0xC0);
-
-					//UTF text 1 is on byte 2 and byte 3
-					telematic_display_info_msg_data[3]=dashboardPageStringArray[paramsStringCharIndex];
-					paramsStringCharIndex++; //prepare to send next char
-					//UTF text 2 is on byte 4 (set to zero ) and byte 5
-					telematic_display_info_msg_data[5]=dashboardPageStringArray[paramsStringCharIndex];
-					paramsStringCharIndex++; //prepare to send next char
-					//UTF text 3 is on byte 6 (set to zero) and byte 7
-					telematic_display_info_msg_data[7]=dashboardPageStringArray[paramsStringCharIndex];
-					paramsStringCharIndex++; //prepare to send next char
-					//send it
-					/*
-					if (paramsStringCharIndex==3){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								indiceTmp++;
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)(indiceTmp & 0x00FF); //
-								indiceTmp++;
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)(indiceTmp & 0x00FF); //
-								indiceTmp++;
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)(indiceTmp & 0x00FF); //
-
-							}
-						}
-					}
-
-					if (paramsStringCharIndex==6){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								indiceTmp++;
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)(indiceTmp & 0x00FF); //
-								indiceTmp++;
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)(indiceTmp & 0x00FF); //
-								indiceTmp++;
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)(indiceTmp & 0x00FF); //
-
-							}
-						}
-					}
-
-					if (paramsStringCharIndex==6){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
-							}
-						}
-					}
-
-					if (paramsStringCharIndex==9){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
-							}
-						}
-					}
-
-					if (paramsStringCharIndex==12){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
-							}
-						}
-					}
-
-					if (paramsStringCharIndex==15){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
-							}
-						}
-					}
-
-					if (paramsStringCharIndex==18){
-						if(dashboardPageStringArray[0]=='['){
-							if(dashboardPageStringArray[1]=='X'){
-								//replace char to use flagged checkbox
-								telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
-								telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
-								telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
-							}
-						}
-					}
-
-*/
-					can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
-
-					telematic_display_info_field_frameNumber++; //prepare for next frame to send
-					if( paramsStringCharIndex>=DASHBOARD_MESSAGE_MAX_LENGTH) { //if we sent the entire string
-						paramsStringCharIndex=0; //prepare to send first char of the string
-						telematic_display_info_field_frameNumber=0; //prepare to send first frame
-						requestToSendOneFrame -= 1;
-						onboardLed_blue_on();
-					}
+			if(shutdownDashboardMenuRequestTime>0){
+				if(HAL_GetTick()-shutdownDashboardMenuRequestTime>39000){
+					baccableDashboardMenuVisible=0; //stop sending params request when motor is off
+					clearDashboardBaccableMenu(); //ripulisci la stringa
+					baccabledashboardMenuWasVisible=1; //allows the menu to automatically turn on when motor rotates
+					shutdownDashboardMenuRequestTime=0; //avoid to return here
 				}
 			}
-		#endif
+			//send a parameter request each xx msec if dashboard menu shall be visible
+			//baccableDashboardMenuVisible=1; //force menu always on, just for debug
+			if((HAL_GetTick()-last_sent_uds_parameter_request_Time>500) && baccableDashboardMenuVisible ){
+				last_sent_uds_parameter_request_Time=HAL_GetTick();
 
-		#if (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable))
-			if(clearFaultsRequest>0){
-				//clear faults if requested
-				if(HAL_GetTick()-last_sent_clear_faults_msg>25){
-					last_sent_clear_faults_msg= HAL_GetTick();
+				switch(dashboard_menu_indent_level){
+					case 0: //main menu
+						sendMainDashboardPageToSlaveBaccable();
+						break;
+					case 1:
+						if(main_dashboardPageIndex==1){ //we are in show params submenu
+							clearFaultsRequest=0; //ensure we don't perform more tasks simoultaneously
+							if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
+								//request current parameter to ECU
+								uds_parameter_request_msg_header.ExtId=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId;
 
-					#if defined(C1baccable)
-						if(clearFaultsRequest==255){
-							//ask to Baccable on C2 and bH bus, to reset faults //to be done
-							uint8_t tmpArr[1]={AllResetFaults};
-							addToUARTSendQueue(tmpArr, 1);
+
+								memcpy(&uds_parameter_request_msg_data[0],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqData,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen );
+								uds_parameter_request_msg_header.DLC=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen;
+								//uds_parameter_request_msg_header.ExtId=0x18DA40F1;
+								//uds_parameter_request_msg_header.DLC=4;
+								//uds_parameter_request_msg_data[0]=0x03;
+								//uds_parameter_request_msg_data[1]=0x22;
+								//uds_parameter_request_msg_data[2]=0x10;
+								//uds_parameter_request_msg_data[3]=0x05;
+								//onboardLed_blue_on();
+								can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
+							}else{ //0xff reqId is a special value that we use to send particular values. now we use to send baccable FW version and oil pressure, for now
+								sendDashboardPageToSlaveBaccable(-3400000000000000000);
+							}
 						}
-					#endif
-					//send a reset request
-					clearFaults_msg_header.ExtId= 0x18DA00F1 | ((uint32_t)clearFaultsRequest<<8);
-					can_tx(&clearFaults_msg_header, clearFaults_msg_data); //transmit the request
 
-					clearFaultsRequest--;
+						if(main_dashboardPageIndex==9){
+							sendSetupDashboardPageToSlaveBaccable();
+						}
+						break;
+					default:
+						break; //unexpected
 				}
+
+
 			}
-		#endif
-
-		#if defined(C1baccable)
-
-				//send a parameter request each xx msec if dashboard menu shall be visible
-				//baccableDashboardMenuVisible=1; //force menu always on, just for debug
-				if((HAL_GetTick()-last_sent_uds_parameter_request_Time>500) && baccableDashboardMenuVisible ){
-					last_sent_uds_parameter_request_Time=HAL_GetTick();
-
-					switch(dashboard_menu_indent_level){
-						case 0: //main menu
-							sendMainDashboardPageToSlaveBaccable();
-							break;
-						case 1:
-							if(main_dashboardPageIndex==1){ //we are in show params submenu
-								clearFaultsRequest=0; //ensure we don't perform more tasks simoultaneously
-								if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
-									//request current parameter to ECU
-									uds_parameter_request_msg_header.ExtId=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId;
-
-
-									memcpy(&uds_parameter_request_msg_data[0],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqData,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen );
-									uds_parameter_request_msg_header.DLC=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen;
-									//uds_parameter_request_msg_header.ExtId=0x18DA40F1;
-									//uds_parameter_request_msg_header.DLC=4;
-									//uds_parameter_request_msg_data[0]=0x03;
-									//uds_parameter_request_msg_data[1]=0x22;
-									//uds_parameter_request_msg_data[2]=0x10;
-									//uds_parameter_request_msg_data[3]=0x05;
-									//onboardLed_blue_on();
-									can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
-								}else{ //0xff reqId is a special value that we use to send particular values. now we use to send baccable FW version and oil pressure, for now
-									sendDashboardPageToSlaveBaccable(-3400000000000000000);
-								}
-							}
-
-							if(main_dashboardPageIndex==9){
-								sendSetupDashboardPageToSlaveBaccable();
-							}
-							break;
-						default:
-							break; //unexpected
-					}
-
-
-				}
-
 		#endif
 
 		#if defined(C2baccable)
@@ -889,6 +729,168 @@ int main(void){
 
 		#endif
 
+#if defined(BHbaccable) //this is the baccable slave
+	if(requestToSendOneFrame>0){ //if requested by a message received from master baccable
+		//send one msg to write something on the dashboard each 50msec (one frame each 300msec)
+		if (lastSentTelematic_display_info_msg_Time+50<HAL_GetTick()){
+			lastSentTelematic_display_info_msg_Time=HAL_GetTick();
+			//prepare msg to send:
+			//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
+			telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0x07) | ((telematic_display_info_field_frameNumber>>2) & 0x07);
+			telematic_display_info_msg_data[1]=(telematic_display_info_msg_data[1] & ~0xC0) | ((telematic_display_info_field_frameNumber<<6) & 0xC0);
+
+			//UTF text 1 is on byte 2 and byte 3
+			telematic_display_info_msg_data[3]=dashboardPageStringArray[paramsStringCharIndex];
+			paramsStringCharIndex++; //prepare to send next char
+			//UTF text 2 is on byte 4 (set to zero ) and byte 5
+			telematic_display_info_msg_data[5]=dashboardPageStringArray[paramsStringCharIndex];
+			paramsStringCharIndex++; //prepare to send next char
+			//UTF text 3 is on byte 6 (set to zero) and byte 7
+			telematic_display_info_msg_data[7]=dashboardPageStringArray[paramsStringCharIndex];
+			paramsStringCharIndex++; //prepare to send next char
+			//send it
+			/*
+			if (paramsStringCharIndex==3){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						indiceTmp++;
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)(indiceTmp & 0x00FF); //
+						indiceTmp++;
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)(indiceTmp & 0x00FF); //
+						indiceTmp++;
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)(indiceTmp & 0x00FF); //
+
+					}
+				}
+			}
+
+			if (paramsStringCharIndex==6){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						indiceTmp++;
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)(indiceTmp & 0x00FF); //
+						indiceTmp++;
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)(indiceTmp & 0x00FF); //
+						indiceTmp++;
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)(indiceTmp & 0x00FF); //
+
+					}
+				}
+			}
+
+			if (paramsStringCharIndex==6){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
+					}
+				}
+			}
+
+			if (paramsStringCharIndex==9){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
+					}
+				}
+			}
+
+			if (paramsStringCharIndex==12){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
+					}
+				}
+			}
+
+			if (paramsStringCharIndex==15){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
+					}
+				}
+			}
+
+			if (paramsStringCharIndex==18){
+				if(dashboardPageStringArray[0]=='['){
+					if(dashboardPageStringArray[1]=='X'){
+						//replace char to use flagged checkbox
+						telematic_display_info_msg_data[2]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[3]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[4]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[5]=(uint8_t)((indiceTmp--) & 0x0F); //
+						telematic_display_info_msg_data[6]=(uint8_t)(indiceTmp>>8);
+						telematic_display_info_msg_data[7]=(uint8_t)((indiceTmp--) & 0x0F); //
+					}
+				}
+			}
+
+*/
+			can_tx(&telematic_display_info_msg_header, telematic_display_info_msg_data); //transmit the packet
+
+			telematic_display_info_field_frameNumber++; //prepare for next frame to send
+			if( paramsStringCharIndex>=DASHBOARD_MESSAGE_MAX_LENGTH) { //if we sent the entire string
+				paramsStringCharIndex=0; //prepare to send first char of the string
+				telematic_display_info_field_frameNumber=0; //prepare to send first frame
+				requestToSendOneFrame -= 1;
+				onboardLed_blue_on();
+			}
+		}
+	}
+#endif
+
+#if (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable))
+	if(clearFaultsRequest>0){
+		//clear faults if requested
+		if(HAL_GetTick()-last_sent_clear_faults_msg>25){
+			last_sent_clear_faults_msg= HAL_GetTick();
+
+			#if defined(C1baccable)
+				if(clearFaultsRequest==255){
+					//ask to Baccable on C2 and bH bus, to reset faults //to be done
+					uint8_t tmpArr[1]={AllResetFaults};
+					addToUARTSendQueue(tmpArr, 1);
+				}
+			#endif
+			//send a reset request
+			clearFaults_msg_header.ExtId= 0x18DA00F1 | ((uint32_t)clearFaultsRequest<<8);
+			can_tx(&clearFaults_msg_header, clearFaults_msg_data); //transmit the request
+
+			clearFaultsRequest--;
+		}
+	}
+#endif
 
 		// If CAN message receive is pending, process the message
 		if(is_can_msg_pending(CAN_RX_FIFO0)){
@@ -1156,15 +1158,16 @@ int main(void){
 										if(currentRpmSpeed< 400 ) startAndStopEnabled=1; //if motor off, re-enable start&stop
 
 										if(currentRpmSpeed<400){
+
 											if(baccableDashboardMenuVisible){
-												baccableDashboardMenuVisible=0; //stop sending params request when motor is off
-												clearDashboardBaccableMenu(); //ripulisci la stringa
-												baccabledashboardMenuWasVisible=1;
+												if(shutdownDashboardMenuRequestTime==0) shutdownDashboardMenuRequestTime=HAL_GetTick(); //save time. we will shut it off after one minute
 											}
 										}else{
+											shutdownDashboardMenuRequestTime=0;
 											if(baccabledashboardMenuWasVisible==1){
 												baccableDashboardMenuVisible=1; //show menu
 												baccabledashboardMenuWasVisible=0; //avoid to return here
+
 											}
 										}
 
@@ -1270,24 +1273,15 @@ int main(void){
 									break;
 								case 0x00000226:
 									#if defined(C1baccable)
-										if(rx_msg_header.DLC>=4){
+										if(rx_msg_header.DLC>=3){
 											//fill a variable with start&stop Status (byte2 bit 3 and 2 = 1 means S&S disabled)
 											if(((rx_msg_data[2]>>2) & 0x03) ==0x01){
 												startAndstopCarStatus=0; //S&S disabled in car
+
 											}else{
 												startAndstopCarStatus=1;//S&S enabled in car (default in giulias)
 											}
-
-											if(requestToPlayChime==1){  //if there is a request to play sound
-												requestToPlayChime=0;
-												//copy message
-												memcpy(CHIME_msg_data, &rx_msg_data, rx_msg_header.DLC);
-												CHIME_msg_data[3] |= 0x04; //enable chime, byte 3, bit 2
-												can_tx(&CHIME_msg_header, CHIME_msg_data); //send msg
-												onboardLed_blue_on();
-											}
 										}
-
 									#endif
 									break;
 								case 0x000002ED: //message to dashboard containing shift indicator
@@ -1345,8 +1339,9 @@ int main(void){
 										}
 
 										if(function_regeneration_alert_enabled){
-											if((rx_msg_data[1] >>7)==1 && regenerationInProgress==0){
-												requestToPlayChime=1;
+											if((rx_msg_data[1] >>7)==1 && regenerationInProgress==0){ //if regeneration has just begun,
+												uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
+												addToUARTSendQueue(tmpArr3, 1);
 											}
 										}
 										regenerationInProgress=rx_msg_data[1] >>7; //DPF Regeneration mode is on byte 1 bit 7.
@@ -1645,7 +1640,7 @@ int main(void){
 														}
 														break;
 												case 0x10: // button released
-													if(wheelPressedButtonID==0x89){ //we pressed RES for at least one instant, then we released before 2 seconds, therefore we want to enter inside dashboard menu
+													if(wheelPressedButtonID==0x89 && baccableDashboardMenuVisible==1){ //we pressed RES for at least one instant, then we released before 2 seconds, therefore we want to enter inside dashboard menu (will work only if menu is visible)
 
 														if(dashboard_menu_indent_level==0){
 															uint8_t printStopTheCar=0; //if enabled prints a message to screen for half second
@@ -1777,6 +1772,10 @@ int main(void){
 																		break;
 																	case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
 																		function_regeneration_alert_enabled=!function_regeneration_alert_enabled;
+																		//just for debug
+																		//uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
+																		//addToUARTSendQueue(tmpArr3, 1);
+
 																		break;
 																	case 8: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
 																		break;
@@ -2040,9 +2039,15 @@ int main(void){
 									break;
 								case 0x000004B1:
 									#if defined(C1baccable)
-										//grab the message
-										if(rx_msg_header.DLC==8){
-											memcpy(&disableStartAndStopMsgData, &rx_msg_data, 8);
+										memcpy(&disableStartAndStopMsgData, &rx_msg_data, rx_msg_header.DLC); //grab the message
+
+										if(requestToDisableStartAndStop==1){//if requested, send message to simulate button press
+											requestToDisableStartAndStop=0;
+											//set message data, byte 5, bits from 5 to 3 to binary 001.
+											disableStartAndStopMsgData[5]=(disableStartAndStopMsgData[5] & ~0x38) | (0x01<<3);
+											can_tx(&disableStartAndStopMsgHeader, disableStartAndStopMsgData);
+											onboardLed_blue_on();
+											startAndStopEnabled=0; //done
 										}
 									#endif
 									// Bonnet Status is on byte0 bit 4
@@ -2103,6 +2108,22 @@ int main(void){
 										}
 									#endif
 									break;
+								case 0x000005AC:
+									#if defined(BHbaccable)
+										if(requestToPlayChime==1){  //if there is a request to play sound
+											requestToPlayChime=0;
+											//copy message
+											memcpy(CHIME_msg_data, &rx_msg_data, rx_msg_header.DLC);
+											//enable chime, by changing message
+											CHIME_msg_header.DLC=rx_msg_header.DLC;
+											CHIME_msg_data[0]= (CHIME_msg_data[0] & 0b00111111) ; //set bit 7 and 6 to zero (chime type 0)
+											CHIME_msg_data[1]= (CHIME_msg_data[1] & 0b00111111) | 0b01000000; //byte1 bit 7 and 6 = 01 (seatbelt alarm active)
+											CHIME_msg_data[3]=CHIME_msg_data[3] | 0xE0; //max volume
+											can_tx(&CHIME_msg_header, CHIME_msg_data); //send msg
+											onboardLed_blue_on();
+										}
+									#endif
+									break;
 								case 0x000005AE:
 									#if defined(C1baccable)
 										//this message is directed to IPC once per second. DPF status is on byte 4 bit 2. (1=dirty, 0=clean)
@@ -2113,6 +2134,7 @@ int main(void){
 														//change message and send it again
 														memcpy(STATUS_ECM_msg_data, &rx_msg_data, rx_msg_header.DLC); //copy message
 														STATUS_ECM_msg_data[4] |= 0x04; //DPF Dirty (bit 2) set to ON
+														STATUS_ECM_msg_header.DLC=rx_msg_header.DLC;
 														can_tx(&STATUS_ECM_msg_header, STATUS_ECM_msg_data); //send msg
 														onboardLed_blue_on();
 													}
@@ -2294,7 +2316,7 @@ int main(void){
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_ipc_my23_is_installed];
 				break;
 			case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_ipc_my23_is_installed];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_regeneration_alert_enabled];
 				break;
 			case 8: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
 				break;

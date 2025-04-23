@@ -100,7 +100,8 @@
 			#else
 				#pragma message("Will select default gasoline engine parameters")
 			#endif
-//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
+
+			//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
 
 
 		#endif

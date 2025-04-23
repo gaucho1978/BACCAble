@@ -38,6 +38,7 @@ extern UART_HandleTypeDef huart2;
 	extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH];
 	extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
 	//extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
+	extern uint8_t requestToPlayChime;
 #endif
 
 extern uint8_t clearFaultsRequest; //if enabled, sends  messages to clear faults
@@ -110,7 +111,7 @@ void uart_init(){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
 		// evaluate received message
-    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=BhBusIDgetStatus)){ //if the received char indicates the beginning of a message
+    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=BhBusChimeRequest)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
 				#if defined(ACT_AS_CANABLE)
 					onboardLed_blue_on();
@@ -164,6 +165,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					case BhBusIDgetStatus:
 						#if defined(BHbaccable)
 							weCanSendAMessageReply=HAL_GetTick();
+						#endif
+						break;
+					case BhBusChimeRequest:
+						#if defined(BHbaccable)
+							weCanSendAMessageReply=HAL_GetTick();
+							requestToPlayChime=1;
 						#endif
 						break;
 					case AllSleep: //message directed to all the modules, in order to request low consumption
