@@ -604,24 +604,25 @@ int main(void){
 
 							if(startAndstopCarStatus==0){//if start & stop was found disabled in car, we don't need to do anything. Avoid to enter here; We enter here in example if board is switched when the car is running and S&S was still manually disabled by the pilot
 								startAndStopEnabled=0;
+								requestToDisableStartAndStop=0;
 							}else{
 								if(lastTimeStartAndstopDisablerButtonPressed==0){ //first time we arrive here, go inside
 									requestToDisableStartAndStop=1;
 
-									#if defined(DISABLE_START_STOP)
-										// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
-										HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
-										lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
-										onboardLed_blue_on();
-									#endif
+									//#if defined(DISABLE_START_STOP)
+									//	// We will now short gpio to ground in order to disable start&stop car functionality. This will simulate car start&stop button press
+									//	HAL_GPIO_WritePin(START_STOP_DISABLER, 0); // I use swclk pin, pin37, PA14
+									//	lastTimeStartAndstopDisablerButtonPressed=HAL_GetTick();
+									//	onboardLed_blue_on();
+									//#endif
 								}
-								#if defined(DISABLE_START_STOP)
-									if(HAL_GetTick()-lastTimeStartAndstopDisablerButtonPressed>2000){ //if pressed since 500msec
-										HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
-										startAndStopEnabled=0;
-										onboardLed_blue_on();
-									}
-								#endif
+								//#if defined(DISABLE_START_STOP)
+								//	if(HAL_GetTick()-lastTimeStartAndstopDisablerButtonPressed>2000){ //if pressed since 500msec
+								//		HAL_GPIO_WritePin(START_STOP_DISABLER, 1); //return to 1
+								//		startAndStopEnabled=0;
+								//		onboardLed_blue_on();
+								//	}
+								//#endif
 							}
 						}
 					}
@@ -1147,19 +1148,18 @@ int main(void){
 											//onboardLed_blue_on();
 										}
 									#endif
-									if(currentRpmSpeed< 400 ){
-										#if defined(C2baccable)
+									#if defined(C2baccable)
+										if(currentRpmSpeed< 400 ){
 											if(ESCandTCinversion!=0) ESCandTCinversion=0;
 											if(DynoModeEnabled!=0) DynoModeEnabled=0;
 											if(front_brake_forced!=0) front_brake_forced=255;
-										#endif
-									}
+										}
+									#endif
 									#if defined(C1baccable)
-										if(currentRpmSpeed< 400 ) startAndStopEnabled=1; //if motor off, re-enable start&stop
-
 										if(currentRpmSpeed<400){
-
-											if(baccableDashboardMenuVisible){
+											startAndStopEnabled=1; //if motor off, re-enable start&stop logic
+											requestToDisableStartAndStop=0;
+											if(baccableDashboardMenuVisible==1){
 												if(shutdownDashboardMenuRequestTime==0) shutdownDashboardMenuRequestTime=HAL_GetTick(); //save time. we will shut it off after one minute
 											}
 										}else{
@@ -1167,10 +1167,8 @@ int main(void){
 											if(baccabledashboardMenuWasVisible==1){
 												baccableDashboardMenuVisible=1; //show menu
 												baccabledashboardMenuWasVisible=0; //avoid to return here
-
 											}
 										}
-
 									#endif
 
 									//engine speed fail is on byte1 bit 1.
@@ -1754,6 +1752,7 @@ int main(void){
 																		break;
 																	case 1: //{'[',' ',']','S','t','a','r','t','&','S','t','o','p'},
 																		function_smart_disable_start_stop_enabled=!function_smart_disable_start_stop_enabled;
+																		requestToDisableStartAndStop=0;
 																		break;
 																	case 2: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-',},
 																		break;
@@ -2039,15 +2038,16 @@ int main(void){
 									break;
 								case 0x000004B1:
 									#if defined(C1baccable)
-										memcpy(&disableStartAndStopMsgData, &rx_msg_data, rx_msg_header.DLC); //grab the message
-
 										if(requestToDisableStartAndStop==1){//if requested, send message to simulate button press
 											requestToDisableStartAndStop=0;
+											startAndStopEnabled=0; //done
+											memcpy(&disableStartAndStopMsgData, &rx_msg_data, rx_msg_header.DLC); //grab the message
+											disableStartAndStopMsgHeader.DLC=rx_msg_header.DLC;
 											//set message data, byte 5, bits from 5 to 3 to binary 001.
-											disableStartAndStopMsgData[5]=(disableStartAndStopMsgData[5] & ~0x38) | (0x01<<3);
+											disableStartAndStopMsgData[5]=(disableStartAndStopMsgData[5] & 0b11000111) | (0x01<<3);
 											can_tx(&disableStartAndStopMsgHeader, disableStartAndStopMsgData);
 											onboardLed_blue_on();
-											startAndStopEnabled=0; //done
+
 										}
 									#endif
 									// Bonnet Status is on byte0 bit 4
