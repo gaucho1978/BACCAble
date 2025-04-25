@@ -1,0 +1,58 @@
+name: Build unstable
+
+on: workflow_dispatch
+      
+jobs:
+  build:
+    name: BACCAble unstable
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+
+      - run: arm-none-eabi-gcc --version
+
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: Compile BH
+        working-directory: ./firmware/ledsStripController
+        run: |
+          CFLAGS="-DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1" make all
+          cp build/baccable-*.elf baccableBH_unstable.elf
+          
+      - name: Compile C1 Diesel
+        working-directory: ./firmware/ledsStripController
+        run: |
+          CFLAGS="-DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1" make clean all
+          cp build/baccable-*.elf baccableC1diesel_unstable.elf
+
+      - name: Compile C1 Gasoline
+        working-directory: ./firmware/ledsStripController
+        run: |
+          CFLAGS="-DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1" make clean all
+          cp build/baccable-*.elf baccableC1gasoline_unstable.elf
+
+      - name: Compile C2
+        working-directory: ./firmware/ledsStripController
+        run: |
+          CFLAGS="-DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1" make clean all
+          cp build/baccable-*.elf baccableC2_unstable.elf
+
+      - name: Compile CANable
+        working-directory: ./firmware/ledsStripController
+        run: |
+          CFLAGS="-DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1" make clean all
+          cp build/baccable-*.elf baccableCANable_unstable.elf
+ 
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          tag_name: continuous
+          files: |
+            ./firmware/ledsStripController/baccableBH_unstable.elf
+            ./firmware/ledsStripController/baccableC1diesel_unstable.elf
+            ./firmware/ledsStripController/baccableC1gasoline_unstable.elf
+            ./firmware/ledsStripController/baccableC2_unstable.elf
+            ./firmware/ledsStripController/baccableCANable_unstable.elf
