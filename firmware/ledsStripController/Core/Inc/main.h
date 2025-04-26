@@ -67,7 +67,7 @@
 			#pragma message("Building C1 BACCAble") //adds a message in the compilation log
 
 			#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
-			//#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			//if one of the following will be uncommented, its default status will be enabled. It will be possible to change the status inside SETUP menu.
 			#define IMMOBILIZER_ENABLED //immobilizer will be enabled.
@@ -108,7 +108,7 @@
 
 		#if defined(C2baccable) //this works only on C2 can bus (obd port pin 12 and 13)
 			#pragma message("Building C2 BACCAble")
-			//#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			#define ESC_TC_CUSTOMIZATOR_ENABLED // enable/disable ESC and Traction control (also controlled by C1 baccable) (by pressing LANE button (left stak) for 2 seconds it inverts current enabling status of ESC and TC features). it works only in race mode
 			#define DYNO_MODE //disables all the controls (roll bench mode of MES) (also controlled by C1 baccable).
@@ -118,7 +118,7 @@
 
 		#if defined(BHbaccable) //this works only on BH can bus (obd port pin 3 and pin 11)
 			#pragma message("Building BH BACCAble")
-			//#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+			#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 			#define SHOW_PARAMS_ON_DASHBOARD // used on new board to print text on dashboard (or if you connected together another baccable)
 			#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too
@@ -164,6 +164,13 @@
 			void sendSetupDashboardPageToSlaveBaccable();
 		#endif
 
+
+	#define ENGINE_NORMAL				0
+	#define ENGINE_DPF_REGEN_LO			1
+	#define ENGINE_DPF_REGEN_HI			2
+	#define ENGINE_NSC_DE_NOX_REGEN		3
+	#define ENGINE_NSC_DE_SOX_REGEN		4
+	#define ENGINE_SCR_HEATUP_STRATEGY	5
 
 
 	//this is used to invert bytes order in a 32 bit integer

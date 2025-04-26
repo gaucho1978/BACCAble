@@ -15,7 +15,7 @@
 	#include "lowConsume.h"
 	extern uint32_t lastReceivedCanMsgTime;
 #endif
-const char *FW_VERSION="BACCABLE V.2.5";  //this is used to store FW version, also shown on usb when used as slcan
+const char *FW_VERSION="BACCABLE V.2.5.2";  //this is used to store FW version, also shown on usb when used as slcan
 
 
 
@@ -124,7 +124,7 @@ uint16_t indiceTmp=33;
 		};
 
 		uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
-		uint8_t total_pages_in_dashboard_menu_diesel=33;
+		uint8_t total_pages_in_dashboard_menu_diesel=34;
 		uint8_t total_pages_in_dashboard_menu_gasoline=33;
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
 		const	uds_param_element uds_params_array[2][60]={
@@ -178,6 +178,7 @@ uint16_t indiceTmp=33;
 											{.name={'T','O','T',' ','R','E','G','E','N',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x032218A4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,  			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 											{.name={'M','E','A','N',' ','R','E','G','E','N',':',' ',},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223809),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,  			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
 											{.name={'M','E','A','N',' ','R','E','G','E','N',':',' ',},			.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x0322380A),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01666666666,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','i','n',}					},
+											{.name={'R','E','G','E','N',':',' ',' ',' ',' ',' ',' ',},			.reqId=0x19,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000005AE,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 											{.name={'B','A','T','T','.',':',},									.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221955),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0005,			.replyScaleOffset=0,	.replyDecimalDigits=3,	.replyMeasurementUnit={'V',}							},
 											{.name={'B','A','T','T','.',':',},									.reqId=0x13, 		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 											{.name={'B','A','T','T','.',':',},									.reqId=0x14,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x0000041A,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=-250,	.replyDecimalDigits=2,	.replyMeasurementUnit={'A',}							},
@@ -231,6 +232,8 @@ uint16_t indiceTmp=33;
 	uint8_t uds_parameter_request_msg_data[8];//used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
 	uint8_t dashboardPageIndex=0; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
 	uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
+
+	uint8_t dieselEngineMode=0; //0=normal, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
 
 	//
 	uint8_t cruiseControlDisabled=1;
@@ -1158,7 +1161,17 @@ int main(void){
 									#if defined(C1baccable)
 										if(currentRpmSpeed<400){
 											startAndStopEnabled=1; //if motor off, re-enable start&stop logic
-											requestToDisableStartAndStop=0;
+											requestToDisableStartAndStop=0; //re set request trigger
+
+											if(_4wd_disabled>0){
+												//disable 4dw function
+												_4wd_disabled=0; //disable 4dw function
+												dashboard_main_menu_array[main_dashboardPageIndex][4]=' '; //enabled
+												dashboard_main_menu_array[main_dashboardPageIndex][5]='E';
+												dashboard_main_menu_array[main_dashboardPageIndex][6]='n';
+												commandsMenuEnabled=1;//enable menu commands
+											}
+
 											if(baccableDashboardMenuVisible==1){
 												if(shutdownDashboardMenuRequestTime==0) shutdownDashboardMenuRequestTime=HAL_GetTick(); //save time. we will shut it off after one minute
 											}
@@ -2127,8 +2140,8 @@ int main(void){
 								case 0x000005AE:
 									#if defined(C1baccable)
 										//this message is directed to IPC once per second. DPF status is on byte 4 bit 2. (1=dirty, 0=clean)
-										if(function_regeneration_alert_enabled){  //if out function was enabled in setup menu
-											if(rx_msg_header.DLC>=5){
+										if(rx_msg_header.DLC>=6){
+											if(function_regeneration_alert_enabled){  //if out function was enabled in setup menu
 												if(regenerationInProgress){ //if regeneration is in progress
 													if(((rx_msg_data[4]>>2) & 0x01 )==0){ //if the message needs to be changed
 														//change message and send it again
@@ -2141,6 +2154,7 @@ int main(void){
 
 												}
 											}
+											dieselEngineMode = (rx_msg_data[5]>>2 ) & 0b00000111 ;//byte 5 bit 4-2
 										}
 									#endif
 									break;
@@ -2415,6 +2429,9 @@ int main(void){
 			case 0x18: //current speed (km/h)
 				param=currentSpeed_km_h;
 				break;
+			//case 0x19: //Diesel Engine Mode
+			//	param=dieselEngineMode;
+			//	break;
 			default:
 				break;
 		}
@@ -2425,6 +2442,34 @@ int main(void){
 				tmpStrLen=strlen(FW_VERSION);
 				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
+				break;
+			case 0x19:
+				if (uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId == 0x19) { //if diesel engine mode status
+					tmpStrLen=18;
+					switch(dieselEngineMode){
+						case 0:
+							memcpy(&uartTxMsg[1], "REGEN.: NONE      ", tmpStrLen);
+							break;
+						case 1:
+							memcpy(&uartTxMsg[1], "REGEN.: DPF LO    ", tmpStrLen);
+							break;
+						case 2:
+							memcpy(&uartTxMsg[1], "REGEN.: DPF HI    ", tmpStrLen);
+							break;
+						case 3:
+							memcpy(&uartTxMsg[1], "REGEN.: NSC De-NOx", tmpStrLen);
+							break;
+						case 4:
+							memcpy(&uartTxMsg[1], "REGEN.: NSC De-SOx", tmpStrLen);
+							break;
+						case 5:
+							memcpy(&uartTxMsg[1], "REGEN.: SCR HeatUp", tmpStrLen);
+							break;
+						default:
+							memcpy(&uartTxMsg[1], "REGEN.: NONE.     ", tmpStrLen);
+							break;
+					}
+				}
 				break;
 			default:
 				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
