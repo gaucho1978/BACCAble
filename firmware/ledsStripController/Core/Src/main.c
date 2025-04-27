@@ -15,7 +15,7 @@
 	#include "lowConsume.h"
 	extern uint32_t lastReceivedCanMsgTime;
 #endif
-const char *FW_VERSION="BACCABLE V.2.5.3";  //this is used to store FW version, also shown on usb when used as slcan
+const char *FW_VERSION="BACCABLE V.2.5.4";  //this is used to store FW version, also shown on usb when used as slcan
 
 
 
@@ -206,8 +206,7 @@ uint16_t indiceTmp=33;
 											{.name={'T','U','R','B','O',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218A0),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.00152590219,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 											{.name={'B','O','O','S','T',' ','R','E','Q','.',':',' ',},			.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221959),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-32768,	.replyScale=0.001,			.replyScaleOffset=-1,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
 											{.name={'B','O','O','S','T',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322195B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.0001,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'V',}							},
-											{.name={'R','A','I','L',':',' ',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221904),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'b','a','r',}					},
-			//redundant(same as rail maybe)	{.name={'D','I','E','S','E','L',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221947),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+											{.name={'R','A','I','L',':',' ',},									.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221947),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
 											{.name={'D','I','E','S','E','L',':',' ',},							.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221900),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
 											{.name={'O','D','O','M','.','L','A','S','T',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222002),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						},
 											{.name={'A','I','R',' ','C','O','N','D','.',':',' ',},				.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
@@ -2897,6 +2896,8 @@ uint8_t calculateCRC(uint8_t* data, uint8_t arraySize) {
 	return 0; //nothing to calculate
 }
 
+
+#if defined(STM32F072xB)
 //System Clock Configuration
 void SystemClock_Config(void){
   HAL_Init();
@@ -2938,6 +2939,122 @@ void SystemClock_Config(void){
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
 }
+#elif defined(STM32G431xx)
+void SystemClock_Config(void){
+    HAL_Init();
+
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+    /** Configure the main internal regulator output voltage
+    */
+    HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+    /** Initializes the CPU, AHB and APB busses clocks
+    */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+    RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV4;
+    RCC_OscInitStruct.PLL.PLLN = 85;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+    RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+      while(1);
+    }
+    /** Initializes the CPU, AHB and APB busses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                                |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_8) != HAL_OK)
+    {
+      while(1);
+    }
+    /** Initializes the peripherals clocks
+    */
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_FDCAN;
+    PeriphClkInit.FdcanClockSelection = RCC_FDCANCLKSOURCE_PCLK1;
+    PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+      while(1);
+    }
+
+    /** Configures CRS
+         */
+    RCC_CRSInitTypeDef pInit = {0};
+	pInit.Prescaler = RCC_CRS_SYNC_DIV1;
+	pInit.Source = RCC_CRS_SYNC_SOURCE_USB;
+	pInit.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
+	pInit.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000,1000);
+	pInit.ErrorLimitValue = 34;
+	pInit.HSI48CalibrationValue = 32;
+
+	HAL_RCCEx_CRSConfig(&pInit);
+
+    HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+    __HAL_RCC_GPIOF_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_GPIOG_CLK_ENABLE(); // just nrst is on portG
+
+    __option_byte_config();
+}
+
+static void __option_byte_config(void);
+
+// Configure option bytes: set BoR level to 4 (2.8v)
+static void __option_byte_config(void){
+	// Set BoR level to 4
+	// This eliminates an issue where poor quality USB hubs
+	// that provide low voltage before switching the 5v supply on
+	// which was causing PoR issues where the microcontroller
+	// would enter boot mode incorrectly.
+
+	// Get option bytes
+	FLASH_OBProgramInitTypeDef config = {0};
+	HAL_FLASHEx_OBGetConfig(&config);
+
+	// If BoR is already at level 4, then don't bother doing anything
+	if((config.USERConfig & FLASH_OPTR_BOR_LEV_Msk) == OB_BOR_LEVEL_4)
+		return;
+
+	// Unlock flash
+	if(HAL_FLASH_Unlock() != HAL_OK)
+		return;
+
+	// Unlock option bytes
+   if(HAL_FLASH_OB_Unlock() != HAL_OK)
+	   return;
+
+   FLASH_OBProgramInitTypeDef progval = {0};
+
+   // Update the user option byte
+   progval.OptionType = OPTIONBYTE_USER;
+   progval.USERType = OB_USER_BOR_LEV;
+   progval.USERConfig = OB_BOR_LEVEL_4; // 2.8v for level 4
+
+   // Program the option bytes
+   HAL_FLASHEx_OBProgram(&progval);
+
+   // Lock flash / option bytes
+   HAL_FLASH_OB_Lock();
+   HAL_FLASH_Lock();
+
+   // Note: option byte update will take effect on the next power cycle
+}
+#endif
 
 void Error_Handler(void){
   __disable_irq();
