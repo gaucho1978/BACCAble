@@ -15,9 +15,17 @@
 	#include "lowConsume.h"
 	extern uint32_t lastReceivedCanMsgTime;
 #endif
-const char *FW_VERSION="BACCABLE V.2.5.4";  //this is used to store FW version, also shown on usb when used as slcan
 
+//this is used to store FW version, also shown on usb when used as slcan
+#ifndef BUILD_VERSION //compile time define with -D
+#define BUILD_VERSION "v2.5.4"
+#endif
+#define FW_PREFIX "BACCAble "
+#define _FW_VERSION FW_PREFIX BUILD_VERSION
+const char *FW_VERSION=_FW_VERSION;
 
+// force print
+#pragma message ("FW_VERSION: " _FW_VERSION)
 
 #if defined(UCAN_BOARD_LED_INVERSION)
 	const uint8_t led_light_on_bit=1;

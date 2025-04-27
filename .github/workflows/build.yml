@@ -21,40 +21,41 @@ jobs:
       - name: Compile BH
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS="-DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1" make all
-          cp build/baccable-*.elf baccableBH_stable_${{ github.ref_name }}.elf
+          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1' make all
+          cp build/baccable-*.elf baccableBH_stable.elf
           
       - name: Compile C1 Diesel
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS="-DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1" make clean all
-          cp build/baccable-*.elf baccableC1diesel_stable_${{ github.ref_name }}.elf
+          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1' make clean all
+          cp build/baccable-*.elf baccableC1diesel_stable.elf
 
       - name: Compile C1 Gasoline
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS="-DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1" make clean all
-          cp build/baccable-*.elf baccableC1gasoline_stable_${{ github.ref_name }}.elf
+          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1' make clean all
+          cp build/baccable-*.elf baccableC1gasoline_stable.elf
 
       - name: Compile C2
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS="-DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1" make clean all
-          cp build/baccable-*.elf baccableC2_stable_${{ github.ref_name }}.elf
+          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1' make clean all
+          cp build/baccable-*.elf baccableC2_stable.elf
 
       - name: Compile CANable
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS="-DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1" make clean all
-          cp build/baccable-*.elf baccableCANable_stable_${{ github.ref_name }}.elf
+          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
+          cp build/baccable-*.elf baccableCANable_stable.elf
  
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           prerelease: false
+          name: Stable ${{ github.ref_name }}
           files: |
-            ./firmware/ledsStripController/baccableBH_stable_${{ github.ref_name }}.elf
-            ./firmware/ledsStripController/baccableC1diesel_stable_${{ github.ref_name }}.elf
-            ./firmware/ledsStripController/baccableC1gasoline_stable_${{ github.ref_name }}.elf
-            ./firmware/ledsStripController/baccableC2_stable_${{ github.ref_name }}.elf
-            ./firmware/ledsStripController/baccableCANable_stable_${{ github.ref_name }}.elf
+            ./firmware/ledsStripController/baccableBH_stable.elf
+            ./firmware/ledsStripController/baccableC1diesel_stable.elf
+            ./firmware/ledsStripController/baccableC1gasoline_stable.elf
+            ./firmware/ledsStripController/baccableC2_stable.elf
+            ./firmware/ledsStripController/baccableCANable_stable.elf
