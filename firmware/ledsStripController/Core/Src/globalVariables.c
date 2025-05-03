@@ -223,7 +223,6 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t dashboardPageIndex=0; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
 	uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
 
-	uint8_t dieselEngineMode=0; //0=normal, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
 	uint8_t dieselEngineRegenerationMode=0; //0=None, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
 
 	//
