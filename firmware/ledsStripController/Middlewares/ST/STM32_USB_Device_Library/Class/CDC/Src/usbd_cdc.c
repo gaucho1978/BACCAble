@@ -57,6 +57,7 @@ EndBSPDependencies */
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc.h"
+//#include "usbd_def.h"
 #include "usbd_ctlreq.h"
 
 

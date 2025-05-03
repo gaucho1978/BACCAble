@@ -1,6 +1,7 @@
 #include "uart.h"
 #include "stm32f0xx_hal.h"
 #include "main.h"
+#include "globalVariables.h"
 extern void Error_Handler(void);
 
 #define QUEUE_SIZE 10  // max queue size

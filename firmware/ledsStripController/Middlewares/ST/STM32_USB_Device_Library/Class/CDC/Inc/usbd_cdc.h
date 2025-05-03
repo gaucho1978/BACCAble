@@ -18,14 +18,15 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __USB_CDC_H
-#define __USB_CDC_H
+#ifndef __USBD_CDC_H
+#define __USBD_CDC_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#include  "usbd_def.h"
 #include  "usbd_ioreq.h"
 
 /** @addtogroup STM32_USB_DEVICE_LIBRARY

@@ -1,7 +1,8 @@
 
 #ifndef INC_LOWCONSUME_H_
-#define INC_LOWCONSUME_H_
+	#define INC_LOWCONSUME_H_
 
+	#include "globalVariables.h"
 
 	#define CHIP_LOW_CONSUME_Pin GPIO_PIN_4
 	#define CHIP_LOW_CONSUME_Port GPIOA

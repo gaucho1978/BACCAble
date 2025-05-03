@@ -18,8 +18,12 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __USB_REQUEST_H
-#define __USB_REQUEST_H
+#ifndef __USBD_CTLREQ_H
+<<<<<<< Updated upstream
+#define __USB_CTLREQ_H
+=======
+#define __USBD_CTLREQ_H
+>>>>>>> Stashed changes
 
 #ifdef __cplusplus
 extern "C" {

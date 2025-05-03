@@ -1,6 +1,6 @@
-#include "stm32f0xx_hal.h"
+//#include "stm32f0xx_hal.h"
 #include "lowConsume.h"
-#include "uart.h"
+//#include "uart.h"
 //uint32_t lastChipResetTime=0;
 //uint8_t chipResetRequest=0;
 uint8_t lowConsumeIsActive=0; //0=false, 1=true
@@ -36,9 +36,6 @@ void lowConsume_init(){
 
 void Reset_Other_Chips(void){
 	HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 0); // resets the other chips
-	//lastChipResetTime= HAL_GetTick();
-	//chipResetRequest=1;
-	//resetOtherProcessorsSleepStatus(); //reset the stored status
 }
 
 
@@ -57,31 +54,19 @@ void CAN_LOW_CONSUME_Off(void){
 
 // Process time-based events
 void lowConsume_process(void){
-	// If GPIO has been on for long enough, turn it off
-	/*
-	if(chipResetRequest){
-		if(HAL_GetTick() - lastChipResetTime > CHIP_RESET_DURATION){
-			Remove_Reset_From_Other_Chips();
-			chipResetRequest=0;
-			lowConsumeIsActive=0; //we completed the wakeup process (wakeUpAllProcessorsAndTransceivers function), therefore store it in this variable
-		}
-	}
-	*/
-
 	if(lowConsumeIsActive){ //se siamo in basso consumo
 		//se l'ultimo messaggio ricevuto é meno vecchio di un minuto, risveglia gli altri chip
-		if(HAL_GetTick()-lastReceivedCanMsgTime<60000){
+		if(currentTime-lastReceivedCanMsgTime<60000){
 			wakeUpAllProcessorsAndTransceivers();
 			lowConsumeIsActive=0;
 		}
 	}else{ //altrimenti se non siamo in basso consumo
 		//se l'ultimo messaggio ricevuto é piú vecchio di un minuto, riduci i consumi
-		if(HAL_GetTick()-lastReceivedCanMsgTime>60000){
+		if(currentTime-lastReceivedCanMsgTime>60000){
 			reduceConsumption();
 			lowConsumeIsActive=1;
 		}
 	}
-
 }
 
 void reduceConsumption(void){

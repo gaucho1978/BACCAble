@@ -1,4 +1,5 @@
 #include "usbd_cdc_if.h"
+#include "main.h"
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */

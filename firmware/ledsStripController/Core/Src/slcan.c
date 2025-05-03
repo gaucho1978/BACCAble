@@ -5,7 +5,7 @@
 #include "slcan.h"
 #include "usbd_cdc_if.h"
 
-extern char *FW_VERSION;
+extern const char *FW_VERSION;
 
 // Parse an incoming CAN frame into an outgoing slcan message
 int8_t slcan_parse_frame(uint8_t *buf, CAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data)
@@ -156,7 +156,7 @@ int8_t slcan_parse_str(uint8_t *buf, uint8_t len)
 		case 'V':
 		{
 			// Report firmware version
-			char* fw_id = FW_VERSION ;
+			const char* fw_id = FW_VERSION ;
 			CDC_Transmit_FS((uint8_t*)fw_id, strlen(fw_id));
 			return 0;
 		}

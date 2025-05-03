@@ -27,16 +27,11 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#if defined(STM32F072xB)
+
 	#include "stm32f0xx.h"
 	#include "stm32f0xx_hal.h"
-#elif defined(STM32G431xx)
-	#include "stm32g4xx.h"
-	#include "stm32g4xx_hal.h"
-#else
-	#error "Unsupported MCU"
-#endif
-#include "usbd_def.h"
+
+
 
 /* USER CODE BEGIN INCLUDE */
 

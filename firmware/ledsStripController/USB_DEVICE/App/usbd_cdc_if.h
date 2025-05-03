@@ -6,6 +6,8 @@
 #endif
 
 #include "usbd_cdc.h"
+//#include "usbd_conf.h"
+
 /* Define size for the receive and transmit buffer over CDC */
 //#define APP_RX_DATA_SIZE  1024
 //#define APP_TX_DATA_SIZE  1024

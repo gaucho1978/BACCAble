@@ -9,7 +9,8 @@
 	#include "can.h"
 	#include "printf.h"
 
-	#include "main.h"
+	#include "globalVariables.h"
+	//#include "main.h"
 
 	int8_t slcan_parse_frame(uint8_t *buf, CAN_RxHeaderTypeDef *frame_header, uint8_t* frame_data);
 	int8_t slcan_parse_str(uint8_t *buf, uint8_t len);
