@@ -264,7 +264,9 @@ void processingStandardMessage(){
 			#if defined(C1baccable)
 				//this message is directed to IPC once per second. DPF status is on byte 4 bit 2. (1=dirty, 0=clean)
 				if(rx_msg_header.DLC>=6){
-					if(function_regeneration_alert_enabled){  //if out function was enabled in setup menu
+					dieselEngineRegenerationMode = (rx_msg_data[5]>>2 ) & 0b00000111 ;//byte 5 bit 4-2
+
+					if(function_regeneration_alert_enabled){  //if  function was enabled in setup menu
 						if(regenerationInProgress){ //if regeneration is in progress
 							if(((rx_msg_data[4]>>2) & 0x01 )==0){ //if the message needs to be changed
 								//change message and send it again
@@ -276,10 +278,7 @@ void processingStandardMessage(){
 							}
 
 						}
-					}
-					dieselEngineRegenerationMode = (rx_msg_data[5]>>2 ) & 0b00000111 ;//byte 5 bit 4-2
 
-					if(function_regeneration_alert_enabled){
 						if((dieselEngineRegenerationMode==2) && (regenerationInProgress==0)){ //if regeneration has just begun,
 							uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
 							addToUARTSendQueue(tmpArr3, 1);
