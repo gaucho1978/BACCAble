@@ -30,11 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-<<<<<<< Updated upstream
-#include "globalVariables.h"
-=======
 //#include "globalVariables.h"
->>>>>>> Stashed changes
 //#include "main.h"
 
 #include "stm32f0xx.h"

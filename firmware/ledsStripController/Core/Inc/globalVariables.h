@@ -12,15 +12,9 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //compile time define with -D
-<<<<<<< Updated upstream
-	#define BUILD_VERSION "v2.5.4"
-	#endif
-	#define FW_PREFIX "BACCAble "
-=======
 	#define BUILD_VERSION "V2.5.4"
 	#endif
 	#define FW_PREFIX "BACCABLE "
->>>>>>> Stashed changes
 	#define _FW_VERSION FW_PREFIX BUILD_VERSION
 
 
@@ -178,11 +172,8 @@
 	//#include "usbd_def.h"
 	#include "usb_device.h"
 	#include "string.h"
-<<<<<<< Updated upstream
-=======
 	#include "usbd_cdc_if.h"
 
->>>>>>> Stashed changes
 #endif
 
 
@@ -200,13 +191,6 @@
 		extern uint32_t lastReceivedCanMsgTime;
 	#endif
 
-<<<<<<< Updated upstream
-	#if defined(ACT_AS_CANABLE)
-			#include "usb_device.h"
-			#include "string.h"
-	#endif
-=======
->>>>>>> Stashed changes
 
 	#if defined(C1baccable)
 		typedef struct{
@@ -301,11 +285,8 @@
 		extern uint8_t dashboardPageIndex; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
 		extern uint32_t last_sent_uds_parameter_request_Time; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
 
-<<<<<<< Updated upstream
 		extern uint8_t dieselEngineMode; //0=normal, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
-=======
 		extern uint8_t dieselEngineRegenerationMode; //0=None, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
->>>>>>> Stashed changes
 
 		//
 		extern uint8_t cruiseControlDisabled;
@@ -386,11 +367,6 @@
 		//extern void sendDashboardPageToSlaveBaccable(float param); 	//this is defined in main.h
 		//extern void sendMainDashboardPageToSlaveBaccable(); 		//this is defined in main.h
 		//extern void sendSetupDashboardPageToSlaveBaccable(); 		//this is defined in main.h
-<<<<<<< Updated upstream
-	#endif
-
-//#include "usbd_cdc_if.h"
-=======
 		//extern void clearDashboardBaccableMenu();
 	#endif
 
@@ -468,6 +444,5 @@
 		extern uint8_t _4wd_disabled; //if =4 disables 4wd
 		extern uint8_t front_brake_forced; //if=5 disables Front brakes
 		extern uint8_t commandsMenuEnabled; //if 0 disables the up-down buttons to change menu position
->>>>>>> Stashed changes
 
 #endif /* INC_GLOBALVARIABLES_H_ */

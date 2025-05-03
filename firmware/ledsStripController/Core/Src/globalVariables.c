@@ -6,17 +6,12 @@
  */
 #include "globalVariables.h"
 
-<<<<<<< Updated upstream
-const char *FW_VERSION=_FW_VERSION;
-
-=======
 
 const char *FW_VERSION=_FW_VERSION;
 
 // force print
 #pragma message ("FW_VERSION: " _FW_VERSION)
 
->>>>>>> Stashed changes
 #if defined(UCAN_BOARD_LED_INVERSION)
 	const uint8_t led_light_on_bit=1;
 #else
@@ -228,11 +223,8 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t dashboardPageIndex=0; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
 	uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
 
-<<<<<<< Updated upstream
 	uint8_t dieselEngineMode=0; //0=normal, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
-=======
 	uint8_t dieselEngineRegenerationMode=0; //0=None, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
->>>>>>> Stashed changes
 
 	//
 	uint8_t cruiseControlDisabled=1;
@@ -308,8 +300,6 @@ const char *FW_VERSION=_FW_VERSION;
 	//FRONT_BRAKE_FORCER_MASTER
 	uint8_t function_front_brake_forcer_master=1; //stored in flash
 #endif
-<<<<<<< Updated upstream
-=======
 
 #if defined(C2baccable)
 	//ESC_TC_CUSTOMIZATOR_ENABLED
@@ -385,4 +375,3 @@ uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 uint8_t _4wd_disabled=0; //if =4 disables 4wd
 uint8_t front_brake_forced=0; //if=5 disables Front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position
->>>>>>> Stashed changes
