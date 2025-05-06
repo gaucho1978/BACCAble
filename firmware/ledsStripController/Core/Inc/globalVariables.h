@@ -25,7 +25,6 @@
 		#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
 
 		//if one of the following will be uncommented, its default status will be enabled. It will be possible to change the status inside SETUP menu.
-		#define IMMOBILIZER_ENABLED //immobilizer will be enabled.
 		#define SMART_DISABLE_START_STOP //start&stop will be automatically disabled with can message
 		//#define DISABLE_START_STOP //start&stop disabling with external resistor simulating button press. this is left just for reference. no more used.
 		//#define LED_STRIP_CONTROLLER_ENABLED //led strip controller functionality

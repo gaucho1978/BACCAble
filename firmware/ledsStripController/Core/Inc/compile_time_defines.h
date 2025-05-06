@@ -1,6 +1,10 @@
 #ifndef INC_COMPILE_TIME_DEFINES_H_
 #define INC_COMPILE_TIME_DEFINES_H_
 
+	#ifdef INCLUDE_USER_CONFIG_H
+		#include "user_config.h"
+	#endif
+
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //compile time define with -D
 	#define BUILD_VERSION "V2.5.4"
@@ -63,4 +67,17 @@
     #ifndef DISABLE_UCAN_BOARD_LED_INVERSION
         #define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
     #endif
+
+    #ifndef DISABLE_IMMOBILIZER
+        #define IMMOBILIZER_ENABLED
+    #endif
+
+    #ifndef DISABLE_DPF_REGEN_VISUAL_ALERT
+        #define DPF_REGEN_VISUAL_ALERT
+    #endif
+
+    #ifndef DISABLE_DPF_REGEN_SOUND_ALERT
+        #define DPF_REGEN_SOUND_ALERT
+    #endif
+
 #endif
