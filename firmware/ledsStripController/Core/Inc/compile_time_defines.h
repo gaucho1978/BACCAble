@@ -69,14 +69,17 @@
     #endif
 
     #ifndef DISABLE_IMMOBILIZER
+        #pragma message("Disabling immobilizer")
         #define IMMOBILIZER_ENABLED
     #endif
 
     #ifndef DISABLE_DPF_REGEN_VISUAL_ALERT
+        #pragma message("Disabling visual alert for DPF regeneration")
         #define DPF_REGEN_VISUAL_ALERT
     #endif
 
     #ifndef DISABLE_DPF_REGEN_SOUND_ALERT
+        #pragma message("Disabling sound alert for DPF regeneration")
         #define DPF_REGEN_SOUND_ALERT
     #endif
 
