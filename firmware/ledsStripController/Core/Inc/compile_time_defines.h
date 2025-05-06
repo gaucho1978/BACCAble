@@ -60,4 +60,7 @@
         #pragma message("Will select default gasoline engine parameters")
     #endif
 
+    #ifndef DISABLE_UCAN_BOARD_LED_INVERSION
+        #define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+    #endif
 #endif

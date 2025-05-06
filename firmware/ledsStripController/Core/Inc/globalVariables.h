@@ -17,14 +17,12 @@
 
 	#if defined(ACT_AS_CANABLE)
 		#pragma message("Building CANable") //adds a message in the compilation log
-		#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 	#endif
 
 	#if defined(C1baccable) //this works only on C1 can bus (OBD port pins 6 and 14)
 		#pragma message("Building C1 BACCAble") //adds a message in the compilation log
 
 		#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
-		#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 		//if one of the following will be uncommented, its default status will be enabled. It will be possible to change the status inside SETUP menu.
 		#define IMMOBILIZER_ENABLED //immobilizer will be enabled.
@@ -65,7 +63,6 @@
 
 	#if defined(C2baccable) //this works only on C2 can bus (obd port pin 12 and 13)
 		#pragma message("Building C2 BACCAble")
-		#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 		#define ESC_TC_CUSTOMIZATOR_ENABLED // enable/disable ESC and Traction control (also controlled by C1 baccable) (by pressing LANE button (left stak) for 2 seconds it inverts current enabling status of ESC and TC features). it works only in race mode
 		#define DYNO_MODE //disables all the controls (roll bench mode of MES) (also controlled by C1 baccable).
@@ -75,7 +72,6 @@
 
 	#if defined(BHbaccable) //this works only on BH can bus (obd port pin 3 and pin 11)
 		#pragma message("Building BH BACCAble")
-		#define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
 
 		#define SHOW_PARAMS_ON_DASHBOARD // used on new board to print text on dashboard (or if you connected together another baccable)
 		#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too
