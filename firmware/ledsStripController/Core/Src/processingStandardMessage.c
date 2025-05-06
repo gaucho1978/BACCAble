@@ -269,19 +269,23 @@ void processingStandardMessage(){
 					if(function_regeneration_alert_enabled){  //if  function was enabled in setup menu
 						if(regenerationInProgress){ //if regeneration is in progress
 							if(((rx_msg_data[4]>>2) & 0x01 )==0){ //if the message needs to be changed
+#ifdef DPF_REGEN_VISUAL_ALERT
 								//change message and send it again
 								memcpy(STATUS_ECM_msg_data, &rx_msg_data, rx_msg_header.DLC); //copy message
 								STATUS_ECM_msg_data[4] |= 0x04; //DPF Dirty (bit 2) set to ON
 								STATUS_ECM_msg_header.DLC=rx_msg_header.DLC;
 								can_tx(&STATUS_ECM_msg_header, STATUS_ECM_msg_data); //send msg
+#endif
 								onboardLed_blue_on();
 							}
 
 						}
 
 						if((dieselEngineRegenerationMode==2) && (regenerationInProgress==0)){ //if regeneration has just begun,
+#ifdef DPF_REGEN_SOUND_ALERT
 							uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
 							addToUARTSendQueue(tmpArr3, 1);
+#endif
 							regenerationInProgress=1;
 						}
 						if((dieselEngineRegenerationMode==0) && (regenerationInProgress==1)){ //if regeneration has ended,
