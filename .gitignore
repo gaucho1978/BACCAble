@@ -3,7 +3,6 @@
 .settings
 .launch
 .vscode
-user_config.h
 
 # outputs
 Debug

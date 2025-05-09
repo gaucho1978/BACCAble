@@ -45,16 +45,6 @@
 
 		//experimental: it still do not work. don't use it!
 		//#define REMOTE_START_ENABLED //the car can be powered on by remote by means of the original key
-
-		// IS_GASOLINE  is defined if compiling with eclipse (on stm cube it will be not defined)
-		#ifndef IS_GASOLINE
-			#pragma message("Will select default diesel engine parameters")
-			//If compiling with STM cube IDE, you will have to comment and uncomment the following line:
-			#define IS_DIESEL //if uncommented sets by default diesel parameters (you can change it in setup menu), otherwise Gasoline will be default setting.
-		#else
-			#pragma message("Will select default gasoline engine parameters")
-		#endif
-
 		//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
 
 

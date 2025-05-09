@@ -1,10 +1,6 @@
 #ifndef INC_COMPILE_TIME_DEFINES_H_
 #define INC_COMPILE_TIME_DEFINES_H_
 
-	#ifdef INCLUDE_USER_CONFIG_H
-		#include "user_config.h"
-	#endif
-
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //compile time define with -D
 	#define BUILD_VERSION "V2.5.4"
@@ -25,16 +21,6 @@
 
 
 	//---------------------------------------------------------------------------------------------------------------------------
-	// NEW
-	//---------------------------------------------------------------------------------------------------------------------------
-
-	//#define LARGE_DISPLAY //uncomment this to compile firmware for large displays; ideally you should use -D compiler args
-	#ifndef LARGE_DISPLAY
-		#define DASHBOARD_MESSAGE_MAX_LENGTH 18
-	#else
-		#define DASHBOARD_MESSAGE_MAX_LENGTH 24
-	#endif
-
 	// RELEASE_FLAVOR  is defined if compiling with eclipse
 	#ifndef RELEASE_FLAVOR
 
@@ -55,6 +41,14 @@
 		#endif
 	#endif
 
+	//#define LARGE_DISPLAY //uncomment this to compile firmware for large displays; ideally you should use -D compiler args
+	#ifndef LARGE_DISPLAY
+		#define DASHBOARD_MESSAGE_MAX_LENGTH 18
+	#else
+		#define DASHBOARD_MESSAGE_MAX_LENGTH 24
+	#endif
+
+#ifdef C1baccable
 	// IS_GASOLINE  is defined if compiling with eclipse (on stm cube it will be not defined)
     #ifndef IS_GASOLINE
         #pragma message("Will select default diesel engine parameters")
@@ -82,5 +76,6 @@
         #pragma message("Disabling sound alert for DPF regeneration")
         #define DPF_REGEN_SOUND_ALERT
     #endif
+#endif
 
 #endif
