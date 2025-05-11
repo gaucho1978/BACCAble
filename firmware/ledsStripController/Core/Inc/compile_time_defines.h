@@ -1,12 +1,24 @@
 #ifndef INC_COMPILE_TIME_DEFINES_H_
 #define INC_COMPILE_TIME_DEFINES_H_
 
-	//this is used to store FW version, also shown on usb when used as slcan
-	#ifndef BUILD_VERSION //compile time define with -D
-	#define BUILD_VERSION "V2.5.4"
+	#ifdef INCLUDE_USER_CONFIG_H
+// define this globally (e.g. gcc -DINCLUDE_USER_CONFIG_H ...) to include the
+// printf_config.h header file at compile time
+// default: undefined
+// user can set preferred defines for its own custom builds; as - for example - it
+// can create a printf_config.h (that won't be committed) setting DISABLE_DPF_REGEN_VISUAL_ALERT
+// and it will not get the dashboard warning when the DPF regeneration starts or LARGE_DISPLAY if it
+// owns a 7 inches dashboard etc. etc. (see below comments on defines)
+// user can still comment/uncomment defines, user_config.h is meant to be used to avoid conflicts
+// when pulling changes from remote
+		#include "user_config.h"
 	#endif
-	#define FW_PREFIX "BACCABLE "
-	#define _FW_VERSION FW_PREFIX BUILD_VERSION
+
+	//this is used to store FW version, also shown on usb when used as slcan
+	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
+		#define BUILD_VERSION "V2.5.4"
+	#endif
+	#define _FW_VERSION "BACCAble " BUILD_VERSION
 
 
 	// force print
@@ -21,14 +33,14 @@
 
 
 	//---------------------------------------------------------------------------------------------------------------------------
-	// RELEASE_FLAVOR  is defined if compiling with eclipse
+	// RELEASE_FLAVOR  is defined if compiling with eclipse, default is ACT_AS_CANABLE
 	#ifndef RELEASE_FLAVOR
 
 		//If compiling with STM cube IDE, you will have to comment and uncomment these 4 lines:
-		//#define ACT_AS_CANABLE //uncomment this to use the canable connected to the pc, as a usb-can adapter, for sniffing purposes
-		#define C1baccable //uncomment this to compile firmware for baccable on C1 can bus
-		//#define C2baccable //uncomment this to compile firmware for baccable on C2 can bus
-		//#define BHbaccable //uncomment this to compile firmware for baccable on BH can bus
+		#define ACT_AS_CANABLE
+		//#define C1baccable
+		//#define C2baccable
+		//#define BHbaccable
 	#else
 		#if RELEASE_FLAVOR == CAN_FLAVOR
 			#define ACT_AS_CANABLE
@@ -41,38 +53,42 @@
 		#endif
 	#endif
 
-	//#define LARGE_DISPLAY //uncomment this to compile firmware for large displays; ideally you should use -D compiler args
-	#ifndef LARGE_DISPLAY
+	//display size
+	#ifndef LARGE_DISPLAY//optional compile time define with -D, default: undefined
 		#define DASHBOARD_MESSAGE_MAX_LENGTH 18
 	#else
 		#define DASHBOARD_MESSAGE_MAX_LENGTH 24
 	#endif
 
+//optional compile time defines for C1
 #ifdef C1baccable
-	// IS_GASOLINE  is defined if compiling with eclipse (on stm cube it will be not defined)
-    #ifndef IS_GASOLINE
+	//By default BACCAble handle diesel params, can be changed by car user - dashboard menu
+    #ifndef IS_GASOLINE//optional compile time define with -D, default: undefined
         #pragma message("Will select default diesel engine parameters")
-        //If compiling with STM cube IDE, you will have to comment and uncomment the following line:
-        #define IS_DIESEL //if uncommented sets by default diesel parameters (you can change it in setup menu), otherwise Gasoline will be default setting.
+        #define IS_DIESEL
     #else
         #pragma message("Will select default gasoline engine parameters")
     #endif
 
-    #ifndef DISABLE_UCAN_BOARD_LED_INVERSION
-        #define UCAN_BOARD_LED_INVERSION //uncommented on ucan fysect board (and on new baccable board). the led onboard are physically connected differently (status is inverted)
+	//ucan fysect board (and on new BACCAble board). the led onboard are physically connected differently (status is inverted)
+	#ifndef DISABLE_UCAN_BOARD_LED_INVERSION//optional compile time define with -D, default: undefined
+        #define UCAN_BOARD_LED_INVERSION
     #endif
 
-    #ifndef DISABLE_IMMOBILIZER
+	//Immobilizer is enabled, can be disabled by car user - dedicated button
+    #ifndef DISABLE_IMMOBILIZER//optional compile time define with -D, default: undefined
         #pragma message("Disabling immobilizer")
         #define IMMOBILIZER_ENABLED
     #endif
 
-    #ifndef DISABLE_DPF_REGEN_VISUAL_ALERT
+    //BACCAble displays visual alert for DPF regeneration
+	#ifndef DISABLE_DPF_REGEN_VISUAL_ALERT//optional compile time define with -D, default: undefined
         #pragma message("Disabling visual alert for DPF regeneration")
         #define DPF_REGEN_VISUAL_ALERT
     #endif
 
-    #ifndef DISABLE_DPF_REGEN_SOUND_ALERT
+    //BACCAble emits sound alert for DPF regeneration (belts alarm)
+	#ifndef DISABLE_DPF_REGEN_SOUND_ALERT//optional compile time define with -D, default: undefined
         #pragma message("Disabling sound alert for DPF regeneration")
         #define DPF_REGEN_SOUND_ALERT
     #endif
