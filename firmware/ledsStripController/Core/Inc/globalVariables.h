@@ -10,76 +10,8 @@
 	#include "compile_time_defines.h"
 	#include "stm32f0xx_hal.h"
 
-	//This section sets ACT_AS_CANABLE if no option was selected
-	#if !defined(ACT_AS_CANABLE) && !defined(C1baccable) && !defined(C2baccable) && !defined(BHbaccable)
-		#define ACT_AS_CANABLE
-	#endif
-
-	#if defined(ACT_AS_CANABLE)
-		#pragma message("Building CANable") //adds a message in the compilation log
-	#endif
-
-	#if defined(C1baccable) //this works only on C1 can bus (OBD port pins 6 and 14)
-		#pragma message("Building C1 BACCAble") //adds a message in the compilation log
-
-		#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
-
-		//if one of the following will be uncommented, its default status will be enabled. It will be possible to change the status inside SETUP menu.
-		#define SMART_DISABLE_START_STOP //start&stop will be automatically disabled with can message
-		//#define DISABLE_START_STOP //start&stop disabling with external resistor simulating button press. this is left just for reference. no more used.
-		//#define SHIFT_INDICATOR_ENABLED //show shift indicator when rpm motor goes over the configurable threshold SHIFT_THRESHOLD (in race mode)
-		#define SHIFT_THRESHOLD 4500 //default shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
-		//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My23 Giulia/Stelvio
-		#define SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE //Used if you connected another baccable to usb port and want this baccable to send parameters to slave baccable (the slave will display parameter on the dashboard). if defined, the cruise control buttons + and - will change the shown parameter
-		//#define ROUTE_MSG // allows communication with  commercial diagnostic tools to supply internal bus parameters. better described in the manual
-		//#define DYNO_MODE_MASTER //allows to request DYNO in master baccable
-		//#define ESC_TC_CUSTOMIZATOR_MASTER //used to activate ESC/TC in master baccable
-		//#define ACC_VIRTUAL_PAD //simulate the presence of ACC button pad. When the user press button to enable/disable CC, the BACCABLE sends message to enable/disable ACC
-		//#define FRONT_BRAKE_FORCER_MASTER //used to activate FRONT_BRAKE_FORCER in master baccable
-		//#define _4WD_DISABLER //disables 4WD
-		#define CLEAR_FAULTS_ENABLED //baccable menu will allow to reset faults on all 3 baccable
-
-		//experimental: it still do not work. don't use it!
-		//#define READ_FAULTS_ENABLED // baccable menu will allow to read faults
-
-		//experimental: it still do not work. don't use it!
-		//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
 
 
-	#endif
-
-	#if defined(C2baccable) //this works only on C2 can bus (obd port pin 12 and 13)
-		#pragma message("Building C2 BACCAble")
-
-		#define ESC_TC_CUSTOMIZATOR_ENABLED // enable/disable ESC and Traction control (also controlled by C1 baccable) (by pressing LANE button (left stak) for 2 seconds it inverts current enabling status of ESC and TC features). it works only in race mode
-		#define DYNO_MODE //disables all the controls (roll bench mode of MES) (also controlled by C1 baccable).
-		#define FRONT_BRAKE_FORCER //disables front brakes (controlled by C1baccable).
-		#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru C2baccable too
-	#endif
-
-	#if defined(BHbaccable) //this works only on BH can bus (obd port pin 3 and pin 11)
-		#pragma message("Building BH BACCAble")
-
-		#define SHOW_PARAMS_ON_DASHBOARD // used on new board to print text on dashboard (or if you connected together another baccable)
-		#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too
-	#endif
-
-	//note: with the following we avoid some combinations of defines.
-	#if (defined(ACT_AS_CANABLE) && (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)))
-		#error "invalid combination of defines. If you want ACT_AS_CANABLE, disable C1, C2 and BH"
-	#endif
-
-	#if (defined(BHbaccable) &&		(defined(C1baccable) ||defined(C2baccable) ) )  //if required, let's automatically open the can bus
-		#error "invalid combination of defines. If you want BH, disable C1 and C2"
-	#endif
-
-	#if ((defined(C2baccable)) &&	(defined(C1baccable)  || defined(BHbaccable)))
-		#error "invalid combination of defines. If you want C2, disable C1 and BH"
-	#endif
-
-	#if (defined(SMART_DISABLE_START_STOP) && defined(DISABLE_START_STOP))
-		#error "invalid combination of defines. Choose SMART_DISABLE_START_STOP or DISABLE_START_STOP."
-	#endif
 
 
 
