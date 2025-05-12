@@ -27,7 +27,6 @@
 		//if one of the following will be uncommented, its default status will be enabled. It will be possible to change the status inside SETUP menu.
 		#define SMART_DISABLE_START_STOP //start&stop will be automatically disabled with can message
 		//#define DISABLE_START_STOP //start&stop disabling with external resistor simulating button press. this is left just for reference. no more used.
-		//#define LED_STRIP_CONTROLLER_ENABLED //led strip controller functionality
 		//#define SHIFT_INDICATOR_ENABLED //show shift indicator when rpm motor goes over the configurable threshold SHIFT_THRESHOLD (in race mode)
 		#define SHIFT_THRESHOLD 4500 //default shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
 		//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My23 Giulia/Stelvio
@@ -44,7 +43,6 @@
 		//#define READ_FAULTS_ENABLED // baccable menu will allow to read faults
 
 		//experimental: it still do not work. don't use it!
-		//#define REMOTE_START_ENABLED //the car can be powered on by remote by means of the original key
 		//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
 
 

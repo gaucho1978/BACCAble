@@ -2,8 +2,9 @@
 #define INC_COMPILE_TIME_DEFINES_H_
 
 	#ifdef INCLUDE_USER_CONFIG_H
-// define this globally (e.g. gcc -DINCLUDE_USER_CONFIG_H ...) to include the
-// printf_config.h header file at compile time
+// define this globally (e.g. gcc -DINCLUDE_USER_CONFIG_H ...) or in the STM32CubeIDE project properties
+// under "C/C++ Build" -> "Settings" -> "MCU GCC Compiler" -> "Preprocessor"
+// to include the user_config.h header file at compile time
 // default: undefined
 // user can set preferred defines for its own custom builds; as - for example - it
 // can create a printf_config.h (that won't be committed) setting DISABLE_DPF_REGEN_VISUAL_ALERT
@@ -33,10 +34,11 @@
 
 
 	//---------------------------------------------------------------------------------------------------------------------------
-	// RELEASE_FLAVOR  is defined if compiling with eclipse, default is ACT_AS_CANABLE
+	// RELEASE_FLAVOR  is defined if compiling with gcc or STM32CubeIde, default is ACT_AS_CANABLE
 	#ifndef RELEASE_FLAVOR
 
-		//If compiling with STM cube IDE, you will have to comment and uncomment these 4 lines:
+		//If user's building with "Release" or "Debug" build configuration or on command line wth just "make"
+		//then it will get this configuration; other defines are here just for reference (C1, C2 and BH)
 		#define ACT_AS_CANABLE
 		//#define C1baccable
 		//#define C2baccable
@@ -79,6 +81,17 @@
     #ifndef DISABLE_IMMOBILIZER//optional compile time define with -D, default: undefined
         #pragma message("Disabling immobilizer")
         #define IMMOBILIZER_ENABLED
+    #endif
+
+	//experimental: it doesn't work yet. don't use it!
+    #ifdef ENABLE_REMOTE_START//optional compile time define with -D, default: undefined
+        #pragma message("Enabling remote start immobilizer")
+		#define REMOTE_START_ENABLED
+    #endif
+
+	#ifdef ENABLE_LED_STRIP_CONTROLLER//optional compile time define with -D, default: undefined
+        #pragma message("Enabling led strip controller")
+		#define LED_STRIP_CONTROLLER_ENABLED
     #endif
 
     //BACCAble displays visual alert for DPF regeneration
