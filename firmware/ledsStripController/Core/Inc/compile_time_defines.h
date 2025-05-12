@@ -79,7 +79,7 @@
 
 	//Immobilizer is enabled, can be disabled by car user - dedicated button
     #ifndef DISABLE_IMMOBILIZER//optional compile time define with -D, default: undefined
-        #pragma message("Disabling immobilizer")
+        #pragma message("Enabling immobilizer")
         #define IMMOBILIZER_ENABLED
     #endif
 
@@ -96,13 +96,13 @@
 
     //BACCAble displays visual alert for DPF regeneration
 	#ifndef DISABLE_DPF_REGEN_VISUAL_ALERT//optional compile time define with -D, default: undefined
-        #pragma message("Disabling visual alert for DPF regeneration")
+        #pragma message("Enabling visual alert for DPF regeneration")
         #define DPF_REGEN_VISUAL_ALERT
     #endif
 
     //BACCAble emits sound alert for DPF regeneration (belts alarm)
 	#ifndef DISABLE_DPF_REGEN_SOUND_ALERT//optional compile time define with -D, default: undefined
-        #pragma message("Disabling sound alert for DPF regeneration")
+        #pragma message("Enabling sound alert for DPF regeneration")
         #define DPF_REGEN_SOUND_ALERT
     #endif
 #endif
