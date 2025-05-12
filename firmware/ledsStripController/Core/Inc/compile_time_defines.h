@@ -73,6 +73,15 @@
 		#pragma message("Building CANable") //adds a message in the compilation log
 	#endif
 
+	// UCAN_BOARD_LED_INVERSION is active by default, can be de activated by user, if required
+	// The following define should be moved in user_config if required. Left Here as reference
+	//#define DISABLE_UCAN_BOARD_LED_INVERSION
+	#ifndef DISABLE_UCAN_BOARD_LED_INVERSION //optional compile time define with -D, default: undefined
+		#pragma message("Ucan Board or New Baccable Board is used")
+		#define UCAN_BOARD_LED_INVERSION //ucan fysect board (and  new BACCAble board) requires UCAN_BOARD_LED_INVERSION, since the led onboard are physically connected differently (status is inverted)
+	#endif
+
+
 	//optional compile time defines for C1
 	#ifdef C1baccable //this works only on C1 can bus (OBD port pins 6 and 14)
 		#pragma message("Building C1 BACCAble") //adds a message in the compilation log
@@ -103,13 +112,6 @@
 			#pragma message("Will select default gasoline engine parameters")
 		#endif
 
-		// UCAN_BOARD_LED_INVERSION is active by default, can be de activated by user, if required
-		// The following define should be moved in user_config if required. Left Here as reference
-		//#define DISABLE_UCAN_BOARD_LED_INVERSION
-		#ifndef DISABLE_UCAN_BOARD_LED_INVERSION //optional compile time define with -D, default: undefined
-			#pragma message("Ucan Board or New Baccable Board is used")
-			#define UCAN_BOARD_LED_INVERSION //ucan fysect board (and  new BACCAble board) requires UCAN_BOARD_LED_INVERSION, since the led onboard are physically connected differently (status is inverted)
-		#endif
 
 		//Immobilizer is enabled by default, can be disabled by user, if required
 		// The following define should be moved in user_config if required. Left Here as reference
