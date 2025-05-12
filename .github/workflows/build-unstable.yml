@@ -1,6 +1,16 @@
 name: Build unstable
 
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+    inputs:
+      TAG_NAME:
+        description: "Tag name to generate (DO NOT USE vX.X.X!!!)"
+        default: "continuous"
+        required: true
+      CFLAGS:
+        description: "Optional GCC flags (-D)"
+        default: ""
+        required: false
       
 jobs:
   build:
@@ -15,7 +25,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set short git commit SHA
-        id: vars
         run: |
           calculatedSha=$(git rev-parse --short ${{ github.sha }})
           echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
@@ -23,41 +32,48 @@ jobs:
       - name: Confirm git commit SHA output
         run: echo ${{ env.COMMIT_SHORT_SHA }}
 
+      - name: Set CFLAGS
+        run: |
+          echo "CFLAGS=${{github.event.inputs.CFLAGS}}" >> $GITHUB_ENV
+
+      - name: Confirm optional CFLAGS output
+        run: echo ${{ env.CFLAGS }}
+
       - name: Compile BH
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1' make all
+          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1' make all
           cp build/baccable-*.elf baccableBH_unstable.elf
           
       - name: Compile C1 Diesel
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1' make clean all
+          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableC1diesel_unstable.elf
 
       - name: Compile C1 Gasoline
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1' make clean all
+          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableC1gasoline_unstable.elf
 
       - name: Compile C2
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1' make clean all
+          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableC2_unstable.elf
 
       - name: Compile CANable
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
+          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableCANable_unstable.elf
  
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           prerelease: true
-          tag_name: continuous
+          tag_name: ${{github.event.inputs.TAG_NAME}}
           name: Unstable ${{ env.COMMIT_SHORT_SHA }}
           files: |
             ./firmware/ledsStripController/baccableBH_unstable.elf
