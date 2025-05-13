@@ -33,7 +33,7 @@
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
 			//la flash inizia a 0x08000000  e finisce a 0x0801FFFF, -0x800 +1 di una pagina fa 0x0801F800
 
-#if defined(ACT_AS_CANABLE)
+#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE)
 	//#include "usbd_def.h"
 	#include "usb_device.h"
 	#include "string.h"

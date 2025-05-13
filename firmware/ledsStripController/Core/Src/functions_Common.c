@@ -6,6 +6,7 @@
  */
 
 #include "functions_Common.h"
+#include "debug.h"
 
 void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
     uint8_t i = 0;
@@ -169,6 +170,7 @@ void SystemClock_Config(void){
 
 
 void Error_Handler(void){
+  LOGS("System error\r\n");
   __disable_irq();
   while (1){}
 }
