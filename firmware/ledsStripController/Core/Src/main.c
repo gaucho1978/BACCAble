@@ -12,7 +12,7 @@ int main(void){
 
 	uart_init();
 
-	#if defined(ACT_AS_CANABLE)
+	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE)
 		MX_USB_DEVICE_Init();
 	#endif
 

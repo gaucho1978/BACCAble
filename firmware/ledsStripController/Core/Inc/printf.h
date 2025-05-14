@@ -35,6 +35,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#define PRINTF_INCLUDE_CONFIG_H
 
 #ifdef __cplusplus
 extern "C" {
