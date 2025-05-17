@@ -1,0 +1,29 @@
+/**
+ * user_config.h sample; copy it as "user_config.h" in the same
+ * folder and then use "-DINCLUDE_USER_CONFIG_H" when compiling
+ * with gcc OR use "+ user_config" Project build configurations
+ *
+ * see related commend in compile_time_defines.h
+ *
+ * user can set preferred defines for its own custom builds; as - for example - set
+ * DISABLE_DPF_REGEN_VISUAL_ALERT and it will not get the dashboard warning when the
+ * DPF regeneration starts or LARGE_DISPLAY if it owns a 7 inches dashboard etc. etc.
+ * see compile_time_defines.h for defines
+ * user can still comment/uncomment defines, user_config.h is meant to be used to avoid conflicts
+ * when pulling/pushing changes from/to remote
+ */
+#ifndef INC_USER_CONFIG_H_SAMPLE_
+#define INC_USER_CONFIG_H_SAMPLE_
+
+//examples
+
+//disable immobilizer by default
+#define DISABLE_IMMOBILIZER
+
+//default shift threshold
+#define SHIFT_THRESHOLD 2500
+
+//ddisable visual alert for DPF regeneration
+#define DISABLE_DPF_REGEN_VISUAL_ALERT
+
+#endif /* INC_USER_CONFIG_H_SAMPLE_ */
