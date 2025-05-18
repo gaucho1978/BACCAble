@@ -158,12 +158,6 @@
 		#endif
 
 		// The following define should be moved in user_config if required. Left Here as reference
-		//#define IPC_MY23_IS_INSTALLED //this is used in SHIFT_INDICATOR_ENABLED functionality, if you are using IPC for My23 Giulia/Stelvio
-		#ifdef IPC_MY23_IS_INSTALLED //optional compile time define with -D, default: undefined
-			#pragma message("Enabling IPC_MY23_IS_INSTALLED")
-		#endif
-
-		// The following define should be moved in user_config if required. Left Here as reference
 		//#define ROUTE_MSG // allows communication with  commercial diagnostic tools to supply internal bus parameters. better described in the manual
 		#ifdef ROUTE_MSG //optional compile time define with -D, default: undefined
 			#pragma message("Enabling ROUTE_MSG functionality")
@@ -217,23 +211,23 @@
 		//#define REGENERATION_ALERT_ENABLED //if enabled, an alert wil be fired during each DPF regeneration process
 		#ifdef REGENERATION_ALERT_ENABLED //optional compile time define with -D, default: undefined
 			#pragma message("Enabling REGENERATION_ALERT_ENABLED Functionality")
+			//by default the DPF_REGEN_VISUAL_ALERT is enabled, but can be disabled if required by the user
+			// The following define should be moved in user_config if required. Left Here as reference
+			//#define DISABLE_DPF_REGEN_VISUAL_ALERT
+			#ifndef DISABLE_DPF_REGEN_VISUAL_ALERT//optional compile time define with -D, default: undefined
+				#pragma message("Enabling visual alert for DPF regeneration")
+				#define DPF_REGEN_VISUAL_ALERT //BACCAble displays visual alert for DPF regeneration
+			#endif
+
+			//by default the DPF_REGEN_SOUND_ALERT is enabled, but can be disabled if required by the user
+			// The following define should be moved in user_config if required. Left Here as reference
+			//#define DISABLE_DPF_REGEN_SOUND_ALERT
+			#ifndef DISABLE_DPF_REGEN_SOUND_ALERT//optional compile time define with -D, default: undefined
+				#pragma message("Enabling sound alert for DPF regeneration")
+				#define DPF_REGEN_SOUND_ALERT //BACCAble emits sound alert for DPF regeneration (belts alarm)
+			#endif
 		#endif
 
-		//by default the DPF_REGEN_VISUAL_ALERT is enabled, but can be disabled if required by the user
-		// The following define should be moved in user_config if required. Left Here as reference
-		//#define DISABLE_DPF_REGEN_VISUAL_ALERT
-		#ifndef DISABLE_DPF_REGEN_VISUAL_ALERT//optional compile time define with -D, default: undefined
-			#pragma message("Enabling visual alert for DPF regeneration")
-			#define DPF_REGEN_VISUAL_ALERT //BACCAble displays visual alert for DPF regeneration
-		#endif
-
-		//by default the DPF_REGEN_SOUND_ALERT is enabled, but can be disabled if required by the user
-		// The following define should be moved in user_config if required. Left Here as reference
-		//#define DISABLE_DPF_REGEN_SOUND_ALERT
-		#ifndef DISABLE_DPF_REGEN_SOUND_ALERT//optional compile time define with -D, default: undefined
-			#pragma message("Enabling sound alert for DPF regeneration")
-			#define DPF_REGEN_SOUND_ALERT //BACCAble emits sound alert for DPF regeneration (belts alarm)
-		#endif
 	#endif
 
 
