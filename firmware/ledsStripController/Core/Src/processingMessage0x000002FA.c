@@ -5,6 +5,7 @@
  *      Author: GauchoHP
  */
 
+#include "debug.h"
 #include "processingMessage0x000002FA.h"
 
 void processingMessage0x000002FA(){
@@ -490,6 +491,8 @@ void processingMessage0x000002FA(){
 						wheelPressedButtonID=0x90; //avoid returning here until button is not released
 
 						baccableDashboardMenuVisible=!baccableDashboardMenuVisible; //toggle visualizazion of the menu
+
+						LOG("Dashboard vis: %d\r\n", baccableDashboardMenuVisible);
 
 						if(!baccableDashboardMenuVisible){ //if menu needs to be hidden, print spaces to clear the string on dashboard
 							clearDashboardBaccableMenu();

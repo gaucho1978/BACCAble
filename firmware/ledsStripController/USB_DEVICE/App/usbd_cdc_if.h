@@ -6,6 +6,7 @@
 #endif
 
 #include "usbd_cdc.h"
+#include "main.h"
 //#include "usbd_conf.h"
 
 /* Define size for the receive and transmit buffer over CDC */
@@ -31,6 +32,10 @@ typedef struct _usbrx_buf_
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 void cdc_process(void);
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+#ifdef DEBUG_MODE
+uint8_t print_to_usb_(char* message);
+uint8_t printf_to_usb_(const char* format, ...);
+#endif
 #ifdef __cplusplus
 }
 #endif

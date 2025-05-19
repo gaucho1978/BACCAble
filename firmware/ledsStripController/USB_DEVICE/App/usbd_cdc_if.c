@@ -1,5 +1,4 @@
 #include "usbd_cdc_if.h"
-#include "main.h"
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
@@ -274,3 +273,20 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
     USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, Len);
     return USBD_CDC_TransmitPacket(&hUsbDeviceFS);
 }
+
+#ifdef DEBUG_MODE
+uint8_t print_to_usb_(char* message)
+{
+    uint16_t msg_len = strlen(message);
+    return CDC_Transmit_FS((uint8_t*)message, msg_len < SLCAN_MTU ? msg_len : SLCAN_MTU);
+}
+
+uint8_t printf_to_usb_(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    int written = vsnprintf_((char*)slcan_str, SLCAN_MTU, format, args);
+    va_end(args);
+    return CDC_Transmit_FS(slcan_str, written < SLCAN_MTU ? (uint8_t) written : SLCAN_MTU);
+  }
+#endif

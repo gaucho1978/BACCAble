@@ -261,6 +261,10 @@
 	#endif
 
 	//note: with the following we avoid some combinations of defines.
+	#if (defined(DEBUG_MODE) && (defined(ACT_AS_CANABLE) || defined(LED_STRIP_CONTROLLER_ENABLED)))
+		#error "invalid combination of defines. If you want DEBUG_MODE, disable ACT_AS_CANABLE, LED_STRIP_CONTROLLER_ENABLED"
+	#endif
+
 	#if (defined(ACT_AS_CANABLE) && (defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)))
 		#error "invalid combination of defines. If you want ACT_AS_CANABLE, disable C1, C2 and BH"
 	#endif
