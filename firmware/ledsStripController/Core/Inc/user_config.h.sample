@@ -1,29 +1,61 @@
 /**
- * user_config.h sample; copy it as "user_config.h" in the same
- * folder and then use "-DINCLUDE_USER_CONFIG_H" when compiling
- * with gcc OR use "+ user_config" Project build configurations
+ * In this file the user can set preferred defines for its own custom builds;
  *
- * see related commend in compile_time_defines.h
+ * This is a sample file; Rename it to "user_config.h" to use it, then:
+ * -if compiling with GCC use "-DINCLUDE_USER_CONFIG_H",
+ * -if compiling with STM IDE select, on build drop down menu, "C1baccableDiesel+user_config" or any other "....+user_config"
  *
- * user can set preferred defines for its own custom builds; as - for example - set
- * DISABLE_DPF_REGEN_VISUAL_ALERT and it will not get the dashboard warning when the
- * DPF regeneration starts or LARGE_DISPLAY if it owns a 7 inches dashboard etc. etc.
- * see compile_time_defines.h for defines
- * user can still comment/uncomment defines, user_config.h is meant to be used to avoid conflicts
- * when pulling/pushing changes from/to remote
- */
+ * Build drop down menu in STM IDE is populated with compilation options.
+ * The compilation options are defined in menu "Project" -> "Properties" -> "C/C++ Build" -> "Settings" -> "MCU GCC Compiler" -> "Preprocessor"
+ *
+*/
+
 #ifndef INC_USER_CONFIG_H_SAMPLE_
-#define INC_USER_CONFIG_H_SAMPLE_
+	#define INC_USER_CONFIG_H_SAMPLE_
 
-//examples
+	// The following defines are used, if uncommented, by C1baccable board:
 
-//disable immobilizer by default
-#define DISABLE_IMMOBILIZER
+	// #define LARGE_DISPLAY 					// if uncommented it uses longer strings on dashboard. Note: requires adaptations to array strings in order to show some more longer text. Under development. don't use it.
+	// #define DISABLE_UCAN_BOARD_LED_INVERSION	// if uncommented it uses onboard leds configuration for canable board (default value is used for ucan board and baccable custom board).
+	// #define DISABLE_CLEAR_FAULTS_ENABLED		// if uncommented it disables the clear faults functionality.  It can disabled inside baccable SETUP menu.
+	// #define DISABLE_LOW_CONSUME				// if uncommented it disables low consume functionality
+	// #define IS_GASOLINE						// if uncommented it uses GASOLINE parameters by default (by default it will use DIESEL). You can change it runtime from BACCABLE SETUP menu.
+	// #define DISABLE_IMMOBILIZER 				// if uncommented it disables immobilizer functionality
+	// #define DISABLE_THE_FUNCTION_SMART_DISABLE_START_STOP	//if uncommented it disables the start&stop functionality (active by default). It can disabled inside baccable SETUP menu.
+	// #define SHIFT_THRESHOLD 2500				//if uncommented it overwrites default shift rpm threshod, used in "shift"functionality. It can be changed runtime from baccable SETUP menu.
+	// #define SHIFT_INDICATOR_ENABLED 			// if uncommented it enables shift functionality. It can enabled inside baccable SETUP menu.
+	// #define LED_STRIP_CONTROLLER_ENABLED		// if uncommented it enables led strip controller functionality. It can enabled inside baccable SETUP menu.
+	// #define IPC_MY23_IS_INSTALLED			// if uncommented it considers the presence of a my23 IPC. It is used in "shift" functionality. It can enabled inside baccable SETUP menu.
+	// #define ROUTE_MSG 						// if uncommented it enables "route" functionality. It can enabled inside baccable SETUP menu.
+	// #define DYNO_MODE_MASTER 				// if uncommented it allows to request DYNO functionality in C1 baccable. It can enabled inside baccable SETUP menu.
+	// #define ESC_TC_CUSTOMIZATOR_MASTER 		// if uncommented it allows to request ESC/TC functionality in C1 baccable. It can enabled inside baccable SETUP menu
+	// #define ACC_VIRTUAL_PAD					// if uncommented it will enable "ACC virtual pad"functionality. It can enabled inside baccable SETUP menu
+	// #define FRONT_BRAKE_FORCER_MASTER 		// if uncommented it will enable "front brake forcer" functionality in C1 baccable. It can enabled inside baccable SETUP menu
+	// #define _4WD_DISABLER 					// if uncommented it will enable "4WD" functionality in C1 baccable. It can enabled inside baccable SETUP menu
+	// #define REMOTE_START_ENABLED				// if uncommented it will enable "remote start" functionality. Experimental: it doesn't work yet. don't use it! It can enabled inside baccable SETUP menu
+	// #define READ_FAULTS_ENABLED				// if uncommented it will enable "read faults" functionality. Experimental: it doesn't work yet. don't use it! It can enabled inside baccable SETUP menu
+	// #define REGENERATION_ALERT_ENABLED		// if uncommented it will enable "regeneration alert"functionality.  It can enabled inside baccable SETUP menu.
+	// #define DISABLE_DPF_REGEN_VISUAL_ALERT	// if uncommented it will disable visual alert in "DPF regeneration alert functionality"
+	// #define DISABLE_DPF_REGEN_SOUND_ALERT	// if uncommented it will disable sound alert in "DPF regeneration alert functionality"
 
-//default shift threshold
-#define SHIFT_THRESHOLD 2500
 
-//ddisable visual alert for DPF regeneration
-#define DISABLE_DPF_REGEN_VISUAL_ALERT
+
+
+
+	// The following defines are used, if uncommented, by C2baccable board:
+
+	// #define DISABLE_ESC_TC_CUSTOMIZATOR 		// if uncommented it will disable "ESC/TC" functionality.
+	// #define DISABLE_DYNO_MODE 				// if uncommented it will disable "DYNO" functionality.
+	// #define DISABLE_FRONT_BRAKE_FORCER 		// if uncommented it will disable "front brake forcer" functionality.
+	// #define DISABLE_CLEAR_FAULTS_C2 			// if uncommented it will disable "clear faults" functionality.
+
+
+
+
+
+	// The following defines are used, if uncommented, by BHbaccable board:
+
+	// #define DISABLE_CLEAR_FAULTS_BH 			// if uncommented it will disable "clear faults" functionality.
+
 
 #endif /* INC_USER_CONFIG_H_SAMPLE_ */

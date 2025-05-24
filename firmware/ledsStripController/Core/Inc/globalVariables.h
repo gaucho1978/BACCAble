@@ -137,7 +137,7 @@
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
 		extern const	uds_param_element uds_params_array[2][60]; // initializes all the uds parameters request to send and reply to receive
 
-		extern CAN_TxHeaderTypeDef uds_parameter_request_msg_header; //used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
+		extern CAN_TxHeaderTypeDef uds_parameter_request_msg_header;
 		extern uint8_t baccableDashboardMenuVisible;
 		extern uint8_t baccabledashboardMenuWasVisible; //tells us if menu was previously disabled (and then when motor will turn we want to show it again
 		extern uint8_t oilPressure; //oil pressure without scaling (this value shall be multiplied by xx to obtain value in bar).
@@ -146,9 +146,9 @@
 		extern uint8_t batteryStateOfCharge; //battery charge %
 		extern uint16_t batteryCurrent; //battery current (to be converted in Amps)
 		extern uint8_t transmissionTemperature;
-		extern uint8_t uds_parameter_request_msg_data[8];//used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
-		extern uint8_t dashboardPageIndex; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
-		extern uint32_t last_sent_uds_parameter_request_Time; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
+		extern uint8_t uds_parameter_request_msg_data[8];
+		extern uint8_t dashboardPageIndex; //to send message index - it changes when you press cruise control buttons
+		extern uint32_t last_sent_uds_parameter_request_Time; //stores last time we send a uds parameter request
 
 		extern uint8_t dieselEngineRegenerationMode; //0=None, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
 
@@ -262,14 +262,14 @@
 	#endif
 
 	#if defined(BHbaccable)
-		extern uint32_t lastSentTelematic_display_info_msg_Time; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
-		extern uint8_t telematic_display_info_field_totalFrameNumber; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-		extern uint8_t telematic_display_info_field_frameNumber; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-		extern uint8_t telematic_display_info_field_infoCode; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-		extern uint8_t paramsStringCharIndex; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
-		extern CAN_TxHeaderTypeDef telematic_display_info_msg_header; //used when SHOW_PARAMS_ON_DASHBOARD is defined
-		extern uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-		extern uint8_t requestToSendOneFrame; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
+		extern uint32_t lastSentTelematic_display_info_msg_Time;
+		extern uint8_t telematic_display_info_field_totalFrameNumber; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5)
+		extern uint8_t telematic_display_info_field_frameNumber; //current frame
+		extern uint8_t telematic_display_info_field_infoCode;
+		extern uint8_t paramsStringCharIndex; // next char to send index.
+		extern CAN_TxHeaderTypeDef telematic_display_info_msg_header;
+		extern uint8_t telematic_display_info_msg_data[8];
+		extern uint8_t requestToSendOneFrame; //set to 1 to send one frame on dashboard
 
 		//Message to generate sound indication (chime)
 		extern uint8_t CHIME_msg_data[8];
@@ -286,7 +286,7 @@
 		extern CAN_TxHeaderTypeDef clearFaults_msg_header;
 
 		//
-		extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
+		extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]; //it contains string to print on dashboard
 
 		extern float currentSpeed_km_h; //current vehicle speed
 
@@ -294,7 +294,7 @@
 		extern uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
 		extern uint32_t currentTime; //stores current time in milliseconds, each time we enter the main loop
 
-		extern UART_HandleTypeDef huart2; // this is the serial line between baccables -- used with SHOW_PARAMS_ON_DASHBOARD and SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE and low consumption define functionalities
+		extern UART_HandleTypeDef huart2; // this is the serial line between baccables
 
 		extern uint32_t currentRpmSpeed;	//used by C1baccable
 		extern uint8_t currentGear; 		//used by C1baccable

@@ -210,7 +210,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 		}; // initializes all the uds parameters request to send and reply to receive
 
-	CAN_TxHeaderTypeDef uds_parameter_request_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3}; //used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
+	CAN_TxHeaderTypeDef uds_parameter_request_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3};
 	uint8_t baccableDashboardMenuVisible=0;
 	uint8_t baccabledashboardMenuWasVisible=0; //tells us if menu was previously disabled (and then when motor will turn we want to show it again
 	uint8_t oilPressure; //oil pressure without scaling (this value shall be multiplied by xx to obtain value in bar).
@@ -219,9 +219,9 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t batteryStateOfCharge=0; //battery charge %
 	uint16_t batteryCurrent; //battery current (to be converted in Amps)
 	uint8_t transmissionTemperature;
-	uint8_t uds_parameter_request_msg_data[8];//used when SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
-	uint8_t dashboardPageIndex=0; //to send message index - it changes when you press cruise control buttons - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality.
-	uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request - Used with SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE define functionality
+	uint8_t uds_parameter_request_msg_data[8];
+	uint8_t dashboardPageIndex=0; //to send message index - it changes when you press cruise control buttons
+	uint32_t last_sent_uds_parameter_request_Time=0; //stores last time we send a uds parameter request
 
 	uint8_t dieselEngineRegenerationMode=0; //0=None, 1=DPF_REGEN_LO, 2=DPF_REGEN_HI, 3=NSC_DE_NOX_REGEN, 4=NSC_DE_SOX_REGEN, 5=SCR_HEATUP_STRATEGY
 
@@ -328,14 +328,14 @@ const char *FW_VERSION=_FW_VERSION;
 #endif
 
 #if defined(BHbaccable)
-	uint32_t lastSentTelematic_display_info_msg_Time=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality.
-	uint8_t telematic_display_info_field_totalFrameNumber=(DASHBOARD_MESSAGE_MAX_LENGTH / 3) - 1; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5) //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t telematic_display_info_field_frameNumber=0; //current frame //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t telematic_display_info_field_infoCode=0x09; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t paramsStringCharIndex=0; // next char to send index - Used with SHOW_PARAMS_ON_DASHBOARD define functionality.
-	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8}; //used when SHOW_PARAMS_ON_DASHBOARD is defined
-	uint8_t telematic_display_info_msg_data[8]; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality
-	uint8_t requestToSendOneFrame=0; //--// used with SHOW_PARAMS_ON_DASHBOARD define functionality //set to 1 to send one frame on dashboard
+	uint32_t lastSentTelematic_display_info_msg_Time=0;
+	uint8_t telematic_display_info_field_totalFrameNumber=(DASHBOARD_MESSAGE_MAX_LENGTH / 3) - 1; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5)
+	uint8_t telematic_display_info_field_frameNumber=0; //current frame
+	uint8_t telematic_display_info_field_infoCode=0x09;
+	uint8_t paramsStringCharIndex=0; // next char to send index
+	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8};
+	uint8_t telematic_display_info_msg_data[8];
+	uint8_t requestToSendOneFrame=0; //set to 1 to send one frame on dashboard
 
 	//Message to generate sound indication (chime)
 	uint8_t CHIME_msg_data[8];
@@ -352,7 +352,7 @@ uint8_t clearFaults_msg_data[5]={0x04,0x14,0xff,0xff,0xff}; //message to clear D
 CAN_TxHeaderTypeDef clearFaults_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA00F1, .DLC=5};
 
 //
-uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]={' ',}; //used if SHOW_PARAMS_ON_DASHBOARD or SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is declared - it contains string to print on dashboard
+uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]={' ',}; //it contains string to print on dashboard
 
 float currentSpeed_km_h=0; //current vehicle speed
 
@@ -360,7 +360,7 @@ uint32_t weCanSendAMessageReply=0; //defines last time that C2 or BH baccable re
 uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
 uint32_t currentTime; //stores current time in milliseconds, each time we enter the main loop
 
-UART_HandleTypeDef huart2; // this is the serial line between baccables -- used with SHOW_PARAMS_ON_DASHBOARD and SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE and low consumption define functionalities
+UART_HandleTypeDef huart2; // this is the serial line between baccables
 
 uint32_t currentRpmSpeed=0;	//used by C1baccable
 uint8_t currentGear=0; 		//used by C1baccable

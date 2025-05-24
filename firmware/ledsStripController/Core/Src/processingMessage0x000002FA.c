@@ -46,7 +46,6 @@ void processingMessage0x000002FA(){
 			}
 		}
 
-	//This is used if the SHOW_PARAMS_ON_DASHBOARD_MASTER_BACCABLE is defined
 		if(cruiseControlDisabled && ACC_Disabled){ //if we are allowed to press buttons, use them in baccable menu
 			switch(rx_msg_data[0]){
 				case 0x18://if cruise control speed reduction button was pressed, user wants to see next page
