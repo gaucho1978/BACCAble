@@ -1,5 +1,9 @@
 name: Build unstable
-
+    
+permissions:
+  contents: write
+  releases: write
+  
 on: 
   workflow_dispatch:
     inputs:

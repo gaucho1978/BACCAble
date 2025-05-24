@@ -1,5 +1,9 @@
 name: Build stable 
 
+permissions:
+  contents: write
+  releases: write
+  
 on:
   push:
     tags:
