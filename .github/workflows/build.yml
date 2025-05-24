@@ -1,61 +1,87 @@
-name: Build stable 
+name: Build and Release stable
 
 permissions:
   contents: write
-  
+  # Serve il permesso per pushare tag nel repo
+
 on:
   push:
     tags:
       - "v*.*.*"
-      
+  workflow_dispatch:
+    inputs:
+      TAG_NAME:
+        description: 'Tag della release (es. v1.0.0)'
+        required: true
+
 jobs:
-  build:
-    name: BACCAble stable
+  build_and_release:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: carlosperate/arm-none-eabi-gcc-action@v1
-
-      - run: arm-none-eabi-gcc --version
-
-      - name: Clone
+      - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # importante per avere tutta la storia e poter pushare tag
+
+      - name: Set TAG variable
+        id: tag
+        run: |
+          if [ -n "${GITHUB_REF##refs/tags/}" ] && [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "TAG=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
+          else
+            echo "TAG=${{ github.event.inputs.TAG_NAME }}" >> $GITHUB_ENV
+          fi
+
+      - name: Create and push tag if triggered manually and tag does not exist
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if ! git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} does not exist. Creating and pushing it."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "${TAG}"
+            git push origin "${TAG}"
+          else
+            echo "Tag ${TAG} already exists."
+          fi
 
       - name: Compile BH
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1' make all
+          CFLAGS='-DBUILD_VERSION=\"${TAG}\" -DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1' make all
           cp build/baccable-*.elf baccableBH_stable.elf
           
       - name: Compile C1 Diesel
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1' make clean all
+          CFLAGS='-DBUILD_VERSION=\"${TAG}\" -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableC1diesel_stable.elf
 
       - name: Compile C1 Gasoline
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1' make clean all
+          CFLAGS='-DBUILD_VERSION=\"${TAG}\" -DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableC1gasoline_stable.elf
 
       - name: Compile C2
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1' make clean all
+          CFLAGS='-DBUILD_VERSION=\"${TAG}\" -DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableC2_stable.elf
 
       - name: Compile CANable
         working-directory: ./firmware/ledsStripController
         run: |
-          CFLAGS='-DBUILD_VERSION=\"${{ github.ref_name }}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
+          CFLAGS='-DBUILD_VERSION=\"${TAG}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableCANable_stable.elf
- 
-      - name: Release
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
+          name: Stable ${{ env.TAG }}
           prerelease: false
-          name: Stable ${{ github.ref_name }}
           files: |
             ./firmware/ledsStripController/baccableBH_stable.elf
             ./firmware/ledsStripController/baccableC1diesel_stable.elf
