@@ -15,14 +15,16 @@ on:
         required: true
 
 jobs:
-  build_and_release:
+  build_stable:
+    name: BACCAble Stable Version
     runs-on: ubuntu-latest
-
     steps:
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+      - run: arm-none-eabi-gcc --version
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # importante per avere tutta la storia e poter pushare tag
+          fetch-depth: 0
 
       - name: Set TAG variable
         id: tag
@@ -76,12 +78,13 @@ jobs:
           CFLAGS='-DBUILD_VERSION=\"${TAG}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
           cp build/baccable-*.elf baccableCANable_stable.elf
 
-      - name: Create GitHub Release
+      - name: Stable Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.TAG }}
-          name: Stable ${{ env.TAG }}
           prerelease: false
+          tag_name: ${{ env.TAG }}
+          name: Stable Version ${{ env.TAG }}
+
           files: |
             ./firmware/ledsStripController/baccableBH_stable.elf
             ./firmware/ledsStripController/baccableC1diesel_stable.elf
