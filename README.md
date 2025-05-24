@@ -2,7 +2,7 @@
 
 News: new telegram group for BACCABLE: https://t.me/baccable 
 
-Please donate, with Paupal or Bitcoin
+Please donate, with Paypal or Crypto (Bitcoin)
 
 [![PayPal](tools/paypal.png)](https://www.paypal.me/tr3ma1)
 [![Bitcoin](tools/bitcoin.png)](bitcoin:bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth)
@@ -52,10 +52,11 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 I developed a custom Board for Baccable, including 3 canable in a small factor form. You can find more details in the dedicated subparagraph.
 
 ## manuals
-Available manuals are the following:
+These are Available manuals:
 
-[![English Manual](https://img.icons8.com/ios-filled/50/000000/pdf.png)](manuals/Baccable_manual_EN.pdf)
-[![Italian Manual](https://img.icons8.com/ios-filled/50/000000/pdf.png)](manuals/Baccable_manual_IT.pdf)
+| <a href="manuals/Baccable_manual_EN.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual EN"></a> | <a href="manuals/Baccable_manual_IT.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual IT"></a> |
+| :---: | :---: |
+| [English Manual](manuals/Baccable_manual_EN.pdf) | [Italian Manual](manuals/Baccable_manual_IT.pdf) |
 
 ## Folders content
 - Subfolder firmware contains the firmware
@@ -65,8 +66,6 @@ Available manuals are the following:
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 - Subfolder hardware/newBaccableDedicatedPcb contains the new pcb for Baccable
 - Subfolder Manuals contains the manuals
-
-
 
 ## Immobilizer functionality Notes
 Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: 
