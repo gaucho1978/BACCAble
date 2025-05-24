@@ -81,9 +81,12 @@ Note1: If you are not using new baccable board, you will need to connect canable
 
 ![DashboardFunctionInterconnections](hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
 
+## Low Consume functionality Notes
+This function, is enabled by default. If using the new Baccable PCB Board (it includes 3 baccable), it will allow the master baccable, to reset the other 2 chips and to put can transiceivers in low consumption, by means of 2 dedicated GPIO. Low consume is activated after one minute without messages on the bus, and it will wake up as soon as messages start to flow again on the bus.
+
 ## Firmware notes
 
-Note1: The parameters array is customizable ,It resides in main.c. (search for uds_params_array array)
+Note1: The parameters array is customizable ,It resides in global_variabes.c. (search for uds_params_array array)
 
 This is the structure of each element:
  
@@ -105,13 +108,9 @@ This is the structure of each element:
 
 Note2: if you change number of elements in the array, you shall update total number of elements in the variable total_pages_in_dashboard_menu.
 
-## LOW CONSUME Notes
-This function, is enabled by default. If using the new Baccable PCB Board (it includes 3 baccable), it will allow the master baccable, to reset the other 2 chips and to put can transiceivers in low consumption, by means of 2 dedicated GPIO. Low consume is activated after one minute without messages on the bus, and it will wake up as soon as messages start to flow again on the bus.
-
 ## BACCABLE Compile Instructions
 
-We introduced automatic compilation on github. Stable releases are downloadable from "Releases" section: 
-[![Release](https://img.shields.io/github/v/release/gaucho1978/BACCAble)](releases)
+We introduced automatic compilation on github. Stable releases are downloadable from "Releases" section:  [![Release](https://img.shields.io/github/v/release/gaucho1978/BACCAble)](https://github.com/gaucho1978/BACCAble/releases)
 
 
 If you want to compile it on your PC, the easiest way is to use stm32CubeIde software.
@@ -125,7 +124,7 @@ Default options are enough for anyone, but if any customization is required, it 
 
 
 ## BACCABLE Flash Instructions
-The obtained elf file (downloaded from online Releases section, or locally compiled), can be flashed using stm32cubeProgrammer.
+The obtained elf file (downloaded from online Releases section [![Release](https://img.shields.io/github/v/release/gaucho1978/BACCAble)](https://github.com/gaucho1978/BACCAble/releases) , or locally compiled), can be flashed using stm32cubeProgrammer.
 
 Flash procedure:
 - press reset button on the board, then connect usb to pc (the board will be detected as serial device named "stm32 bootloader" (if using new baccable board, the usb connectors are connected, from right to left, to C1baccable, C2baccable, BHbaccable)
