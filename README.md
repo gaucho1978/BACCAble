@@ -133,7 +133,7 @@ Flash procedure:
 - select the elf file that you want to flash.
 - check the flag "verify programming"
 - press START PROGRAMMING button
-- at the end press ok on the success popup, then ress DISCONNECT button
+- at the end press ok on the success popup, then press DISCONNECT button
 
 ## The hardware using NEW BACCABLE BOARD
 The following video describes the new pcb board. 
@@ -145,13 +145,14 @@ The board can be used directly connected to obd port (recent veichles requires S
 
 ![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/cable.jpg)
 
-available documentation is the following:
+available documentation about the new board hardware is the following:
 
-![3D views](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf)
+| <a href="hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="PCBA_3D_VIEWS"></a> | <a href="hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="SCHEMATIC"></a> |
+| :---: | :---: |
+| [PCBA_3D_VIEWS](hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf) | [SCHEMATIC](hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf) |
 
-![Schematic](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf)
 
-This is the connector pinout, including color of the obd cable that I selected:
+This is the connector pinout:
 
 ![pinout](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/pinout.png)
 
