@@ -79,7 +79,7 @@ Note2: Usb voltage is switched on as soon as the thief wakes up the rfhub.
 ## DASHBOARD MENU functionality Notes
 Note1: If you are not using new baccable board, you will need to connect canable boards between them as shown in the following reference image:
 
-![DashboardFunctionInterconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
+![DashboardFunctionInterconnections](hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
 
 ## Firmware notes
 
@@ -110,7 +110,9 @@ This function, is enabled by default. If using the new Baccable PCB Board (it in
 
 ## BACCABLE Compile Instructions
 
-We are introducing automatic compilation on github. Stable releases are downloadable from "Releases" section (right side of this page).
+We introduced automatic compilation on github. Stable releases are downloadable from "Releases" section: 
+[![Release](https://img.shields.io/github/v/release/gaucho1978/BACCAble)](releases)
+
 
 If you want to compile it on your PC, the easiest way is to use stm32CubeIde software.
 Once the project has been opened, select the desired compile option, and the related elf file will be generated under firmware\ledsStripController, in a subfolder named according to the selected compile option. Inside that folder you will find generated elf file.
@@ -138,12 +140,12 @@ Flash procedure:
 ## The hardware using NEW BACCABLE BOARD
 The following video describes the new pcb board. 
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/9D86vWsAVG8/0.jpg)](https://www.youtube.com/watch?v=9D86vWsAVG8)
+[![NewPcbBoard](https://img.youtube.com/vi/9D86vWsAVG8/0.jpg)](https://www.youtube.com/watch?v=9D86vWsAVG8)
 
 In the Box section you will find the box usable with this board.
 The board can be used directly connected to obd port (recent veichles requires SGW bypass to use obd devices) , or connected to the cabling by means of a cable with obd female connector on one side, and free wires on the other side, like the following one:
 
-![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/cable.jpg)
+![Interconnections](hardware/newBaccableDedicatedPcb/cable.jpg)
 
 available documentation about the new board hardware is the following:
 
@@ -154,7 +156,7 @@ available documentation about the new board hardware is the following:
 
 This is the connector pinout:
 
-![pinout](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/newBaccableDedicatedPcb/pinout.png)
+![pinout](hardware/newBaccableDedicatedPcb/pinout.png)
 
 
 
@@ -190,14 +192,14 @@ If you use the function to show params on dashboard, you have to add the wire be
 Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the  functionality to add parameters on the dashboard). 
 This is the old original wiring diagram:
 
-![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
+![Interconnections](hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
 
 Note: if you use immobilizer function, it is suggested to remove the voltage regulator that I used to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket. As alterinative for immobilizer,  use the DCDC connected to a 12V of the car always available, to ensure proper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
 
 
 This is the obd pinout on Giulia/Stelvio:
 
-![Interconnections](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/system_interconnection/IMG_3511.jpeg)
+![Interconnections](hardware/system_interconnection/IMG_3511.jpeg)
 
 
 
@@ -206,35 +208,35 @@ I developed different cases.
 
 I recently added a case for the new PCB board:
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview.jpg)
+![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview.jpg)
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview2.jpg)
+![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview2.jpg)
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview3.jpg)
+![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview3.jpg)
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/baccable_lastest_case_for_new_PCB/preview4.jpg)
+![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview4.jpg)
 
 
 Single case for original canable or DykbRadio Nano canable:
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/box.png)
+![Box](hardware/box/canableDykbRadioNanoOnly/box.png)
 
-![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableDykbRadioNanoOnly/cap.png)
+![Cap](hardware/box/canableDykbRadioNanoOnly/cap.png)
 
 Single case for Fysect Ucan:
 (uses same case of dual ucan with a dedicated cap)
 
-![Box with Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/single_fysect_ucan/preview.png)
+![Box with Cap](hardware/box/single_fysect_ucan/preview.png)
 
 Dual case for Fysect Ucan (to accomodate 2 ucan, each one connected to a different can bus):
 
-![dual box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/dual_fysect_ucan/preview.png)
+![dual box](hardware/box/dual_fysect_ucan/preview.png)
 
 Old box to accomodate DCDC, termination board and original canable or DykbRadio Nano canable.
 
-![Box](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableWithDcDcAndTB/box.png)
+![Box](hardware/box/canableWithDcDcAndTB/box.png)
 
-![Cap](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/hardware/box/canableWithDcDcAndTB/cap.png)
+![Cap](hardware/box/canableWithDcDcAndTB/cap.png)
 
 
 ## Usage when configured to act as Canable (Sniffer)
