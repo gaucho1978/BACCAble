@@ -4,7 +4,7 @@
 	#ifdef INCLUDE_USER_CONFIG_H
 		// In user_config.h file the user can set preferred defines for its own custom builds;
  		// Inside user_config.h.sample file you will find instructions about how to use it.
-		#include <user_config.h.sample>
+		#include <user_config.h>
 	#endif
 
 	//this is used to store FW version, also shown on usb when used as slcan
