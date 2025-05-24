@@ -2,18 +2,10 @@
 
 News: new telegram group for BACCABLE: https://t.me/baccable 
 
-Please donate
+Please donate, with Paupal or Bitcoin
 
-[![PayPal](https://www.paypalobjects.com/webstatic/icon/pp258.png)](https://www.paypal.me/tr3ma1)
-[![Bitcoin](https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg)](bitcoin:bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth)
-[![Bitcoin](https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg)](bitcoin:bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth)
-
-
-
-
-
-
-<img src="https://github.com/gaucho1978/CANableAndLedsStripController/blob/master/tools/bitcoin.jpg" alt="Immagine di esempio" width="200" height="300">
+[![PayPal](tools/paypal.png)](https://www.paypal.me/tr3ma1)
+[![Bitcoin](tools/bitcoin.png)](bitcoin:bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth)
 
 ## DISCLAIMER
 
