@@ -9,7 +9,7 @@
 
 void processingExtendedMessage(){
 	#if defined(C1baccable)
-		if(immobilizerEnabled){
+		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds<500)){ //if immo enabled and engine is off
 			//if it is a message of connection to RFHUB, reset the connection periodically, but start the panic alarm only once
 			if(floodTheBus==0){ //if we are not flooding the bus
 				uint8_t responseOffset=rx_msg_data[0]>>4; //0=single frame , 1=first fragmented frame 2=fragmented frame, 3=frame ack

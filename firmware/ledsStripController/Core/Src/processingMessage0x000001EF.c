@@ -9,8 +9,12 @@
 
 void processingMessage0x000001EF(){
 	#if defined(C1baccable)
-		if(function_remote_start_Enabled==1){
-			if(rx_msg_header.DLC==8){
+		if(rx_msg_header.DLC==8){
+
+			//avoid thief to simulate engine rotation. As soon as RFHUB tells ignition is not in RUN reset engineOn status stored inside baccable
+			if((rx_msg_data[0] & 0x0F)!=0x08) engineOnSinceMoreThan5seconds=0;
+
+			if(function_remote_start_Enabled==1){
 				if(rx_msg_data[2]>>4==0x4){ //it is the message to open the car. THIS IS JUST FOR TEST!!!!!
 				RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obrainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message
 				//within 2 seconds, send remote start

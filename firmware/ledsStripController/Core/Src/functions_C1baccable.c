@@ -75,7 +75,7 @@
 		}
 
 
-		if(immobilizerEnabled){
+		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds>=500)){
 			//the following it is used only by IMMOBILIZER functionality
 			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE THIEF WILL NOT BE ABLE TO CONNECT TO RFHUB, AND CAR WILL NOT SWITCH ON.
 				if(currentTime-floodTheBusLastTimeSent>10){
@@ -109,7 +109,7 @@
 		if(function_smart_disable_start_stop_enabled){
 			if(startAndStopEnabled){
 				if(currentTime>10000){ //first 10 seconds don't do anything to avoid to disturb other startup functions or immobilizer
-					if(currentRpmSpeed>400){ //if motor is on
+					if(engineOnSinceMoreThan5seconds>=500){ //if motor is on since at least 5 seconds
 
 						if(startAndstopCarStatus==0){//if start & stop was found disabled in car, we don't need to do anything. Avoid to enter here; We enter here in example if board is switched when the car is running and S&S was still manually disabled by the pilot
 							startAndStopEnabled=0;

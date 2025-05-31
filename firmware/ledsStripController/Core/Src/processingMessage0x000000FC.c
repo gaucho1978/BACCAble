@@ -40,12 +40,16 @@ void processingMessage0x000000FC(){
 			if(baccableDashboardMenuVisible==1){
 				if(shutdownDashboardMenuRequestTime==0) shutdownDashboardMenuRequestTime=currentTime; //save time. we will shut it off after one minute
 			}
+
+			engineOnSinceMoreThan5seconds=0; //engine is off
 		}else{
 			shutdownDashboardMenuRequestTime=0;
 			if(baccabledashboardMenuWasVisible==1){
 				baccableDashboardMenuVisible=1; //show menu
 				baccabledashboardMenuWasVisible=0; //avoid to return here
 			}
+
+			if(engineOnSinceMoreThan5seconds<500) engineOnSinceMoreThan5seconds++; //engine is rotating. increase it (this message arrives each 10msec, so if >500, 5 seconds has elapsed)
 		}
 	#endif
 

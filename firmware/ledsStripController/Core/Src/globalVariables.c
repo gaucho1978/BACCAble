@@ -59,6 +59,8 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t floodTheBusStartTime=0;
 	uint32_t floodTheBusLastTimeSent=0;
 	uint8_t executeDashboardBlinks=0; //executes the number of defined blinks, one each second.
+	uint16_t engineOnSinceMoreThan5seconds=0; //if>=500 means engine is on since at least 5 seconds (for RFHUB too)
+
 
 	//SMART_DISABLE_START_STOP
 	//DISABLE_START_STOP
