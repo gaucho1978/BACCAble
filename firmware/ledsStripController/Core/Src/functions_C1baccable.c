@@ -75,7 +75,7 @@
 		}
 
 
-		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds>=500)){
+		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds<500)){
 			//the following it is used only by IMMOBILIZER functionality
 			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE THIEF WILL NOT BE ABLE TO CONNECT TO RFHUB, AND CAR WILL NOT SWITCH ON.
 				if(currentTime-floodTheBusLastTimeSent>10){
