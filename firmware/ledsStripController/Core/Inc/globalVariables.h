@@ -108,7 +108,7 @@
 		extern uint32_t floodTheBusStartTime;
 		extern uint32_t floodTheBusLastTimeSent;
 		extern uint8_t executeDashboardBlinks; //executes the number of defined blinks, one each second.
-		extern uint16_t engineOnSinceMoreThan5seconds; //if=1 means engine is on, for RFHUB since at least 5 seconds
+		extern uint16_t engineOnSinceMoreThan5seconds; //if>=500 means engine is on since at least 5 seconds
 
 
 		//SMART_DISABLE_START_STOP
