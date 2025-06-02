@@ -144,7 +144,7 @@
 		extern uint8_t baccabledashboardMenuWasVisible; //tells us if menu was previously disabled (and then when motor will turn we want to show it again
 		extern uint8_t oilPressure; //oil pressure without scaling (this value shall be multiplied by xx to obtain value in bar).
 		extern uint8_t oilTemperature; //oil temperature in celsious degrees (to correct by offset)
-		extern uint16_t torque; //torque
+		extern int16_t torque; //torque
 		extern uint8_t batteryStateOfCharge; //battery charge %
 		extern uint16_t batteryCurrent; //battery current (to be converted in Amps)
 		extern uint8_t transmissionTemperature;
@@ -227,6 +227,7 @@
 
 		//FRONT_BRAKE_FORCER_MASTER
 		extern uint8_t function_front_brake_forcer_master; //stored in flash
+		extern uint16_t launch_torque_threshold; //stored in flash
 
 		extern uint32_t lastReceivedCanMsgTime; //this is not in global C file, but comes from another C file
 
@@ -309,6 +310,8 @@
 
 		extern uint8_t _4wd_disabled; //if =4 disables 4wd
 		extern uint8_t front_brake_forced; //if=5 disables Front brakes
+		extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
+
 		extern uint8_t commandsMenuEnabled; //if 0 disables the up-down buttons to change menu position
 
 #endif /* INC_GLOBALVARIABLES_H_ */

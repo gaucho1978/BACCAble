@@ -32,6 +32,7 @@ uint8_t syncObtained=0;
 extern uint32_t weCanSendAMessageReply; //identifies last time a message was received by BH and C2 baccable (used by BH and C2 baccable)
 
 extern uint8_t front_brake_forced;
+extern uint8_t launch_assist_enabled;
 
 extern UART_HandleTypeDef huart2;
 #if defined(BHbaccable)
@@ -118,9 +119,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							switch(rxBuffer[1]){
 								case C2cmdForceFrontBrake:
 									front_brake_forced=1; //update status
+									launch_assist_enabled=1; //enable launch assist
 									break;
 								case C2cmdNormalFrontBrake:
 									front_brake_forced=0;
+									launch_assist_enabled=0; //disable launch assist
 									break;
 								default:
 									break;

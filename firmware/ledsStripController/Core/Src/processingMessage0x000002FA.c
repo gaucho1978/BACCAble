@@ -97,7 +97,7 @@ void processingMessage0x000002FA(){
 									}
 									if(main_dashboardPageIndex==9){ //we are in setup menu
 										setup_dashboardPageIndex+=1;//set next page
-										if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
+										//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
 
 										if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
 
@@ -158,7 +158,7 @@ void processingMessage0x000002FA(){
 										}
 										if(main_dashboardPageIndex==9){ //we are in setup menu
 											setup_dashboardPageIndex+=10;//set next page
-											if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
+											//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
 											if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
 											if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
@@ -218,7 +218,7 @@ void processingMessage0x000002FA(){
 									if(main_dashboardPageIndex==9){ //we are in setup menu
 										setup_dashboardPageIndex-=1;//set next page
 										if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
-										if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
+										//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
 
 										if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=total_pages_in_setup_dashboard_menu-1; // make a rotative menu
 										//onboardLed_blue_on();
@@ -277,7 +277,7 @@ void processingMessage0x000002FA(){
 										if(main_dashboardPageIndex==9){ //we are in setup menu
 											setup_dashboardPageIndex-=10;//set prev page
 											if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
-											if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
+											//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
 											if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendSetupDashboardPageToSlaveBaccable(); //send
@@ -325,9 +325,13 @@ void processingMessage0x000002FA(){
 								case 7: //toggle front brake
 
 									if(front_brake_forced>0){ //toggle front brake
-										//send serial message to C2 baccable, to set front brakes to normal
-										uint8_t tmpArr3[2]={C2BusID,C2cmdNormalFrontBrake};
-										addToUARTSendQueue(tmpArr3, 2);
+										if(launch_assist_enabled==1){ //if assist is enabled (by default it is enabled)
+											launch_assist_enabled=0; //disable assist
+										}else{ //launch assist is not enabled, but brakes are forced
+											//send serial message to C2 baccable, to RELEASE front brakes
+											uint8_t tmpArr3[2]={C2BusID,C2cmdNormalFrontBrake};
+											addToUARTSendQueue(tmpArr3, 2);
+										}
 									}else{
 										if(currentSpeed_km_h==0){
 											//send serial message to C2 baccable, to force front brakes
@@ -396,7 +400,9 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_esc_tc_customizator_enabled			!= readFromFlash(14))	|| //ESC_TC_CUSTOMIZATOR_MASTER
 											((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
 											((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
-											((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	){
+											((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	|| //REGENERATION_ALERT_ENABLED
+											((uint16_t)launch_torque_threshold						!= readFromFlash(18))	){ //LAUNCH_ASSIST_THRESHOLD
+
 												//save it on flash
 												saveOnflash();
 										}
@@ -406,7 +412,9 @@ void processingMessage0x000002FA(){
 										function_smart_disable_start_stop_enabled=!function_smart_disable_start_stop_enabled;
 										requestToDisableStartAndStop=0;
 										break;
-									case 2: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-',},
+									case 2: //{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N,'m',},
+										launch_torque_threshold=launch_torque_threshold+25;
+										if(launch_torque_threshold>600) launch_torque_threshold=25;
 										break;
 									case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
 										function_led_strip_controller_enabled = !function_led_strip_controller_enabled;

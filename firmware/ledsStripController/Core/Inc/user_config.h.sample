@@ -30,6 +30,7 @@
 	// #define ESC_TC_CUSTOMIZATOR_MASTER 		// if uncommented it allows to request ESC/TC functionality in C1 baccable. It can enabled inside baccable SETUP menu
 	// #define ACC_VIRTUAL_PAD					// if uncommented it will enable "ACC virtual pad"functionality. It can enabled inside baccable SETUP menu
 	// #define FRONT_BRAKE_FORCER_MASTER 		// if uncommented it will enable "front brake forcer" functionality in C1 baccable. It can enabled inside baccable SETUP menu
+	// #define LAUNCH_ASSIST_THRESHOLD			// if uncommented it will set torque force (default is 100Nm) used in the functionality Launch assist, part of front brake forcer functionality. It can be set inside baccable SETUP menu
 	// #define _4WD_DISABLER 					// if uncommented it will enable "4WD" functionality in C1 baccable. It can enabled inside baccable SETUP menu
 	// #define REMOTE_START_ENABLED				// if uncommented it will enable "remote start" functionality. Experimental: it doesn't work yet. don't use it! It can enabled inside baccable SETUP menu
 	// #define READ_FAULTS_ENABLED				// if uncommented it will enable "read faults" functionality. Experimental: it doesn't work yet. don't use it! It can enabled inside baccable SETUP menu

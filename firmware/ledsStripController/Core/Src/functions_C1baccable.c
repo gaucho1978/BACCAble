@@ -28,7 +28,7 @@
 		function_read_faults_enabled=(uint8_t)readFromFlash(15);
 		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
 		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
-
+		launch_torque_threshold= (uint16_t)readFromFlash(18);
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -75,7 +75,7 @@
 		}
 
 
-		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds<500)){
+		if(immobilizerEnabled){
 			//the following it is used only by IMMOBILIZER functionality
 			if(floodTheBus){ //WHEN THIS IS ACTIVATED, THE THIEF WILL NOT BE ABLE TO CONNECT TO RFHUB, AND CAR WILL NOT SWITCH ON.
 				if(currentTime-floodTheBusLastTimeSent>10){
@@ -177,7 +177,7 @@
 	void sendMainDashboardPageToSlaveBaccable(){
 		uint8_t tmpStrLen=0;
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
-
+		char tmpfloatString[5]; //temp array
 		//update records if required
 		switch(main_dashboardPageIndex){
 			case 2: //READ_FAULTS_ENABLED
@@ -213,16 +213,96 @@
 				//update the string
 				if(front_brake_forced==0){
 					//update text {'F','r','o','n','t',' ','B','r','a','k','e',' ','N','o','r','m','a','l' },
+					dashboard_main_menu_array[main_dashboardPageIndex][0]='F';
+					dashboard_main_menu_array[main_dashboardPageIndex][1]='r';
+					dashboard_main_menu_array[main_dashboardPageIndex][2]='o';
+					dashboard_main_menu_array[main_dashboardPageIndex][3]='n';
+					dashboard_main_menu_array[main_dashboardPageIndex][4]='t';
+					dashboard_main_menu_array[main_dashboardPageIndex][5]=' ';
+					dashboard_main_menu_array[main_dashboardPageIndex][6]='B';
+					dashboard_main_menu_array[main_dashboardPageIndex][7]='r';
+					dashboard_main_menu_array[main_dashboardPageIndex][8]='a';
+					dashboard_main_menu_array[main_dashboardPageIndex][9]='k';
+					dashboard_main_menu_array[main_dashboardPageIndex][10]='e';
+					dashboard_main_menu_array[main_dashboardPageIndex][11]=' ';
 					dashboard_main_menu_array[main_dashboardPageIndex][12]='N'; //normal
+					dashboard_main_menu_array[main_dashboardPageIndex][13]='o'; //
+					dashboard_main_menu_array[main_dashboardPageIndex][14]='r'; //
 					dashboard_main_menu_array[main_dashboardPageIndex][15]='m';
 					dashboard_main_menu_array[main_dashboardPageIndex][16]='a';
 					dashboard_main_menu_array[main_dashboardPageIndex][17]='l';
 				}else{
-					//update text
-					dashboard_main_menu_array[main_dashboardPageIndex][12]='F'; //forced
-					dashboard_main_menu_array[main_dashboardPageIndex][15]='c';
-					dashboard_main_menu_array[main_dashboardPageIndex][16]='e';
-					dashboard_main_menu_array[main_dashboardPageIndex][17]='d';
+					if(launch_assist_enabled==1){
+						if(torque>50){ //assist active and torque greather than minimum threshold. the minimum thr allows to view the menu "...assist" before the following string is printed
+							//prepare variables
+
+							//show torque
+							dashboard_main_menu_array[main_dashboardPageIndex][0]='L';
+							dashboard_main_menu_array[main_dashboardPageIndex][1]='a';
+							dashboard_main_menu_array[main_dashboardPageIndex][2]='u';
+							dashboard_main_menu_array[main_dashboardPageIndex][3]='n';
+							dashboard_main_menu_array[main_dashboardPageIndex][4]='c';
+							dashboard_main_menu_array[main_dashboardPageIndex][5]='h';
+							dashboard_main_menu_array[main_dashboardPageIndex][6]=' ';
+
+							floatToStr(tmpfloatString,(float)torque,0,4);
+							dashboard_main_menu_array[main_dashboardPageIndex][7]=tmpfloatString[0];
+							dashboard_main_menu_array[main_dashboardPageIndex][8]=tmpfloatString[1];
+							dashboard_main_menu_array[main_dashboardPageIndex][9]=tmpfloatString[2];
+
+							dashboard_main_menu_array[main_dashboardPageIndex][10]='N';
+							dashboard_main_menu_array[main_dashboardPageIndex][11]='m';
+							dashboard_main_menu_array[main_dashboardPageIndex][12]='/';
+
+							floatToStr(tmpfloatString,(float)launch_torque_threshold,0,4);
+							dashboard_main_menu_array[main_dashboardPageIndex][13]=tmpfloatString[0];
+							dashboard_main_menu_array[main_dashboardPageIndex][14]=tmpfloatString[1];
+							dashboard_main_menu_array[main_dashboardPageIndex][15]=tmpfloatString[2];
+
+							dashboard_main_menu_array[main_dashboardPageIndex][16]='N';
+							dashboard_main_menu_array[main_dashboardPageIndex][17]='m';
+						}else{
+							//update text
+							dashboard_main_menu_array[main_dashboardPageIndex][0]='F';
+							dashboard_main_menu_array[main_dashboardPageIndex][1]='r';
+							dashboard_main_menu_array[main_dashboardPageIndex][2]='o';
+							dashboard_main_menu_array[main_dashboardPageIndex][3]='n';
+							dashboard_main_menu_array[main_dashboardPageIndex][4]='t';
+							dashboard_main_menu_array[main_dashboardPageIndex][5]=' ';
+							dashboard_main_menu_array[main_dashboardPageIndex][6]='B';
+							dashboard_main_menu_array[main_dashboardPageIndex][7]='r';
+							dashboard_main_menu_array[main_dashboardPageIndex][8]='a';
+							dashboard_main_menu_array[main_dashboardPageIndex][9]='k';
+							dashboard_main_menu_array[main_dashboardPageIndex][10]='e';
+							dashboard_main_menu_array[main_dashboardPageIndex][11]=' ';
+							dashboard_main_menu_array[main_dashboardPageIndex][12]='A'; //assist (launch control)
+							dashboard_main_menu_array[main_dashboardPageIndex][13]='s'; //
+							dashboard_main_menu_array[main_dashboardPageIndex][14]='s'; //
+							dashboard_main_menu_array[main_dashboardPageIndex][15]='i';
+							dashboard_main_menu_array[main_dashboardPageIndex][16]='s';
+							dashboard_main_menu_array[main_dashboardPageIndex][17]='t';
+						}
+					}else{ //launch assist not enabled
+						//update text
+						dashboard_main_menu_array[main_dashboardPageIndex][0]='F';
+						dashboard_main_menu_array[main_dashboardPageIndex][1]='r';
+						dashboard_main_menu_array[main_dashboardPageIndex][2]='o';
+						dashboard_main_menu_array[main_dashboardPageIndex][3]='n';
+						dashboard_main_menu_array[main_dashboardPageIndex][4]='t';
+						dashboard_main_menu_array[main_dashboardPageIndex][5]=' ';
+						dashboard_main_menu_array[main_dashboardPageIndex][6]='B';
+						dashboard_main_menu_array[main_dashboardPageIndex][7]='r';
+						dashboard_main_menu_array[main_dashboardPageIndex][8]='a';
+						dashboard_main_menu_array[main_dashboardPageIndex][9]='k';
+						dashboard_main_menu_array[main_dashboardPageIndex][10]='e';
+						dashboard_main_menu_array[main_dashboardPageIndex][11]=' ';
+						dashboard_main_menu_array[main_dashboardPageIndex][12]='F'; //forced
+						dashboard_main_menu_array[main_dashboardPageIndex][13]='o'; //
+						dashboard_main_menu_array[main_dashboardPageIndex][14]='r'; //
+						dashboard_main_menu_array[main_dashboardPageIndex][15]='c';
+						dashboard_main_menu_array[main_dashboardPageIndex][16]='e';
+						dashboard_main_menu_array[main_dashboardPageIndex][17]='d';
+					}
 				}
 				break;
 			case 8: //4wd
@@ -259,6 +339,7 @@
 		//uint8_t tmpStrLen=0;
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 
+		char tmpfloatString[5]; //temp array for shift and launch threshods
 		//update records if required
 		switch(setup_dashboardPageIndex){
 			case 0: //{'S','A','V','E','&','E','X','I','T',},
@@ -267,6 +348,10 @@
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_smart_disable_start_stop_enabled];
 				break;
 			case 2: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-',},
+				floatToStr(tmpfloatString,(float)launch_torque_threshold,0,4);
+				dashboard_setup_menu_array[setup_dashboardPageIndex][13]=tmpfloatString[0];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[1];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[2];
 				break;
 			case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_led_strip_controller_enabled];
@@ -275,7 +360,6 @@
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_shift_indicator_enabled];
 				break;
 			case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',},
-				char tmpfloatString[5];
 				floatToStr(tmpfloatString,(float)shift_threshold,0,5);
 				dashboard_setup_menu_array[setup_dashboardPageIndex][10]=tmpfloatString[0];
 				dashboard_setup_menu_array[setup_dashboardPageIndex][11]=tmpfloatString[1];
@@ -362,10 +446,10 @@
 				param=(float) oilPressure * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
 				break;
 			case 0x11: //power in CV
-				param=((float)torque + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyValOffset) * (float)currentRpmSpeed * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale ;
+				param=(float)torque * (float)currentRpmSpeed * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale ;
 				break;
 			case 0x12: //torque in NM
-				param=((float)torque  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
+				param=(float)torque;
 				break;
 			case 0x13: //battery state of charge (%)
 				param=(float)batteryStateOfCharge  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
@@ -539,9 +623,10 @@
 		  function_read_faults_enabled,
 		  function_is_diesel_enabled,
 		  function_regeneration_alert_enabled,
+		  launch_torque_threshold,
 		};
 
-		for (uint8_t i = 0; i < 17; i++) {
+		for (uint8_t i = 0; i < 18; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -711,6 +796,15 @@
 						#endif
 					}
 					break;
+			case 18: //LAUNCH_THRESHOLD
+				if(tmpParam==0xFFFF){
+					#if defined(LAUNCH_THRESHOLD)
+						return LAUNCH_THRESHOLD;
+					#else
+						return 100; // another default value
+					#endif
+				}
+				break;
 			default:
 				return 0;
 				break;

@@ -54,6 +54,16 @@ void processingStandardMessage(){
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC>=4){
 					torque= ((rx_msg_data[2] & 0b01111111) << 4 | ((rx_msg_data[3] >> 4) & 0b00001111));
+					torque=torque-500;
+				}
+
+				if(launch_assist_enabled==1){
+					if(torque>=launch_torque_threshold){
+						//send serial message to C2 baccable, to RELEASE front brakes
+						uint8_t tmpArr3[2]={C2BusID,C2cmdNormalFrontBrake};
+						addToUARTSendQueue(tmpArr3, 2);
+						launch_assist_enabled=0; //ensure we do not return here
+					}
 				}
 			#endif
 			//torque is on byte 2 from bit 6 to 0 and byte 3 from bit 7 to 4.

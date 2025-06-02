@@ -217,7 +217,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t baccabledashboardMenuWasVisible=0; //tells us if menu was previously disabled (and then when motor will turn we want to show it again
 	uint8_t oilPressure; //oil pressure without scaling (this value shall be multiplied by xx to obtain value in bar).
 	uint8_t oilTemperature; //oil temperature in celsious degrees (to correct by offset)
-	uint16_t torque; //torque
+	int16_t torque; //torque
 	uint8_t batteryStateOfCharge=0; //battery charge %
 	uint16_t batteryCurrent; //battery current (to be converted in Amps)
 	uint8_t transmissionTemperature;
@@ -300,6 +300,13 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//FRONT_BRAKE_FORCER_MASTER
 	uint8_t function_front_brake_forcer_master=1; //stored in flash
+
+	#if defined(LAUNCH_ASSIST_THRESHOLD)
+		uint16_t launch_torque_threshold=LAUNCH_ASSIST_THRESHOLD;
+	#else
+		uint16_t launch_torque_threshold=100;
+	#endif
+
 #endif
 
 #if defined(C2baccable)
@@ -375,4 +382,5 @@ uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
 uint8_t _4wd_disabled=0; //if =4 disables 4wd
 uint8_t front_brake_forced=0; //if=5 disables Front brakes
+uint8_t launch_assist_enabled=0; //if=1 assist is enabled and uses torque as trigget to release front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position

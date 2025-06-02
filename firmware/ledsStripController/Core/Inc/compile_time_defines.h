@@ -9,9 +9,9 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V2.6.2"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V2.7.0"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
-	#define _FW_VERSION "BACCAble " BUILD_VERSION
+	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
 
 	// force print
