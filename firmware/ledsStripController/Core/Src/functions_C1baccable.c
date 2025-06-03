@@ -246,18 +246,38 @@
 							dashboard_main_menu_array[main_dashboardPageIndex][6]=' ';
 
 							floatToStr(tmpfloatString,(float)torque,0,4);
-							dashboard_main_menu_array[main_dashboardPageIndex][7]=tmpfloatString[0];
-							dashboard_main_menu_array[main_dashboardPageIndex][8]=tmpfloatString[1];
-							dashboard_main_menu_array[main_dashboardPageIndex][9]=tmpfloatString[2];
+							switch(strlen(tmpfloatString)){
+								case 1:
+									dashboard_main_menu_array[main_dashboardPageIndex][7]=' ';
+									dashboard_main_menu_array[main_dashboardPageIndex][8]=' ';
+									dashboard_main_menu_array[main_dashboardPageIndex][9]=tmpfloatString[0];
+									break;
+								case 2:
+									dashboard_main_menu_array[main_dashboardPageIndex][7]=' ';
+									dashboard_main_menu_array[main_dashboardPageIndex][8]=tmpfloatString[0];
+									dashboard_main_menu_array[main_dashboardPageIndex][9]=tmpfloatString[1];
+									break;
+								default:
+									dashboard_main_menu_array[main_dashboardPageIndex][7]=tmpfloatString[0];
+									dashboard_main_menu_array[main_dashboardPageIndex][8]=tmpfloatString[1];
+									dashboard_main_menu_array[main_dashboardPageIndex][9]=tmpfloatString[2];
+									break;
+							}
 
 							dashboard_main_menu_array[main_dashboardPageIndex][10]='N';
 							dashboard_main_menu_array[main_dashboardPageIndex][11]='m';
 							dashboard_main_menu_array[main_dashboardPageIndex][12]='/';
 
 							floatToStr(tmpfloatString,(float)launch_torque_threshold,0,4);
-							dashboard_main_menu_array[main_dashboardPageIndex][13]=tmpfloatString[0];
-							dashboard_main_menu_array[main_dashboardPageIndex][14]=tmpfloatString[1];
-							dashboard_main_menu_array[main_dashboardPageIndex][15]=tmpfloatString[2];
+							if(strlen(tmpfloatString)==2){
+								dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+								dashboard_main_menu_array[main_dashboardPageIndex][14]=tmpfloatString[0];
+								dashboard_main_menu_array[main_dashboardPageIndex][15]=tmpfloatString[1];
+							}else{
+								dashboard_main_menu_array[main_dashboardPageIndex][13]=tmpfloatString[0];
+								dashboard_main_menu_array[main_dashboardPageIndex][14]=tmpfloatString[1];
+								dashboard_main_menu_array[main_dashboardPageIndex][15]=tmpfloatString[2];
+							}
 
 							dashboard_main_menu_array[main_dashboardPageIndex][16]='N';
 							dashboard_main_menu_array[main_dashboardPageIndex][17]='m';
@@ -349,9 +369,17 @@
 				break;
 			case 2: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-',},
 				floatToStr(tmpfloatString,(float)launch_torque_threshold,0,4);
-				dashboard_setup_menu_array[setup_dashboardPageIndex][13]=tmpfloatString[0];
-				dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[1];
-				dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[2];
+				if(strlen(tmpfloatString)==2){
+					dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+					dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[0];
+					dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[1];
+				}else{
+					dashboard_setup_menu_array[setup_dashboardPageIndex][13]=tmpfloatString[0];
+					dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[1];
+					dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[2];
+				}
+
+
 				break;
 			case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_led_strip_controller_enabled];
