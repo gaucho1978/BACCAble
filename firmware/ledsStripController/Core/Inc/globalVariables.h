@@ -84,6 +84,7 @@
 
 
 	#if defined(C1baccable)
+		extern uint8_t printStopTheCar; //if =2 prints a message to screen for one second
 		extern uint32_t shutdownDashboardMenuRequestTime; //used to shutdown display after one minute from motor off event
 		extern uint8_t checkbox_symbols[2]; // O (0x4F= not selected), Ø (0xD8= selected)
 		//ACC_VIRTUAL_PAD

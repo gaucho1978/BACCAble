@@ -206,10 +206,22 @@
 				}
 				break;
 			case 5: //dyno
+				if(printStopTheCar>0){
+					printStopTheCar--;
+					uint8_t stopTheCarMsg[13]={BhBusIDparamString,'S','T','O','P',' ','T','H','E',' ','C','A','R'};
+					addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
+					return;
+				}
 				break;
 			case 6: //ESC/TC
 				break;
 			case 7: //front brake
+				if(printStopTheCar>0){
+					printStopTheCar--;
+					uint8_t stopTheCarMsg[13]={BhBusIDparamString,'S','T','O','P',' ','T','H','E',' ','C','A','R'};
+					addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
+					return;
+				}
 				//update the string
 				if(front_brake_forced==0){
 					//update text {'F','r','o','n','t',' ','B','r','a','k','e',' ','N','o','r','m','a','l' },
@@ -326,6 +338,12 @@
 				}
 				break;
 			case 8: //4wd
+				if(printStopTheCar>0){
+					printStopTheCar--;
+					uint8_t stopTheCarMsg[13]={BhBusIDparamString,'S','T','O','P',' ','T','H','E',' ','C','A','R'};
+					addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
+					return;
+				}
 				//nothing to do
 				break;
 			default:

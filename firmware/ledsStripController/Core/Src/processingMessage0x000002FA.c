@@ -293,7 +293,6 @@ void processingMessage0x000002FA(){
 					if(wheelPressedButtonID==0x89 && baccableDashboardMenuVisible==1){ //we pressed RES for at least one instant, then we released before 2 seconds, therefore we want to enter inside dashboard menu (will work only if menu is visible)
 
 						if(dashboard_menu_indent_level==0){
-							uint8_t printStopTheCar=0; //if enabled prints a message to screen for half second
 							switch(main_dashboardPageIndex){
 								case 1: //show params
 									dashboard_menu_indent_level++;
@@ -314,7 +313,7 @@ void processingMessage0x000002FA(){
 										uint8_t tmpArr1[2]={C2BusID,C2cmdtoggleDyno};
 										addToUARTSendQueue(tmpArr1, 2);
 									}else{
-										printStopTheCar=1;//print message "stop the car"
+										printStopTheCar=2;//print message "stop the car"
 									}
 									break;
 								case 6: //toggle ESC/TC
@@ -338,7 +337,7 @@ void processingMessage0x000002FA(){
 											uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
 											addToUARTSendQueue(tmpArr4, 2);
 										}else{
-											printStopTheCar=1;//print message "stop the car"
+											printStopTheCar=2;//print message "stop the car"
 										}
 									}
 
@@ -361,7 +360,7 @@ void processingMessage0x000002FA(){
 											dashboard_main_menu_array[main_dashboardPageIndex][6]='s';
 											commandsMenuEnabled=0;//disable menu commands
 										}else{
-											printStopTheCar=1;//print message "stop the car"
+											printStopTheCar=2;//print message "stop the car"
 										}
 									}
 									break;
@@ -371,11 +370,6 @@ void processingMessage0x000002FA(){
 									break;
 								default:
 									break;
-							}
-
-							if(printStopTheCar==1){
-								uint8_t stopTheCarMsg[13]={BhBusIDparamString,'S','T','O','P',' ','T','H','E',' ','C','A','R'};
-								addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
 							}
 
 						}else{ //indent level >0

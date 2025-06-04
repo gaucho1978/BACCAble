@@ -22,6 +22,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 #if defined(C1baccable)
 
+	uint8_t printStopTheCar=0; //if =2 prints a message to screen for one second
+
 	uint32_t shutdownDashboardMenuRequestTime=0; //used to shutdown display after one minute from motor off event
 
 	uint8_t checkbox_symbols[2] = {0x4F, 0xD8}; // O (0x4F= not selected), Ø (0xD8= selected)
