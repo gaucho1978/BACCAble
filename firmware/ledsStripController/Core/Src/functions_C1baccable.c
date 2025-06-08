@@ -34,6 +34,8 @@
 	void C1baccablePeriodicCheck(){
 		lowConsume_process();
 
+
+
 		if(function_led_strip_controller_enabled==1){
 			//don't act as canable. One USB port pin is used to control leds.
 			vuMeterInit(); //initialize leds strip controller - this is called many times to divide the operations on more loops
@@ -515,6 +517,18 @@
 			case 0x18: //current speed (km/h)
 				param=currentSpeed_km_h;
 				break;
+			case 0x1A: //stat 0-100km/h
+				param=chronometerElapsedTime_0_100_km_h; // >=20=MISSED , increase in progress= GO
+				break;
+			case 0x1B: //stat 100-200km/h
+				param=chronometerElapsedTime_100_200_km_h; // >=40=MISSED , increase in progress= GO
+				break;
+			case 0x1C: //Best stat 0-100km/h
+				param=readStatisticsFromFlash(1);
+				break;
+			case 0x1D: //Best stat 100-200km/h
+				param=readStatisticsFromFlash(2);
+				break;
 			default:
 				break;
 		}
@@ -526,32 +540,30 @@
 				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
 				break;
-			case 0x19:
-				if (uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId == 0x19) { //if diesel engine mode status
-					tmpStrLen=18;
-					switch(dieselEngineRegenerationMode){
-						case 0:
-							memcpy(&uartTxMsg[1], "REGEN.: NONE      ", tmpStrLen);
-							break;
-						case 1:
-							memcpy(&uartTxMsg[1], "REGEN.: DPF LO    ", tmpStrLen);
-							break;
-						case 2:
-							memcpy(&uartTxMsg[1], "REGEN.: DPF HI    ", tmpStrLen);
-							break;
-						case 3:
-							memcpy(&uartTxMsg[1], "REGEN.: NSC De-NOx", tmpStrLen);
-							break;
-						case 4:
-							memcpy(&uartTxMsg[1], "REGEN.: NSC De-SOx", tmpStrLen);
-							break;
-						case 5:
-							memcpy(&uartTxMsg[1], "REGEN.: SCR HeatUp", tmpStrLen);
-							break;
-						default:
-							memcpy(&uartTxMsg[1], "REGEN.: NONE.     ", tmpStrLen);
-							break;
-					}
+			case 0x19: //if diesel engine mode status
+				tmpStrLen=18;
+				switch(dieselEngineRegenerationMode){
+					case 0:
+						memcpy(&uartTxMsg[1], "REGEN.: NONE      ", tmpStrLen);
+						break;
+					case 1:
+						memcpy(&uartTxMsg[1], "REGEN.: DPF LO    ", tmpStrLen);
+						break;
+					case 2:
+						memcpy(&uartTxMsg[1], "REGEN.: DPF HI    ", tmpStrLen);
+						break;
+					case 3:
+						memcpy(&uartTxMsg[1], "REGEN.: NSC De-NOx", tmpStrLen);
+						break;
+					case 4:
+						memcpy(&uartTxMsg[1], "REGEN.: NSC De-SOx", tmpStrLen);
+						break;
+					case 5:
+						memcpy(&uartTxMsg[1], "REGEN.: SCR HeatUp", tmpStrLen);
+						break;
+					default:
+						memcpy(&uartTxMsg[1], "REGEN.: NONE.     ", tmpStrLen);
+						break;
 				}
 				break;
 			default:
@@ -564,17 +576,68 @@
 					//convert param from float to string
 					char tmpfloatString[10];
 
-					if (uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId == 0x17) { //if Current gear request data - currentGear
+					switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId) {
+						case 0x17: //if Current gear request data - currentGear
+							if ((uint8_t)param<11){
+								tmpfloatString[0]=gearArray[(uint8_t)param];
+							}else{
+								tmpfloatString[0] = '-';
+							}
 
-						if ((uint8_t)param<11){
-							tmpfloatString[0]=gearArray[(uint8_t)param];
-						}else{
-							tmpfloatString[0] = '-';
-						}
-
-						tmpfloatString[1] =0;
-					}else{
-						floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+							tmpfloatString[1] =0;
+							break;
+						case 0x1A: //0-100 stat
+						case 0x1C: //Best 0-100
+							if(param>20.0){ //missed
+								tmpfloatString[0]='M';
+								tmpfloatString[1]='I';
+								tmpfloatString[2]='S';
+								tmpfloatString[3]='S';
+								tmpfloatString[4]='E';
+								tmpfloatString[5]='D';
+								tmpfloatString[6]=' ';
+								tmpfloatString[7]=0;
+							}else{
+								if(statistics_0_100_started){
+									tmpfloatString[0]='G';
+									tmpfloatString[1]='O';
+									tmpfloatString[2]=' ';
+									tmpfloatString[3]=' ';
+									tmpfloatString[4]=' ';
+									tmpfloatString[5]=' ';
+									tmpfloatString[6]=' ';
+									tmpfloatString[7]=0;
+								}else{ //show time
+									floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+								}
+							}
+							break;
+						case 0x1B: //100-200 stat
+						case 0x1D: //Best 100-200
+							if(param>40.0){ //missed
+								tmpfloatString[0]='M';
+								tmpfloatString[1]='I';
+								tmpfloatString[2]='S';
+								tmpfloatString[3]='S';
+								tmpfloatString[4]='E';
+								tmpfloatString[5]='D';
+								tmpfloatString[6]=0;
+							}else{
+								if(statistics_100_200_started){
+									tmpfloatString[0]='G';
+									tmpfloatString[1]='O';
+									tmpfloatString[2]=' ';
+									tmpfloatString[3]=' ';
+									tmpfloatString[4]=' ';
+									tmpfloatString[5]=' ';
+									tmpfloatString[6]=0;
+								}else{ //show time
+									floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+								}
+							}
+							break;
+						default:
+							floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 					}
 
 					//add param to the page String
@@ -683,6 +746,67 @@
 		//lock the flash
 		HAL_FLASH_Lock();
 		return 0;
+	}
+
+	uint8_t saveStatisticsOnFlash(){
+		//compare current stats with best stored times
+		uint8_t weShallWriteFlash=0;
+		uint16_t params[10];
+		if(chronometerElapsedTime_0_100_km_h<readStatisticsFromFlash(1)){
+			params[0]=(uint16_t)(chronometerElapsedTime_0_100_km_h *1000);
+			weShallWriteFlash=1;
+		}else{
+			params[0]=(uint16_t)(readStatisticsFromFlash(1) * 1000);
+		}
+
+		if(chronometerElapsedTime_100_200_km_h<readStatisticsFromFlash(2)){
+			params[1]=(uint16_t)(chronometerElapsedTime_100_200_km_h *1000);
+			weShallWriteFlash=1;
+		}else{
+			params[1]=(uint16_t)(readStatisticsFromFlash(2) * 1000);
+		}
+
+
+		if(weShallWriteFlash){ //if new best time was found, save again all stats
+			HAL_FLASH_Unlock(); //unlock flash
+
+			//erase flash
+			FLASH_EraseInitTypeDef eraseInitStruct;
+			uint32_t pageError=0;
+			eraseInitStruct.TypeErase= FLASH_TYPEERASE_PAGES;
+			eraseInitStruct.PageAddress=LAST_PAGE_ADDRESS_STATISTICS;
+			eraseInitStruct.NbPages=1;
+			if(HAL_FLASHEx_Erase(&eraseInitStruct,&pageError)!=HAL_OK){ //error during erase
+				HAL_FLASH_Lock();
+				onboardLed_red_blink(8);
+				return 254; //error
+			}
+
+			//it seems that stm32F072 supports only writing 2byte words
+			//write parameter
+
+			for (uint8_t i = 0; i < 9; i++) {
+				if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS_STATISTICS + (i * 4), params[i]) != HAL_OK) {
+					HAL_FLASH_Lock();
+					onboardLed_red_blink(9);
+					return 255;
+				}
+			}
+
+			//lock the flash
+			HAL_FLASH_Lock();
+			return 0;
+
+		}
+		return 253;
+	}
+
+	float readStatisticsFromFlash(uint8_t paramId){ // 1=0-100km/h, 2=100/200km/h
+		if(paramId<1) return 0;
+		uint16_t tmpParam=*(volatile uint16_t*)(LAST_PAGE_ADDRESS_STATISTICS+((paramId-1)*4));
+
+		return (float)(((float)tmpParam)/1000.0);
+
 	}
 
 	uint16_t readFromFlash(uint8_t paramId){

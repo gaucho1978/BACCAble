@@ -32,6 +32,7 @@
 
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
 			//la flash inizia a 0x08000000  e finisce a 0x0801FFFF, -0x800 +1 di una pagina fa 0x0801F800
+	#define LAST_PAGE_ADDRESS_STATISTICS LAST_PAGE_ADDRESS- FLASH_PAGE_SIZE //we will use previous page for statistics
 
 #if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE)
 	//#include "usbd_def.h"
@@ -84,6 +85,10 @@
 
 
 	#if defined(C1baccable)
+		extern float chronometerElapsedTime_0_100_km_h; //stores time statistic in seconds
+		extern float chronometerElapsedTime_100_200_km_h; //stores time statistic in seconds
+		extern uint8_t statistics_0_100_started; //stores id the statistic timer has started
+		extern uint8_t statistics_100_200_started; //stores id the statistic timer has started
 		extern uint8_t printStopTheCar; //if =2 prints a message to screen for one second
 		extern uint32_t shutdownDashboardMenuRequestTime; //used to shutdown display after one minute from motor off event
 		extern uint8_t checkbox_symbols[2]; // O (0x4F= not selected), Ø (0xD8= selected)
@@ -293,6 +298,9 @@
 		extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]; //it contains string to print on dashboard
 
 		extern float currentSpeed_km_h; //current vehicle speed
+		extern float previousSpeed_km_h; //store speed at previous loop
+		extern uint32_t statistics_0_100_StartTime;
+		extern uint32_t statistics_100_200_StartTime;
 
 		extern uint32_t weCanSendAMessageReply; //defines last time that C2 or BH baccable received a message (used by C2 and BH baccable)
 		extern uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart

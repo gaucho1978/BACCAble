@@ -63,6 +63,10 @@ void processingStandardMessage(){
 						uint8_t tmpArr3[2]={C2BusID,C2cmdNormalFrontBrake};
 						addToUARTSendQueue(tmpArr3, 2);
 						launch_assist_enabled=0; //ensure we do not return here
+						//jump to statistics
+						dashboard_menu_indent_level=1;
+						main_dashboardPageIndex=1; 	// params submenu
+						dashboardPageIndex=33; 		// 0-100km/h statistics
 					}
 				}
 			#endif
@@ -77,7 +81,50 @@ void processingStandardMessage(){
 				if(rx_msg_header.DLC>=3){
 					//get vehicle speed
 					currentSpeed_km_h= (float)((((uint16_t)rx_msg_data[0] << 11) & 0b0001111111111111) | ((uint16_t)rx_msg_data[1] <<3) | ((uint16_t)rx_msg_data[2] >>5))/16;
+
+					//Execute Statistics
+					if((previousSpeed_km_h<0.0625) && (currentSpeed_km_h>=0.0625)){ //we started. Let's count the time
+						statistics_0_100_StartTime=currentTime-10;
+						statistics_0_100_started = 1;
+					}
+
+
+
+					if(statistics_0_100_started){
+						chronometerElapsedTime_0_100_km_h=((float)(currentTime-statistics_0_100_StartTime))/1000.0;
+
+						if(currentSpeed_km_h>=100.0){ // target speed reached
+							statistics_0_100_started=0;// stop the time
+							saveStatisticsOnFlash();//save on flash, if it is a best time
+						}
+
+						if(chronometerElapsedTime_0_100_km_h>20.0){ //if it is missed
+							statistics_0_100_started=0;
+						}
+					}
+
+					if((previousSpeed_km_h<=100.0) && (currentSpeed_km_h>100.0)){ //we started. Let's count the time
+						statistics_100_200_StartTime=currentTime-10;
+						statistics_100_200_started = 1;
+					}
+
+					if(statistics_100_200_started){
+						chronometerElapsedTime_100_200_km_h=((float)(currentTime-statistics_100_200_StartTime))/1000.0;
+
+						if(currentSpeed_km_h>=200.0){ 		//target speed was reached
+							statistics_100_200_started=0;	// stop the time
+							saveStatisticsOnFlash();			//save on flash, if it is a best time
+						}
+
+						if(chronometerElapsedTime_100_200_km_h>40.0){ //if it is missed
+							statistics_100_200_started=0;
+						}
+					}
+
+					previousSpeed_km_h=currentSpeed_km_h;
+
 				}
+
 			#endif
 			break;
 		case 0x000001EF:

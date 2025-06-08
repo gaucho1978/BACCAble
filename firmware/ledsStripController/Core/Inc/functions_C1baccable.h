@@ -19,7 +19,9 @@
 	float scaleVolume(uint8_t vol);
 	uint8_t scaleColorSet(uint8_t col);
 	uint8_t saveOnflash();
+	uint8_t saveStatisticsOnFlash();
 	uint16_t readFromFlash(uint8_t paramId);
+	float readStatisticsFromFlash(uint8_t paramId);
 
 
 #endif /* INC_FUNCTIONS_C1BACCABLE_H_ */
