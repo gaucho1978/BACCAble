@@ -1,7 +1,7 @@
 /**
  * In this file the user can set preferred defines for its own custom builds;
  *
- * This is a sample file; Rename it to "user_config.h" to use it, then:
+ * This is a sample file; You should make a copy of it named "user_config.h" and then:
  * -if compiling with GCC use "-DINCLUDE_USER_CONFIG_H",
  * -if compiling with STM IDE select, on build drop down menu, "C1baccableDiesel+user_config" or any other "....+user_config"
  *
