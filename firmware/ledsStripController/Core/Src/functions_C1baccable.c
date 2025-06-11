@@ -587,7 +587,6 @@
 							tmpfloatString[1] =0;
 							break;
 						case 0x1A: //0-100 stat
-						case 0x1C: //Best 0-100
 							if(param>20.0){ //missed
 								tmpfloatString[0]='M';
 								tmpfloatString[1]='I';
@@ -613,7 +612,6 @@
 							}
 							break;
 						case 0x1B: //100-200 stat
-						case 0x1D: //Best 100-200
 							if(param>40.0){ //missed
 								tmpfloatString[0]='M';
 								tmpfloatString[1]='I';
@@ -634,6 +632,34 @@
 								}else{ //show time
 									floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 								}
+							}
+							break;
+						case 0x1C: //Best 0-100
+							if(param>20.0){ //missed
+								tmpfloatString[0]='M';
+								tmpfloatString[1]='I';
+								tmpfloatString[2]='S';
+								tmpfloatString[3]='S';
+								tmpfloatString[4]='E';
+								tmpfloatString[5]='D';
+								tmpfloatString[6]=' ';
+								tmpfloatString[7]=0;
+							}else{
+								floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
+							}
+							break;
+						case 0x1D: //Best 100-200
+							if(param>40.0){ //missed
+								tmpfloatString[0]='M';
+								tmpfloatString[1]='I';
+								tmpfloatString[2]='S';
+								tmpfloatString[3]='S';
+								tmpfloatString[4]='E';
+								tmpfloatString[5]='D';
+								tmpfloatString[6]=' ';
+								tmpfloatString[7]=0;
+							}else{
+								floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 							}
 							break;
 						default:
