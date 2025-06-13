@@ -7,8 +7,9 @@ Please donate, with Paypal or Crypto (Bitcoin)
 [![PayPal](tools/paypal.png)](https://www.paypal.me/tr3ma1)
 [![Bitcoin](tools/bitcoin.png)](bitcoin:bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth)
 
-##CREDITS
-*None of us got where we are solely by pulling ourselves up by our bootstraps. We got here because somebody — a parent, a teacher, an Ivy League crony or a few nuns — bent down and helped us pick up our boots* Cit. Thurgood Marshall.
+## CREDITS
+
+*"None of us got where we are solely by pulling ourselves up by our bootstraps. We got here because somebody — a parent, a teacher, an Ivy League crony or a few nuns — bent down and helped us pick up our boots"* Cit. Thurgood Marshall.
 
 Thanks Sniz https://alfatuning.app/
 
