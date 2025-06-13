@@ -7,6 +7,19 @@ Please donate, with Paypal or Crypto (Bitcoin)
 [![PayPal](tools/paypal.png)](https://www.paypal.me/tr3ma1)
 [![Bitcoin](tools/bitcoin.png)](bitcoin:bc1qyvh5mexkhfw6tgdztm884gs9y6smc04lueyvth)
 
+##CREDITS
+*None of us got where we are solely by pulling ourselves up by our bootstraps. We got here because somebody — a parent, a teacher, an Ivy League crony or a few nuns — bent down and helped us pick up our boots* Cit. Thurgood Marshall.
+
+Thanks Sniz https://alfatuning.app/
+
+Thanks Alexey, Alfaobd developer https://www.alfaobd.com/
+
+Thanks normaldotcom https://github.com/normaldotcom/canable-fw
+
+Thanks Danardi https://github.com/danardi78/Alfaromeo-Giulia-Stelvio-PIDs/
+
+Thanks Ambrotek, Gev, and all the Baccable Community
+
 ## DISCLAIMER
 
 BACCABLE is a project developed exclusively for educational and research purposes. The use of this tool on vehicles operating on public roads or in any context that may cause harm to people, property, or violate applicable regulations is strictly prohibited.
@@ -38,12 +51,12 @@ Current available functions are:
 - Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
 - ACC_VIRTUAL_PAD allows to enable Adaptive Cruise Control without the need to thange the wheel buttons pad: baccable will detect Cruise Control buttons press and it will send Adaptive Cruise Control messages to ECU.  
 - LOW consumpption, used to reduce current consumption if using the new Baccable pcb board.
-- enable front brake from dashboard menu, in order to perform burnout start 
+- enable front brake from dashboard menu, in order to perform burnout start and launch assist based on torque force
 - disable 4wd, for giulias and stelvios with 4wd.
  
-Youtube videos playlist includes all available videos:
+Youtube overview video:
 
-[![Playlist YouTube](https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg)](https://www.youtube.com/playlist?list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X)
+[![Playlist YouTube](https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg)]([https://www.youtube.com/playlist?list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X](https://www.youtube.com/watch?v=0mxV7nnITM4&t=1s))
 
 
 ## General Description
