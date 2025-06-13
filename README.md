@@ -19,7 +19,7 @@ Thanks normaldotcom https://github.com/normaldotcom/canable-fw
 
 Thanks Danardi https://github.com/danardi78/Alfaromeo-Giulia-Stelvio-PIDs/
 
-Thanks Ambrotek, Gev, and all the Baccable Community
+Thanks Ambrotek, Tim, Gev, and all the Baccable Community
 
 ## DISCLAIMER
 
