@@ -512,41 +512,42 @@ void processingMessage0x000002FA(){
 			}
 		}
 
-		if(cruiseControlDisabled && ACC_Disabled ){ //if we are allowed to use the buttons of the cruise control
-			if (currentRpmSpeed>400){ //if motor is on
-				if(currentGear==0){ //gear is neutral
-					if((rx_msg_data[0]==0x08) && ((wheelPressedButtonID==0x10) || (wheelPressedButtonID==0x08))){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
-						lastPressedSpeedUpWheelButtonDuration++;
-						if(lastPressedSpeedUpWheelButtonDuration>1267){ //around 30 seconds
-							//avoid to return here
-							wheelPressedButtonID=0xF8; //invent a new status to differentiate it from 0x08 used in baccable menu few lines of code up here
-							lastPressedSpeedUpWheelButtonDuration=0; //unuseful here since it is done when button is released. just to be superstitious :-D.
-							immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status
-							floodTheBus=0; //ensure to reset this even if probably it is not needed
-							if(saveOnflash((uint16_t)immobilizerEnabled)>253){ //if we get error while permanently storeing the parameter on flash
-								immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status to the original status and avoid to report the user anything
-								onboardLed_red_on(); //a problem occurred
-							}else{
-								onboardLed_blue_on(); //everything goes fine. change saved on flash
-								if(immobilizerEnabled){ //if immo enabled
-									executeDashboardBlinks=6; //blinks the dashboard brightness 3 times
+		#ifndef PERMANENTLY_DISABLE_IMMO
+			if(cruiseControlDisabled && ACC_Disabled ){ //if we are allowed to use the buttons of the cruise control
+				if (currentRpmSpeed>400){ //if motor is on
+					if(currentGear==0){ //gear is neutral
+						if((rx_msg_data[0]==0x08) && ((wheelPressedButtonID==0x10) || (wheelPressedButtonID==0x08))){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
+							lastPressedSpeedUpWheelButtonDuration++;
+							if(lastPressedSpeedUpWheelButtonDuration>1267){ //around 30 seconds
+								//avoid to return here
+								wheelPressedButtonID=0xF8; //invent a new status to differentiate it from 0x08 used in baccable menu few lines of code up here
+								lastPressedSpeedUpWheelButtonDuration=0; //unuseful here since it is done when button is released. just to be superstitious :-D.
+								immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status
+								floodTheBus=0; //ensure to reset this even if probably it is not needed
+								if(saveOnflash((uint16_t)immobilizerEnabled)>253){ //if we get error while permanently storeing the parameter on flash
+									immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status to the original status and avoid to report the user anything
+									onboardLed_red_on(); //a problem occurred
 								}else{
-									executeDashboardBlinks=12; //blinks the dashboard brightness 6 times
+									onboardLed_blue_on(); //everything goes fine. change saved on flash
+									if(immobilizerEnabled){ //if immo enabled
+										executeDashboardBlinks=6; //blinks the dashboard brightness 3 times
+									}else{
+										executeDashboardBlinks=12; //blinks the dashboard brightness 6 times
+									}
 								}
+
+
 							}
-
-
+						}
+						if(rx_msg_data[0]==0x10){ //user released the button
+							lastPressedSpeedUpWheelButtonDuration=0;
+							wheelPressedButtonID=0x10; //button released
 						}
 					}
-					if(rx_msg_data[0]==0x10){ //user released the button
-						lastPressedSpeedUpWheelButtonDuration=0;
-						wheelPressedButtonID=0x10; //button released
-					}
+
 				}
-
 			}
-		}
-
+		#endif
 	#endif
 
 }
