@@ -27,6 +27,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t statistics_100_200_started=0; //stores id the statistic timer has started
 
 	uint8_t printStopTheCar=0; //if =2 prints a message to screen for one second
+	uint8_t printEnableDyno=0; //print the message "ENABLE DYNO" on the dashboard
 
 	uint32_t shutdownDashboardMenuRequestTime=0; //used to shutdown display after one minute from motor off event
 
@@ -309,6 +310,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//DYNO_MODE_MASTER
 	uint8_t function_dyno_mode_master_enabled=1; //stored in flash
+	uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dyno is active
 
 	//ESC_TC_CUSTOMIZATOR_MASTER)
 	uint8_t function_esc_tc_customizator_enabled=0; //stored in flash
@@ -334,12 +336,13 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
 
 	//DYNO_MODE
+
 	uint8_t DynoModeEnabled=0;
 	uint8_t DynoStateMachine=0xff; //State machine for dyno messages sequence. frm 00 to 03 = dyno message sequence is beeing transmitted. FF= inactive
 	uint16_t testerMsgSent=0;
-	uint8_t DYNO_msg_data[5][6]={{0x02,0x10,0x03,},{0x03,0x22,0x30,0x02,},{0x05,0x2E,0x30,0x02,0x00,0x01},{0x05,0x2E,0x30,0x02,0xFF,0x01}}; //index0=diagnostic session, index1=read status, index2=disable dyno, index3=enable dyno
+	uint8_t DYNO_msg_data[5][6]={{0x02,0x10,0x03,},{0x03,0x22,0x30,0x02,},{0x05,0x2E,0x30,0x02,0x00,0x01},{0x05,0x2E,0x30,0x02,0xFF,0x01}, {0x02, 0x3E, 0x80,}}; //index0=diagnostic session, index1=read status, index2=disable dyno, index3=enable dyno, index 4=tester presence
 	CAN_TxHeaderTypeDef DYNO_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=6};
-
+	uint32_t last_sent_tester_presence_msg_time=0; //stores time in millisec. from last sent presence. used when dyno is enabled
 	uint32_t DynoStateMachineLastUpdateTime=0; //stores time (in milliseconds from power on) when Park Assist button press was read last time
 	uint8_t ParkAssistButtonPressCount=0; //stores number of times this message field was received
 

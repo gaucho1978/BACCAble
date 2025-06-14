@@ -114,7 +114,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 				switch(rxBuffer[0]){
 					case C1BusID: //message directed to baccable connected to C1 bus
-						//not used up to today
+
 						#if defined(C1baccable)
 							switch(rxBuffer[1]){
 								case C2cmdForceFrontBrake:
@@ -124,6 +124,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C2cmdNormalFrontBrake:
 									front_brake_forced=0;
 									launch_assist_enabled=0; //disable launch assist
+									break;
+								case C2cmdDynoActive:
+									DynoModeEnabledOnMaster=1; //dyno active
+									break;
+								case C2cmdDynoNotActive:
+									DynoModeEnabledOnMaster=0; //dyno not active
 									break;
 								default:
 									break;

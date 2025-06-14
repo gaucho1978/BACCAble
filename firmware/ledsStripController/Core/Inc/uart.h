@@ -26,6 +26,8 @@
 	#define C2cmdForceFrontBrake	0x22 //second byte of the message to C2 bus, identifies the request to force Front Brake ON
 	#define C2cmdGetStatus			0x23 //second byte of the message to C2 bus, identifies the request to getStatus
 	#define C2cmdtoggleEscTc		0x24 //second byte of the message to C2 bus, identifies the request to toggle ESC/TC
+	#define C2cmdDynoActive			0x25 //second byte of the message to C2 bus, identifies the status dyno Active
+	#define C2cmdDynoNotActive		0x26 //second byte of the message to C2 bus, identifies the status dyno Not Active
 
 	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 

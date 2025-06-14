@@ -11,9 +11,22 @@
 		if(DynoStateMachine!=0xff){ //if state machine in progress
 			if(currentTime-DynoStateMachineLastUpdateTime> 4000){ //if older than 4 sec
 				DynoStateMachine=0xff; //timeout. stop any sequence
+				//send message to master to inform about the status of Dyno
+				uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
+				if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+				addToUARTSendQueue(tmpArr2, 2);
 			}
 		}
 
+		if(DynoModeEnabled){
+			//send tester presence each 450msec if dyno is enabled
+			if(currentTime-last_sent_tester_presence_msg_time>500){ //enter here once each 500msec
+				last_sent_tester_presence_msg_time=currentTime;
+				DYNO_msg_header.DLC=DYNO_msg_data[4][0]+1;
+				can_tx(&DYNO_msg_header, DYNO_msg_data[4]); //add to the transmission queue
+
+			}
+		}
 		if(front_brake_forced==255){ //request to disable Front brake
 			front_brake_forced=0;
 			//just reply to C1 baccable

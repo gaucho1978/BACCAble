@@ -333,9 +333,13 @@ void processingMessage0x000002FA(){
 										}
 									}else{
 										if(currentSpeed_km_h==0){
-											//send serial message to C2 baccable, to force front brakes
-											uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
-											addToUARTSendQueue(tmpArr4, 2);
+											if(DynoModeEnabledOnMaster){
+												printEnableDyno=2; //print message Enable DYNO
+											}else{
+												//send serial message to C2 baccable, to force front brakes
+												uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
+												addToUARTSendQueue(tmpArr4, 2);
+											}
 										}else{
 											printStopTheCar=2;//print message "stop the car"
 										}

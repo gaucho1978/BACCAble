@@ -224,6 +224,13 @@
 					addToUARTSendQueue(stopTheCarMsg, 13);//print message "stop the car"
 					return;
 				}
+
+				if(printEnableDyno>0){
+					printEnableDyno--;
+					uint8_t enableDynoMsg[12]={BhBusIDparamString,'E','N','A','B','L','E',' ','D','Y','N','O'};
+					addToUARTSendQueue(enableDynoMsg, 12);//print message "Enable Dyno"
+					return;
+				}
 				//update the string
 				if(front_brake_forced==0){
 					//update text {'F','r','o','n','t',' ','B','r','a','k','e',' ','N','o','r','m','a','l' },

@@ -148,7 +148,14 @@ void processingExtendedMessage(){
 			if (DynoStateMachine==3 && rx_msg_header.DLC>=4){ //we received a reply to dyno enable msg
 				if(rx_msg_data[0]==0x03 && rx_msg_data[1]==0x6E && rx_msg_data[2]==0x30 && rx_msg_data[3]==0x02){ //if request was successful
 					DynoModeEnabled=1;//success change complete
+
 					DynoStateMachine=0xff; //disable state machine
+
+					//send message to master to inform about the status of Dyno
+					uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
+					if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+					addToUARTSendQueue(tmpArr2, 2);
+
 					onboardLed_blue_on();
 				}
 			}
@@ -156,7 +163,14 @@ void processingExtendedMessage(){
 			if (DynoStateMachine!=0xff && rx_msg_header.DLC>=3){ //in any case
 				if( rx_msg_data[1]==0x7F ){ //if request refused, abort all
 					DynoStateMachine=0xff; //disable state machine
+
+					//send message to master to inform about the status of Dyno
+					uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
+					if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+					addToUARTSendQueue(tmpArr2, 2);
+
 					onboardLed_blue_on();
+
 				}
 			}
 			if(DynoStateMachine!=0xff){ //if we are running, send next message

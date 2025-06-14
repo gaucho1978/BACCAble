@@ -90,6 +90,8 @@
 		extern uint8_t statistics_0_100_started; //stores id the statistic timer has started
 		extern uint8_t statistics_100_200_started; //stores id the statistic timer has started
 		extern uint8_t printStopTheCar; //if =2 prints a message to screen for one second
+		extern uint8_t printEnableDyno; //print the message "ENABLE DYNO" on the dashboard
+
 		extern uint32_t shutdownDashboardMenuRequestTime; //used to shutdown display after one minute from motor off event
 		extern uint8_t checkbox_symbols[2]; // O (0x4F= not selected), Ø (0xD8= selected)
 		//ACC_VIRTUAL_PAD
@@ -227,6 +229,7 @@
 
 		//DYNO_MODE_MASTER
 		extern uint8_t function_dyno_mode_master_enabled; //stored in flash
+		extern uint8_t DynoModeEnabledOnMaster; //status of dyno in master board. tells if dyno is active
 
 		//ESC_TC_CUSTOMIZATOR_MASTER)
 		extern uint8_t function_esc_tc_customizator_enabled; //stored in flash
@@ -256,9 +259,9 @@
 		extern uint8_t DynoModeEnabled;
 		extern uint8_t DynoStateMachine; //State machine for dyno messages sequence. frm 00 to 03 = dyno message sequence is beeing transmitted. FF= inactive
 		extern uint16_t testerMsgSent;
-		extern uint8_t DYNO_msg_data[5][6]; //index0=diagnostic session, index1=read status, index2=disable dyno, index3=enable dyno
+		extern uint8_t DYNO_msg_data[5][6]; //index0=diagnostic session, index1=read status, index2=disable dyno, index3=enable dyno, index 4=tester presence
 		extern CAN_TxHeaderTypeDef DYNO_msg_header;
-
+		extern uint32_t last_sent_tester_presence_msg_time; //stores time in millisec. from last sent presence. used when dyno is enabled
 		extern uint32_t DynoStateMachineLastUpdateTime; //stores time (in milliseconds from power on) when Park Assist button press was read last time
 		extern uint8_t ParkAssistButtonPressCount; //stores number of times this message field was received
 
