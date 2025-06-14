@@ -19,7 +19,7 @@
 			//just reply to C1 baccable
 			uint8_t tmpArr[2]={C1BusID,C2cmdNormalFrontBrake};
 			addToUARTSendQueue(tmpArr, 2);
-			//can_tx(&rearBrakeMsgHeader[0], rearBrakeMsgData[0]); //send message to return control to ECU
+			can_tx(&rearBrakeMsgHeader[0], rearBrakeMsgData[0]); //send message to return control to ECU
 
 
 		}
