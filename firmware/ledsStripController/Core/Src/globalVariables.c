@@ -110,7 +110,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',' ',' ',' ',' '},
 			{'O',' ',' ','M','y','2','3',' ','I','P','C',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
-			{'O',' ',' ','-','-','-','-','-','-','-','-','-','-','-',' ',' ',' ',' '},
+			{'O',' ',' ',' ',' ',' ',' ',' ','-','-','-','-','-','-',' ',' ',' ',' '},
 			{'O',' ',' ','R','o','u','t','e',' ','M','e','s','s','a','g','e','s',' '},
 			{'O',' ',' ','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',' '},
 			{'O',' ',' ','D','y','n','o',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '},
@@ -310,7 +310,6 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//DYNO_MODE_MASTER
 	uint8_t function_dyno_mode_master_enabled=1; //stored in flash
-	uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dyno is active
 
 	//ESC_TC_CUSTOMIZATOR_MASTER)
 	uint8_t function_esc_tc_customizator_enabled=0; //stored in flash
@@ -323,6 +322,18 @@ const char *FW_VERSION=_FW_VERSION;
 	#else
 		uint16_t launch_torque_threshold=100;
 	#endif
+
+
+		//SEAT BELT DISABLE messages and function
+		// diag session request 	0x02,0x10,0x03
+		// diag session reply 		0x06,0x50,0x03,0x00,0x32,0x01,0xF4
+		// temp.request 			0x05,0x2F,0x55,0xA0,0x03,0x00
+		// temp.request reply		0x04,0x6F,0x55,0xA0,0x03
+		uint8_t function_seatbelt_selector_enabled=1; //default enabled . stored in flash
+		CAN_TxHeaderTypeDef seatBeltMsgHeader[2]={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA60F1, .DLC=6},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA60F1, .DLC=3}};
+		uint8_t seatbeltMsgData[2][8]= {{0x05,0x2F,0x55,0xA0,0x03,0x00,},{0x02, 0x10, 0x03,}}; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(set front torque to 0), reset ECU
+		uint32_t last_sent_seatbelt_msg_time=0;
+
 
 #endif
 
@@ -403,5 +414,7 @@ uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 
 uint8_t _4wd_disabled=0; //if =4 disables 4wd
 uint8_t front_brake_forced=0; //if=5 disables Front brakes
+uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dyno is active
+
 uint8_t launch_assist_enabled=0; //if=1 assist is enabled and uses torque as trigget to release front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position
