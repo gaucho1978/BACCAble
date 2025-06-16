@@ -123,11 +123,12 @@ const char *FW_VERSION=_FW_VERSION;
 			{0xD8,' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 		};
 
-		uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
+	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
+#ifndef DASHBOARD_ITEMS
 		uint8_t total_pages_in_dashboard_menu_diesel=38;
 		uint8_t total_pages_in_dashboard_menu_gasoline=37;
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
-		const	uds_param_element uds_params_array[2][60]={
+		const uds_param_element uds_params_array[2][60]={
 										{
 												{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 												{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
@@ -224,10 +225,41 @@ const char *FW_VERSION=_FW_VERSION;
 											{.name={'B','e','s','t','1','0','0','-','2','0','0',':',},			.reqId=0x1D,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
 											{.name={'S','P','E','E','D',':',},									.reqId=0x18,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000101,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0625,			.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'k','m','/','h', }				},
 
-										}
+										},
 
 		}; // initializes all the uds parameters request to send and reply to receive
-
+#else
+		typedef enum
+		{
+		#define X(id, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12) id,
+		    DASHBOARD_ITEMS
+		#undef X
+		        DASHBOARD_ITEMS_COUNT
+		} DashboardItemType;//not really needed but we need to count items
+#ifdef IS_DIESEL
+		uint8_t total_pages_in_dashboard_menu_diesel=DASHBOARD_ITEMS_COUNT;
+		uint8_t total_pages_in_dashboard_menu_gasoline=0;
+#else
+		uint8_t total_pages_in_dashboard_menu_diesel=0;
+		uint8_t total_pages_in_dashboard_menu_gasoline=DASHBOARD_ITEMS_COUNT;
+#endif
+		const uds_param_element uds_params_array[2][60]={
+#ifdef IS_DIESEL
+				{},
+#endif
+				{
+#define X(_, _name, _reqId, _reqLen, _reqData, _replyId, _replyLen, _replyOffset, _replyValOffset, _replyScale, _replyScaleOffset, _replyDecimalDigits, _replyMeasurementUnit) \
+	{.name=_name, .reqId=_reqId, .reqLen=_reqLen, .reqData=SWAP_UINT32(_reqData), .replyId=_replyId,	\
+	.replyLen=_replyLen, .replyOffset=_replyOffset,	.replyValOffset=_replyValOffset, .replyScale=_replyScale, .replyScaleOffset=_replyScaleOffset, \
+	.replyDecimalDigits=_replyDecimalDigits, .replyMeasurementUnit=_replyMeasurementUnit},
+DASHBOARD_ITEMS
+#undef X
+				},
+#ifdef IS_GASOLINE
+				{},
+#endif
+		};
+#endif
 	CAN_TxHeaderTypeDef uds_parameter_request_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3};
 	uint8_t baccableDashboardMenuVisible=0;
 	uint8_t baccabledashboardMenuWasVisible=0; //tells us if menu was previously disabled (and then when motor will turn we want to show it again
@@ -369,7 +401,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t lastSentTelematic_display_info_msg_Time=0;
 	uint8_t telematic_display_info_field_totalFrameNumber=(DASHBOARD_MESSAGE_MAX_LENGTH / 3) - 1; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5)
 	uint8_t telematic_display_info_field_frameNumber=0; //current frame
-	uint8_t telematic_display_info_field_infoCode=0x09;
+	uint8_t telematic_display_info_field_infoCode=DISPLAY_INFO_CODE;
 	uint8_t paramsStringCharIndex=0; // next char to send index
 	CAN_TxHeaderTypeDef telematic_display_info_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x090, .DLC=8};
 	uint8_t telematic_display_info_msg_data[8];
