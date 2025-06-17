@@ -238,14 +238,14 @@ const char *FW_VERSION=_FW_VERSION;
 		} DashboardItemType;//not really needed but we need to count items
 #ifdef IS_DIESEL
 		uint8_t total_pages_in_dashboard_menu_diesel=DASHBOARD_ITEMS_COUNT;
-		uint8_t total_pages_in_dashboard_menu_gasoline=0;
+		uint8_t total_pages_in_dashboard_menu_gasoline=1;
 #else
-		uint8_t total_pages_in_dashboard_menu_diesel=0;
+		uint8_t total_pages_in_dashboard_menu_diesel=1;
 		uint8_t total_pages_in_dashboard_menu_gasoline=DASHBOARD_ITEMS_COUNT;
 #endif
 		const uds_param_element uds_params_array[2][60]={
 #ifdef IS_DIESEL
-				{},
+				{{.name="Missing", .reqId=0xFF, .reqLen=0, .reqData=SWAP_UINT32(0x00000000), .replyId=0xFF, .replyLen=0, .replyOffset=0, .replyValOffset=0, .replyScale=0, .replyScaleOffset=0,	.replyDecimalDigits=0, .replyMeasurementUnit=""}},
 #endif
 				{
 #define X(_, _name, _reqId, _reqLen, _reqData, _replyId, _replyLen, _replyOffset, _replyValOffset, _replyScale, _replyScaleOffset, _replyDecimalDigits, _replyMeasurementUnit) \
@@ -256,7 +256,7 @@ DASHBOARD_ITEMS
 #undef X
 				},
 #ifdef IS_GASOLINE
-				{},
+				{{.name="Missing", .reqId=0xFF, .reqLen=0, .reqData=SWAP_UINT32(0x00000000), .replyId=0xFF, .replyLen=0, .replyOffset=0, .replyValOffset=0, .replyScale=0, .replyScaleOffset=0,	.replyDecimalDigits=0, .replyMeasurementUnit=""}},
 #endif
 		};
 #endif
