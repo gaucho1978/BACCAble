@@ -239,10 +239,27 @@
 
 		extern uint32_t lastReceivedCanMsgTime; //this is not in global C file, but comes from another C file
 
-		//extern void sendDashboardPageToSlaveBaccable(float param); 	//this is defined in main.h
-		//extern void sendMainDashboardPageToSlaveBaccable(); 		//this is defined in main.h
-		//extern void sendSetupDashboardPageToSlaveBaccable(); 		//this is defined in main.h
-		//extern void clearDashboardBaccableMenu();
+		//SEAT BELT DISABLE messages and function
+		// diag session request 	0x02,0x10,0x03
+		// diag session reply 		0x06,0x50,0x03,0x00,0x32,0x01,0xF4
+		// disable seatbelt			0x05,0x2F,0x55,0xA0,0x03,0x00
+		// en/dis seatbelt	reply	0x04,0x6F,0x55,0xA0,0x03
+		// enable seatbelt			0x05,0x2F,0x55,0xA0,0x03,0x01
+		extern uint8_t function_seatbelt_alarm_enabled;
+		extern uint8_t seatbeltAlarmDisabled;
+		// Values associated to the variable seatbeltAlarmDisabled:
+		// ff=undefined,
+		// fe=status in Aquisition,
+		// 0=seatbeltAlarmEnabled,
+		// 1=seatBeltAlarmDisabled,
+		// 0x10=request to disable SeatBelt alarm in progress(write param shall be sent),
+		// 0x20=request to enable Seatbelt Alarm in progress(write param shall be sent)
+
+		extern uint32_t seatbeltAlarmStatusRequestTime;
+		extern CAN_TxHeaderTypeDef seatBeltMsgHeader[2];
+		extern uint8_t seatbeltMsgData[2][8];
+		//extern uint32_t last_sent_seatbelt_msg_time;
+
 	#endif
 
 	#if defined(C2baccable)

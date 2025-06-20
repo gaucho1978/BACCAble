@@ -99,7 +99,7 @@ void processingMessage0x000002FA(){
 										setup_dashboardPageIndex+=1;//set next page
 										//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
 
-										if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
+										//if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
 
 										if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 
@@ -159,7 +159,7 @@ void processingMessage0x000002FA(){
 										if(main_dashboardPageIndex==9){ //we are in setup menu
 											setup_dashboardPageIndex+=10;//set next page
 											//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex++; //future growth
-											if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
+											//if(setup_dashboardPageIndex==8) setup_dashboardPageIndex++; //future growth
 											if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendSetupDashboardPageToSlaveBaccable(); //send
@@ -217,7 +217,7 @@ void processingMessage0x000002FA(){
 									}
 									if(main_dashboardPageIndex==9){ //we are in setup menu
 										setup_dashboardPageIndex-=1;//set next page
-										if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
+										//if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
 										//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
 
 										if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=total_pages_in_setup_dashboard_menu-1; // make a rotative menu
@@ -276,7 +276,7 @@ void processingMessage0x000002FA(){
 										}
 										if(main_dashboardPageIndex==9){ //we are in setup menu
 											setup_dashboardPageIndex-=10;//set prev page
-											if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
+											//if(setup_dashboardPageIndex==8) setup_dashboardPageIndex--; //future growth
 											//if(setup_dashboardPageIndex==2) setup_dashboardPageIndex--; //future growth
 											if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
@@ -399,8 +399,8 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
 											((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
 											((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	|| //REGENERATION_ALERT_ENABLED
-											((uint16_t)launch_torque_threshold						!= readFromFlash(18))	){ //LAUNCH_ASSIST_THRESHOLD
-
+											((uint16_t)launch_torque_threshold						!= readFromFlash(18))	|| //LAUNCH_ASSIST_THRESHOLD
+											((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	){ //SEATBELT_ALARM_DISABLED
 												//save it on flash
 												saveOnflash();
 										}
@@ -434,7 +434,8 @@ void processingMessage0x000002FA(){
 										//addToUARTSendQueue(tmpArr3, 1);
 
 										break;
-									case 8: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
+									case 8: //{'O',' ',' ','S','e','a','t','b','e','l','t',' ','A','l','a','r','m',' '},
+										function_seatbelt_alarm_enabled=!function_seatbelt_alarm_enabled;
 										break;
 									case 9: //{'[',' ',']','R','o','u','t','e',' ','M','e','s','s','a','g','e','s', },
 										function_route_msg_enabled=!function_route_msg_enabled;

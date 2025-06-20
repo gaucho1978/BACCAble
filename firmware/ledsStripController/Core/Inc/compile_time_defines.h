@@ -168,6 +168,11 @@
 			#define DPF_REGEN_SOUND_ALERT //BACCAble emits sound alert for DPF regeneration (belts alarm)
 		#endif
 
+		#ifdef SEATBELT_ALARM_DISABLED //optional compile time define with -D, default: undefined
+			#pragma message("Enabling SEATBELT_ALARM_DISABLED Functionality")
+		#endif
+
+
 	#endif
 
 

@@ -38,9 +38,7 @@
 	// #define REGENERATION_ALERT_ENABLED		// if uncommented it will enable "regeneration alert"functionality.  It can enabled inside baccable SETUP menu.
 	// #define DISABLE_DPF_REGEN_VISUAL_ALERT	// if uncommented it will disable visual alert in "DPF regeneration alert functionality"
 	// #define DISABLE_DPF_REGEN_SOUND_ALERT	// if uncommented it will disable sound alert in "DPF regeneration alert functionality"
-
-
-
+	// #define SEATBELT_ALARM_DISABLED			// if uncommented it will disable "seatbelt alarm " functionality.  It can changed inside baccable SETUP menu.
 
 
 	// The following defines are used, if uncommented, by C2baccable board:

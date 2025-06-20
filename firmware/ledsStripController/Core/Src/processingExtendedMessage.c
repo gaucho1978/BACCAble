@@ -80,6 +80,69 @@ void processingExtendedMessage(){
 				}
 			}
 		}
+		/*
+		if(seatbeltAlarmDisabled==0xfe){ //if seatbelt status acquisition is in progress
+			if(rx_msg_header.ExtId==0x18DAF160){ //if received message comes from IPC
+				if (rx_msg_header.DLC>=5){ //if at least 5 bytes
+					if(rx_msg_data[1]==0x62){ //if param read reply successful
+						if((rx_msg_data[2]==0x55) && (rx_msg_data[3]==0xA0 )){ //if param. 55A0 (seat belt alarm status)
+							seatbeltAlarmDisabled= !(rx_msg_data[4]); //coherce to boolean and negate
+						}
+					}
+				}
+			}
+		}
+		*/
+
+		if((seatbeltAlarmDisabled==0x11) || (seatbeltAlarmDisabled==0x21)){ //if write param was sent (seatbelt disabling or enabling in progress)
+			if(rx_msg_header.ExtId==0x18DAF160){ //if received message comes from IPC
+				if (rx_msg_header.DLC>=4){ //if at least 4 bytes
+					if(rx_msg_data[1]==0x6F){ //if write param reply successful
+						if((rx_msg_data[2]==0x55) && (rx_msg_data[3]==0xA0)){ //if param wrote was 55A0 (en/dis seatbelt alam)
+							if(seatbeltAlarmDisabled==0x11){ // if seatbelt disabling
+								seatbeltAlarmDisabled=1; //seatbelt disabled
+							}
+							if(seatbeltAlarmDisabled==0x21){ // if seatbelt enabling
+								seatbeltAlarmDisabled=0; //seatbelt enabled
+							}
+						}
+					}
+				}
+			}
+		}
+
+
+		if((seatbeltAlarmDisabled==0x10) || (seatbeltAlarmDisabled==0x20)){ //if diag session was sent (seatbelt disabling or enabling is in progress)
+			if(rx_msg_header.ExtId==0x18DAF160){ //if received message comes from IPC
+				if (rx_msg_header.DLC>=2){ //if at least 2 bytes
+					if(rx_msg_data[1]==0x50){ //if diag session reply successful
+						// Send enable/disable seatbelt alarm message
+						uds_parameter_request_msg_header.ExtId=0x18DA60F1;
+						uds_parameter_request_msg_header.DLC=6;
+						uds_parameter_request_msg_data[0]=0x05;
+						uds_parameter_request_msg_data[1]=0x2F;
+						uds_parameter_request_msg_data[2]=0x55;
+						uds_parameter_request_msg_data[3]=0xA0;
+						uds_parameter_request_msg_data[4]=0x03;
+
+						if(seatbeltAlarmDisabled==0x10){ // if seatbelt disabling
+							uds_parameter_request_msg_data[5]=0x00; //set byte to disable alarm
+						}
+						if(seatbeltAlarmDisabled==0x20){ // if seatbelt enabling
+							uds_parameter_request_msg_data[5]=0x01; //send msg to enable alarm
+						}
+						// send message
+						can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
+
+						seatbeltAlarmDisabled++; //record that operation was executed
+						seatbeltAlarmStatusRequestTime=currentTime;
+						last_sent_uds_parameter_request_Time=currentTime;
+					}
+				}
+			}
+		}
+
+
 
 		if(function_route_msg_enabled==1){
 			if (rx_msg_header.ExtId==0x18DABAF1){ //if route request and dashboard menu not shown to avoid conflicts

@@ -29,6 +29,7 @@
 		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
 		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
 		launch_torque_threshold= (uint16_t)readFromFlash(18);
+		function_seatbelt_alarm_enabled= (uint16_t)readFromFlash(19);
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -125,6 +126,61 @@
 				}
 			}
 		}
+
+		/*
+		if(seatbeltAlarmDisabled==0xff ){ //if the status is unknown
+			if(engineOnSinceMoreThan5seconds>=200){ //if motor is on since at least 2 seconds
+				//get the status of the seatbelt alarm
+
+				uds_parameter_request_msg_header.ExtId=0x18DA60F1;
+				uds_parameter_request_msg_data[0]=0x03;
+				uds_parameter_request_msg_data[1]=0x22;
+				uds_parameter_request_msg_data[2]=0x55;
+				uds_parameter_request_msg_data[3]=0xA0;
+				uds_parameter_request_msg_header.DLC=4;
+				can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
+				seatbeltAlarmDisabled=0xfe; //status is in aquisition
+				seatbeltAlarmStatusRequestTime=currentTime;
+				last_sent_uds_parameter_request_Time=currentTime;
+			}
+		}
+		*/
+
+		if(((seatbeltAlarmDisabled==0xfe) || (seatbeltAlarmDisabled==0x10) || (seatbeltAlarmDisabled==0x20) || (seatbeltAlarmDisabled==0x11) || (seatbeltAlarmDisabled==0x21)) && (currentTime-seatbeltAlarmStatusRequestTime>10000)){ //if operations in progress but timeout was reached
+			seatbeltAlarmDisabled=0xff;//return to unknown status
+		}
+
+
+		if(((seatbeltAlarmDisabled==1) || (seatbeltAlarmDisabled==0xff) ) && (function_seatbelt_alarm_enabled==1)){ //the alarm is disabled (or unknown) and the use wants to enable it
+			//request to enable Seatbelt Alarm
+			//send diag session request
+			uds_parameter_request_msg_header.ExtId=0x18DA60F1;
+			uds_parameter_request_msg_data[0]=0x02;
+			uds_parameter_request_msg_data[1]=0x10;
+			uds_parameter_request_msg_data[2]=0x03;
+			uds_parameter_request_msg_header.DLC=3;
+			can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
+
+			seatbeltAlarmDisabled=0x20; //request to enable SeatBelt alarm in progress(send write param)
+			seatbeltAlarmStatusRequestTime=currentTime;
+			last_sent_uds_parameter_request_Time=currentTime;
+		}
+
+		if((seatbeltAlarmDisabled==0 || seatbeltAlarmDisabled==0xff)  && function_seatbelt_alarm_enabled==0){ //alarm is enabled (or unknown) and user wants to disable it
+			//request to disable Seatbelt Alarm
+			//send diag session request
+			uds_parameter_request_msg_header.ExtId=0x18DA60F1;
+			uds_parameter_request_msg_data[0]=0x02;
+			uds_parameter_request_msg_data[1]=0x10;
+			uds_parameter_request_msg_data[2]=0x03;
+			uds_parameter_request_msg_header.DLC=3;
+			can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
+
+			seatbeltAlarmDisabled=0x10; //request to disable SeatBelt alarm in progress(send write param)
+			seatbeltAlarmStatusRequestTime=currentTime;
+			last_sent_uds_parameter_request_Time=currentTime;
+		}
+
 
 		if(shutdownDashboardMenuRequestTime>0){
 			if(currentTime-shutdownDashboardMenuRequestTime>39000){
@@ -427,7 +483,8 @@
 			case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_regeneration_alert_enabled];
 				break;
-			case 8: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-', },
+			case 8: //{'O',' ',' ','S','e','a','t','b','e','l','t',' ','A','l','a','r','m',' '},
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_seatbelt_alarm_enabled];
 				break;
 			case 9: //{'[',' ',']','R','o','u','t','e',' ','M','e','s','s','a','g','e','s', },
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_route_msg_enabled];
@@ -536,6 +593,8 @@
 			case 0x1D: //Best stat 100-200km/h
 				param=readStatisticsFromFlash(2);
 				break;
+			case 0x1E: //seat belt alarm status
+				param=seatbeltAlarmDisabled;
 			default:
 				break;
 		}
@@ -669,6 +728,26 @@
 								floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 							}
 							break;
+						case 0x1E: //seat belt alarm status
+							//we use an enumerated
+							switch (seatbeltAlarmDisabled){
+								case 1:
+									tmpfloatString[0]='O';
+									tmpfloatString[1]='F';
+									tmpfloatString[2]='F';
+									tmpfloatString[3]=0;
+									break;
+								case 0:
+									tmpfloatString[0]='O';
+									tmpfloatString[1]='N';
+									tmpfloatString[2]=0;
+									break;
+								default:
+									tmpfloatString[0]='?';
+									tmpfloatString[1]=0;
+							}
+
+							break;
 						default:
 							floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
 					}
@@ -766,9 +845,10 @@
 		  function_is_diesel_enabled,
 		  function_regeneration_alert_enabled,
 		  launch_torque_threshold,
+		  function_seatbelt_alarm_enabled,
 		};
 
-		for (uint8_t i = 0; i < 18; i++) {
+		for (uint8_t i = 0; i < 19; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -1005,6 +1085,15 @@
 						return LAUNCH_THRESHOLD;
 					#else
 						return 100; // another default value
+					#endif
+				}
+				break;
+			case 19: //SEATBELT_ALARM_DISABLED
+				if(tmpParam>1){
+					#if defined(SEATBELT_ALARM_DISABLED)
+						return 0;
+					#else
+						return 1;
 					#endif
 				}
 				break;
