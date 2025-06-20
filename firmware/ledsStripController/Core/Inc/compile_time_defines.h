@@ -204,6 +204,9 @@
 	#if defined(BHbaccable) //this works only on BH can bus (obd port pin 3 and pin 11)
 		#pragma message("Building BH BACCAble")
 
+		#ifndef DISPLAY_INFO_CODE//optional compile time define with -D, default: undefined
+			#define DISPLAY_INFO_CODE 0x09
+		#endif
 		#ifndef DISABLE_CLEAR_FAULTS_BH //optional compile time define with -D, default: undefined
 			#pragma message("Enabling CLEAR_FAULTS functionality")
 			#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too

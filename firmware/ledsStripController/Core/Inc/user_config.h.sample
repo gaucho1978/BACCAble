@@ -40,6 +40,30 @@
 	// #define DISABLE_DPF_REGEN_SOUND_ALERT	// if uncommented it will disable sound alert in "DPF regeneration alert functionality"
 	// #define SEATBELT_ALARM_DISABLED			// if uncommented it will disable "seatbelt alarm " functionality.  It can changed inside baccable SETUP menu.
 
+	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
+	// Note: #define shall be on a single line. That's why we put \ at the end for readability
+	//
+	// X() params are:
+	//
+	// _itemUniqueId, _name, _reqId, _reqLen, _reqData, _replyId, _replyLen, _replyOffset, _replyValOffset, _replyScale, _replyScaleOffset, _replyDecimalDigits, _replyMeasurementUnit
+	//
+	// _itemUniqueId must be unique as the name suggests and it's up to the user (if not unique it won't compile)
+	//
+	// have a look at uds_params_array in globalVariables.c to get an idea of values you should put for you engine type
+	//
+	// This example show just 4 params; when building for Diesel then the Gasoline list of params will just have 1 element labeled as "Missing"
+	// and vice versa
+	//
+	// #define DASHBOARD_ITEMS // if uncommented it will use the following items to popupate  SHOW PARAMS menu
+	//	X(IT_POWER, "Power: ", 0x11, 4, 0, 0xFB, 2, 0, -500, 0.000142378, 0, 1, "Hp") \
+	//	X(IT_TORQUE, "Torque: ", 0x12, 4, 0, 0xFB, 2, 0, 0, 1, -500, 0, "Nm") \
+	//	X(IT_OIL_PRESS, "Oil press: ", 0x10, 4, 0, 0x04B2, 2, 0, 0, 0.1, 0, 1, "bar") \
+	//	X(IT_WATER_TEMP, "Water: ", 0x18DA10F1, 4, 0x03221003, 0x18DAF110, 2, 0, 0, 0.02, -40, 1, "\xB0" "C")
+	
+	
+	
+	
+	
 
 	// The following defines are used, if uncommented, by C2baccable board:
 
@@ -55,6 +79,6 @@
 	// The following defines are used, if uncommented, by BHbaccable board:
 
 	// #define DISABLE_CLEAR_FAULTS_BH 			// if uncommented it will disable "clear faults" functionality.
-
+	// #define DISPLAY_INFO_CODE 0x09			// if uncommented it will display preferred icon on dashboard (0x05=Aux, 0x06=left USB, 0x07=Right USB, 0x08=Center USB, 0x09=Bluetooth) but it may cause temporary screen freeze and string overlapping if other devices in the car tries to print the same string on dashboard.
 
 #endif /* INC_USER_CONFIG_H_SAMPLE_ */
