@@ -54,7 +54,10 @@ void processingStandardMessage(){
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC>=4){
 					torque= ((rx_msg_data[2] & 0b01111111) << 4 | ((rx_msg_data[3] >> 4) & 0b00001111));
-					torque=torque-500;
+					torque=(torque-500);
+					#ifdef TORQUE_CORRECTION_FACTOR
+						torque=torque * TORQUE_CORRECTION_FACTOR; //custom correction factor in user_define.h
+					#endif
 				}
 
 				if(launch_assist_enabled==1){

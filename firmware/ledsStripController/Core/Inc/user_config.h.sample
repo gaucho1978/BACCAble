@@ -31,7 +31,7 @@
 	// #define ESC_TC_CUSTOMIZATOR_MASTER 		// if uncommented it allows to request ESC/TC functionality in C1 baccable. It can enabled inside baccable SETUP menu
 	// #define ACC_VIRTUAL_PAD					// if uncommented it will enable "ACC virtual pad"functionality. It can enabled inside baccable SETUP menu
 	// #define FRONT_BRAKE_FORCER_MASTER 		// if uncommented it will enable "front brake forcer" functionality in C1 baccable. It can enabled inside baccable SETUP menu
-	// #define LAUNCH_ASSIST_THRESHOLD			// if uncommented it will set torque force (default is 100Nm) used in the functionality Launch assist, part of front brake forcer functionality. It can be set inside baccable SETUP menu
+	// #define LAUNCH_ASSIST_THRESHOLD 100		// if uncommented it will set torque force (default is 100Nm) used in the functionality Launch assist, part of front brake forcer functionality. It can be set inside baccable SETUP menu
 	// #define _4WD_DISABLER 					// if uncommented it will enable "4WD" functionality in C1 baccable. It can enabled inside baccable SETUP menu
 	// #define REMOTE_START_ENABLED				// if uncommented it will enable "remote start" functionality. Experimental: it doesn't work yet. don't use it! It can enabled inside baccable SETUP menu
 	// #define READ_FAULTS_ENABLED				// if uncommented it will enable "read faults" functionality. Experimental: it doesn't work yet. don't use it! It can enabled inside baccable SETUP menu
@@ -39,7 +39,8 @@
 	// #define DISABLE_DPF_REGEN_VISUAL_ALERT	// if uncommented it will disable visual alert in "DPF regeneration alert functionality"
 	// #define DISABLE_DPF_REGEN_SOUND_ALERT	// if uncommented it will disable sound alert in "DPF regeneration alert functionality"
 	// #define SEATBELT_ALARM_DISABLED			// if uncommented it will disable "seatbelt alarm " functionality.  It can changed inside baccable SETUP menu.
-
+	// #define TORQUE_CORRECTION_FACTOR 1.22	// if uncommented it will multiply torque by this factor.
+	
 	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
 	// Note: #define shall be on a single line. That's why we put \ at the end for readability
 	//
