@@ -152,33 +152,37 @@
 
 
 		if(((seatbeltAlarmDisabled==1) || (seatbeltAlarmDisabled==0xff) ) && (function_seatbelt_alarm_enabled==1)){ //the alarm is disabled (or unknown) and the use wants to enable it
-			//request to enable Seatbelt Alarm
-			//send diag session request
-			uds_parameter_request_msg_header.ExtId=0x18DA60F1;
-			uds_parameter_request_msg_data[0]=0x02;
-			uds_parameter_request_msg_data[1]=0x10;
-			uds_parameter_request_msg_data[2]=0x03;
-			uds_parameter_request_msg_header.DLC=3;
-			can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
+			if(engineOnSinceMoreThan5seconds>=200){
+				//request to enable Seatbelt Alarm
+				//send diag session request
+				uds_parameter_request_msg_header.ExtId=0x18DA60F1;
+				uds_parameter_request_msg_data[0]=0x02;
+				uds_parameter_request_msg_data[1]=0x10;
+				uds_parameter_request_msg_data[2]=0x03;
+				uds_parameter_request_msg_header.DLC=3;
+				can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
 
-			seatbeltAlarmDisabled=0x20; //request to enable SeatBelt alarm in progress(send write param)
-			seatbeltAlarmStatusRequestTime=currentTime;
-			last_sent_uds_parameter_request_Time=currentTime;
+				seatbeltAlarmDisabled=0x20; //request to enable SeatBelt alarm in progress(send write param)
+				seatbeltAlarmStatusRequestTime=currentTime;
+				last_sent_uds_parameter_request_Time=currentTime;
+			}
 		}
 
 		if((seatbeltAlarmDisabled==0 || seatbeltAlarmDisabled==0xff)  && function_seatbelt_alarm_enabled==0){ //alarm is enabled (or unknown) and user wants to disable it
-			//request to disable Seatbelt Alarm
-			//send diag session request
-			uds_parameter_request_msg_header.ExtId=0x18DA60F1;
-			uds_parameter_request_msg_data[0]=0x02;
-			uds_parameter_request_msg_data[1]=0x10;
-			uds_parameter_request_msg_data[2]=0x03;
-			uds_parameter_request_msg_header.DLC=3;
-			can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
+			if(engineOnSinceMoreThan5seconds>=200){
+				//request to disable Seatbelt Alarm
+				//send diag session request
+				uds_parameter_request_msg_header.ExtId=0x18DA60F1;
+				uds_parameter_request_msg_data[0]=0x02;
+				uds_parameter_request_msg_data[1]=0x10;
+				uds_parameter_request_msg_data[2]=0x03;
+				uds_parameter_request_msg_header.DLC=3;
+				can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the diag session request
 
-			seatbeltAlarmDisabled=0x10; //request to disable SeatBelt alarm in progress(send write param)
-			seatbeltAlarmStatusRequestTime=currentTime;
-			last_sent_uds_parameter_request_Time=currentTime;
+				seatbeltAlarmDisabled=0x10; //request to disable SeatBelt alarm in progress(send write param)
+				seatbeltAlarmStatusRequestTime=currentTime;
+				last_sent_uds_parameter_request_Time=currentTime;
+			}
 		}
 
 
