@@ -54,14 +54,20 @@
 	//
 	// This example show just 4 params; when building for Diesel then the Gasoline list of params will just have 1 element labeled as "Missing"
 	// and vice versa
-	//
-	// #define DASHBOARD_ITEMS // if uncommented it will use the following items to popupate  SHOW PARAMS menu
+	// if uncommented it will use the following items to popupate  SHOW PARAMS menu
+	/*
+	#define DASHBOARD_ITEMS \
+		X(IT_POWER, "Power: ", 0x11, 4, 0, 0xFB, 2, 0, -500, 0.000142378, 0, 1, "Hp") \
+		X(IT_TORQUE, "Torque: ", 0x12, 4, 0, 0xFB, 2, 0, 0, 1, -500, 0, "Nm") \
+		X(IT_OIL_PRESS, "Oil press: ", 0x10, 4, 0, 0x04B2, 2, 0, 0, 0.1, 0, 1, "bar") \
+		X(IT_WATER_TEMP, "Water: ", 0x18DA10F1, 4, 0x03221003, 0x18DAF110, 2, 0, 0, 0.02, -40, 1, "\xB0" "C")
+	*/
+	
+// #define DASHBOARD_ITEMS \
 	//	X(IT_POWER, "Power: ", 0x11, 4, 0, 0xFB, 2, 0, -500, 0.000142378, 0, 1, "Hp") \
 	//	X(IT_TORQUE, "Torque: ", 0x12, 4, 0, 0xFB, 2, 0, 0, 1, -500, 0, "Nm") \
 	//	X(IT_OIL_PRESS, "Oil press: ", 0x10, 4, 0, 0x04B2, 2, 0, 0, 0.1, 0, 1, "bar") \
 	//	X(IT_WATER_TEMP, "Water: ", 0x18DA10F1, 4, 0x03221003, 0x18DAF110, 2, 0, 0, 0.02, -40, 1, "\xB0" "C")
-	
-	
 	
 	
 	
