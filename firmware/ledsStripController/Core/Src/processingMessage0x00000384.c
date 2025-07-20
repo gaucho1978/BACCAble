@@ -10,6 +10,7 @@
 void processingMessage0x00000384(){
 	// pressStartButton
 	#if defined(C1baccable)
+		/*
 		if(function_remote_start_Enabled==1){
 			if(pressStartButton){
 				if(rx_msg_header.DLC==8){
@@ -26,6 +27,7 @@ void processingMessage0x00000384(){
 				}
 			}
 		}
+		*/
 	#endif
 	#if defined(C2baccable)
 		//on C2 can bus, msg 0x384 contains, in byte3, bit6 contains left stalk button press status (LANE indicator button)

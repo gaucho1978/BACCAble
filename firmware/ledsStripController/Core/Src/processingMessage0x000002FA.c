@@ -336,9 +336,29 @@ void processingMessage0x000002FA(){
 											if(!DynoModeEnabledOnMaster){
 												printEnableDyno=2; //print message Enable DYNO
 											}else{
+												/* This commented part is a test... not working now
+
+
+												//if dyno function is enabled but dyno is not enabled, enable dyno
+												if(function_dyno_mode_master_enabled){
+													if(DynoModeEnabledOnMaster==0){
+														//send serial message to C2 baccable, to enable dyno
+														uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
+														addToUARTSendQueue(tmpArr4, 2);
+													}
+												}
+
+												//if 4wd function is enabled but 4wd is not disabled, disable 4wd
+												if(function_4wd_disabler_enabled){
+													if(_4wd_disabled==0){
+														//seend messages to disable	4wd
+														//TBDone.......
+													}
+												}
+												*/
 												//send serial message to C2 baccable, to force front brakes
-												uint8_t tmpArr4[2]={C2BusID,C2cmdForceFrontBrake};
-												addToUARTSendQueue(tmpArr4, 2);
+												uint8_t tmpArr5[2]={C2BusID,C2cmdForceFrontBrake};
+												addToUARTSendQueue(tmpArr5, 2);
 											}
 										}else{
 											printStopTheCar=2;//print message "stop the car"
@@ -400,7 +420,9 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
 											((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	|| //REGENERATION_ALERT_ENABLED
 											((uint16_t)launch_torque_threshold						!= readFromFlash(18))	|| //LAUNCH_ASSIST_THRESHOLD
-											((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	){ //SEATBELT_ALARM_DISABLED
+											((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	|| //SEATBELT_ALARM_DISABLED
+											((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
+											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	){ //DISABLE_ODOMETER_BLINK
 												//save it on flash
 												saveOnflash();
 										}
@@ -466,6 +488,20 @@ void processingMessage0x000002FA(){
 										break;
 									case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 										function_is_diesel_enabled=!function_is_diesel_enabled;
+										break;
+									case 19: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
+										function_pedal_booster_enabled++;
+										if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+										//Now let's inform the C2 and BH Baccable
+										uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
+										addToUARTSendQueue(tmpArr1, 3);
+										break;
+									case 20: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
+										function_disable_odometer_blink=!function_disable_odometer_blink;
+										//Now let's inform the C2 Baccable
+										uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
+										if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
+										addToUARTSendQueue(tmpArr2, 2);
 										break;
 									default:
 										break;

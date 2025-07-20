@@ -40,6 +40,8 @@
 	// #define DISABLE_DPF_REGEN_SOUND_ALERT	// if uncommented it will disable sound alert in "DPF regeneration alert functionality"
 	// #define SEATBELT_ALARM_DISABLED			// if uncommented it will disable "seatbelt alarm " functionality.  It can changed inside baccable SETUP menu.
 	// #define TORQUE_CORRECTION_FACTOR 1.22	// if uncommented it will multiply torque by this factor.
+	// #define PEDAL_BOOSTER_ENABLED 1			// if uncommented it will enable pedal booster function. Experimental: it doesn't work yet. don't use it! You have to Assign its value according to the following legend: 0=disabled, 1=Auto map, 2=Bypass, 3=A Map, 4=N Map, 5=D Map, 6=R Map. It can be changed inside baccable SETUP menu.
+	// #define DISABLE_ODOMETER_BLINK			// if uncommented it will disable odometer blink on dashboard.  It can changed inside baccable SETUP menu.
 	
 	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
 	// Note: #define shall be on a single line. That's why we put \ at the end for readability
@@ -79,5 +81,6 @@
 
 	// #define DISABLE_CLEAR_FAULTS_BH 			// if uncommented it will disable "clear faults" functionality.
 	// #define DISPLAY_INFO_CODE 0x09			// if uncommented it will display preferred icon on dashboard (0x05=Aux, 0x06=left USB, 0x07=Right USB, 0x08=Center USB, 0x09=Bluetooth) but it may cause temporary screen freeze and string overlapping if other devices in the car tries to print the same string on dashboard.
-
+	// Note: The define DISABLE_ODOMETER_BLINK in C1 section above, applies to BH too (in case you use a single canable board on BH to disable odometer blink on dashboard)
+	
 #endif /* INC_USER_CONFIG_H_SAMPLE_ */

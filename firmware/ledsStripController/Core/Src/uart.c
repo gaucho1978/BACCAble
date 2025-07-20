@@ -26,37 +26,10 @@ uint8_t rxBuffer[UART_BUFFER_SIZE]; //buffer to receive the message from uart
 uint8_t rxIndex = 0;
 uint8_t syncObtained=0;
 
-//uint8_t baccableC2_IsSleeping=0;
-//uint8_t baccableBH_IsSleeping=0;
-
-extern uint32_t weCanSendAMessageReply; //identifies last time a message was received by BH and C2 baccable (used by BH and C2 baccable)
-
-extern uint8_t front_brake_forced;
-extern uint8_t launch_assist_enabled;
-
-extern UART_HandleTypeDef huart2;
-#if defined(BHbaccable)
-	extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH];
-	extern uint8_t requestToSendOneFrame; //Set it to 1 to send one frame on dashboard
-	//extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
-	extern uint8_t requestToPlayChime;
-#endif
-
-extern uint8_t clearFaultsRequest; //if enabled, sends  messages to clear faults
-
-#if defined(C2baccable)
-	//DYNO
-	extern uint8_t DynoModeEnabled;
-	extern uint8_t DynoStateMachine;
-
-	//ESC_TC_CUSTOMIZATOR_ENABLED
-	extern uint8_t ESCandTCinversion;
-#endif
-
-//#if defined(LOW_CONSUME)
-//	extern uint8_t lowConsumeIsActive; //this variable comes from lowConsume.c
-//#endif
-
+//weCanSendAMessageReply identifies last time a message was received by BH and C2 baccable (used by BH and C2 baccable)
+//requestToSendOneFrame is Set to 1 to send one frame on dashboard
+//uartTxMsg array contains the serial message to send
+//clearFaultsRequest, if enabled, sends  messages to clear faults
 
 void uart_init(){
 
@@ -106,7 +79,7 @@ void uart_init(){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
 		// evaluate received message
-    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=BhBusChimeRequest)){ //if the received char indicates the beginning of a message
+    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C2_Bh_BusID)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
 				#if defined(ACT_AS_CANABLE)
 					onboardLed_blue_on();
@@ -137,7 +110,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#endif
 						break;
 					case C2BusID: //message directed to baccable connected to C2 bus
-						//not used up to today
 						#if (defined(C2baccable))
 							if(rxBuffer[1]==C2cmdtoggleDyno){ //dyno request
 								if(front_brake_forced==0) dynoToggle();
@@ -150,11 +122,31 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							if(rxBuffer[1]==C2cmdForceFrontBrake){ front_brake_forced=5;}; //force front brake
 							if(rxBuffer[1]==C2cmdNormalFrontBrake){ front_brake_forced=255;}; //release the brake - we set it to 255, just to trigger serial msg sending in the main (sync) and not here (async), since async may cause concurrent variables write
 							//if(rxBuffer[1]==C2cmdGetStatus){};//nothing to do, since we just need to set weCanSendAMessageReply
-
 							onboardLed_blue_on();
 							weCanSendAMessageReply=HAL_GetTick();
 						#endif
 
+						break;
+					case BhBusID: //message directed to baccable connected to BH bus
+						#if defined(BHbaccable)
+							if(rxBuffer[1]==BHcmdOdometerBlinkDisable){ //odometer blink disable request
+								disable_odometer_blink=1;
+							}
+							if(rxBuffer[1]==BHcmdOdometerBlinkDefault){ //odometer blink default request
+								disable_odometer_blink=0;
+							}
+							weCanSendAMessageReply=HAL_GetTick();
+						#endif
+						break;
+					case C2_Bh_BusID: //message directed to baccable connected to C2 and BH bus
+						#if defined(C2baccable) || defined(BHbaccable)
+							if(rxBuffer[1]==C2_Bh_cmdSetPedalBoostStatus){
+								//third byte contains the pedal booster status
+								function_pedal_booster_enabled=rxBuffer[2];
+							}
+							onboardLed_blue_on();
+							weCanSendAMessageReply=HAL_GetTick();
+						#endif
 						break;
 					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
 							#if defined(BHbaccable)
@@ -190,6 +182,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#if (defined(C2baccable) || defined(BHbaccable))
 							clearFaultsRequest=255;
 							onboardLed_blue_on();
+							weCanSendAMessageReply=HAL_GetTick();
 						#endif
 						break;
 					default:

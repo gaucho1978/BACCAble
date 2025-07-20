@@ -100,7 +100,7 @@ const char *FW_VERSION=_FW_VERSION;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=19;
+	uint8_t total_pages_in_setup_dashboard_menu=21;
 	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -121,12 +121,16 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','R','e','a','d',' ',' ','F','a','u','l','t','s',' ',' ',' '},
 			{'O',' ',' ','R','e','m','o','t','e',' ','S','t','a','r','t',' ',' ',' '},
 			{0xD8,' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
+			{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
+			{'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
+
+
 		};
 
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
 
 	#ifndef DASHBOARD_ITEMS //if no custom params are defined, use the following items
-		uint8_t total_pages_in_dashboard_menu_diesel=40;
+		uint8_t total_pages_in_dashboard_menu_diesel=41;
 		uint8_t total_pages_in_dashboard_menu_gasoline=38;
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
 		const	uds_param_element uds_params_array[2][60]={
@@ -174,9 +178,10 @@ const char *FW_VERSION=_FW_VERSION;
 												{.name={'1','0','0','-','2','0','0','K','m','/','h',' ',},			.reqId=0x1B,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
 												{.name={'B','e','s','t',' ',' ','0','-','1','0','0',':',},			.reqId=0x1C,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
 												{.name={'B','e','s','t','1','0','0','-','2','0','0',':',},			.reqId=0x1D,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
+				//just to print stuff for debug:{.name={'D',},														.reqId=0x1F,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //debug string
 
 										},
-										{
+										{   // Diesel
 											{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),		.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 											{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),		.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
 											{.name={'D','P','F',':',' ',},										.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218E4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
@@ -193,6 +198,7 @@ const char *FW_VERSION=_FW_VERSION;
 											{.name={'O','I','L',' ','Q','U','A','L','Y',':',' ',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223813),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.0015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
 											{.name={'O','I','L',':',' ',},										.reqId=0x15,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=-40,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},
 											{.name={'O','I','L',':',' ',},										.reqId=0x10,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					},
+											{.name={'O','I','L',':',' ',},										.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x0322194E),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'m','m',}						}, // livello olio nella coppa, da 50 a 70mmm
 											{.name={'E','X','A','U','S','T',' ','G','A','S',':',},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03223836),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C',}                       }, // TEMPERATURA GAS DI SCARICO (ingresso turbo)
 											{.name={'C','U','R','.',' ','G','E','A','R',':',' ',},				.reqId=0x17,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000002EF,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={}								},
 											{.name={'W','A','T','E','R',':',' ',},								.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221003),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						},
@@ -228,6 +234,7 @@ const char *FW_VERSION=_FW_VERSION;
 											{.name={'1','0','0','-','2','0','0','K','m','/','h',' ',},			.reqId=0x1B,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
 											{.name={'B','e','s','t',' ',' ','0','-','1','0','0',':',},			.reqId=0x1C,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
 											{.name={'B','e','s','t','1','0','0','-','2','0','0',':',},			.reqId=0x1D,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //statistic 0/100
+			//just to print stuff for debug:{.name={'D',},														.reqId=0x1F,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //debug string
 
 										}
 		}; // initializes all the uds parameters request to send and replies to receive
@@ -386,13 +393,14 @@ const char *FW_VERSION=_FW_VERSION;
 	CAN_TxHeaderTypeDef seatBeltMsgHeader[2]={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA60F1, .DLC=6},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA60F1, .DLC=3}};
 	uint8_t seatbeltMsgData[2][8]= {{0x05,0x2F,0x55,0xA0,0x03,0x00,},{0x02, 0x10, 0x03,}}; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(set front torque to 0), reset ECU
 
-
+	//DISABLE_ODOMETER_BLINK
+	uint8_t function_disable_odometer_blink=0;
 
 #endif
 
 #if defined(C2baccable)
 	//ESC_TC_CUSTOMIZATOR_ENABLED
-	uint8_t currentDNAmode;
+	uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
 	uint8_t DNA_msg_data[8];
 	CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
 	uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
@@ -433,7 +441,15 @@ const char *FW_VERSION=_FW_VERSION;
 	CAN_TxHeaderTypeDef CHIME_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5AC, .DLC=8};
 	uint8_t requestToPlayChime=0;
 
+	#if defined(DISABLE_ODOMETER_BLINK)
+		uint8_t disable_odometer_blink=1;
+	#else
+		uint8_t disable_odometer_blink=0;
+	#endif
 #endif
+
+//PEDAL_BOOSTER_ENABLED
+uint8_t function_pedal_booster_enabled=0; //0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
 
 //CLEAR_FAULTS_ENABLED
 uint8_t function_clear_faults_enabled=1; //default enabled. saved on flash
@@ -471,3 +487,8 @@ uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dy
 
 uint8_t launch_assist_enabled=0; //if=1 assist is enabled and uses torque as trigget to release front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position
+
+//LOW CONSUME
+uint8_t lowConsumeIsActive=0; //0=false, 1=true
+uint32_t lastReceivedCanMsgTime=0;
+uint32_t allProcessorsWakeupTime=0;

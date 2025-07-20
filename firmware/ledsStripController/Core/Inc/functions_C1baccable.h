@@ -22,6 +22,6 @@
 	uint8_t saveStatisticsOnFlash();
 	uint16_t readFromFlash(uint8_t paramId);
 	float readStatisticsFromFlash(uint8_t paramId);
-
+	uint8_t getParamIndexFromReqId(uint32_t searchedReqId);
 
 #endif /* INC_FUNCTIONS_C1BACCABLE_H_ */

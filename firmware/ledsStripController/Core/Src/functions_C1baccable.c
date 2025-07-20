@@ -30,6 +30,15 @@
 		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
 		launch_torque_threshold= (uint16_t)readFromFlash(18);
 		function_seatbelt_alarm_enabled= (uint16_t)readFromFlash(19);
+		function_pedal_booster_enabled= (uint16_t)readFromFlash(20);
+		uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
+		addToUARTSendQueue(tmpArr1, 3);
+
+		function_disable_odometer_blink= (uint16_t)readFromFlash(21);
+		//send the message to BH to inform about the status of the function disable_odometer_blink
+		uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
+		if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
+		addToUARTSendQueue(tmpArr2, 2);
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -538,6 +547,86 @@
 					dashboard_setup_menu_array[setup_dashboardPageIndex][10]='e';
 				}
 				break;
+			case 19: //{'[',' ',']','P','e','d','a','l',' ','B','o','o','s','t','e','r'},
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_pedal_booster_enabled]; // double ! coerces to bool
+				switch(function_pedal_booster_enabled){
+					case 0: //off
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='o';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]='o';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='s';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]='t';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='e';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='r';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 1: //Auto
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='A';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]='u';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='t';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='o';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 2: //Bypass
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='B';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]='y';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='p';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='a';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='s';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='s';
+						break;
+					case 3: //All Weather Map
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='A';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='M';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='a';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='p';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 4: //Natural Map
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='N';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='M';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='a';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='p';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 5: //Dynamic Map
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='D';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='M';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='a';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='p';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 6: //Race Map
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='R';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='M';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='a';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='p';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					default: //we will never end here
+						break;
+				}
+				break;
+			case 20:
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_disable_odometer_blink];
+				break;
 
 			default:
 				break;
@@ -599,6 +688,7 @@
 				break;
 			case 0x1E: //seat belt alarm status
 				param=seatbeltAlarmDisabled;
+				break;
 			default:
 				break;
 		}
@@ -635,6 +725,65 @@
 						memcpy(&uartTxMsg[1], "REGEN.: NONE.     ", tmpStrLen);
 						break;
 				}
+				break;
+			case 0x1F: //debug string
+				tmpStrLen=18;
+				//dobbiamo stampare: stato di sleep degli altri due chip
+				// 					 tempo da ultimo messaggio ricevuto su C1
+				//					 tempo da ultimo intervento IMMO
+				uint8_t debugString[18];
+				char tmpfloatString3[10];
+
+				if(lowConsumeIsActive){
+					debugString[0]='O';
+					debugString[1]='f';
+					debugString[2]='f';
+
+				}else{
+					debugString[0]='O';
+					debugString[1]='n';
+					debugString[2]=' ';
+				}
+				debugString[3]=' ';
+				debugString[4]='T';
+				debugString[5]='w';
+				debugString[6]='k';
+				debugString[7]='p';
+
+
+
+				float allProcessorsWakeupElapsedTime=((float)currentTime-(float)allProcessorsWakeupTime)/(float)1000.0;
+				if(allProcessorsWakeupElapsedTime>999.0){
+					debugString[8]= '>';
+					debugString[9]= '9';
+					debugString[10]='9';
+				}else{
+					//scriviamo il valore
+					floatToStr(tmpfloatString3,(float)allProcessorsWakeupElapsedTime, 0,4);
+					memcpy(&debugString[8],tmpfloatString3,strlen(tmpfloatString3));
+					if(strlen(tmpfloatString3)<3) debugString[10]=' ';
+					if(strlen(tmpfloatString3)<2) debugString[9] =' ';
+
+				}
+				debugString[11]=' ';
+				debugString[12]='I';
+				debugString[13]='m';
+				debugString[14]='m';
+				float tmpLastImmoElapsedTime=((float)currentTime-(float)floodTheBusStartTime)/(float)1000.0;
+				if(tmpLastImmoElapsedTime>999.0){
+					debugString[15]= '>';
+					debugString[16]= '9';
+					debugString[17]= '9';
+				}else{
+					//scriviamo il valore
+					floatToStr(tmpfloatString3,(float)tmpLastImmoElapsedTime,0,4);
+					memcpy(&debugString[15],tmpfloatString3,strlen(tmpfloatString3));
+					if(strlen(tmpfloatString3)<3) debugString[17]=' ';
+					if(strlen(tmpfloatString3)<2) debugString[16]=' ';
+				}
+
+
+				memcpy(&uartTxMsg[1],debugString,18);
 				break;
 			default:
 				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
@@ -830,7 +979,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint16_t params[20] = {
+		uint16_t params[21] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
 		  function_led_strip_controller_enabled,
@@ -850,9 +999,11 @@
 		  function_regeneration_alert_enabled,
 		  launch_torque_threshold,
 		  function_seatbelt_alarm_enabled,
+		  function_pedal_booster_enabled,
+		  function_disable_odometer_blink
 		};
 
-		for (uint8_t i = 0; i < 19; i++) {
+		for (uint8_t i = 0; i < 21; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -1101,11 +1252,39 @@
 					#endif
 				}
 				break;
+			case 20: //PEDAL_BOOSTER_ENABLED
+				if(tmpParam>6){
+					#if defined(PEDAL_BOOSTER_ENABLED)
+						return PEDAL_BOOSTER_ENABLED;
+					#else
+						return 0;
+					#endif
+				}
+				break;
+			case 21: //DISABLE_ODOMETER_BLINK
+				if(tmpParam>1){
+					#if defined(DISABLE_ODOMETER_BLINK)
+						return 1;
+					#else
+						return 0;
+					#endif
+				}
+				break;
+
 			default:
 				return 0;
 				break;
 		}
 		return tmpParam;
+	}
+
+	uint8_t getParamIndexFromReqId(uint32_t searchedReqId){
+		uint8_t totalParams=total_pages_in_dashboard_menu_gasoline;
+		if(function_is_diesel_enabled) totalParams=total_pages_in_dashboard_menu_diesel;
+		for (uint8_t i=0;i<totalParams;i++){
+			if(uds_params_array[function_is_diesel_enabled][i].reqId==searchedReqId) return i;
+		}
+		return 0; //means not found, or param0 (it could be an exception)
 	}
 
 #endif

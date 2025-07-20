@@ -69,7 +69,7 @@ void processingStandardMessage(){
 						//jump to statistics
 						dashboard_menu_indent_level=1;
 						main_dashboardPageIndex=1; 	// params submenu
-						dashboardPageIndex=33; 		// 0-100km/h statistics
+						dashboardPageIndex=getParamIndexFromReqId(0x1A); 		// 0-100km/h statistics
 					}
 				}
 			#endif
@@ -207,6 +207,16 @@ void processingStandardMessage(){
 		case 0x000002FA:
 			processingMessage0x000002FA();
 			break;
+		case 0x00000356:
+		   #if defined(BHbaccable)
+			if(disable_odometer_blink){
+				if((rx_msg_data[4] & 0x04) ==0x04){ //if proxy align is required (SysEOLsts=1)
+					rx_msg_data[4] &= (uint8_t)~0x04; //set to zero the SysEOLsts
+					can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //retransmit the packet
+				}
+			}
+		   #endif
+		   break;
 		case 0x00000384:
 			processingMessage0x00000384();
 			break;

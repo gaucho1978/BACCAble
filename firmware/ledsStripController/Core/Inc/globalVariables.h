@@ -260,11 +260,14 @@
 		extern uint8_t seatbeltMsgData[2][8];
 		//extern uint32_t last_sent_seatbelt_msg_time;
 
+		//DISABLE_ODOMETER_BLINK
+		extern uint8_t function_disable_odometer_blink;
+
 	#endif
 
 	#if defined(C2baccable)
 		//ESC_TC_CUSTOMIZATOR_ENABLED
-		extern uint8_t currentDNAmode;
+		extern uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
 		extern uint8_t DNA_msg_data[8];
 		extern CAN_TxHeaderTypeDef DNA_msg_header;
 		extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
@@ -303,8 +306,11 @@
 		extern uint8_t CHIME_msg_data[8];
 		extern CAN_TxHeaderTypeDef CHIME_msg_header;
 		extern uint8_t requestToPlayChime;
-
+		extern uint8_t disable_odometer_blink;
 	#endif
+
+		//PEDAL_BOOSTER_ENABLED
+		extern uint8_t function_pedal_booster_enabled;
 
 		//CLEAR_FAULTS_ENABLED
 		extern uint8_t function_clear_faults_enabled; //default enabled. saved on flash
@@ -343,5 +349,10 @@
 		extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
 
 		extern uint8_t commandsMenuEnabled; //if 0 disables the up-down buttons to change menu position
+
+		//LOW CONSUME
+		extern uint8_t lowConsumeIsActive; //0=false, 1=true
+		extern uint32_t lastReceivedCanMsgTime;
+		extern uint32_t allProcessorsWakeupTime;
 
 #endif /* INC_GLOBALVARIABLES_H_ */

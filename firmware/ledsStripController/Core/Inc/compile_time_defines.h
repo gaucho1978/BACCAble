@@ -9,7 +9,7 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V2.8.2"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V2.9.0"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
 	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
@@ -172,7 +172,17 @@
 			#pragma message("Enabling SEATBELT_ALARM_DISABLED Functionality")
 		#endif
 
+		#ifdef TORQUE_CORRECTION_FACTOR //optional compile time define with -D, default: undefined
+			#pragma message("Enabling TORQUE_CORRECTION_FACTOR Correction")
+		#endif
 
+		#ifdef PEDAL_BOOSTER_ENABLED //optional compile time define with -D, default: undefined
+			#pragma message("Enabling PEDAL_BOOSTER_ENABLED Functionality")
+		#endif
+
+		#ifdef DISABLE_ODOMETER_BLINK //optional compile time define with -D, default: undefined
+			#pragma message("Enabling function to disable odometer blink")
+		#endif
 	#endif
 
 
@@ -211,6 +221,11 @@
 			#pragma message("Enabling CLEAR_FAULTS functionality")
 			#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too
 		#endif
+
+		#ifdef DISABLE_ODOMETER_BLINK //optional compile time define with -D, default: undefined
+			#pragma message("Enabling function to disable odometer blink")
+		#endif
+
 	#endif
 
 	//note: with the following we avoid some combinations of defines.

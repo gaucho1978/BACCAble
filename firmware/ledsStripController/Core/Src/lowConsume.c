@@ -3,12 +3,12 @@
 //#include "uart.h"
 //uint32_t lastChipResetTime=0;
 //uint8_t chipResetRequest=0;
-uint8_t lowConsumeIsActive=0; //0=false, 1=true
-uint32_t lastReceivedCanMsgTime=0;
+
 
 //extern uint8_t uartTxMsg[UART_BUFFER_SIZE];  //this variable contains the serial message to send
 //extern UART_HandleTypeDef huart2; // this is the serial line between baccables
-extern uint8_t front_brake_forced;
+
+//extern uint8_t front_brake_forced;
 
 // Initialize GPIOs
 void lowConsume_init(){
@@ -59,6 +59,7 @@ void lowConsume_process(void){
 		if(currentTime-lastReceivedCanMsgTime<60000){
 			wakeUpAllProcessorsAndTransceivers();
 			lowConsumeIsActive=0;
+			allProcessorsWakeupTime=currentTime;
 		}
 	}else{ //altrimenti se non siamo in basso consumo
 		//se l'ultimo messaggio ricevuto é piú vecchio di un minuto, riduci i consumi
