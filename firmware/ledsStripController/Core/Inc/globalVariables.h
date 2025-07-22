@@ -263,6 +263,7 @@
 		//DISABLE_ODOMETER_BLINK
 		extern uint8_t function_disable_odometer_blink;
 
+		extern uint8_t instructSlaveBoardsTriggerEnabled;
 	#endif
 
 	#if defined(C2baccable)

@@ -44,7 +44,20 @@
 	void C1baccablePeriodicCheck(){
 		lowConsume_process();
 
+		if(instructSlaveBoardsTriggerEnabled){
+			if((currentTime-allProcessorsWakeupTime)>5000){
+				instructSlaveBoardsTriggerEnabled=0; //avoid to return here
 
+				//send messages to slave boards
+				uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
+				addToUARTSendQueue(tmpArr1, 3);
+
+				//send the message to BH to inform about the status of the function disable_odometer_blink
+				uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
+				if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
+				addToUARTSendQueue(tmpArr2, 2);
+			}
+		}
 
 		if(function_led_strip_controller_enabled==1){
 			//don't act as canable. One USB port pin is used to control leds.

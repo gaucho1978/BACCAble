@@ -396,6 +396,7 @@ const char *FW_VERSION=_FW_VERSION;
 	//DISABLE_ODOMETER_BLINK
 	uint8_t function_disable_odometer_blink=0;
 
+	uint8_t instructSlaveBoardsTriggerEnabled=0; //variable to send messages to C2 and BH chips, after a wakeup event
 #endif
 
 #if defined(C2baccable)
