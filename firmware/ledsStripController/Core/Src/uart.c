@@ -79,7 +79,7 @@ void uart_init(){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
 		// evaluate received message
-    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C2_Bh_BusID)){ //if the received char indicates the beginning of a message
+    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_Bh_BusID)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
 				#if defined(ACT_AS_CANABLE)
 					onboardLed_blue_on();
@@ -118,6 +118,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							if(rxBuffer[1]==C2cmdtoggleEscTc){ // ESC/TC request
 								//if we can, enable it
 								if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
+
+								if(ESCandTCinversion==1){ //if enabled, notify C1 and BH
+									uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
+									addToUARTSendQueue(tmpArr1, 2);
+								}else{
+									uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
+									addToUARTSendQueue(tmpArr1, 2);
+								}
 							}
 							if(rxBuffer[1]==C2cmdForceFrontBrake){ front_brake_forced=5;}; //force front brake
 							if(rxBuffer[1]==C2cmdNormalFrontBrake){ front_brake_forced=255;}; //release the brake - we set it to 255, just to trigger serial msg sending in the main (sync) and not here (async), since async may cause concurrent variables write
@@ -183,6 +191,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							clearFaultsRequest=255;
 							onboardLed_blue_on();
 							weCanSendAMessageReply=HAL_GetTick();
+						#endif
+						break;
+					case C1_Bh_BusID: //message received by C1 and BH baccable.
+						#if (defined(C1baccable) || defined(BHbaccable))
+							if(rxBuffer[1]==C1BHcmdShowRaceScreen){
+								ESCandTCinversion=1;
+							}
+							if(rxBuffer[1]==C1BHcmdStopShowRaceScreen){
+								ESCandTCinversion=0;
+							}
 						#endif
 						break;
 					default:

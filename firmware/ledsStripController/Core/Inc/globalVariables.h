@@ -206,8 +206,9 @@
 		//REGENERATION_ALERT_ENABLED
 		extern uint8_t function_regeneration_alert_enabled;
 		extern uint8_t regenerationInProgress;
-		extern uint8_t STATUS_ECM_msg_data[8];
-		extern CAN_TxHeaderTypeDef STATUS_ECM_msg_header;
+		//extern uint8_t STATUS_ECM_msg_data[8];
+		//extern CAN_TxHeaderTypeDef STATUS_ECM_msg_header;
+		extern uint8_t loopsFromRegenerationEnded;
 
 		//SHIFT_INDICATOR_ENABLED
 		extern uint8_t function_shift_indicator_enabled; //saved in flash.
@@ -268,12 +269,11 @@
 
 	#if defined(C2baccable)
 		//ESC_TC_CUSTOMIZATOR_ENABLED
-		extern uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
-		extern uint8_t DNA_msg_data[8];
-		extern CAN_TxHeaderTypeDef DNA_msg_header;
-		extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
 		extern uint32_t LANEbuttonPressLastTimeSeen; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+		extern uint32_t LANEbutton2PressLastTimeSeen; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+
 		extern uint8_t LANEbuttonPressCount; //stores number of times this message field was received
+		extern uint8_t LANEbutton2PressCount; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
 
 		//DYNO_MODE
 		extern uint8_t DynoModeEnabled;
@@ -355,5 +355,12 @@
 		extern uint8_t lowConsumeIsActive; //0=false, 1=true
 		extern uint32_t lastReceivedCanMsgTime;
 		extern uint32_t allProcessorsWakeupTime;
+
+		//ESC/TC function (common to C1,C2,BH
+		extern uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
+		//extern uint8_t DNA_msg_data[8];
+		//extern CAN_TxHeaderTypeDef DNA_msg_header;
+		extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
+
 
 #endif /* INC_GLOBALVARIABLES_H_ */

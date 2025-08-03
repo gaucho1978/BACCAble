@@ -242,6 +242,24 @@ void processingStandardMessage(){
 			//battery state of charge is on byte 1 from bit 6 to 0 (Percentage)
 			//battery current (A) is on byte 4 and in byte 5 from bit 7 to bit 4
 			break;
+		case 0x0000046C:
+			#if defined(BHbaccable)
+
+				if(currentDNAmode!=(rx_msg_data[7] & 0x1F)){ //RDNA mode was changed, reset the ESCandTCinversion
+					ESCandTCinversion=0;
+				}
+				//current DNA mode, also called "Drive Style Status" (RDNA mode) is on byte 7, from bit 0 to bit 4 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
+				currentDNAmode=rx_msg_data[7] & 0x1F; //1F is the mask from bit 4 to 0
+				if (ESCandTCinversion){
+					if(currentDNAmode!=0x0C){ //if not in race
+						rx_msg_data[7] = (rx_msg_data[7] & ~0x1F) | 0x0C;  //set Race mode (0x30) to show on IPC the race screen
+					}
+					can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+					//onboardLed_blue_on();
+				}
+
+			#endif
+			break;
 		case 0x000004B1:
 			#if defined(C1baccable)
 				if(requestToDisableStartAndStop==1){//if requested, send message to simulate button press
@@ -292,6 +310,39 @@ void processingStandardMessage(){
 			//engine oil temperature is on byte 2 from bit 5 to 0 and on byte 3 from bit 7 to 6.
 			//engine oil temperature warning light is on byte 3 bit 5.
 			break;
+		case 0x000004B4:
+			#if defined(C2baccable)
+			/*
+				//this is used on my20 cars, where lane button (left stalk) is not on message 0x384 but it is on msg id 0x4B4, byte 2, bit 6 (1= button pressed)
+				if((rx_msg_data[2] & 0x40) ==0x40){ // left stalk button was pressed (lane following indicator)
+
+					LANEbutton2PressLastTimeSeen=currentTime;//save current time it was pressed as LANEbutton2PressLastTimeSeen
+					LANEbutton2PressCount++;
+					if (LANEbutton2PressCount>4 ){ //4 is more or less 2 seconds
+						//ESCandTCinversion=!ESCandTCinversion; //toggle the status
+						//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
+						if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
+
+						if(ESCandTCinversion==1){ //if enabled, notify C1 and BH
+							uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
+							addToUARTSendQueue(tmpArr1, 2);
+						}else{
+							uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
+							addToUARTSendQueue(tmpArr1, 2);
+						}
+
+						onboardLed_blue_on();
+						LANEbutton2PressCount=0; //reset the count
+					}
+				}else{
+					if(currentTime-LANEbutton2PressLastTimeSeen>1000){ // if LANEbutton2PressLastTimeSeen, is older than 1 second ago, it means that button was released
+						LANEbutton2PressCount=0;// reset the count assigning it zero
+					}
+				}
+			*/
+			#endif
+
+			break;
 		case 0x00000545:
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC==8){
@@ -338,13 +389,15 @@ void processingStandardMessage(){
 
 					if(function_regeneration_alert_enabled){  //if  function was enabled in setup menu
 						if(regenerationInProgress){ //if regeneration is in progress
-							if(((rx_msg_data[4]>>2) & 0x01 )==0){ //if the message needs to be changed
+							if((rx_msg_data[4] & 0x04 )==0){ //if the message needs to be changed
 								#ifdef DPF_REGEN_VISUAL_ALERT
 									//change message and send it again
-									memcpy(STATUS_ECM_msg_data, &rx_msg_data, rx_msg_header.DLC); //copy message
-									STATUS_ECM_msg_data[4] |= 0x04; //DPF Dirty (bit 2) set to ON
-									STATUS_ECM_msg_header.DLC=rx_msg_header.DLC;
-									can_tx(&STATUS_ECM_msg_header, STATUS_ECM_msg_data); //send msg
+									//memcpy(STATUS_ECM_msg_data, &rx_msg_data, rx_msg_header.DLC); //copy message
+									//STATUS_ECM_msg_data[4] |= 0x04; //DPF Dirty (bit 2) set to ON
+									//STATUS_ECM_msg_header.DLC=rx_msg_header.DLC;
+									//can_tx(&STATUS_ECM_msg_header, STATUS_ECM_msg_data); //send msg
+									rx_msg_data[4] |= 0x04; //DPF Dirty (bit 2) set to ON
+									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
 								#endif
 								onboardLed_blue_on();
 							}
@@ -357,9 +410,17 @@ void processingStandardMessage(){
 								addToUARTSendQueue(tmpArr3, 1);
 							#endif
 							regenerationInProgress=1;
+							loopsFromRegenerationEnded=0;
 						}
 						if((dieselEngineRegenerationMode==0) && (regenerationInProgress==1)){ //if regeneration has ended,
-							regenerationInProgress=0;
+							loopsFromRegenerationEnded++;
+							if (loopsFromRegenerationEnded>10){
+								regenerationInProgress=0;
+								loopsFromRegenerationEnded=0;
+							}
+
+						}else{
+							loopsFromRegenerationEnded=0;
 						}
 					}
 

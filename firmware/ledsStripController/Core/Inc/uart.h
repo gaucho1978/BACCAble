@@ -20,7 +20,8 @@
 	#define BhBusIDgetStatus		0x08 //first byte sent over uart to identify destinator baccable connected to BH Can Bus to request its status
 	#define BhBusChimeRequest		0x09 //first byte sent over uart to indentify message to BH to play sound
 	#define BhBusID					0x0A //first byte sent over uart to indentify destinator baccable connected to BH Can Bus
-	#define C2_Bh_BusID				0x0B //first byte sent over uart to indentify destinator baccable connected to C1 and BH Can Bus
+	#define C2_Bh_BusID				0x0B //first byte sent over uart to indentify destinator baccable connected to C2 and BH Can Bus
+	#define C1_Bh_BusID				0x0C //first byte sent over uart to indentify destinator baccable connected to C1 and BH Can Bus
 
 	#define C2cmdtoggleDyno					0x20 //second byte of the message to C2 bus, identifies the request to toggle dyno
 	#define C2cmdNormalFrontBrake			0x21 //second byte of the message to C2 bus, identifies the request to set front Brake to normal
@@ -29,10 +30,15 @@
 	#define C2cmdtoggleEscTc				0x24 //second byte of the message to C2 bus, identifies the request to toggle ESC/TC
 	#define C2cmdDynoActive					0x25 //second byte of the message to C2 bus, identifies the status dyno Active
 	#define C2cmdDynoNotActive				0x26 //second byte of the message to C2 bus, identifies the status dyno Not Active
-	#define C2_Bh_cmdSetPedalBoostStatus	0x27 //second byte of the message to C2 bus, identifies the pedal booster function status. Third byte of the message will contain its status
+
+	#define C2_Bh_cmdSetPedalBoostStatus	0x27 //second byte of the message to C2 and BH bus, identifies the pedal booster function status. Third byte of the message will contain its status
 
 	#define BHcmdOdometerBlinkDisable		0x20 //second byte of the message to BH bus, identifies the request to disable odometer blink
 	#define BHcmdOdometerBlinkDefault		0x21 //second byte of the message to BH bus, identifies the request to restore normal odometer blink status
+
+	#define C1BHcmdShowRaceScreen			0x22 //second byte of the message to C1 and BH bus, identifies the request to show Race Screen on dashboard
+	#define C1BHcmdStopShowRaceScreen		0x23 //second byte of the message to C1 and BH bus, identifies the request to STOP to show Race Screen on dashboard
+
 
 	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 

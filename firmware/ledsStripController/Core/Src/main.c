@@ -69,6 +69,7 @@ int main(void){
 
 		#if defined(C2baccable)
 			C2PeriodicCheck();
+			//ESCandTCinversion=1;
 		#endif
 
 		#if defined(BHbaccable) //this is the baccable slave

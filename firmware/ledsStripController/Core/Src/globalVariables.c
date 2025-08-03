@@ -332,8 +332,9 @@ const char *FW_VERSION=_FW_VERSION;
 	//REGENERATION_ALERT_ENABLED
 	uint8_t function_regeneration_alert_enabled=0;
 	uint8_t regenerationInProgress=0;
-	uint8_t STATUS_ECM_msg_data[8];
-	CAN_TxHeaderTypeDef STATUS_ECM_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5AE, .DLC=8};
+	//uint8_t STATUS_ECM_msg_data[8];
+	//CAN_TxHeaderTypeDef STATUS_ECM_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5AE, .DLC=8};
+	uint8_t loopsFromRegenerationEnded=0;
 
 	//SHIFT_INDICATOR_ENABLED
 	uint8_t function_shift_indicator_enabled=0; //saved in flash.
@@ -401,12 +402,11 @@ const char *FW_VERSION=_FW_VERSION;
 
 #if defined(C2baccable)
 	//ESC_TC_CUSTOMIZATOR_ENABLED
-	uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
-	uint8_t DNA_msg_data[8];
-	CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
-	uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
 	uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+	uint32_t LANEbutton2PressLastTimeSeen=0; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+
 	uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
+	uint8_t LANEbutton2PressCount=0; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
 
 	//DYNO_MODE
 
@@ -493,3 +493,9 @@ uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change men
 uint8_t lowConsumeIsActive=0; //0=false, 1=true
 uint32_t lastReceivedCanMsgTime=0;
 uint32_t allProcessorsWakeupTime=0;
+
+//ESC/TC function (common to C1,C2,BH
+uint8_t currentDNAmode; //on C1 and C2 bus 0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race (but on BH bus 0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
+//uint8_t DNA_msg_data[8];
+//CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
+uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
