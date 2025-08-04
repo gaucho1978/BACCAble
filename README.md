@@ -140,17 +140,8 @@ Default options are enough for anyone, but if any customization is required, it 
 
 
 ## BACCABLE Flash Instructions
-The obtained elf file (downloaded from online Releases section [![Release](https://img.shields.io/github/v/release/gaucho1978/BACCAble)](https://github.com/gaucho1978/BACCAble/releases) , or locally compiled), can be flashed using stm32cubeProgrammer.
 
-Flash procedure:
-- press reset button on the board, then connect usb to pc (the board will be detected as serial device named "stm32 bootloader" (if using new baccable board, the usb connectors are connected, from right to left, to C1baccable, C2baccable, BHbaccable)
-- only once the green led is on, the button can be released. 
-- open stm32CubeProgrammer, select USB from the drop down menu (right side of the window), the press CONNECT.
-- if the connection was successful, move to section "erasing and programming", then press BROWSE button.
-- select the elf file that you want to flash.
-- check the flag "verify programming"
-- press START PROGRAMMING button
-- at the end press ok on the success popup, then press DISCONNECT button
+See Manual, paragraph 1.11
 
 ## The hardware using NEW BACCABLE BOARD
 The following video describes the new pcb board. 
