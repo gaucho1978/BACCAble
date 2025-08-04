@@ -63,11 +63,11 @@ Current available functions are:
  
 Youtube overview video (1):
 
-[![BACCABLE 2025 overview - Italian version](https://img.youtube.com/vi/Y440Ge9YP-k/0.jpg)](https://www.youtube.com/watch?v=Y440Ge9YP-k&list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X&index=24)
+[![BACCABLE 2025 overview - English version](https://img.youtube.com/vi/0mxV7nnITM4/0.jpg)](https://www.youtube.com/watch?v=0mxV7nnITM4)
 
 Youtube overview video (2):
 
-[![BACCABLE 2025 SUMMER camp](https://img.youtube.com/vi/hagr2j90Plg/0.jpg)](https://www.youtube.com/watch?v=hagr2j90Plg&t=12s)
+[![BACCABLE 2025 SUMMER camp](https://img.youtube.com/vi/hagr2j90Plg/0.jpg)](https://www.youtube.com/watch?v=hagr2j90Plg)
 
 
 ## General Description
