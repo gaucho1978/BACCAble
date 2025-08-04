@@ -1,6 +1,8 @@
 ## BACCAble 
 
-News: new telegram group for BACCABLE: https://t.me/baccable 
+Direct contact: https://t.me/gaucholivido
+
+Telegram group for BACCABLE: https://t.me/baccable 
 
 Please donate, with Paypal or Crypto (Bitcoin)
 
@@ -50,16 +52,22 @@ Current available functions are:
 - show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
 - add a menu to dashboard in order to show additional parameters like dpf occlusion percentage, oil pressure and performance statistics 
 - route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).  
-- enable and disable ESC and TC with left stalk button press
+- enable and disable ESC and TC with left stalk button press (now it also shows race screen, avoiding the need of RDNA selector)
 - Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
 - ACC_VIRTUAL_PAD allows to enable Adaptive Cruise Control without the need to thange the wheel buttons pad: baccable will detect Cruise Control buttons press and it will send Adaptive Cruise Control messages to ECU.  
 - LOW consumpption, used to reduce current consumption if using the new Baccable pcb board.
 - enable front brake from dashboard menu, in order to perform burnout start and launch assist based on torque force
 - disable 4wd, for giulias and stelvios with 4wd.
+- Disable seatbelt alarm
+- Disable odometer blink
  
-Youtube overview video:
+Youtube overview video (1):
 
-[![Playlist YouTube](https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg)]([https://www.youtube.com/playlist?list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X](https://www.youtube.com/watch?v=0mxV7nnITM4&t=1s))
+[![BACCABLE 2025 overview - Italian version](https://img.youtube.com/vi/Y440Ge9YP-k/0.jpg)](https://www.youtube.com/watch?v=Y440Ge9YP-k&list=PLBaS0780TbwKpBBER44QJkiz-0hAlga8X&index=24)
+
+Youtube overview video (2):
+
+[![BACCABLE 2025 SUMMER camp](https://img.youtube.com/vi/hagr2j90Plg/0.jpg)](https://www.youtube.com/watch?v=hagr2j90Plg&t=12s)
 
 
 ## General Description
