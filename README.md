@@ -23,7 +23,7 @@ Thanks Danardi https://github.com/danardi78/Alfaromeo-Giulia-Stelvio-PIDs/
 
 Thanks Alessandro https://github.com/anegrin
 
-Thanks Ambrotek, Tim, Gev, and all the Baccable Community
+Thanks Ambrotek, Arfa, Tim, Gev, and all the Baccable Community
 
 ## DISCLAIMER
 
