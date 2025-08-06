@@ -37,7 +37,7 @@ void processingMessage0x00000384(){
 				//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
 				if(DynoModeEnabled || DynoStateMachine!=0xff) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
 
-				if(ESCandTCinversion==1){ //if enabled, notify C1 and BH
+				if(ESCandTCinversion && function_show_race_mask){ //if enabled, notify C1 and BH
 					uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
 					addToUARTSendQueue(tmpArr1, 2);
 				}else{

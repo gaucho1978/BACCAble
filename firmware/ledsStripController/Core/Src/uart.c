@@ -111,24 +111,39 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						break;
 					case C2BusID: //message directed to baccable connected to C2 bus
 						#if (defined(C2baccable))
-							if(rxBuffer[1]==C2cmdtoggleDyno){ //dyno request
-								if(front_brake_forced==0) dynoToggle();
+							switch (rxBuffer[1]){
+								case C2cmdtoggleDyno: //dyno request
+									if(front_brake_forced==0) dynoToggle();
+									break;
+								case C2cmdtoggleEscTc: // ESC/TC request
+									//if we can, enable it
+									if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
+
+									if(ESCandTCinversion && function_show_race_mask){ //if enabled and race screen requested, notify C1 and BH
+										uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
+										addToUARTSendQueue(tmpArr1, 2);
+									}else{
+										uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
+										addToUARTSendQueue(tmpArr1, 2);
+									}
+
+									break;
+								case C2cmdForceFrontBrake: //force front brake
+									front_brake_forced=5;
+									break;
+								case C2cmdNormalFrontBrake: //release the brake - we set it to 255, just to trigger serial msg sending in the main (sync) and not here (async), since async may cause concurrent variables write
+									front_brake_forced=255;
+									break;
+								case C2cmdRaceMaskDefault: //do not request to show race mask
+									function_show_race_mask=0;
+									break;
+								case C2cmdShowRaceMask: //request to show race mask
+									function_show_race_mask=1;
+									break;
+								default:
 							}
 
-							if(rxBuffer[1]==C2cmdtoggleEscTc){ // ESC/TC request
-								//if we can, enable it
-								if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
 
-								if(ESCandTCinversion==1){ //if enabled, notify C1 and BH
-									uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
-									addToUARTSendQueue(tmpArr1, 2);
-								}else{
-									uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
-									addToUARTSendQueue(tmpArr1, 2);
-								}
-							}
-							if(rxBuffer[1]==C2cmdForceFrontBrake){ front_brake_forced=5;}; //force front brake
-							if(rxBuffer[1]==C2cmdNormalFrontBrake){ front_brake_forced=255;}; //release the brake - we set it to 255, just to trigger serial msg sending in the main (sync) and not here (async), since async may cause concurrent variables write
 							//if(rxBuffer[1]==C2cmdGetStatus){};//nothing to do, since we just need to set weCanSendAMessageReply
 							onboardLed_blue_on();
 							weCanSendAMessageReply=HAL_GetTick();
@@ -153,7 +168,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								function_pedal_booster_enabled=rxBuffer[2];
 							}
 							onboardLed_blue_on();
-							weCanSendAMessageReply=HAL_GetTick();
+							#if defined(C2baccable)
+								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 can reply, otherwise errors may arise
+							#endif
 						#endif
 						break;
 					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
@@ -190,11 +207,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#if (defined(C2baccable) || defined(BHbaccable))
 							clearFaultsRequest=255;
 							onboardLed_blue_on();
-							weCanSendAMessageReply=HAL_GetTick();
+							#if defined(C2baccable)
+								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 is allowed to reply
+							#endif
 						#endif
 						break;
 					case C1_Bh_BusID: //message received by C1 and BH baccable.
-						#if (defined(C1baccable) || defined(BHbaccable))
+						//#if (defined(C1baccable) || defined(BHbaccable))
+						#if defined(BHbaccable)
 							if(rxBuffer[1]==C1BHcmdShowRaceScreen){
 								ESCandTCinversion=1;
 							}
@@ -204,7 +224,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#endif
 						break;
 					default:
-						//not exptected to end up here
+						//not expected to end up here
 						break;
 				}
 
@@ -327,12 +347,21 @@ void processUART() {
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
 					//save time
-					if(tx_queue->tx_buffer[tx_queue->head][0]== C2BusID){
-						lastMsgSentToC2Time=HAL_GetTick();
+					switch(tx_queue->tx_buffer[tx_queue->head][0]){
+						case C2BusID:
+						case C2_Bh_BusID: //only C2 is allowed to reply when this msg is received
+						case AllResetFaults: //only C2 is allowed to reply when this msg is received
+							lastMsgSentToC2Time=HAL_GetTick();
+							break;
+						case BhBusIDparamString:
+						case BhBusIDgetStatus:
+						case BhBusChimeRequest:
+							lastMsgSentToBHTime=HAL_GetTick();
+							break;
+						default:
 					}
-					if((tx_queue->tx_buffer[tx_queue->head][0]== BhBusIDparamString) || (tx_queue->tx_buffer[tx_queue->head][0])==BhBusIDgetStatus){
-						lastMsgSentToBHTime=HAL_GetTick();
-					}
+
+
 
 					// update head index in a circular way
 					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;

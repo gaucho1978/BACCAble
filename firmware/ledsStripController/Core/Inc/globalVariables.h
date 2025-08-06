@@ -265,6 +265,8 @@
 		extern uint8_t function_disable_odometer_blink;
 
 		extern uint8_t instructSlaveBoardsTriggerEnabled;
+
+
 	#endif
 
 	#if defined(C2baccable)
@@ -362,5 +364,7 @@
 		//extern CAN_TxHeaderTypeDef DNA_msg_header;
 		extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
 
+		//SHOW RACE MASK
+		extern uint8_t function_show_race_mask;
 
 #endif /* INC_GLOBALVARIABLES_H_ */

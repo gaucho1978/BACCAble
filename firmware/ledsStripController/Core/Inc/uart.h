@@ -30,8 +30,10 @@
 	#define C2cmdtoggleEscTc				0x24 //second byte of the message to C2 bus, identifies the request to toggle ESC/TC
 	#define C2cmdDynoActive					0x25 //second byte of the message to C2 bus, identifies the status dyno Active
 	#define C2cmdDynoNotActive				0x26 //second byte of the message to C2 bus, identifies the status dyno Not Active
+	#define C2cmdRaceMaskDefault			0x27 //second byte of the message to C2 bus, identifies the status race mask not requested
+	#define C2cmdShowRaceMask				0x28 //second byte of the message to C2 bus, identifies the status race mask requested
 
-	#define C2_Bh_cmdSetPedalBoostStatus	0x27 //second byte of the message to C2 and BH bus, identifies the pedal booster function status. Third byte of the message will contain its status
+	#define C2_Bh_cmdSetPedalBoostStatus	0x39 //second byte of the message to C2 and BH bus, identifies the pedal booster function status. Third byte of the message will contain its status
 
 	#define BHcmdOdometerBlinkDisable		0x20 //second byte of the message to BH bus, identifies the request to disable odometer blink
 	#define BHcmdOdometerBlinkDefault		0x21 //second byte of the message to BH bus, identifies the request to restore normal odometer blink status

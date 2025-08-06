@@ -9,7 +9,7 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V2.9.5"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V2.10.0"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
 	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
@@ -182,6 +182,10 @@
 
 		#ifdef DISABLE_ODOMETER_BLINK //optional compile time define with -D, default: undefined
 			#pragma message("Enabling function to disable odometer blink")
+		#endif
+
+		#ifdef SHOW_RACE_MASK //optional compile time define with -D, default: undefined
+			#pragma message("Enabling function to show race mask when ESC/TC is activated")
 		#endif
 	#endif
 

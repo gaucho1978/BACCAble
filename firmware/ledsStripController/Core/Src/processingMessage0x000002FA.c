@@ -422,7 +422,8 @@ void processingMessage0x000002FA(){
 											((uint16_t)launch_torque_threshold						!= readFromFlash(18))	|| //LAUNCH_ASSIST_THRESHOLD
 											((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	|| //SEATBELT_ALARM_DISABLED
 											((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
-											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	){ //DISABLE_ODOMETER_BLINK
+											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
+											((uint16_t)function_show_race_mask						!= readFromFlash(22))	){ //SHOW_RACE_MASK
 												//save it on flash
 												saveOnflash();
 										}
@@ -498,10 +499,17 @@ void processingMessage0x000002FA(){
 										break;
 									case 20: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
 										function_disable_odometer_blink=!function_disable_odometer_blink;
-										//Now let's inform the C2 Baccable
+										//Now let's inform the BH Baccable
 										uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
 										if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
 										addToUARTSendQueue(tmpArr2, 2);
+										break;
+									case 21: // {'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
+										function_show_race_mask=!function_show_race_mask;
+										//Now let's inform the C2 Baccable
+										uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
+										if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
+										addToUARTSendQueue(tmpArr3, 2);
 										break;
 									default:
 										break;

@@ -100,7 +100,7 @@ const char *FW_VERSION=_FW_VERSION;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=21;
+	uint8_t total_pages_in_setup_dashboard_menu=22;
 	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -123,7 +123,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{0xD8,' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 			{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 			{'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
-
+			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
 
 		};
 
@@ -398,6 +398,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t function_disable_odometer_blink=0;
 
 	uint8_t instructSlaveBoardsTriggerEnabled=0; //variable to send messages to C2 and BH chips, after a wakeup event
+
 #endif
 
 #if defined(C2baccable)
@@ -499,3 +500,6 @@ uint8_t currentDNAmode; //on C1 and C2 bus 0x00=Natural, 0x08=dynamic 0x10=AllWe
 //uint8_t DNA_msg_data[8];
 //CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
 uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
+
+//SHOW RACE MASK
+uint8_t function_show_race_mask=0;

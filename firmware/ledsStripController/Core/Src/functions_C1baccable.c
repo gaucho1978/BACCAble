@@ -39,6 +39,12 @@
 		uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
 		if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
 		addToUARTSendQueue(tmpArr2, 2);
+
+		function_show_race_mask= (uint16_t)readFromFlash(22);
+		//Now let's inform the C2 Baccable
+		uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
+		if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
+		addToUARTSendQueue(tmpArr3, 2);
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -56,6 +62,11 @@
 				uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
 				if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
 				addToUARTSendQueue(tmpArr2, 2);
+
+				//Now let's inform the C2 Baccable
+				uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
+				if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
+				addToUARTSendQueue(tmpArr3, 2);
 			}
 		}
 
@@ -640,7 +651,9 @@
 			case 20:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_disable_odometer_blink];
 				break;
-
+			case 21:
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_show_race_mask];
+				break;
 			default:
 				break;
 		}
@@ -992,7 +1005,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint16_t params[21] = {
+		uint16_t params[22] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
 		  function_led_strip_controller_enabled,
@@ -1013,10 +1026,11 @@
 		  launch_torque_threshold,
 		  function_seatbelt_alarm_enabled,
 		  function_pedal_booster_enabled,
-		  function_disable_odometer_blink
+		  function_disable_odometer_blink,
+		  function_show_race_mask,
 		};
 
-		for (uint8_t i = 0; i < 21; i++) {
+		for (uint8_t i = 0; i < 22; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -1277,6 +1291,15 @@
 			case 21: //DISABLE_ODOMETER_BLINK
 				if(tmpParam>1){
 					#if defined(DISABLE_ODOMETER_BLINK)
+						return 1;
+					#else
+						return 0;
+					#endif
+				}
+				break;
+			case 22: //SHOW_RACE_MASK
+				if(tmpParam>1){
+					#if defined(SHOW_RACE_MASK)
 						return 1;
 					#else
 						return 0;
