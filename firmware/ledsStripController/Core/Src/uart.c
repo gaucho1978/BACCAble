@@ -213,8 +213,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#endif
 						break;
 					case C1_Bh_BusID: //message received by C1 and BH baccable.
-						//#if (defined(C1baccable) || defined(BHbaccable))
-						#if defined(BHbaccable)
+						#if (defined(C1baccable) || defined(BHbaccable))
+						//#if defined(BHbaccable)
 							if(rxBuffer[1]==C1BHcmdShowRaceScreen){
 								ESCandTCinversion=1;
 							}

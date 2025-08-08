@@ -20,6 +20,10 @@ void processingMessage0x00000384(){
 			if(currentDNAmode!=0x30){ //if not in race
 				rx_msg_data[1] = (rx_msg_data[1] & ~0x7C) | 0x30;  //set Race mode (0x30) to show on IPC the race screen
 			}
+			uint8_t tmpCounter=(rx_msg_data[6] & 0x0F)+1;
+			if(tmpCounter>0x0F) tmpCounter=0;
+			rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
+			rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
 			can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
 			//onboardLed_blue_on();
 		}
@@ -68,6 +72,10 @@ void processingMessage0x00000384(){
 				//DNA_msg_data[1] = (DNA_msg_data[1] & ~0x7C) | (0x30 & 0x7C);  //set Race mode (0x30) to disable ESC and TC
 				rx_msg_data[1] = (rx_msg_data[1] & ~0x7C) | 0x30;  //set Race mode (0x30) to disable ESC and TC
 			}
+			//uint8_t tmpCounter=(rx_msg_data[6] & 0x0F)+1;
+			//if(tmpCounter>0x0F) tmpCounter=0;
+			//rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
+			//rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
 			can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
 			//onboardLed_blue_on();
 		}
