@@ -43,6 +43,7 @@
 	// #define PEDAL_BOOSTER_ENABLED 1			// if uncommented it will enable pedal booster function. Experimental: it doesn't work yet. don't use it! You have to Assign its value according to the following legend: 0=disabled, 1=Auto map, 2=Bypass, 3=A Map, 4=N Map, 5=D Map, 6=R Map. It can be changed inside baccable SETUP menu.
 	// #define DISABLE_ODOMETER_BLINK			// if uncommented it will disable odometer blink on dashboard.  It can changed inside baccable SETUP menu.
 	// #define SHOW_RACE_MASK					// if uncommented it will show race screen when the function ESC/TC is in use.  It can changed inside baccable SETUP menu.
+	// #define HIDE_DASHBOARD_MENU				// if uncommented it will permanently hide baccable dashboard menu. Useful to statically set some functions like immo and start&stop without the availability of baccable menu commands.
 	
 	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
 	// Note: #define shall be on a single line. That's why we put \ at the end for readability

@@ -187,6 +187,11 @@
 		#ifdef SHOW_RACE_MASK //optional compile time define with -D, default: undefined
 			#pragma message("Enabling function to show race mask when ESC/TC is activated")
 		#endif
+
+
+		#ifdef HIDE_DASHBOARD_MENU
+			#pragma message("dashboard menu will be permanently hidden")
+		#endif
 	#endif
 
 

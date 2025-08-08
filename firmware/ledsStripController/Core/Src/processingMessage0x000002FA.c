@@ -532,28 +532,31 @@ void processingMessage0x000002FA(){
 					break;
 				case 0x90: //RES button was pressed
 				case 0x50: //distance selector, used like RES, to manage the menu
-					lastPressedWheelButtonDuration++;
+					#ifndef HIDE_DASHBOARD_MENU
+						lastPressedWheelButtonDuration++;
 
-					if (wheelPressedButtonID==0x10 && wheelPressedButtonID!=0x90){//we pressed RES for at least one instant
-						wheelPressedButtonID=0x89; //avoid returning here until button is not released
-					}
-					if (wheelPressedButtonID==0x89 && (lastPressedWheelButtonDuration>50)){//we pressed RES for around 2 seconds, therefore we want to enable/disable Baccable menu on dashboard
-						wheelPressedButtonID=0x90; //avoid returning here until button is not released
-
-						baccableDashboardMenuVisible=!baccableDashboardMenuVisible; //toggle visualizazion of the menu
-
-						LOG("Dashboard vis: %d\r\n", baccableDashboardMenuVisible);
-
-						if(!baccableDashboardMenuVisible){ //if menu needs to be hidden, print spaces to clear the string on dashboard
-							clearDashboardBaccableMenu();
-						}else{
-							//dashboardPageIndex=0; //reset the page, just to be sure to show initial Baccable print
-							//main_dashboardPageIndex=0; //shows initial baccable version
-							//dashboard_menu_indent_level=0;
+						if (wheelPressedButtonID==0x10 && wheelPressedButtonID!=0x90){//we pressed RES for at least one instant
+							wheelPressedButtonID=0x89; //avoid returning here until button is not released
 						}
+						if (wheelPressedButtonID==0x89 && (lastPressedWheelButtonDuration>50)){//we pressed RES for around 2 seconds, therefore we want to enable/disable Baccable menu on dashboard
+							wheelPressedButtonID=0x90; //avoid returning here until button is not released
+
+							baccableDashboardMenuVisible=!baccableDashboardMenuVisible; //toggle visualizazion of the menu
+
+							LOG("Dashboard vis: %d\r\n", baccableDashboardMenuVisible);
+
+							if(!baccableDashboardMenuVisible){ //if menu needs to be hidden, print spaces to clear the string on dashboard
+								clearDashboardBaccableMenu();
+							}else{
+								//dashboardPageIndex=0; //reset the page, just to be sure to show initial Baccable print
+								//main_dashboardPageIndex=0; //shows initial baccable version
+								//dashboard_menu_indent_level=0;
+							}
 
 
-					}
+						}
+					#endif
+
 					break;
 				case 0x12: //Cruise Control Disabled/Enabled
 					break;
