@@ -365,6 +365,20 @@ void processingStandardMessage(){
 				}
 			#endif
 			break;
+		case 0x000005A8:
+			#if defined(C1baccable)
+				if (ESCandTCinversion){
+					if((rx_msg_data[4] & 0x78)!=0x30){
+						rx_msg_data[4] = (rx_msg_data[4] & ~0x78) | 0x30;  //set track mode
+						uint8_t tmpCounter=(rx_msg_data[6] & 0x0F)+1;
+						if(tmpCounter>0x0F) tmpCounter=0;
+						rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
+						rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
+						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+					}
+				}
+			#endif
+			break;
 		case 0x000005AC:
 			#if defined(BHbaccable)
 				if(requestToPlayChime==1){  //if there is a request to play sound
