@@ -395,7 +395,7 @@ void processingStandardMessage(){
 						leftParkMirrorVerticalPos=		rx_msg_data[1];
 						rightParkMirrorHorizontalPos=	rx_msg_data[2];
 						rightParkMirrorVerticalPos=		(rx_msg_data[3]<<4) | (rx_msg_data[4]>>4);
-						saveOnflashBH(); //save it permanently on BH!
+						saveOnFlashBH(); //save it permanently on BH!
 					}
 				}
 			#endif
