@@ -100,7 +100,7 @@ const char *FW_VERSION=_FW_VERSION;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=22;
+	uint8_t total_pages_in_setup_dashboard_menu=23;
 	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -124,6 +124,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 			{'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
 			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
+			{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 
 		};
 
@@ -475,7 +476,7 @@ uint32_t currentTime; //stores current time in milliseconds, each time we enter 
 UART_HandleTypeDef huart2; // this is the serial line between baccables
 
 uint32_t currentRpmSpeed=0;	//used by C1baccable
-uint8_t currentGear=0; 		//used by C1baccable
+uint8_t currentGear=0; 		//used by C1baccable and BHbaccable
 
 // Storage for status and received message buffer
 CAN_RxHeaderTypeDef rx_msg_header;  //msg header
@@ -503,3 +504,25 @@ uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in
 
 //SHOW RACE MASK
 uint8_t function_show_race_mask=0;
+
+//PARK_MIRROR
+uint8_t function_park_mirror=0;
+uint8_t leftMirrorVerticalPos=0; 		//current Operative position
+uint8_t leftMirrorHorizontalPos=0;		//current Operative position
+uint8_t rightMirrorVerticalPos=0;		//current Operative position
+uint8_t rightMirrorHorizontalPos=0;		//current Operative position
+uint8_t storeCurrentMirrorPosition=0;	//get current Operative position boolean
+uint8_t leftParkMirrorVerticalPos=0; 	//Stored Park position
+uint8_t leftParkMirrorHorizontalPos=0;	//Stored Park position
+uint8_t rightParkMirrorVerticalPos=0;	//Stored Park position
+uint8_t rightParkMirrorHorizontalPos=0; //Stored Park position
+uint8_t storeCurrentParkMirrorPosition=0;//Store Park mirrors position Request
+uint8_t parkMirrorsSteady=1; // park mirrors are not moving if this is =1
+uint8_t turnIndicator=0; //0= center, 1=right, 2=left
+uint8_t parkMirrorMsgData[8]={0x00,0x00,0x00,0x00,0x80,0x00,0x00,0x00};
+CAN_TxHeaderTypeDef parkMirrorMsgHeader={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5A8, .DLC=8};
+uint32_t lastParkMirrorMsgTime=0;
+uint32_t restoreMirrorsPositionRequestTime=0;
+uint8_t restoreMirrorsPosition=0;
+uint8_t leftParkMirrorMovementEnabled=0;
+uint8_t rightParkMirrorMovementEnabled=0;

@@ -37,9 +37,13 @@
 
 	#define BHcmdOdometerBlinkDisable		0x20 //second byte of the message to BH bus, identifies the request to disable odometer blink
 	#define BHcmdOdometerBlinkDefault		0x21 //second byte of the message to BH bus, identifies the request to restore normal odometer blink status
+	#define BHcmdFunctParkMirrorDisabled	0x22 //second byte of the message to BH bus, identifies the request to disable park mirror
+	#define BHcmdFunctParkMirrorEnabled		0x23 //second byte of the message to BH bus, identifies the request to enable park mirror
+	#define BHcmdFunctParkMirrorStoreCurPos	0x24 //second byte of the message to BH bus, identifies the request to enable park mirror and to store current mirror position
 
-	#define C1BHcmdShowRaceScreen			0x22 //second byte of the message to C1 and BH bus, identifies the request to show Race Screen on dashboard
-	#define C1BHcmdStopShowRaceScreen		0x23 //second byte of the message to C1 and BH bus, identifies the request to STOP to show Race Screen on dashboard
+
+	#define C1BHcmdShowRaceScreen			0x40 //second byte of the message to C1 and BH bus, identifies the request to show Race Screen on dashboard
+	#define C1BHcmdStopShowRaceScreen		0x41 //second byte of the message to C1 and BH bus, identifies the request to STOP to show Race Screen on dashboard
 
 
 	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1

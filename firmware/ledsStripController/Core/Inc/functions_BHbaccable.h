@@ -12,5 +12,7 @@
 
 	void BHbaccableInitCheck();
 	void BHperiodicCheck();
+	uint8_t saveOnflashBH();
+	uint16_t readFromFlashBH(uint8_t paramId);
 
 #endif /* INC_FUNCTIONS_BHBACCABLE_H_ */

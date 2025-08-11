@@ -152,11 +152,24 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						break;
 					case BhBusID: //message directed to baccable connected to BH bus
 						#if defined(BHbaccable)
-							if(rxBuffer[1]==BHcmdOdometerBlinkDisable){ //odometer blink disable request
-								disable_odometer_blink=1;
-							}
-							if(rxBuffer[1]==BHcmdOdometerBlinkDefault){ //odometer blink default request
-								disable_odometer_blink=0;
+							switch(rxBuffer[1]){
+								case BHcmdOdometerBlinkDisable: //odometer blink disable request
+									disable_odometer_blink=1;
+									break;
+								case BHcmdOdometerBlinkDefault: //odometer blink default request
+									disable_odometer_blink=0;
+									break;
+								case BHcmdFunctParkMirrorDisabled: //park mirror disable
+									function_park_mirror=0;
+									break;
+								case BHcmdFunctParkMirrorEnabled: //park mirror enabled
+									function_park_mirror=1;
+									break;
+								case BHcmdFunctParkMirrorStoreCurPos: //park mirror enabled and transfer current mirror position
+									function_park_mirror=1;
+									storeCurrentParkMirrorPosition=1;
+									break;
+								default:
 							}
 							weCanSendAMessageReply=HAL_GetTick();
 						#endif

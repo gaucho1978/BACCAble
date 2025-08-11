@@ -220,6 +220,14 @@ void processingStandardMessage(){
 		case 0x00000384:
 			processingMessage0x00000384();
 			break;
+		case 0x000003E8:
+			#if defined(BHbaccable)
+				//gearEngaged is on byte 3 bit 3 to 0
+				//actualGearGSI is on byte 3 bit 7 to 4
+				currentGear= rx_msg_data[3] & 0x0F;
+			#endif
+			break;
+
 		case 0x00000412: //se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
 			#if defined(C1baccable)
 				if(function_led_strip_controller_enabled==1){
@@ -258,6 +266,8 @@ void processingStandardMessage(){
 					//onboardLed_blue_on();
 				}
 
+				//turn indicators are on byte 6, bit 2 and 1
+				turnIndicator= (rx_msg_data[6]>>1) & 0x03; //0= center, 1=right, 2=left
 			#endif
 			break;
 		case 0x000004B1:
@@ -365,6 +375,31 @@ void processingStandardMessage(){
 				}
 			#endif
 			break;
+		case 0x000005A6:
+			//leftHorizontal,leftVertical, rightHorizontal,rightVertical is from byte x (one byte each one)
+			#if defined(BHbaccable)
+				parkMirrorsSteady=((rx_msg_data[3] & 0x40)==0x00) && ((rx_msg_data[3] & 0x10)==0x00); //1 if side mirrors are not moving
+				if(storeCurrentMirrorPosition ){ //if it was requested to store current side mirrors position
+					if(parkMirrorsSteady){ //if mirror movement is not in progress
+						storeCurrentMirrorPosition=0;
+						leftMirrorHorizontalPos=	rx_msg_data[0];
+						leftMirrorVerticalPos=		rx_msg_data[1];
+						rightMirrorHorizontalPos=	rx_msg_data[2];
+						rightMirrorVerticalPos=		(rx_msg_data[3]<<4) | (rx_msg_data[4]>>4);
+					}
+				}
+				if(storeCurrentParkMirrorPosition){
+					if(parkMirrorsSteady){ //if mirror movement is not in progress
+						storeCurrentParkMirrorPosition=0;
+						leftParkMirrorHorizontalPos=	rx_msg_data[0];
+						leftParkMirrorVerticalPos=		rx_msg_data[1];
+						rightParkMirrorHorizontalPos=	rx_msg_data[2];
+						rightParkMirrorVerticalPos=		(rx_msg_data[3]<<4) | (rx_msg_data[4]>>4);
+						saveOnflashBH(); //save it permanently on BH!
+					}
+				}
+			#endif
+			break;
 		case 0x000005A8:
 			#if defined(C1baccable)
 				if (ESCandTCinversion){
@@ -378,6 +413,9 @@ void processingStandardMessage(){
 					}
 				}
 			#endif
+
+
+
 			break;
 		case 0x000005AC:
 			#if defined(BHbaccable)

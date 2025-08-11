@@ -23,6 +23,13 @@
 		telematic_display_info_msg_data[2]=0;
 		telematic_display_info_msg_data[4]=0;
 		telematic_display_info_msg_data[6]=0;
+
+		//load stored params
+		leftParkMirrorHorizontalPos=	(uint8_t)readFromFlashBH(1);
+		leftParkMirrorVerticalPos=		(uint8_t)readFromFlashBH(2);
+		rightParkMirrorHorizontalPos=	(uint8_t)readFromFlashBH(3);
+		rightParkMirrorVerticalPos=		(uint8_t)readFromFlashBH(4);
+
 	}
 
 	void BHperiodicCheck(){
@@ -56,5 +63,113 @@
 				}
 			}
 		}
+
+		if(function_park_mirror && (currentGear==0x0E)){ //if function parkmirror is enabled and reverse gear is seleected
+			if(!restoreMirrorsPosition){ //if we are not returning to operative position
+				switch(turnIndicator){
+					case 0x02: //left arrow inserted
+						if(!leftParkMirrorMovementEnabled && !rightParkMirrorMovementEnabled) storeCurrentMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
+						leftParkMirrorMovementEnabled=1; //Enable sending command to move mirror
+						break;
+					case 0x01: //right arrow inserted
+						if(!leftParkMirrorMovementEnabled && !rightParkMirrorMovementEnabled) storeCurrentMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
+						rightParkMirrorMovementEnabled=1; //Enable sending command to move mirror
+						break;
+					default:
+				}
+			}
+		}
+
+
+		parkMirrorMsgData[0]= leftMirrorHorizontalPos;
+		parkMirrorMsgData[1]= leftMirrorVerticalPos;
+		parkMirrorMsgData[2]= rightMirrorHorizontalPos;
+		parkMirrorMsgData[3]= rightMirrorVerticalPos;
+
+
+
+		if(restoreMirrorsPosition){ //if we have to restore operative side mirrors position
+			if(currentTime-lastParkMirrorMsgTime>100){ //each 100msec send a packet
+					can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+					lastParkMirrorMsgTime=currentTime;
+			}
+			if(currentTime-restoreMirrorsPositionRequestTime>5000){ //after 5 seconds
+				restoreMirrorsPosition=0;
+			}
+		}else{
+			if(leftParkMirrorMovementEnabled){
+				//prepare message to send
+				parkMirrorMsgData[0]= leftParkMirrorHorizontalPos;
+				parkMirrorMsgData[1]= leftParkMirrorVerticalPos;
+			}
+			if(rightParkMirrorMovementEnabled){
+				//prepare message to send
+				parkMirrorMsgData[2]= rightParkMirrorHorizontalPos;
+				parkMirrorMsgData[3]= rightParkMirrorVerticalPos;
+			}
+
+			if(leftParkMirrorMovementEnabled || rightParkMirrorMovementEnabled){ //if mirror movement is requested
+				if(!storeCurrentMirrorPosition && currentGear==0x0E){ //if current pos was stored and gear is reversed
+					if(currentTime-lastParkMirrorMsgTime>100){ //each 100msec send a packet
+						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+						lastParkMirrorMsgTime=currentTime;
+					}
+				}
+				if(currentGear!=0x0E && parkMirrorsSteady){ //if reverse gear no more inserted and mirrors are not moving
+					leftParkMirrorMovementEnabled=0; //Disable sending command to move mirror
+					rightParkMirrorMovementEnabled=0;//Disable sending command to move mirror
+					restoreMirrorsPosition=1; //requesto to restore mirrors to their original position
+					restoreMirrorsPositionRequestTime=currentTime;
+				}
+			}
+		}
 	}
+
+	uint8_t saveOnflashBH(){
+		//last page to store on flash is 0x0801 F800 (we can store 2 bytes each time)
+		// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
+		HAL_FLASH_Unlock(); //unlock flash
+
+		//erase flash
+		FLASH_EraseInitTypeDef eraseInitStruct;
+		uint32_t pageError=0;
+		eraseInitStruct.TypeErase= FLASH_TYPEERASE_PAGES;
+		eraseInitStruct.PageAddress=LAST_PAGE_ADDRESS; //last page address begin
+		eraseInitStruct.NbPages=1;
+		if(HAL_FLASHEx_Erase(&eraseInitStruct,&pageError)!=HAL_OK){ //error during erase
+			HAL_FLASH_Lock();
+			onboardLed_red_blink(8);
+			return 254; //error
+		}
+
+		//it seems that stm32F072 supports only writing 2byte words
+		//write parameter
+		uint8_t paramsNumber=4;
+		uint16_t params[40] = {
+				leftParkMirrorHorizontalPos,
+				leftParkMirrorVerticalPos,
+				rightParkMirrorHorizontalPos,
+				rightParkMirrorVerticalPos,
+		};
+
+		for (uint8_t i = 0; i < paramsNumber; i++) {
+		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
+		        HAL_FLASH_Lock();
+		        onboardLed_red_blink(9);
+		        return 255;
+		    }
+		}
+
+		//lock the flash
+		HAL_FLASH_Lock();
+		return 0;
+
+	}
+
+	uint16_t readFromFlashBH(uint8_t paramId){
+		if(paramId<1) return 0;
+		uint16_t tmpParam=*(volatile uint16_t*)(LAST_PAGE_ADDRESS+((paramId-1)*4));
+		return tmpParam;
+	}
+
 #endif

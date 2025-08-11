@@ -337,7 +337,7 @@
 		extern UART_HandleTypeDef huart2; // this is the serial line between baccables
 
 		extern uint32_t currentRpmSpeed;	//used by C1baccable
-		extern uint8_t currentGear; 		//used by C1baccable
+		extern uint8_t currentGear; 		//used by C1baccable and BHbaccable
 
 		// Storage for status and received message buffer
 		extern CAN_RxHeaderTypeDef rx_msg_header;  //msg header
@@ -367,4 +367,25 @@
 		//SHOW RACE MASK
 		extern uint8_t function_show_race_mask;
 
+		//PARK_MIRROR
+		extern uint8_t function_park_mirror;
+		extern uint8_t leftMirrorVerticalPos; 	//current Operative position
+		extern uint8_t leftMirrorHorizontalPos;	//current Operative position
+		extern uint8_t rightMirrorVerticalPos;	//current Operative position
+		extern uint8_t rightMirrorHorizontalPos;//current Operative position
+		extern uint8_t storeCurrentMirrorPosition;//get current Operative position boolean
+		extern uint8_t leftParkMirrorVerticalPos; //Stored Park position
+		extern uint8_t leftParkMirrorHorizontalPos; //Stored Park position
+		extern uint8_t rightParkMirrorVerticalPos;	//Stored Park position
+		extern uint8_t rightParkMirrorHorizontalPos; //Stored Park position
+		extern uint8_t storeCurrentParkMirrorPosition; //Store Park mirrors position Request
+		extern uint8_t parkMirrorsSteady; // park mirrors are not moving if this is =1
+		extern uint8_t turnIndicator; //0= center, 1=right, 2=left
+		extern uint8_t parkMirrorMsgData[8];
+		extern CAN_TxHeaderTypeDef parkMirrorMsgHeader;
+		extern uint32_t lastParkMirrorMsgTime;
+		extern uint32_t restoreMirrorsPositionRequestTime;
+		extern uint8_t restoreMirrorsPosition;
+		extern uint8_t leftParkMirrorMovementEnabled;
+		extern uint8_t rightParkMirrorMovementEnabled;
 #endif /* INC_GLOBALVARIABLES_H_ */

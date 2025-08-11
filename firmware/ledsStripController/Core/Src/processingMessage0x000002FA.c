@@ -423,7 +423,8 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	|| //SEATBELT_ALARM_DISABLED
 											((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
 											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
-											((uint16_t)function_show_race_mask						!= readFromFlash(22))	){ //SHOW_RACE_MASK
+											((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
+											((uint16_t)function_park_mirror							!= readFromFlash(23))	){ //PARK_MIRROR
 												//save it on flash
 												saveOnflash();
 										}
@@ -511,6 +512,14 @@ void processingMessage0x000002FA(){
 										if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
 										addToUARTSendQueue(tmpArr3, 2);
 										break;
+									case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
+										function_park_mirror=!function_park_mirror;
+										//Now let's inform the BH Baccable
+										uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
+										if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorStoreCurPos;
+										addToUARTSendQueue(tmpArr4, 2);
+										break;
+
 									default:
 										break;
 								}

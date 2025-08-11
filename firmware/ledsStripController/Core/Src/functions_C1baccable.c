@@ -45,6 +45,12 @@
 		uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
 		if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
 		addToUARTSendQueue(tmpArr3, 2);
+
+		function_park_mirror= (uint16_t)readFromFlash(23);
+		//Now let's inform the BH Baccable
+		uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
+		if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorEnabled;
+		addToUARTSendQueue(tmpArr4, 2);
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -67,6 +73,11 @@
 				uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
 				if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
 				addToUARTSendQueue(tmpArr3, 2);
+
+				//Now let's inform the BH Baccable
+				uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
+				if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorEnabled;
+				addToUARTSendQueue(tmpArr4, 2);
 			}
 		}
 
@@ -654,6 +665,9 @@
 			case 21:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_show_race_mask];
 				break;
+			case 22:
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_park_mirror];
+				break;
 			default:
 				break;
 		}
@@ -1005,7 +1019,8 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint16_t params[22] = {
+		uint8_t paramsNumber=23;
+		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
 		  function_led_strip_controller_enabled,
@@ -1028,9 +1043,10 @@
 		  function_pedal_booster_enabled,
 		  function_disable_odometer_blink,
 		  function_show_race_mask,
+		  function_park_mirror,
 		};
 
-		for (uint8_t i = 0; i < 22; i++) {
+		for (uint8_t i = 0; i < paramsNumber; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
 		        HAL_FLASH_Lock();
 		        onboardLed_red_blink(9);
@@ -1306,7 +1322,15 @@
 					#endif
 				}
 				break;
-
+			case 23: //PARK_MIRROR
+				if(tmpParam>1){
+					#if defined(PARK_MIRROR)
+						return 1;
+					#else
+						return 0;
+					#endif
+				}
+				break;
 			default:
 				return 0;
 				break;
