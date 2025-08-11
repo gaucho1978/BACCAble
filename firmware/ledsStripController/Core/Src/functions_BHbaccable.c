@@ -125,7 +125,7 @@
 		}
 	}
 
-	uint8_t saveOnflashBH(){
+	uint8_t saveOnFlashBH(){
 		//last page to store on flash is 0x0801 F800 (we can store 2 bytes each time)
 		// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
 		HAL_FLASH_Unlock(); //unlock flash
