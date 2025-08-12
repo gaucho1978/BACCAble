@@ -373,7 +373,7 @@
 		extern uint8_t leftMirrorHorizontalPos;	//current Operative position
 		extern uint8_t rightMirrorVerticalPos;	//current Operative position
 		extern uint8_t rightMirrorHorizontalPos;//current Operative position
-		extern uint8_t storeCurrentMirrorPosition;//get current Operative position boolean
+		extern uint8_t storeOperativeMirrorPosition;//get Operative Operative position boolean
 		extern uint8_t leftParkMirrorVerticalPos; //Stored Park position
 		extern uint8_t leftParkMirrorHorizontalPos; //Stored Park position
 		extern uint8_t rightParkMirrorVerticalPos;	//Stored Park position
@@ -384,8 +384,8 @@
 		extern uint8_t parkMirrorMsgData[8];
 		extern CAN_TxHeaderTypeDef parkMirrorMsgHeader;
 		extern uint32_t lastParkMirrorMsgTime;
-		extern uint32_t restoreMirrorsPositionRequestTime;
-		extern uint8_t restoreMirrorsPosition;
+		extern uint32_t restoreOperativeMirrorsPositionRequestTime;
+		extern uint8_t restoreOperativeMirrorsPosition;
 		extern uint8_t leftParkMirrorPositionRequired;
 		extern uint8_t rightParkMirrorPositionRequired;
 #endif /* INC_GLOBALVARIABLES_H_ */

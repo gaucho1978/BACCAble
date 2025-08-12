@@ -379,9 +379,9 @@ void processingStandardMessage(){
 			//leftHorizontal,leftVertical, rightHorizontal,rightVertical is from byte x (one byte each one)
 			#if defined(BHbaccable)
 				parkMirrorsSteady=((rx_msg_data[3] & 0x40)==0x00) && ((rx_msg_data[3] & 0x10)==0x00); //1 if side mirrors are not moving
-				if(storeCurrentMirrorPosition ){ //if it was requested to store current side mirrors position
+				if(storeOperativeMirrorPosition ){ //if it was requested to store Operative side mirrors position
 					if(parkMirrorsSteady){ //if mirror movement is not in progress
-						storeCurrentMirrorPosition=0;
+						storeOperativeMirrorPosition=0;
 						leftMirrorHorizontalPos=	rx_msg_data[0];
 						leftMirrorVerticalPos=		rx_msg_data[1];
 						rightMirrorHorizontalPos=	rx_msg_data[2];
@@ -416,8 +416,8 @@ void processingStandardMessage(){
 
 			#if defined(BHbaccable)
 				//BH movement of mirror is requested
-				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreMirrorsPosition){ //if required
-					if(!storeCurrentMirrorPosition){ //if current pos was stored
+				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
+					if(!storeOperativeMirrorPosition){ //if Operative position was stored
 						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
 					}
 				}

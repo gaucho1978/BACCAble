@@ -64,64 +64,60 @@
 			}
 		}
 
-		if(function_park_mirror && (currentGear==0x0E)){ //if function parkmirror is enabled and reverse gear is seleected
-			if(!restoreMirrorsPosition){ //if we are not returning to operative position
-				switch(turnIndicator){
-					case 0x02: //left arrow inserted
-						if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired) storeCurrentMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
-						leftParkMirrorPositionRequired=1; //Enable sending command to move mirror
-						break;
-					case 0x01: //right arrow inserted
-						if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired) storeCurrentMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
-						rightParkMirrorPositionRequired=1; //Enable sending command to move mirror
-						break;
-					default:
+		if(function_park_mirror){ //if function parkmirror is enabled
+
+			if(currentGear==0x0E){ //if reverse gear is selected
+				if(!restoreOperativeMirrorsPosition){ //if we are not returning to operative position
+					switch(turnIndicator){
+						case 0x02: //left arrow inserted
+							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired) storeOperativeMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
+							leftParkMirrorPositionRequired=1; //Enable sending command to move mirror
+							break;
+						case 0x01: //right arrow inserted
+							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired) storeOperativeMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
+							rightParkMirrorPositionRequired=1; //Enable sending command to move mirror
+							break;
+						default:
+					}
 				}
+			}else{
+				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){ //if mirrors are potentially not in operative position,
+					restoreOperativeMirrorsPosition=1; //request to restore mirrors to their original position
+					restoreOperativeMirrorsPositionRequestTime=currentTime;
+				}
+				leftParkMirrorPositionRequired=0; //stop sending message to set Park position for mirrors
+				rightParkMirrorPositionRequired=0;//stop sending message to set Park position for mirrors
 			}
-		}
 
-		//Prepare msg to send: set Operative position of the mirrors
-		parkMirrorMsgData[0]= leftMirrorHorizontalPos;
-		parkMirrorMsgData[1]= leftMirrorVerticalPos;
-		parkMirrorMsgData[2]= rightMirrorHorizontalPos;
-		parkMirrorMsgData[3]= rightMirrorVerticalPos;
 
-		//Prepare msg to send: if required, set park position of the mirrors
-		if(!restoreMirrorsPosition){
+			//Prepare msg to send: set Operative position of the mirrors
+			parkMirrorMsgData[0]= leftMirrorHorizontalPos;
+			parkMirrorMsgData[1]= leftMirrorVerticalPos;
+			parkMirrorMsgData[2]= rightMirrorHorizontalPos;
+			parkMirrorMsgData[3]= rightMirrorVerticalPos;
+
+			//Prepare msg to send: if required, set park position of the mirrors
 			if(leftParkMirrorPositionRequired){
-				//prepare message to send
 				parkMirrorMsgData[0]= leftParkMirrorHorizontalPos;
 				parkMirrorMsgData[1]= leftParkMirrorVerticalPos;
 			}
 			if(rightParkMirrorPositionRequired){
-				//prepare message to send
 				parkMirrorMsgData[2]= rightParkMirrorHorizontalPos;
 				parkMirrorMsgData[3]= rightParkMirrorVerticalPos;
 			}
-		}
-		if(restoreMirrorsPosition){ //if we have to restore operative side mirrors position
-			if(currentTime-lastParkMirrorMsgTime>1000){ //each 1000msec send a packet
-					can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
-					lastParkMirrorMsgTime=currentTime;
-			}
-			if(currentTime-restoreMirrorsPositionRequestTime>6000){ //after 6 seconds
-				restoreMirrorsPosition=0;
-			}
-		}else{
 
 
-			if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){ //if mirror movement is requested
-				if(!storeCurrentMirrorPosition && currentGear==0x0E){ //if current pos was stored and gear is reversed
+			if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
+				if(!storeOperativeMirrorPosition){ //if operative position was stored
 					if(currentTime-lastParkMirrorMsgTime>1000){ //each 1000msec send a packet
 						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
 						lastParkMirrorMsgTime=currentTime;
 					}
 				}
-				if(currentGear!=0x0E && parkMirrorsSteady){ //if reverse gear no more inserted and mirrors are not moving
-					leftParkMirrorPositionRequired=0; //Disable sending command to move mirror
-					rightParkMirrorPositionRequired=0;//Disable sending command to move mirror
-					restoreMirrorsPosition=1; //request to restore mirrors to their original position
-					restoreMirrorsPositionRequestTime=currentTime;
+				if(restoreOperativeMirrorsPosition){
+					if(currentTime-restoreOperativeMirrorsPositionRequestTime>6000){ //after 6 seconds
+						restoreOperativeMirrorsPosition=0;
+					}
 				}
 			}
 		}

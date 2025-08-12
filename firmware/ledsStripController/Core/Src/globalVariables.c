@@ -511,7 +511,7 @@ uint8_t leftMirrorVerticalPos=0; 		//current Operative position
 uint8_t leftMirrorHorizontalPos=0;		//current Operative position
 uint8_t rightMirrorVerticalPos=0;		//current Operative position
 uint8_t rightMirrorHorizontalPos=0;		//current Operative position
-uint8_t storeCurrentMirrorPosition=0;	//get current Operative position boolean
+uint8_t storeOperativeMirrorPosition=0;	//get current Operative position boolean
 uint8_t leftParkMirrorVerticalPos=0; 	//Stored Park position
 uint8_t leftParkMirrorHorizontalPos=0;	//Stored Park position
 uint8_t rightParkMirrorVerticalPos=0;	//Stored Park position
@@ -522,7 +522,7 @@ uint8_t turnIndicator=0; //0= center, 1=right, 2=left
 uint8_t parkMirrorMsgData[8]={0x00,0x00,0x00,0x00,0x80,0x00,0x00,0x00};
 CAN_TxHeaderTypeDef parkMirrorMsgHeader={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x5A8, .DLC=8};
 uint32_t lastParkMirrorMsgTime=0;
-uint32_t restoreMirrorsPositionRequestTime=0;
-uint8_t restoreMirrorsPosition=0;
+uint32_t restoreOperativeMirrorsPositionRequestTime=0;
+uint8_t restoreOperativeMirrorsPosition=0;
 uint8_t leftParkMirrorPositionRequired=0;
 uint8_t rightParkMirrorPositionRequired=0;
