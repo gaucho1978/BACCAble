@@ -382,10 +382,19 @@ void processingStandardMessage(){
 				if(storeOperativeMirrorPosition ){ //if it was requested to store Operative side mirrors position
 					if(parkMirrorsSteady){ //if mirror movement is not in progress
 						storeOperativeMirrorPosition=0;
-						leftMirrorHorizontalPos=	rx_msg_data[0];
-						leftMirrorVerticalPos=		rx_msg_data[1];
-						rightMirrorHorizontalPos=	rx_msg_data[2];
-						rightMirrorVerticalPos=		(rx_msg_data[3]<<4) | (rx_msg_data[4]>>4);
+						if(parkMirrorOperativePositionNotStored){//if position was not previously stored, read it and store it
+							parkMirrorOperativePositionNotStored=0;
+							leftMirrorHorizontalOperativePos=	rx_msg_data[0];
+							leftMirrorVerticalOperativePos=		rx_msg_data[1];
+							rightMirrorHorizontalOperativePos=	rx_msg_data[2];
+							rightMirrorVerticalOperativePos=	(rx_msg_data[3]<<4) | (rx_msg_data[4]>>4);
+							saveOnFlashBH();
+						}else{ //otherwise get it from memory
+							leftMirrorHorizontalOperativePos	=(uint8_t)readFromFlashBH(6);
+							leftMirrorVerticalOperativePos		=(uint8_t)readFromFlashBH(7);
+							rightMirrorHorizontalOperativePos	=(uint8_t)readFromFlashBH(8);
+							rightMirrorVerticalOperativePos 	=(uint8_t)readFromFlashBH(9);
+						}
 					}
 				}
 				if(storeCurrentParkMirrorPosition){

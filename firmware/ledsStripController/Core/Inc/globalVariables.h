@@ -369,10 +369,10 @@
 
 		//PARK_MIRROR
 		extern uint8_t function_park_mirror;
-		extern uint8_t leftMirrorVerticalPos; 	//current Operative position
-		extern uint8_t leftMirrorHorizontalPos;	//current Operative position
-		extern uint8_t rightMirrorVerticalPos;	//current Operative position
-		extern uint8_t rightMirrorHorizontalPos;//current Operative position
+		extern uint8_t leftMirrorHorizontalOperativePos;	//current Operative position
+		extern uint8_t leftMirrorVerticalOperativePos; 	//current Operative position
+		extern uint8_t rightMirrorHorizontalOperativePos;//current Operative position
+		extern uint8_t rightMirrorVerticalOperativePos;	//current Operative position
 		extern uint8_t storeOperativeMirrorPosition;//get Operative Operative position boolean
 		extern uint8_t leftParkMirrorVerticalPos; //Stored Park position
 		extern uint8_t leftParkMirrorHorizontalPos; //Stored Park position
@@ -388,4 +388,6 @@
 		extern uint8_t restoreOperativeMirrorsPosition;
 		extern uint8_t leftParkMirrorPositionRequired;
 		extern uint8_t rightParkMirrorPositionRequired;
+		extern uint8_t parkMirrorOperativePositionNotStored;
+
 #endif /* INC_GLOBALVARIABLES_H_ */

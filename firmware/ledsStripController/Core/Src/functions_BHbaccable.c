@@ -25,10 +25,15 @@
 		telematic_display_info_msg_data[6]=0;
 
 		//load stored params
-		leftParkMirrorHorizontalPos=	(uint8_t)readFromFlashBH(1);
-		leftParkMirrorVerticalPos=		(uint8_t)readFromFlashBH(2);
-		rightParkMirrorHorizontalPos=	(uint8_t)readFromFlashBH(3);
-		rightParkMirrorVerticalPos=		(uint8_t)readFromFlashBH(4);
+		leftParkMirrorHorizontalPos		=(uint8_t)readFromFlashBH(1);
+		leftParkMirrorVerticalPos		=(uint8_t)readFromFlashBH(2);
+		rightParkMirrorHorizontalPos	=(uint8_t)readFromFlashBH(3);
+		rightParkMirrorVerticalPos		=(uint8_t)readFromFlashBH(4);
+		storeCurrentParkMirrorPosition	=(uint8_t)readFromFlashBH(5);
+		leftMirrorHorizontalOperativePos=(uint8_t)readFromFlashBH(6);
+		leftMirrorVerticalOperativePos	=(uint8_t)readFromFlashBH(7);
+		rightMirrorHorizontalOperativePos=(uint8_t)readFromFlashBH(8);
+		rightMirrorVerticalOperativePos =(uint8_t)readFromFlashBH(9);
 
 	}
 
@@ -91,10 +96,10 @@
 
 
 			//Prepare msg to send: set Operative position of the mirrors
-			parkMirrorMsgData[0]= leftMirrorHorizontalPos;
-			parkMirrorMsgData[1]= leftMirrorVerticalPos;
-			parkMirrorMsgData[2]= rightMirrorHorizontalPos;
-			parkMirrorMsgData[3]= rightMirrorVerticalPos;
+			parkMirrorMsgData[0]= leftMirrorHorizontalOperativePos;
+			parkMirrorMsgData[1]= leftMirrorVerticalOperativePos;
+			parkMirrorMsgData[2]= rightMirrorHorizontalOperativePos;
+			parkMirrorMsgData[3]= rightMirrorVerticalOperativePos;
 
 			//Prepare msg to send: if required, set park position of the mirrors
 			if(leftParkMirrorPositionRequired){
@@ -142,12 +147,18 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=4;
+		uint8_t paramsNumber=9;
 		uint16_t params[40] = {
 				leftParkMirrorHorizontalPos,
 				leftParkMirrorVerticalPos,
 				rightParkMirrorHorizontalPos,
 				rightParkMirrorVerticalPos,
+				parkMirrorOperativePositionNotStored,
+				leftMirrorHorizontalOperativePos,
+				leftMirrorVerticalOperativePos,
+				rightMirrorHorizontalOperativePos,
+				rightMirrorVerticalOperativePos,
+
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {

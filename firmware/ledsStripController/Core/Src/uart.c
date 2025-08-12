@@ -161,6 +161,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									break;
 								case BHcmdFunctParkMirrorDisabled: //park mirror disable
 									function_park_mirror=0;
+									parkMirrorOperativePositionNotStored=1;
 									break;
 								case BHcmdFunctParkMirrorEnabled: //park mirror enabled
 									function_park_mirror=1;

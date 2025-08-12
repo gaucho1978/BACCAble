@@ -507,10 +507,10 @@ uint8_t function_show_race_mask=0;
 
 //PARK_MIRROR
 uint8_t function_park_mirror=0;
-uint8_t leftMirrorVerticalPos=0; 		//current Operative position
-uint8_t leftMirrorHorizontalPos=0;		//current Operative position
-uint8_t rightMirrorVerticalPos=0;		//current Operative position
-uint8_t rightMirrorHorizontalPos=0;		//current Operative position
+uint8_t leftMirrorHorizontalOperativePos=0;		//current Operative position
+uint8_t leftMirrorVerticalOperativePos=0; 		//current Operative position
+uint8_t rightMirrorHorizontalOperativePos=0;	//current Operative position
+uint8_t rightMirrorVerticalOperativePos=0;		//current Operative position
 uint8_t storeOperativeMirrorPosition=0;	//get current Operative position boolean
 uint8_t leftParkMirrorVerticalPos=0; 	//Stored Park position
 uint8_t leftParkMirrorHorizontalPos=0;	//Stored Park position
@@ -526,3 +526,4 @@ uint32_t restoreOperativeMirrorsPositionRequestTime=0;
 uint8_t restoreOperativeMirrorsPosition=0;
 uint8_t leftParkMirrorPositionRequired=0;
 uint8_t rightParkMirrorPositionRequired=0;
+uint8_t parkMirrorOperativePositionNotStored=1;
