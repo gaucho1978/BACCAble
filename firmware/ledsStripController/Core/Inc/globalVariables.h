@@ -386,6 +386,6 @@
 		extern uint32_t lastParkMirrorMsgTime;
 		extern uint32_t restoreMirrorsPositionRequestTime;
 		extern uint8_t restoreMirrorsPosition;
-		extern uint8_t leftParkMirrorMovementEnabled;
-		extern uint8_t rightParkMirrorMovementEnabled;
+		extern uint8_t leftParkMirrorPositionRequired;
+		extern uint8_t rightParkMirrorPositionRequired;
 #endif /* INC_GLOBALVARIABLES_H_ */

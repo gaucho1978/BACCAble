@@ -414,7 +414,14 @@ void processingStandardMessage(){
 				}
 			#endif
 
-
+			#if defined(BHbaccable)
+				//BH movement of mirror is requested
+				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreMirrorsPosition){ //if required
+					if(!storeCurrentMirrorPosition){ //if current pos was stored
+						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+					}
+				}
+			#endif
 
 			break;
 		case 0x000005AC:

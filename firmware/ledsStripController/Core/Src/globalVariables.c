@@ -524,5 +524,5 @@ CAN_TxHeaderTypeDef parkMirrorMsgHeader={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .
 uint32_t lastParkMirrorMsgTime=0;
 uint32_t restoreMirrorsPositionRequestTime=0;
 uint8_t restoreMirrorsPosition=0;
-uint8_t leftParkMirrorMovementEnabled=0;
-uint8_t rightParkMirrorMovementEnabled=0;
+uint8_t leftParkMirrorPositionRequired=0;
+uint8_t rightParkMirrorPositionRequired=0;
