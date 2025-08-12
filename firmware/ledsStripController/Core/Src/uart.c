@@ -369,6 +369,7 @@ void processUART() {
 						case BhBusIDparamString:
 						case BhBusIDgetStatus:
 						case BhBusChimeRequest:
+						case BhBusID:
 							lastMsgSentToBHTime=HAL_GetTick();
 							break;
 						default:
