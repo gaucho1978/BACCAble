@@ -19,7 +19,10 @@
 	#if defined(C2baccable)
 		#include "functions_C2baccable.h"
 	#endif
-
+	#if defined(BHbaccable)
+		#include "functions_BHbaccable.h"
+	#endif
+    
 	void processingStandardMessage();
 
 #endif
