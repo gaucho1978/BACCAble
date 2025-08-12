@@ -415,10 +415,12 @@ void processingStandardMessage(){
 			#endif
 
 			#if defined(BHbaccable)
-				//BH movement of mirror is requested
-				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
-					if(!storeOperativeMirrorPosition){ //if Operative position was stored
-						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+				if(function_park_mirror){
+					//BH movement of mirror is requested
+					if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
+						if(!storeOperativeMirrorPosition && !parkMirrorsSteady){ //if Operative position was stored and mirror is not steady
+							can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+						}
 					}
 				}
 			#endif
