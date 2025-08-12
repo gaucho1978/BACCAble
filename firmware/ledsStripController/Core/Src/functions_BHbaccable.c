@@ -87,7 +87,7 @@
 		parkMirrorMsgData[3]= rightMirrorVerticalPos;
 
 		//Prepare msg to send: if required, set park position of the mirrors
-		if(!restoreMirrorPosition){
+		if(!restoreMirrorsPosition){
 			if(leftParkMirrorPositionRequired){
 				//prepare message to send
 				parkMirrorMsgData[0]= leftParkMirrorHorizontalPos;
