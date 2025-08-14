@@ -162,6 +162,20 @@ void processingStandardMessage(){
 		case 0x00000226:
 			processingMessage0x00000226();
 			break;
+		case 0x0000025A:
+			#if defined(BHbaccable)
+				if (ESCandTCinversion){
+					if(currentDNAmode!=0x0C){ //if we are not in race
+						if((rx_msg_data[0] & 0x7C)!= 0x04){   //drive style is on byte 0 from bit 2 to 6 (without bit shift is: 0x40=natural, 0x20=dynamic, 0x10=Allweather, 0x04=race)
+							rx_msg_data[0] = (rx_msg_data[0] & ~0x7C) | 0x04;
+							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+							//onboardLed_blue_on();
+						}
+					}
+				}
+			#endif
+
+			break;
 		case 0x000002ED: //message to dashboard containing shift indicator
 			processingMessage0x000002ED();
 			break;
@@ -261,13 +275,27 @@ void processingStandardMessage(){
 				if (ESCandTCinversion){
 					if(currentDNAmode!=0x0C){ //if not in race
 						rx_msg_data[7] = (rx_msg_data[7] & ~0x1F) | 0x0C;  //set Race mode (0x30) to show on IPC the race screen
+						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+						//onboardLed_blue_on();
 					}
-					can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-					//onboardLed_blue_on();
+
 				}
 
 				//turn indicators are on byte 6, bit 2 and 1
 				turnIndicator= (rx_msg_data[6]>>1) & 0x03; //0= center, 1=right, 2=left
+			#endif
+			break;
+		case 0x000004AF:
+			#if defined(C1baccable) || defined(C2baccable)
+				if (ESCandTCinversion){
+					if(currentDNAmode!=0x30){ //if we're not in race
+						if(((rx_msg_data[0] & 0x01)!=0x01) || ((rx_msg_data[1] & 0x04)!=0x04)){  //if not set as expected in race
+							rx_msg_data[0] = rx_msg_data[0] | 0x01;  //set function bit
+							rx_msg_data[1] = rx_msg_data[1] | 0x04;  //set function bit
+							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+						}
+					}
+				}
 			#endif
 			break;
 		case 0x000004B1:
@@ -412,8 +440,8 @@ void processingStandardMessage(){
 		case 0x000005A8:
 			#if defined(C1baccable)
 				if (ESCandTCinversion){
-					if((rx_msg_data[4] & 0x78)!=0x30){
-						rx_msg_data[4] = (rx_msg_data[4] & ~0x78) | 0x30;  //set track mode
+					if((rx_msg_data[4] & 0x78)!=0x30){  //if not race
+						rx_msg_data[4] = (rx_msg_data[4] & ~0x78) | 0x30;  //set track mode (race)
 						uint8_t tmpCounter=(rx_msg_data[6] & 0x0F)+1;
 						if(tmpCounter>0x0F) tmpCounter=0;
 						rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
