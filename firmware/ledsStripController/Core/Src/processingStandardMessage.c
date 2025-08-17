@@ -34,11 +34,15 @@ void processingStandardMessage(){
 
 		case 0x00000090:
 			#if defined(BHbaccable) //the car is showing something (ie:radio name) on the dashboard
-				//override the displaied string, by restarting the frame
-				paramsStringCharIndex=0; //prepare to send first char of the string
-				telematic_display_info_field_frameNumber=0; //prepare to send first frame
-				if((requestToSendOneFrame==0) && (dashboardPageStringArray[0]!=' ')) requestToSendOneFrame++; //if message is not empty (we check only first char) and if required, increment messages sequence to send, in order to send at least one
-				lastSentTelematic_display_info_msg_Time=0; //if required will immediately send a sequence
+				if(ESCandTCinversion){ //if esc/tc is active, don't show baccable menu
+					 requestToSendOneFrame=0;
+				}else{
+					//override the displaied string, by restarting the frame
+					paramsStringCharIndex=0; //prepare to send first char of the string
+					telematic_display_info_field_frameNumber=0; //prepare to send first frame
+					if((requestToSendOneFrame==0) && (dashboardPageStringArray[0]!=' ')) requestToSendOneFrame++; //if message is not empty (we check only first char) and if required, increment messages sequence to send, in order to send at least one
+					lastSentTelematic_display_info_msg_Time=0; //if required will immediately send a sequence
+				}
 			#endif
 			//on BH can bus, slow bus at 125kbps, this message contains:
 
@@ -438,6 +442,7 @@ void processingStandardMessage(){
 			#endif
 			break;
 		case 0x000005A8:
+			//when in race, byte 4 bit 3-6 has value 6
 			#if defined(C1baccable)
 				if (ESCandTCinversion){
 					if((rx_msg_data[4] & 0x78)!=0x30){  //if not race

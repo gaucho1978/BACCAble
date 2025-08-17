@@ -189,10 +189,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						break;
 					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
 							#if defined(BHbaccable)
-								weCanSendAMessageReply=HAL_GetTick();
 								memcpy(&dashboardPageStringArray[0], &rxBuffer[1], DASHBOARD_MESSAGE_MAX_LENGTH); //copy array that we will use in the main
 
-								if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
+								if(ESCandTCinversion){ //if esc/tc is active, don't show baccable menu
+									requestToSendOneFrame=0;
+								}else{
+									if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
+								}
+								weCanSendAMessageReply=HAL_GetTick();
 
 							#endif
 						break;
@@ -228,7 +232,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						break;
 					case C1_Bh_BusID: //message received by C1 and BH baccable.
 						#if (defined(C1baccable) || defined(BHbaccable))
-						//#if defined(BHbaccable)
+						//#if defined(C1baccable)
 							if(rxBuffer[1]==C1BHcmdShowRaceScreen){
 								ESCandTCinversion=1;
 							}

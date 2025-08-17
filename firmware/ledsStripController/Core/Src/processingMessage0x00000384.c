@@ -16,7 +16,7 @@ void processingMessage0x00000384(){
 		//current DNA mode, also called "Drive Style Status" (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural [shifted by 2 bits becomes 0x00], 0x2=dynamic [shifted by 2 bits becomes 0x08], 0x4=AllWeather [shifted by 2 bits becomes 0x10], 0xC=race [shifted by 2 bits becomes 0x30]
 		currentDNAmode=rx_msg_data[1] & 0x7C; //7C is the mask from bit 6 to 2 (we avoid bit shift to save cpu loops)
 		if (ESCandTCinversion){
-			//memcpy(&DNA_msg_data, &rx_msg_data, 8);
+
 			if(currentDNAmode!=0x30){ //if not in race
 				rx_msg_data[1] = (rx_msg_data[1] & ~0x7C) | 0x30;  //set Race mode (0x30) to show on IPC the race screen
 			}
@@ -27,6 +27,7 @@ void processingMessage0x00000384(){
 			can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
 			//onboardLed_blue_on();
 		}
+		//memcpy(&DNA_msg_data, &rx_msg_data, 8);
 
 	#endif
 

@@ -55,6 +55,19 @@
 
 	void C1baccablePeriodicCheck(){
 		lowConsume_process();
+		/*
+		if(ESCandTCinversion){
+			if((currentTime-lastSent384)>50){
+				lastSent384=currentTime;
+				DNA_msg_data[1] = (DNA_msg_data[1] & ~0x7C) | 0x30;  //set Race mode (0x30) to show on IPC the race screen
+				uint8_t tmpCounter=(DNA_msg_data[6] & 0x0F)+1;
+				if(tmpCounter>0x0F) tmpCounter=0;
+				DNA_msg_data[6]= (DNA_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
+				DNA_msg_data[7]=calculateCRC(DNA_msg_data,DNA_msg_header.DLC); //update CRC
+				can_tx((CAN_TxHeaderTypeDef *)&DNA_msg_header, DNA_msg_data); //transmit the modified packet
+			}
+		}
+		*/
 
 		if(instructSlaveBoardsTriggerEnabled){
 			if((currentTime-allProcessorsWakeupTime)>5000){

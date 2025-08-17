@@ -360,8 +360,10 @@
 
 		//ESC/TC function (common to C1,C2,BH
 		extern uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
-		//extern uint8_t DNA_msg_data[8];
-		//extern CAN_TxHeaderTypeDef DNA_msg_header;
+		extern uint8_t DNA_msg_data[8];
+		extern CAN_TxHeaderTypeDef DNA_msg_header;
+		extern uint32_t lastSent384;
+
 		extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
 
 		//SHOW RACE MASK

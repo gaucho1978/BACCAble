@@ -498,8 +498,9 @@ uint32_t allProcessorsWakeupTime=0;
 
 //ESC/TC function (common to C1,C2,BH
 uint8_t currentDNAmode; //on C1 and C2 bus 0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race (but on BH bus 0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
-//uint8_t DNA_msg_data[8];
-//CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
+uint8_t DNA_msg_data[8];
+CAN_TxHeaderTypeDef DNA_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
+uint32_t lastSent384=0;
 uint8_t ESCandTCinversion=0; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
 
 //SHOW RACE MASK
