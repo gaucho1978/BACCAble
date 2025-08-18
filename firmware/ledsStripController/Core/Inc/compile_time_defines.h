@@ -9,7 +9,7 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V2.11.5"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V2.12.0"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
 	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
@@ -191,6 +191,10 @@
 
 		#ifdef HIDE_DASHBOARD_MENU
 			#pragma message("dashboard menu will be permanently hidden")
+		#endif
+
+		#ifdef ACC_AUTOSTART
+			#pragma message("Enabling function ACC Autostart")
 		#endif
 	#endif
 

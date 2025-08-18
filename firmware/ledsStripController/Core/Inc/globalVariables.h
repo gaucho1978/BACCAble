@@ -266,6 +266,8 @@
 
 		extern uint8_t instructSlaveBoardsTriggerEnabled;
 
+		//ACC Autostart
+		extern uint8_t function_acc_autostart;
 
 	#endif
 

@@ -100,7 +100,7 @@ const char *FW_VERSION=_FW_VERSION;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=23;
+	uint8_t total_pages_in_setup_dashboard_menu=24;
 	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -125,6 +125,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
 			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
 			{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
+			{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
 
 		};
 
@@ -400,6 +401,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	uint8_t instructSlaveBoardsTriggerEnabled=0; //variable to send messages to C2 and BH chips, after a wakeup event
 
+	//ACC Autostart
+	uint8_t function_acc_autostart=0;
 #endif
 
 #if defined(C2baccable)

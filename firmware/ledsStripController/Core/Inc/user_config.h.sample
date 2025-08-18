@@ -44,6 +44,7 @@
 	// #define DISABLE_ODOMETER_BLINK			// if uncommented it will disable odometer blink on dashboard.  It can changed inside baccable SETUP menu.
 	// #define SHOW_RACE_MASK					// if uncommented it will show race screen when the function ESC/TC is in use.  It can changed inside baccable SETUP menu.
 	// #define HIDE_DASHBOARD_MENU				// if uncommented it will permanently hide baccable dashboard menu. Useful to statically set some functions like immo and start&stop without the availability of baccable menu commands.
+	// #define ACC_AUTOSTART					// if uncommented it will allow the ACC+ to automatically restart once the veichle stops for more than 5 seconds. It can changed inside baccable SETUP menu.
 	
 	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
 	// Note: #define shall be on a single line. That's why we put \ at the end for readability

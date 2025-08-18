@@ -12,8 +12,28 @@ void processingMessage0x000002FA(){
 	// Button is pressed on left area of the wheel
 	// These Buttons are detected only if the main panel of the car is on.
 
-	//function ACC Virtual Pad
 	#if defined(C1baccable)
+
+		if(function_acc_autostart){
+			if(ACC_engaged){
+				if(currentSpeed_km_h==0){ //if car is steady
+					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
+						if (rx_msg_data[1] == 0x0A){ //once each 320msec (byte1 low nibble contains a counter from 0 to F)
+							rx_msg_data[0] = 0x90; //Ress button press
+							rx_msg_data[1] = 0x0B; //counter
+							rx_msg_data[2] = 0x0C; //CRC
+							can_tx(&rx_msg_header, rx_msg_data); //send message to simulate RES button press
+							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
+						}
+					}
+				}
+			}
+
+	    }
+
+
+	  	//function ACC Virtual Pad
+
 		if(function_acc_virtual_pad_enabled==1){
 			switch (rx_msg_data[0]){
 				case 0x12: //CC on
@@ -424,7 +444,8 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
 											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
 											((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
-											((uint16_t)function_park_mirror							!= readFromFlash(23))	){ //PARK_MIRROR
+											((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
+											((uint16_t)function_acc_autostart						!= readFromFlash(24))	){ //ACC_AUTOSTART
 												//save it on flash
 												saveOnflash();
 										}
@@ -519,7 +540,9 @@ void processingMessage0x000002FA(){
 										if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorStoreCurPos;
 										addToUARTSendQueue(tmpArr4, 2);
 										break;
-
+									case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
+										function_acc_autostart=!function_acc_autostart;
+										break;
 									default:
 										break;
 								}
