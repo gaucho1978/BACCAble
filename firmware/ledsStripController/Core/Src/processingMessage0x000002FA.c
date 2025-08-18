@@ -22,7 +22,7 @@ void processingMessage0x000002FA(){
 							rx_msg_data[0] = 0x90; //Ress button press
 							rx_msg_data[1] = 0x0B; //counter
 							rx_msg_data[2] = 0x0C; //CRC
-							can_tx(&rx_msg_header, rx_msg_data); //send message to simulate RES button press
+							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
 							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
 						}
 					}
