@@ -439,6 +439,19 @@ void processingStandardMessage(){
 						saveOnFlashBH(); //save it permanently on BH!
 					}
 				}
+
+				if(restoreOperativeMirrorsPosition){ //if we are returning to original operative position
+					//if we completed the return to the original operative position of the mirrors, set the variable as completed
+					if( leftMirrorHorizontalOperativePos==			rx_msg_data[0]){
+						if(leftMirrorVerticalOperativePos==			rx_msg_data[1]){
+							if(rightMirrorHorizontalOperativePos==	rx_msg_data[2]){
+								if(rightMirrorVerticalOperativePos==((rx_msg_data[3]<<4) | (rx_msg_data[4]>>4))){
+									restoreOperativeMirrorsPosition=0; //save the fact that the requested operation was successully completed
+								}
+							}
+						}
+					}
+				}
 			#endif
 			break;
 		case 0x000005A8:

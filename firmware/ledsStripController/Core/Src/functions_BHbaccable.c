@@ -120,7 +120,7 @@
 					}
 				}
 				if(restoreOperativeMirrorsPosition){
-					if(currentTime-restoreOperativeMirrorsPositionRequestTime>6000){ //after 6 seconds
+					if(currentTime-restoreOperativeMirrorsPositionRequestTime>10000){ //after 6 seconds
 						restoreOperativeMirrorsPosition=0;
 					}
 				}
