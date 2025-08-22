@@ -54,6 +54,8 @@
 
 		function_acc_autostart= (uint16_t)readFromFlash(24);
 
+		function_close_windows_with_door_lock=(uint16_t)readFromFlash(25);
+
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -687,6 +689,9 @@
 			case 23:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_acc_autostart];
 				break;
+			case 24:
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_close_windows_with_door_lock];
+				break;
 
 			default:
 				break;
@@ -1039,7 +1044,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=24;
+		uint8_t paramsNumber=25;
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1065,6 +1070,7 @@
 		  function_show_race_mask,
 		  function_park_mirror,
 		  function_acc_autostart,
+		  function_close_windows_with_door_lock,
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -1355,6 +1361,15 @@
 			case 24: //ACC_AUTOSTART
 				if(tmpParam>1){
 					#if defined(ACC_AUTOSTART)
+						return 1;
+					#else
+						return 0;
+					#endif
+				}
+				break;
+			case 25: //CLOSE_WINDOWS
+				if(tmpParam>1){
+					#if defined(CLOSE_WINDOWS)
 						return 1;
 					#else
 						return 0;

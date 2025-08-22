@@ -9,7 +9,7 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V2.12.2"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V2.13.2"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
 	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
@@ -196,6 +196,12 @@
 		#ifdef ACC_AUTOSTART
 			#pragma message("Enabling function ACC Autostart")
 		#endif
+
+		#ifdef CLOSE_WINDOWS
+			#pragma message("Enabling function to Close Windows when door is locked")
+		#endif
+
+
 	#endif
 
 

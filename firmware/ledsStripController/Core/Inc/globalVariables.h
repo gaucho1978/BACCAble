@@ -269,6 +269,12 @@
 		//ACC Autostart
 		extern uint8_t function_acc_autostart;
 
+		//CLOSE_WINDOWS
+		extern uint8_t function_close_windows_with_door_lock;
+		extern uint8_t closeWindowsRequest;
+		extern uint32_t doorCloseTime;
+		extern uint8_t RF_requestor;
+
 	#endif
 
 	#if defined(C2baccable)

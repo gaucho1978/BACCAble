@@ -100,7 +100,7 @@ const char *FW_VERSION=_FW_VERSION;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=24;
+	uint8_t total_pages_in_setup_dashboard_menu=25;
 	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -126,7 +126,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
 			{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 			{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
-
+			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
 		};
 
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
@@ -404,6 +404,14 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//ACC Autostart
 	uint8_t function_acc_autostart=0;
+
+
+	//CLOSE_WINDOWS
+	uint8_t function_close_windows_with_door_lock=0;
+	uint8_t closeWindowsRequest=0;
+	uint32_t doorCloseTime=0;
+	uint8_t RF_requestor=0;
+
 #endif
 
 #if defined(C2baccable)

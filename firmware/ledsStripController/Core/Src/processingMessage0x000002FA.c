@@ -445,7 +445,8 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
 											((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
 											((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
-											((uint16_t)function_acc_autostart						!= readFromFlash(24))	){ //ACC_AUTOSTART
+											((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
+											((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	){ //CLOSE_WINDOWS
 												//save it on flash
 												saveOnflash();
 										}
@@ -542,6 +543,10 @@ void processingMessage0x000002FA(){
 										break;
 									case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
 										function_acc_autostart=!function_acc_autostart;
+										break;
+									case 24: //{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
+										function_close_windows_with_door_lock=!function_close_windows_with_door_lock;
+										closeWindowsRequest=0;
 										break;
 									default:
 										break;
