@@ -312,7 +312,6 @@ const char *FW_VERSION=_FW_VERSION;
 	//REMOTE_START_ENABLED
 	uint8_t function_remote_start_Enabled=0; //default disabled . stored in flash
 	uint8_t engineRemoteStartRequest=0;
-	uint32_t doorOpenTime=0;
 	CAN_TxHeaderTypeDef REMOTE_START_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8};
 	uint8_t REMOTE_START_msg_data[8]={0x42,0x04,0x96,0,};
 	uint8_t RF_fob_number=0;
@@ -411,6 +410,11 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t closeWindowsRequest=0;  //0=disabled, 1=close windows, 2=windows ajar
 	uint32_t doorCloseTime=0;
 	uint8_t RF_requestor=0;
+	uint8_t doorLocksRequestsCounter=0;
+
+	uint8_t openWindowsRequest=0;  //0=disabled, 1=open windows
+	uint32_t doorOpenTime=0;
+	uint8_t doorUnlocksRequestsCounter=0;
 
 #endif
 

@@ -703,11 +703,10 @@
 										dashboard_setup_menu_array[setup_dashboardPageIndex][17]='e';
 										break;
 									case 2: //Windows Ajar
-										dashboard_setup_menu_array[setup_dashboardPageIndex][10]='A';
-										dashboard_setup_menu_array[setup_dashboardPageIndex][11]='j';
-										dashboard_setup_menu_array[setup_dashboardPageIndex][12]='a';
-										dashboard_setup_menu_array[setup_dashboardPageIndex][13]='r';
-										dashboard_setup_menu_array[setup_dashboardPageIndex][14]=' ';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][11]='A';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][12]='j';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][13]='a';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][14]='r';
 										dashboard_setup_menu_array[setup_dashboardPageIndex][15]=' ';
 										dashboard_setup_menu_array[setup_dashboardPageIndex][16]=' ';
 										dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';

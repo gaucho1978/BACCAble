@@ -183,7 +183,6 @@
 		//REMOTE_START_ENABLED
 		extern uint8_t function_remote_start_Enabled; //default disabled . stored in flash
 		extern uint8_t engineRemoteStartRequest;
-		extern uint32_t doorOpenTime;
 		extern CAN_TxHeaderTypeDef REMOTE_START_msg_header;
 		extern uint8_t REMOTE_START_msg_data[8];
 		extern uint8_t RF_fob_number;
@@ -274,6 +273,11 @@
 		extern uint8_t closeWindowsRequest;
 		extern uint32_t doorCloseTime;
 		extern uint8_t RF_requestor;
+		extern uint8_t doorLocksRequestsCounter;
+
+		extern uint8_t openWindowsRequest;
+		extern uint32_t doorOpenTime;
+		extern uint8_t doorUnlocksRequestsCounter;
 
 	#endif
 
