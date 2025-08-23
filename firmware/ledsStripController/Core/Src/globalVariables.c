@@ -126,7 +126,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
 			{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 			{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
-			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
+			{'O',' ',' ','W','i','n','d','o','w','s',' ','C','l','o','s','u','r','e',},
 		};
 
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
@@ -407,8 +407,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 
 	//CLOSE_WINDOWS
-	uint8_t function_close_windows_with_door_lock=0;
-	uint8_t closeWindowsRequest=0;
+	uint8_t function_close_windows_with_door_lock=0; //0=disabled, 1=close windows, 2=windows ajar
+	uint8_t closeWindowsRequest=0;  //0=disabled, 1=close windows, 2=windows ajar
 	uint32_t doorCloseTime=0;
 	uint8_t RF_requestor=0;
 

@@ -27,7 +27,22 @@ void processingMessage0x000001EF(){
 				if((rx_msg_data[2]>>4==0x4) || (rx_msg_data[2]>>4==0x3)){ //it is the message to open the car
 					closeWindowsRequest=0; //interrupt the action, if in progress
 				}
-				if(closeWindowsRequest){ //we have to close the windows
+
+				if(closeWindowsRequest==2){ //we have to set the windows Ajar
+					//send message to close the windows
+					rx_msg_data[1]= rx_msg_data[1] | RF_fob_number; //set proper key fob
+					rx_msg_data[1]= rx_msg_data[1] & ~0x01; //set request to open all windows (set first bit to 0)
+					rx_msg_data[2]= (rx_msg_data[2] & 0x0F) | 0xB0;
+					rx_msg_data[2]= rx_msg_data[2] | RF_requestor; //set requestor
+					rx_msg_data[2]= rx_msg_data[2] & 0x0F; //set requesto to close all windows
+					rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
+					can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
+					if(currentTime-doorCloseTime>7190){ //if at least 190msec from windows closed is passed, windows shoud be opened for at least 2 centimeters
+						closeWindowsRequest=0; //task completed
+					}
+				}
+
+				if(closeWindowsRequest==1){ //we have to close the windows
 					if(currentTime-doorCloseTime>1000){ //if at least one second from door closure is passed
 						//send message to close the windows
 						rx_msg_data[1]= rx_msg_data[1] | RF_fob_number; //set proper key fob
@@ -39,9 +54,13 @@ void processingMessage0x000001EF(){
 
 						if(currentTime-doorCloseTime>7000){ //after 6 seconds of windows movement, they should be closed
 							closeWindowsRequest=0;
+							if(function_close_windows_with_door_lock==2){ //if windows Ajar is selected,
+								closeWindowsRequest=2; //request the windows ajar
+							}
 						}
 					}
 				}
+
 			}
 
 

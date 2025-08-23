@@ -545,7 +545,8 @@ void processingMessage0x000002FA(){
 										function_acc_autostart=!function_acc_autostart;
 										break;
 									case 24: //{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
-										function_close_windows_with_door_lock=!function_close_windows_with_door_lock;
+										function_close_windows_with_door_lock++;
+										if(function_close_windows_with_door_lock>2) function_close_windows_with_door_lock=0;
 										closeWindowsRequest=0;
 										break;
 									default:

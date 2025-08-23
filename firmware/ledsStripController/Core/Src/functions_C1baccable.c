@@ -690,7 +690,31 @@
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_acc_autostart];
 				break;
 			case 24:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_close_windows_with_door_lock];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_close_windows_with_door_lock];
+				switch(function_close_windows_with_door_lock){
+									case 0: //off
+									case 1: //Windows Closure
+										dashboard_setup_menu_array[setup_dashboardPageIndex][11]='C';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][12]='l';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][13]='o';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][14]='s';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][15]='u';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][16]='r';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][17]='e';
+										break;
+									case 2: //Windows Ajar
+										dashboard_setup_menu_array[setup_dashboardPageIndex][10]='A';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][11]='j';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][12]='a';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][13]='r';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][14]=' ';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][15]=' ';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][16]=' ';
+										dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+										break;
+									default: //we will never end here
+										break;
+								}
 				break;
 
 			default:
@@ -1368,9 +1392,9 @@
 				}
 				break;
 			case 25: //CLOSE_WINDOWS
-				if(tmpParam>1){
+				if(tmpParam>2){
 					#if defined(CLOSE_WINDOWS)
-						return 1;
+						return CLOSE_WINDOWS;
 					#else
 						return 0;
 					#endif
