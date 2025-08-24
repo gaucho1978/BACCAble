@@ -15,107 +15,93 @@ void processingMessage0x000001EF(){
 			if((rx_msg_data[0] & 0x0F)!=0x08) engineOnSinceMoreThan5seconds=0;
 
 			if(function_close_windows_with_door_lock){
-
-				if(rx_msg_data[2]>>4==0x1){ //it is the message to lock the car.
-					openWindowsRequest=0; //interrupt the action, if in progress
-					doorUnlocksRequestsCounter=0;
-
-					if(currentTime-doorCloseTime<3000){ //if less than 1 sec from previous lock click
-						doorLocksRequestsCounter++; //if more clicks on the button after first were performed, count them
-					}else{
-						//abort the action
-						doorLocksRequestsCounter=0;
-						closeWindowsRequest=0;
-						doorLocksRequestsCounter=0;
-					}
-
-					if(doorLocksRequestsCounter>=1){ //if more clicks, windows closure for sure is required
-						RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
-						RF_requestor=rx_msg_data[2] & 0x0E; //store requestor ID (real ID is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
-						closeWindowsRequest=1; //within 1 second, we will send request to close windows
-					}
-					doorCloseTime=currentTime;
-				}
-/*
-				if(rx_msg_data[2]>>4==0x1){ //it is the message to lock the car.
-					RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
-					RF_requestor=rx_msg_data[2] & 0x0E; //store requestor ID (real ID is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
-					//within 1 second, send request to close windows
-					doorCloseTime=currentTime;
-					closeWindowsRequest=1;
-				}
-*/
-				if((rx_msg_data[2]>>4==0x4) || (rx_msg_data[2]>>4==0x3)){ //it is the message to open the car
-					closeWindowsRequest=0; //interrupt the action, if in progress
-					doorLocksRequestsCounter=0;
-
-					if(currentTime-doorOpenTime<3000){ //if less than 1 sec from previous unlock click
-						doorUnlocksRequestsCounter++; //if more clicks on the button after first were performed, count them
-					}else{
-						//abort previous requests
+				switch(rx_msg_data[2]>>4){
+					case 0x01: //it is the message to lock the car.
+						openWindowsRequest=0; //interrupt the action, if in progress
 						doorUnlocksRequestsCounter=0;
-						openWindowsRequest=0;
-						doorUnlocksRequestsCounter=0;
-					}
-					if(doorUnlocksRequestsCounter>=1){ //if double click, windows opening is requested
-						RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
-						RF_requestor=rx_msg_data[2] & 0x0E; //store requestor ID (real ID is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
-						openWindowsRequest=1; //within 1 second, we will send request to open windows
-					}
-					doorOpenTime=currentTime;
-				}
 
-				if(closeWindowsRequest==2){ //we have to set the windows Ajar
-					//send message to open the windows
-					if(currentTime-doorCloseTime>9000){
-						rx_msg_data[1]= rx_msg_data[1] | RF_fob_number; //set proper key fob
-						rx_msg_data[1]= rx_msg_data[1] & ~0x01; //set request to open all windows (set first bit to 0)
-						rx_msg_data[2]= (rx_msg_data[2] & 0x0F) | 0xB0; //set request to open all windows
-						rx_msg_data[2]= rx_msg_data[2] | RF_requestor; //set requestor
-						rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
-						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
-					}
-
-
-					if(currentTime-doorCloseTime>10000){ //1sec for test. if at least 190msec from windows closed is passed, windows shoud be opened for at least 2 centimeters
-						closeWindowsRequest=0; //task completed
-						doorLocksRequestsCounter=0;
-					}
-				}
-
-				if(closeWindowsRequest==1){ //we have to close the windows
-					if(currentTime-doorCloseTime>4000){ //if at least 4 seconds from door closure is passed
-						//send message to close the windows
-						rx_msg_data[1]= rx_msg_data[1] | RF_fob_number; //set proper key fob
-						rx_msg_data[1]= rx_msg_data[1] | 0x01; //set request to close all windows
-						rx_msg_data[2]= rx_msg_data[2] | RF_requestor; //set requestor
-						rx_msg_data[2]= rx_msg_data[2] & 0x0F; //set requesto to close all windows
-						rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
-						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
-
-						if(currentTime-doorCloseTime>8000){ //after 4 seconds of windows movement, they should be closed
+						if(currentTime-doorCloseTime<3000){ //if less than 1 sec from previous lock click
+							doorLocksRequestsCounter++; //if more clicks on the button after first were performed, count them
+						}else{
+							//abort the action
+							doorLocksRequestsCounter=0;
 							closeWindowsRequest=0;
-							/*
-							if(function_close_windows_with_door_lock==2){ //if windows Ajar is selected,
-								closeWindowsRequest=2; //request the windows ajar
-							}
-							*/
-							if(doorLocksRequestsCounter>=2){ //if windows Ajar is requested,
-								closeWindowsRequest=2; //request the windows ajar
-							}else{
-								doorLocksRequestsCounter=0;
+						}
+
+						if(doorLocksRequestsCounter>=1){ //if more clicks, windows closure for sure is required
+							RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
+							RF_requestor=rx_msg_data[2] & 0x0E; //store requestor ID (real ID is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
+							closeWindowsRequest=1; //within 1 second, we will send request to close windows
+						}
+						doorCloseTime=currentTime;
+						break;
+					case 0x04: //it is the message to open the car
+					case 0x03: //it is the message to open the car
+						closeWindowsRequest=0; //interrupt the action, if in progress
+						doorLocksRequestsCounter=0;
+
+						if(currentTime-doorOpenTime<3000){ //if less than 1 sec from previous unlock click
+							doorUnlocksRequestsCounter++; //if more clicks on the button after first were performed, count them
+						}else{
+							//abort previous requests
+							doorUnlocksRequestsCounter=0;
+							openWindowsRequest=0;
+						}
+						if(doorUnlocksRequestsCounter>=1){ //if double click, windows opening is requested
+							RF_fob_number=rx_msg_data[1] & 0x1E; //store fob id (the real id is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
+							RF_requestor=rx_msg_data[2] & 0x0E; //store requestor ID (real ID is obtainable by shifting by 1 bit to the right, but this value is better, in order to be used in the next message)
+							openWindowsRequest=1; //within 1 second, we will send request to open windows
+						}
+						doorOpenTime=currentTime;
+						break;
+					default:
+				}
+
+				switch(closeWindowsRequest){
+					case 1: //we have to close the windows
+						if(currentTime-doorCloseTime>4000){ //if at least 4 seconds from door closure is passed
+							//send message to close the windows
+							rx_msg_data[1]= RF_fob_number | 0x01; //set proper key fob and set request to close all windows (0x01)
+							rx_msg_data[2]= RF_requestor; //set requestor
+							rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
+							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
+
+							if(currentTime-doorCloseTime>8000){ //after 4 seconds of windows movement, they should be closed
+								closeWindowsRequest=0;
+
+								if(doorLocksRequestsCounter>=2){ //if windows Ajar is requested,
+									closeWindowsRequest=2; //request the windows ajar
+								}else{
+									doorLocksRequestsCounter=0;
+								}
 							}
 						}
-					}
+
+						break;
+					case 2: //we have to set the windows Ajar
+						//send message to open the windows
+						if(currentTime-doorCloseTime>9000){
+							rx_msg_data[1]= RF_fob_number; //set proper key fob
+							rx_msg_data[2]= 0xB0 | RF_requestor; //set request to open all windows (0xB0) and requestor
+							rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
+							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
+						}
+
+
+						if(currentTime-doorCloseTime>10000){ //1sec for test. if at least 190msec from windows closed is passed, windows shoud be opened for at least 2 centimeters
+							closeWindowsRequest=0; //task completed
+							doorLocksRequestsCounter=0;
+						}
+
+						break;
+					default:
 				}
 
-				if(openWindowsRequest){ //we have to open the windows
+				if(openWindowsRequest==1){ //we have to open the windows
 					if(currentTime-doorOpenTime>4000){ //if at least 4 seconds from door opening is passed
 						//send message to open the windows
-						rx_msg_data[1]= rx_msg_data[1] | RF_fob_number; //set proper key fob
-						rx_msg_data[1]= rx_msg_data[1] & ~0x01; //set request to open all windows (set first bit to 0)
-						rx_msg_data[2]= (rx_msg_data[2] & 0x0F) | 0xB0; //set request to open all windows
-						rx_msg_data[2]= rx_msg_data[2] | RF_requestor; //set requestor
+						rx_msg_data[1]= RF_fob_number; //set proper key fob
+						rx_msg_data[2]= 0xB0 | RF_requestor; //set request to open all windows (0xB0) and requestor
 						rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
 						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
 
