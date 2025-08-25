@@ -442,11 +442,13 @@ void processingStandardMessage(){
 
 				if(restoreOperativeMirrorsPosition){ //if we are returning to original operative position
 					//if we completed the return to the original operative position of the mirrors, set the variable as completed
-					if( 			(rx_msg_data[0]>= leftMirrorHorizontalOperativePos	-1) && (rx_msg_data[0]<= leftMirrorHorizontalOperativePos	+1)){
-						if( 		(rx_msg_data[1]>= leftMirrorVerticalOperativePos	-1) && (rx_msg_data[1]<= leftMirrorVerticalOperativePos		+1)){
-							if(		(rx_msg_data[2]>= rightMirrorHorizontalOperativePos	-1) && (rx_msg_data[2]<= rightMirrorHorizontalOperativePos	+1)){
-								if(	(((rx_msg_data[3]<<4) | (rx_msg_data[4]>>4))>= rightMirrorVerticalOperativePos-1) && (((rx_msg_data[3]<<4) | (rx_msg_data[4]>>4))<= rightMirrorVerticalOperativePos+1) ){
-									restoreOperativeMirrorsPosition=0; //save the fact that the requested operation was successully completed
+					if(((rx_msg_data[3]>>4) & 0b00000101)==0x00){ //if mirrors are steady
+						if( 			(rx_msg_data[0]>= leftMirrorHorizontalOperativePos	-1) && (rx_msg_data[0]<= leftMirrorHorizontalOperativePos	+1)){
+							if( 		(rx_msg_data[1]>= leftMirrorVerticalOperativePos	-1) && (rx_msg_data[1]<= leftMirrorVerticalOperativePos		+1)){
+								if(		(rx_msg_data[2]>= rightMirrorHorizontalOperativePos	-1) && (rx_msg_data[2]<= rightMirrorHorizontalOperativePos	+1)){
+									if(	(((rx_msg_data[3]<<4) | (rx_msg_data[4]>>4))>= rightMirrorVerticalOperativePos-1) && (((rx_msg_data[3]<<4) | (rx_msg_data[4]>>4))<= rightMirrorVerticalOperativePos+1) ){
+										restoreOperativeMirrorsPosition=0; //save the fact that the requested operation was successully completed
+									}
 								}
 							}
 						}

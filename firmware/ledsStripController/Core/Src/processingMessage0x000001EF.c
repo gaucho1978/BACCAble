@@ -68,7 +68,7 @@ void processingMessage0x000001EF(){
 						break;
 					case 2: //we have to set the windows Ajar
 						//send message to open the windows
-						if(currentTime-doorCloseTime>8000){
+						if(currentTime-doorCloseTime>8500){
 							rx_msg_data[1]= RF_fob_number; //set proper key fob
 							rx_msg_data[2]= 0xB0 | RF_requestor; //set request to open all windows (0xB0) and requestor
 							rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
@@ -76,7 +76,7 @@ void processingMessage0x000001EF(){
 						}
 
 
-						if(currentTime-doorCloseTime>8300){ //if at least 300msec from windows closed is passed, windows shoud be opened for at least 3 centimeters
+						if(currentTime-doorCloseTime>8900){ //if at least 300msec from windows closed is passed, windows shoud be opened for at least 3 centimeters
 							closeWindowsRequest=0; //task completed
 							doorLocksRequestsCounter=0;
 						}
