@@ -446,7 +446,8 @@ void processingMessage0x000002FA(){
 											((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
 											((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
 											((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
-											((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	){ //CLOSE_WINDOWS
+											((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
+											((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	){ //OPEN_WINDOWS
 												//save it on flash
 												saveOnflash();
 										}
@@ -549,6 +550,12 @@ void processingMessage0x000002FA(){
 										if(function_close_windows_with_door_lock>2) function_close_windows_with_door_lock=0;
 										closeWindowsRequest=0;
 										doorLocksRequestsCounter=0;
+										//openWindowsRequest=0;
+										//doorUnlocksRequestsCounter=0;
+										break;
+									case 25: //{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' '},
+										function_open_windows_with_door_lock++;
+										if(function_open_windows_with_door_lock>2) function_open_windows_with_door_lock=0;
 										openWindowsRequest=0;
 										doorUnlocksRequestsCounter=0;
 										break;

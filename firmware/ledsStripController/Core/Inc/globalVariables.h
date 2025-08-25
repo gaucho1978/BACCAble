@@ -139,7 +139,7 @@
 
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH];
+		extern uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH];
 
 		extern uint8_t function_is_diesel_enabled; //stored in flash. defines if we use gasoline (0) or diesel (1) params
 		extern uint8_t total_pages_in_dashboard_menu_diesel;
@@ -185,7 +185,6 @@
 		extern uint8_t engineRemoteStartRequest;
 		extern CAN_TxHeaderTypeDef REMOTE_START_msg_header;
 		extern uint8_t REMOTE_START_msg_data[8];
-		extern uint8_t RF_fob_number;
 		extern uint8_t pressStartButton;
 		extern CAN_TxHeaderTypeDef BODY4_msg_header;
 
@@ -272,12 +271,16 @@
 		extern uint8_t function_close_windows_with_door_lock;
 		extern uint8_t closeWindowsRequest;
 		extern uint32_t doorCloseTime;
-		extern uint8_t RF_requestor;
 		extern uint8_t doorLocksRequestsCounter;
 
+		extern uint8_t function_open_windows_with_door_lock;
 		extern uint8_t openWindowsRequest;
 		extern uint32_t doorOpenTime;
 		extern uint8_t doorUnlocksRequestsCounter;
+
+		extern uint8_t RF_requestor;
+		extern uint8_t RF_fob_number;
+
 
 	#endif
 

@@ -100,8 +100,8 @@ const char *FW_VERSION=_FW_VERSION;
 	};
 
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=25;
-	uint8_t dashboard_setup_menu_array[25][DASHBOARD_MESSAGE_MAX_LENGTH]={
+	uint8_t total_pages_in_setup_dashboard_menu=26;
+	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
@@ -126,7 +126,9 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
 			{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 			{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
-			{'O',' ',' ','W','i','n','d','o','w','s',' ','C','l','o','s','u','r','e',},
+			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' ',},
+			{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' ',},
+
 		};
 
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
@@ -314,7 +316,6 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t engineRemoteStartRequest=0;
 	CAN_TxHeaderTypeDef REMOTE_START_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x1EF, .DLC=8};
 	uint8_t REMOTE_START_msg_data[8]={0x42,0x04,0x96,0,};
-	uint8_t RF_fob_number=0;
 	uint8_t pressStartButton=0;
 	CAN_TxHeaderTypeDef BODY4_msg_header={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId=0x384, .DLC=8};
 
@@ -406,15 +407,18 @@ const char *FW_VERSION=_FW_VERSION;
 
 
 	//CLOSE_WINDOWS
-	uint8_t function_close_windows_with_door_lock=0; //0=disabled, 1=close windows, 2=windows ajar
+	uint8_t function_close_windows_with_door_lock=0; //0=disabled, 1=close windows1, 2=close windows2
 	uint8_t closeWindowsRequest=0;  //0=disabled, 1=close windows, 2=windows ajar
 	uint32_t doorCloseTime=0;
-	uint8_t RF_requestor=0;
 	uint8_t doorLocksRequestsCounter=0;
 
+	uint8_t function_open_windows_with_door_lock=0; //0=disabled, 1=open windows1, 2=open windows2
 	uint8_t openWindowsRequest=0;  //0=disabled, 1=open windows
 	uint32_t doorOpenTime=0;
 	uint8_t doorUnlocksRequestsCounter=0;
+
+	uint8_t RF_requestor=0;
+	uint8_t RF_fob_number=0;
 
 #endif
 
