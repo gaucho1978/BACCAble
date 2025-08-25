@@ -82,6 +82,23 @@ void processingMessage0x000001EF(){
 						}
 
 						break;
+					//case 3: //we have to close the convertible top
+					//	//send message to close convertible top
+					//	if(currentTime-doorCloseTime>9400){
+					//		rx_msg_data[1]= RF_fob_number; //set proper key fob
+					//		rx_msg_data[2]= 0xD0 | RF_requestor; //set request to close top (0xD0) and requestor
+					//		rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
+					//		can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
+					//	}
+					//
+					//
+					//	if(currentTime-doorCloseTime>13400){ //if at least 4sec from close top command is passed, the top shoud be closed
+					//		closeWindowsRequest=0; //task completed
+					//		doorLocksRequestsCounter=0;
+					//	}
+					//
+					//	break;
+
 					default:
 				}
 
