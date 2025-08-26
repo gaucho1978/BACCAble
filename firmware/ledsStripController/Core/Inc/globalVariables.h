@@ -151,7 +151,9 @@
 		extern uint8_t baccableDashboardMenuVisible;
 		extern uint8_t baccabledashboardMenuWasVisible; //tells us if menu was previously disabled (and then when motor will turn we want to show it again
 		extern uint8_t oilPressure; //oil pressure without scaling (this value shall be multiplied by xx to obtain value in bar).
+		extern uint8_t oilLevel; //oil level from 0 to 14
 		extern uint8_t oilTemperature; //oil temperature in celsious degrees (to correct by offset)
+		extern uint8_t waterTemperature; //water temperature in celsius degrees (to correct by offset)
 		extern int16_t torque; //torque
 		extern uint8_t batteryStateOfCharge; //battery charge %
 		extern uint16_t batteryCurrent; //battery current (to be converted in Amps)

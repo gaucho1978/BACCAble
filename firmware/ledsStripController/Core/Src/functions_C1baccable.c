@@ -781,10 +781,16 @@
 			case 0x1E: //seat belt alarm status
 				param=seatbeltAlarmDisabled;
 				break;
+			case 0x1F://debug param.
+				break;
+			case 0x20://param couple 1: PWR and Torque
+				break;
 			default:
 				break;
 		}
 
+		uint8_t tmpString1[18];
+		char tmpfloatString1[10];
 
 		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){
 			case 0: //print baccable menu
@@ -823,60 +829,177 @@
 				//dobbiamo stampare: stato di sleep degli altri due chip
 				// 					 tempo da ultimo messaggio ricevuto su C1
 				//					 tempo da ultimo intervento IMMO
-				uint8_t debugString[18];
-				char tmpfloatString3[10];
 
 				if(lowConsumeIsActive){
-					debugString[0]='O';
-					debugString[1]='f';
-					debugString[2]='f';
+					tmpString1[0]='O';
+					tmpString1[1]='f';
+					tmpString1[2]='f';
 
 				}else{
-					debugString[0]='O';
-					debugString[1]='n';
-					debugString[2]=' ';
+					tmpString1[0]='O';
+					tmpString1[1]='n';
+					tmpString1[2]=' ';
 				}
-				debugString[3]=' ';
-				debugString[4]='T';
-				debugString[5]='w';
-				debugString[6]='k';
-				debugString[7]='p';
+				tmpString1[3]=' ';
+				tmpString1[4]='T';
+				tmpString1[5]='w';
+				tmpString1[6]='k';
+				tmpString1[7]='p';
 
 
 
 				float allProcessorsWakeupElapsedTime=((float)currentTime-(float)allProcessorsWakeupTime)/(float)1000.0;
 				if(allProcessorsWakeupElapsedTime>999.0){
-					debugString[8]= '>';
-					debugString[9]= '9';
-					debugString[10]='9';
+					tmpString1[8]= '>';
+					tmpString1[9]= '9';
+					tmpString1[10]='9';
 				}else{
 					//scriviamo il valore
-					floatToStr(tmpfloatString3,(float)allProcessorsWakeupElapsedTime, 0,4);
-					memcpy(&debugString[8],tmpfloatString3,strlen(tmpfloatString3));
-					if(strlen(tmpfloatString3)<3) debugString[10]=' ';
-					if(strlen(tmpfloatString3)<2) debugString[9] =' ';
+					floatToStr(tmpfloatString1,(float)allProcessorsWakeupElapsedTime, 0,4);
+					memcpy(&tmpString1[8],tmpfloatString1,strlen(tmpfloatString1));
+					if(strlen(tmpfloatString1)<3) tmpString1[10]=' ';
+					if(strlen(tmpfloatString1)<2) tmpString1[9] =' ';
 
 				}
-				debugString[11]=' ';
-				debugString[12]='I';
-				debugString[13]='m';
-				debugString[14]='m';
+				tmpString1[11]=' ';
+				tmpString1[12]='I';
+				tmpString1[13]='m';
+				tmpString1[14]='m';
 				float tmpLastImmoElapsedTime=((float)currentTime-(float)floodTheBusStartTime)/(float)1000.0;
 				if(tmpLastImmoElapsedTime>999.0){
-					debugString[15]= '>';
-					debugString[16]= '9';
-					debugString[17]= '9';
+					tmpString1[15]= '>';
+					tmpString1[16]= '9';
+					tmpString1[17]= '9';
 				}else{
 					//scriviamo il valore
-					floatToStr(tmpfloatString3,(float)tmpLastImmoElapsedTime,0,4);
-					memcpy(&debugString[15],tmpfloatString3,strlen(tmpfloatString3));
-					if(strlen(tmpfloatString3)<3) debugString[17]=' ';
-					if(strlen(tmpfloatString3)<2) debugString[16]=' ';
+					floatToStr(tmpfloatString1,(float)tmpLastImmoElapsedTime,0,4);
+					memcpy(&tmpString1[15],tmpfloatString1,strlen(tmpfloatString1));
+					if(strlen(tmpfloatString1)<3) tmpString1[17]=' ';
+					if(strlen(tmpfloatString1)<2) tmpString1[16]=' ';
 				}
 
 
-				memcpy(&uartTxMsg[1],debugString,18);
+				memcpy(&uartTxMsg[1],tmpString1,18);
 				break;
+			case 0x20://param couple 1: PWR and Torque
+				tmpStrLen=18;
+
+				tmpString1[0]='P';
+				tmpString1[1]='W';
+				tmpString1[2]='R';
+				tmpString1[3]=' ';
+
+				//scriviamo il valore
+				float tmpPwr=(float)torque * (float)currentRpmSpeed * 0.000142378F ;
+				floatToStr(tmpfloatString1,tmpPwr, 0,4);
+				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
+				tmpString1[7]= 'C';
+				tmpString1[8]= 'V';
+				tmpString1[9]= ' ';
+				tmpString1[10]=' ';
+				tmpString1[11]=' ';
+
+				floatToStr(tmpfloatString1,torque, 0,4);
+				memcpy(&tmpString1[12],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[14]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[13]= ' ';
+				tmpString1[15]= 'N';
+				tmpString1[16]= 'm';
+				tmpString1[17]= ' ';
+
+				memcpy(&uartTxMsg[1],tmpString1,18);
+				break;
+			case 0x21://param couple 2: Oil pressure and Water Temp.
+				tmpStrLen=18;
+
+				tmpString1[0]='O';
+				tmpString1[1]='I';
+				tmpString1[2]='L';
+				tmpString1[3]=' ';
+
+				//scriviamo il valore
+				floatToStr(tmpfloatString1,(float) oilPressure * 0.039215686F, 1,4);
+				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
+				tmpString1[7]= 'B';
+				tmpString1[8]= 'a';
+				tmpString1[9]= 'r';
+				tmpString1[10]=' ';
+
+				floatToStr(tmpfloatString1,(float)waterTemperature-40.0F, 0,4);
+				memcpy(&tmpString1[11],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[13]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[12]= ' ';
+				tmpString1[14]= 0xB0;
+				tmpString1[15]= 'C';
+				tmpString1[16]= ' ';
+				tmpString1[17]= ' ';
+
+				memcpy(&uartTxMsg[1],tmpString1,18);
+				break;
+			case 0x22://param couple 3: Oil temp. and Water Temp.
+				tmpStrLen=18;
+
+				tmpString1[0]='O';
+				tmpString1[1]='I';
+				tmpString1[2]='L';
+				tmpString1[3]=' ';
+
+				//scriviamo il valore
+				floatToStr(tmpfloatString1,(float) oilTemperature -40.0F, 0,4);
+				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
+				tmpString1[7]= 0xB0;
+				tmpString1[8]= 'C';
+				tmpString1[9]= ' ';
+				tmpString1[10]=' ';
+
+				floatToStr(tmpfloatString1,(float)waterTemperature -40.0F, 0,4);
+				memcpy(&tmpString1[11],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[13]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[12]= ' ';
+				tmpString1[14]= 0xB0;
+				tmpString1[15]= 'C';
+				tmpString1[16]= ' ';
+				tmpString1[17]= ' ';
+
+				memcpy(&uartTxMsg[1],tmpString1,18);
+				break;
+
+			case 0x23://param couple 4: Oil Level and Oil Quality.
+				tmpStrLen=18;
+
+				tmpString1[0]='O';
+				tmpString1[1]='I';
+				tmpString1[2]='L';
+				tmpString1[3]=' ';
+
+				//scriviamo il valore
+				floatToStr(tmpfloatString1,(float) oilLevel * 7.142857142857143F, 0,4);
+				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
+				tmpString1[7]= '%';
+				tmpString1[8]= ' ';
+				tmpString1[9]= 'D';
+				tmpString1[10]='e';
+				tmpString1[11]='g';
+				tmpString1[12]='r';
+				tmpString1[13]='.';
+				uint8_t OilQuality=0; //this shall be implemented. currently we don't have oil quality
+				floatToStr(tmpfloatString1,(float)OilQuality, 0,4);
+				memcpy(&tmpString1[14],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[16]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[15]= ' ';
+				tmpString1[17]= '%';
+
+				memcpy(&uartTxMsg[1],tmpString1,18);
+				break;
+
 			default:
 				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
 				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH; //truncate it. no space left

@@ -9,6 +9,8 @@
 
 void processingMessage0x000002ED(){
 	#if defined(C1baccable)
+		waterTemperature= rx_msg_data[0];
+
 		if(function_shift_indicator_enabled==1){
 			if(rx_msg_header.DLC==8){
 				if (currentRpmSpeed>shift_threshold-1 ){ //if the rpm speed is above SHIFT_THRESHOLD rpm, then the packet need to be modified, therefore,
