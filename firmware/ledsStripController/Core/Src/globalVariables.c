@@ -134,8 +134,8 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
 
 	#ifndef DASHBOARD_ITEMS //if no custom params are defined, use the following items
-		uint8_t total_pages_in_dashboard_menu_gasoline=42;
-		uint8_t total_pages_in_dashboard_menu_diesel=46;
+		uint8_t total_pages_in_dashboard_menu_gasoline=41;
+		uint8_t total_pages_in_dashboard_menu_diesel=45;
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
 		const	uds_param_element uds_params_array[2][60]={
 										{
