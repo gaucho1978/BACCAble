@@ -262,7 +262,7 @@ void processingStandardMessage(){
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC>=6){
 					batteryStateOfCharge= (rx_msg_data[1] & 0b01111111); //set Most Significant Bit to zero
-					batteryCurrent= (rx_msg_data[4] << 4 | ((rx_msg_data[5] >> 4) & 0b00001111));
+					batteryCurrent= (rx_msg_data[4] << 4 | (rx_msg_data[5] >> 4));
 				}
 			#endif
 			//battery state of charge is on byte 1 from bit 6 to 0 (Percentage)

@@ -920,7 +920,7 @@
 				tmpString1[3]=' ';
 
 				//scriviamo il valore
-				floatToStr(tmpfloatString1,(float) oilPressure * 0.039215686F, 1,4);
+				floatToStr(tmpfloatString1,(float) oilPressure * 0.1F, 1,4);
 				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
 				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
 				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
@@ -928,15 +928,15 @@
 				tmpString1[8]= 'a';
 				tmpString1[9]= 'r';
 				tmpString1[10]=' ';
+				tmpString1[11]='W';
+				tmpString1[12]='.';
 
 				floatToStr(tmpfloatString1,(float)waterTemperature-40.0F, 0,4);
-				memcpy(&tmpString1[11],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[13]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[12]= ' ';
-				tmpString1[14]= 0xB0;
-				tmpString1[15]= 'C';
-				tmpString1[16]= ' ';
-				tmpString1[17]= ' ';
+				memcpy(&tmpString1[13],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[15]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[14]= ' ';
+				tmpString1[16]= 0xB0;
+				tmpString1[17]= 'C';
 
 				memcpy(&uartTxMsg[1],tmpString1,18);
 				break;
@@ -953,19 +953,19 @@
 				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
 				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
 				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
-				tmpString1[7]= 0xB0;
-				tmpString1[8]= 'C';
-				tmpString1[9]= ' ';
-				tmpString1[10]=' ';
+				tmpString1[7] = 0xB0;
+				tmpString1[8] = 'C';
+				tmpString1[9] = ' ';
+				tmpString1[10]= ' ';
+				tmpString1[11]= 'W';
+				tmpString1[12]= '.';
 
 				floatToStr(tmpfloatString1,(float)waterTemperature -40.0F, 0,4);
-				memcpy(&tmpString1[11],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[13]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[12]= ' ';
-				tmpString1[14]= 0xB0;
-				tmpString1[15]= 'C';
-				tmpString1[16]= ' ';
-				tmpString1[17]= ' ';
+				memcpy(&tmpString1[13],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[15]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[14]= ' ';
+				tmpString1[16]= 0xB0;
+				tmpString1[17]= 'C';
 
 				memcpy(&uartTxMsg[1],tmpString1,18);
 				break;
@@ -985,10 +985,10 @@
 				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
 				tmpString1[7]= '%';
 				tmpString1[8]= ' ';
-				tmpString1[9]= 'D';
-				tmpString1[10]='e';
-				tmpString1[11]='g';
-				tmpString1[12]='r';
+				tmpString1[9]= 'Q';
+				tmpString1[10]='a';
+				tmpString1[11]='l';
+				tmpString1[12]='y';
 				tmpString1[13]='.';
 				uint8_t OilQuality=0; //this shall be implemented. currently we don't have oil quality
 				floatToStr(tmpfloatString1,(float)OilQuality, 0,4);
@@ -996,6 +996,35 @@
 				if(strlen(tmpfloatString1)<3) tmpString1[16]= ' ';
 				if(strlen(tmpfloatString1)<2) tmpString1[15]= ' ';
 				tmpString1[17]= '%';
+
+				memcpy(&uartTxMsg[1],tmpString1,18);
+				break;
+			case 0x24://param couple 5: BAT State Of Charge and Current.
+				tmpStrLen=18;
+
+				tmpString1[0]='B';
+				tmpString1[1]='A';
+				tmpString1[2]='T';
+				tmpString1[3]=' ';
+
+				//scriviamo il valore
+				floatToStr(tmpfloatString1, (float)batteryStateOfCharge , 0,4);
+				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
+				tmpString1[7]= '%';
+				tmpString1[8]= ' ';
+				tmpString1[9]= ' ';
+
+				floatToStr(tmpfloatString1,((float)batteryCurrent * 0.1F)-250.0F, 1,7);
+				memcpy(&tmpString1[10],tmpfloatString1,strlen(tmpfloatString1));
+				if(strlen(tmpfloatString1)<6) tmpString1[15]= ' ';
+				if(strlen(tmpfloatString1)<5) tmpString1[14]= ' ';
+				if(strlen(tmpfloatString1)<4) tmpString1[13]= ' ';
+				if(strlen(tmpfloatString1)<3) tmpString1[12]= ' ';
+				if(strlen(tmpfloatString1)<2) tmpString1[11]= ' ';
+				tmpString1[16]= 'A';
+				tmpString1[17]= ' ';
 
 				memcpy(&uartTxMsg[1],tmpString1,18);
 				break;
