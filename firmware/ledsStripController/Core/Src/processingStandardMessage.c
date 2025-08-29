@@ -73,6 +73,7 @@ void processingStandardMessage(){
 						//jump to statistics
 						dashboard_menu_indent_level=1;
 						main_dashboardPageIndex=1; 	// params submenu
+
 						dashboardPageIndex=getParamIndexFromReqId(0x1A); 		// 0-100km/h statistics
 					}
 				}

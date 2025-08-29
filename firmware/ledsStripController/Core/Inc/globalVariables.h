@@ -33,6 +33,7 @@
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
 			//la flash inizia a 0x08000000  e finisce a 0x0801FFFF, -0x800 +1 di una pagina fa 0x0801F800
 	#define LAST_PAGE_ADDRESS_STATISTICS LAST_PAGE_ADDRESS- FLASH_PAGE_SIZE //we will use previous page for statistics
+	#define LAST_PAGE_ADDRESS_SHOWN_PARAMS LAST_PAGE_ADDRESS_STATISTICS- FLASH_PAGE_SIZE //we will use previous page for shown params
 
 #if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE)
 	//#include "usbd_def.h"
@@ -72,7 +73,6 @@
 			int32_t		replyScaleOffset;
 			uint8_t		replyMeasurementUnit[7];
 			uint8_t		replyDecimalDigits;
-
 		} uds_param_element;
 
 	#endif
@@ -135,11 +135,14 @@
 		extern uint8_t main_dashboardPageIndex;
 		extern uint8_t dashboard_menu_indent_level;
 		extern uint8_t dashboard_main_menu_array_len;
-		extern uint8_t dashboard_main_menu_array[10][DASHBOARD_MESSAGE_MAX_LENGTH];
-
+		extern uint8_t dashboard_main_menu_array[11][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
 		extern uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH];
+
+		extern uint8_t params_setup_dashboardPageIndex;
+		extern uint8_t shownParamsArray[240];
+		extern uint8_t total_pages_in_params_setup_dashboard_menu;
 
 		extern uint8_t function_is_diesel_enabled; //stored in flash. defines if we use gasoline (0) or diesel (1) params
 		extern uint8_t total_pages_in_dashboard_menu_diesel;

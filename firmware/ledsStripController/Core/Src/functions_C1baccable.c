@@ -57,6 +57,7 @@
 		function_close_windows_with_door_lock=(uint16_t)readFromFlash(25);
 		function_open_windows_with_door_lock=(uint16_t)readFromFlash(26);
 
+		readShownParamsFromFlash();
 	}
 
 	void C1baccablePeriodicCheck(){
@@ -292,6 +293,9 @@
 					if(main_dashboardPageIndex==9){
 						sendSetupDashboardPageToSlaveBaccable();
 					}
+					if(main_dashboardPageIndex==10){
+						sendParamsSetupDashboardPageToSlaveBaccable();
+					}
 					break;
 				default:
 					break; //unexpected
@@ -414,7 +418,7 @@
 
 							floatToStr(tmpfloatString,(float)launch_torque_threshold,0,4);
 							if(strlen(tmpfloatString)==2){
-								dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
+								dashboard_main_menu_array[main_dashboardPageIndex][13]=' ';
 								dashboard_main_menu_array[main_dashboardPageIndex][14]=tmpfloatString[0];
 								dashboard_main_menu_array[main_dashboardPageIndex][15]=tmpfloatString[1];
 							}else{
@@ -725,6 +729,44 @@
 		}
 
 		memcpy(&uartTxMsg[1], &dashboard_setup_menu_array[setup_dashboardPageIndex],UART_BUFFER_SIZE-1);
+		//send to slave baccable
+		addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
+
+
+	}
+
+	void sendParamsSetupDashboardPageToSlaveBaccable(){
+		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
+		switch(params_setup_dashboardPageIndex){
+			case 0: //{'S','A','V','E','&','E','X','I','T',},
+				uartTxMsg[1]='S';
+				uartTxMsg[2]='A';
+				uartTxMsg[3]='V';
+				uartTxMsg[4]='E';
+				uartTxMsg[5]=' ';
+				uartTxMsg[6]='&';
+				uartTxMsg[7]=' ';
+				uartTxMsg[8]='E';
+				uartTxMsg[9]='X';
+				uartTxMsg[10]='I';
+				uartTxMsg[11]='T';
+				uartTxMsg[12]=0;
+				uartTxMsg[13]=0;
+				uartTxMsg[14]=0;
+				uartTxMsg[15]=0;
+				uartTxMsg[16]=0;
+				uartTxMsg[17]=0;
+				uartTxMsg[18]=0;
+
+				break;
+			default: //hidden or shown params
+				uartTxMsg[1]=checkbox_symbols[shownParamsArray[params_setup_dashboardPageIndex-1]];
+				uartTxMsg[2]=' ';
+				uartTxMsg[3]=' ';
+				memcpy(&uartTxMsg[4], &uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name,UART_BUFFER_SIZE-4);
+				break;
+		}
+
 		//send to slave baccable
 		addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
 
@@ -1319,6 +1361,96 @@
 		return 253;
 	}
 
+
+	uint8_t saveShownParamsOnflash(){
+		//compare current stats with best stored times
+		uint8_t weShallWriteFlash=0;
+		uint16_t params[30];
+		weShallWriteFlash=1;
+		if(weShallWriteFlash){ //save shown params
+			HAL_FLASH_Unlock(); //unlock flash
+
+			//erase flash
+			FLASH_EraseInitTypeDef eraseInitStruct;
+			uint32_t pageError=0;
+			eraseInitStruct.TypeErase= FLASH_TYPEERASE_PAGES;
+			eraseInitStruct.PageAddress=LAST_PAGE_ADDRESS_SHOWN_PARAMS;
+			eraseInitStruct.NbPages=1;
+			if(HAL_FLASHEx_Erase(&eraseInitStruct,&pageError)!=HAL_OK){ //error during erase
+				HAL_FLASH_Lock();
+				onboardLed_red_blink(8);
+				return 254; //error
+			}
+
+			//let's prepare variables
+			compress_to_uint16(shownParamsArray, total_pages_in_params_setup_dashboard_menu, params);
+
+			//it seems that stm32F072 supports only writing 2byte words
+			//write parameter
+
+			for (uint8_t i = 0; i < 30; i++) {
+				if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS_SHOWN_PARAMS + (i * 4), params[i]) != HAL_OK) {
+					HAL_FLASH_Lock();
+					onboardLed_red_blink(9);
+					return 255;
+				}
+			}
+
+			//lock the flash
+			HAL_FLASH_Lock();
+			return 0;
+
+		}
+		return 253;
+	}
+
+	void compress_to_uint16(const uint8_t *input, size_t input_len, uint16_t *output) {
+	    size_t out_index = 0;
+	    uint16_t acc = 0;
+	    uint8_t bit_count = 0;
+
+	    for (size_t i = 0; i < input_len; ++i) {
+	        acc = (acc << 1) | (input[i] & 1); // inserisce il bit in MSB-first
+	        bit_count++;
+
+	        if (bit_count == 16) {
+	            output[out_index++] = acc;
+	            acc = 0;
+	            bit_count = 0;
+	        }
+	    }
+
+	    // Scrive l'ultimo uint16_t se ci sono bit residui
+	    if (bit_count > 0) {
+	        acc <<= (16 - bit_count); // allinea i bit a sinistra
+	        output[out_index] = acc;
+	    }
+	}
+
+
+	void decompress_from_uint16(const uint16_t *input, size_t input_len, uint8_t *output, size_t output_len) {
+	    size_t out_index = 0;
+
+	    for (size_t i = 0; i < input_len && out_index < output_len; ++i) {
+	        uint16_t value = input[i];
+	        for (int b = 15; b >= 0 && out_index < output_len; --b) {
+	            output[out_index++] = (value >> b) & 1;
+	        }
+	    }
+	}
+
+	void readShownParamsFromFlash(){
+		//read from flash
+		uint16_t params[30];
+		for (uint8_t b = 0; b<30; b++) {
+			params[b]=*(volatile uint16_t*)(LAST_PAGE_ADDRESS_SHOWN_PARAMS+(b*4));
+		}
+
+		//decompress
+		decompress_from_uint16(params, 30, shownParamsArray, 240);
+
+		}
+
 	float readStatisticsFromFlash(uint8_t paramId){ // 1=0-100km/h, 2=100/200km/h
 		if(paramId<1) return 0;
 		uint16_t tmpParam=*(volatile uint16_t*)(LAST_PAGE_ADDRESS_STATISTICS+((paramId-1)*4));
@@ -1580,5 +1712,38 @@
 		}
 		return 0; //means not found, or param0 (it could be an exception)
 	}
+
+
+
+
+	uint8_t getNextVisibleParam(uint8_t curIndex) {
+	    uint8_t numberOfParams = function_is_diesel_enabled ?
+	                             total_pages_in_dashboard_menu_diesel :
+	                             total_pages_in_dashboard_menu_gasoline;
+
+	    uint8_t index = curIndex;
+	    while (index < numberOfParams && !shownParamsArray[index]) index++;
+
+	    if (index >= numberOfParams) index = 0; //if all hidden, restart from the beginning
+	    while (index < curIndex && !shownParamsArray[index]) index++;
+
+	    return index;
+	}
+
+	uint8_t getPreviousVisibleParam(uint8_t curIndex) {
+	    uint8_t numberOfParams = function_is_diesel_enabled ?
+	                             total_pages_in_dashboard_menu_diesel :
+	                             total_pages_in_dashboard_menu_gasoline;
+
+	    uint8_t index = curIndex;
+	    while (index >= 0 && !shownParamsArray[index]) index--;
+
+	    if (index >= numberOfParams) index = numberOfParams-1; //if all hidden, restart from the end
+	    while (index > curIndex && !shownParamsArray[index]) index--;
+
+	    return index;
+	}
+
+
 
 #endif

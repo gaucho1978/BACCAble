@@ -112,7 +112,9 @@ void processingMessage0x000002FA(){
 										}else{
 											if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // make a rotative menu
 										}
-											//onboardLed_blue_on();
+
+										dashboardPageIndex=getNextVisibleParam(dashboardPageIndex);
+										//onboardLed_blue_on();
 										sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 									}
 									if(main_dashboardPageIndex==9){ //we are in setup menu
@@ -125,6 +127,14 @@ void processingMessage0x000002FA(){
 
 										//onboardLed_blue_on();
 										sendSetupDashboardPageToSlaveBaccable(); //send
+									}
+									if(main_dashboardPageIndex==10){ //we are in params setup menu
+										params_setup_dashboardPageIndex+=1;//set next page
+										total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
+										if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
+
+										if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
 									break;
 								default:
@@ -167,12 +177,13 @@ void processingMessage0x000002FA(){
 										break;
 									case 1:
 										if(main_dashboardPageIndex==1){ //we are in show params submenu
-											dashboardPageIndex += 10; //set 9 pages forward (+1 in gentle command)
+											dashboardPageIndex += 10; //set 10 pages forward (+1 in gentle command)
 											if(function_is_diesel_enabled==1){
 												if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // make a rotative menu
 											}else{
 												if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // make a rotative menu
 											}
+											dashboardPageIndex=getNextVisibleParam(dashboardPageIndex);
 												//onboardLed_blue_on();
 											sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 										}
@@ -183,6 +194,15 @@ void processingMessage0x000002FA(){
 											if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendSetupDashboardPageToSlaveBaccable(); //send
+										}
+										if(main_dashboardPageIndex==10){ //we are in params setup menu
+											params_setup_dashboardPageIndex+=10;//set next page
+											total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
+											if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
+
+											if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+											//onboardLed_blue_on();
+											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
 										break;
 									default:
@@ -232,6 +252,7 @@ void processingMessage0x000002FA(){
 										}else{
 											if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=total_pages_in_dashboard_menu_gasoline-1; // make a rotative menu
 										}
+										dashboardPageIndex=getPreviousVisibleParam(dashboardPageIndex);
 										//onboardLed_blue_on();
 										sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 									}
@@ -243,6 +264,15 @@ void processingMessage0x000002FA(){
 										if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=total_pages_in_setup_dashboard_menu-1; // make a rotative menu
 										//onboardLed_blue_on();
 										sendSetupDashboardPageToSlaveBaccable(); //send
+									}
+									if(main_dashboardPageIndex==10){ //we are in params setup menu
+										params_setup_dashboardPageIndex-=1;//set next page
+										total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
+										if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
+
+										if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=total_pages_in_params_setup_dashboard_menu-1; // make a rotative menu
+										//onboardLed_blue_on();
+										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
 									break;
 								default:
@@ -286,11 +316,15 @@ void processingMessage0x000002FA(){
 									case 1:
 										if(main_dashboardPageIndex==1){ //we are in show params submenu
 											dashboardPageIndex -= 10; //set 10 pages backward
+
 											if(function_is_diesel_enabled==1){
 												if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // stay at zero.
 											}else{
 												if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // stay at zero.
 											}
+											dashboardPageIndex=getPreviousVisibleParam(dashboardPageIndex);
+
+
 											//onboardLed_blue_on();
 											sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
 										}
@@ -301,6 +335,15 @@ void processingMessage0x000002FA(){
 											if(setup_dashboardPageIndex>=total_pages_in_setup_dashboard_menu)  setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendSetupDashboardPageToSlaveBaccable(); //send
+										}
+										if(main_dashboardPageIndex==10){ //we are in params setup menu
+											params_setup_dashboardPageIndex-=10;//set prev page
+											total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
+											if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
+
+											if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+											//onboardLed_blue_on();
+											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
 										break;
 									default:
@@ -409,6 +452,7 @@ void processingMessage0x000002FA(){
 									}
 									break;
 								case 9: //setup menu
+								case 10: //params setup menu
 									dashboard_menu_indent_level++;
 
 									break;
@@ -417,157 +461,168 @@ void processingMessage0x000002FA(){
 							}
 
 						}else{ //indent level >0
-							if(main_dashboardPageIndex==9){ //setup menu
-								//uint8_t tmpArr[19];
+							switch(main_dashboardPageIndex){
+								case 9: //setup menu
+									switch(setup_dashboardPageIndex){
+										case 0: //{'S','A','V','E','&','E','X','I','T',},
+											//if some change occurred
+											if(	((uint16_t)function_smart_disable_start_stop_enabled	!= readFromFlash(2)) 	|| //S&S enable status
+												((uint16_t)function_led_strip_controller_enabled		!= readFromFlash(3)) 	|| //LED_STRIP_CONTROLLER_ENABLED
+												((uint16_t)function_shift_indicator_enabled				!= readFromFlash(4)) 	|| //SHIFT_INDICATOR_ENABLED
+												((uint16_t)shift_threshold								!= readFromFlash(5))	|| //SHIFT_THRESHOLD
+												((uint16_t)function_ipc_my23_is_installed				!= readFromFlash(6))	|| //IPC_MY23_IS_INSTALLED
+												((uint16_t)function_route_msg_enabled					!= readFromFlash(7))	|| //ROUTE_MSG
+												((uint16_t)function_dyno_mode_master_enabled			!= readFromFlash(8))	|| //DYNO_MODE_MASTER
+												((uint16_t)function_acc_virtual_pad_enabled				!= readFromFlash(9))	|| //ACC_VIRTUAL_PAD
+												((uint16_t)function_front_brake_forcer_master			!= readFromFlash(10))	|| //FRONT_BRAKE_FORCER_MASTER
+												((uint16_t)function_4wd_disabler_enabled				!= readFromFlash(11))	|| //_4WD_DISABLER
+												((uint16_t)function_remote_start_Enabled				!= readFromFlash(12))	|| //REMOTE_START_ENABLED
+												((uint16_t)function_clear_faults_enabled				!= readFromFlash(13))	|| //CLEAR_FAULTS_ENABLED
+												((uint16_t)function_esc_tc_customizator_enabled			!= readFromFlash(14))	|| //ESC_TC_CUSTOMIZATOR_MASTER
+												((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
+												((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
+												((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	|| //REGENERATION_ALERT_ENABLED
+												((uint16_t)launch_torque_threshold						!= readFromFlash(18))	|| //LAUNCH_ASSIST_THRESHOLD
+												((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	|| //SEATBELT_ALARM_DISABLED
+												((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
+												((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
+												((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
+												((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
+												((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
+												((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
+												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	){ //OPEN_WINDOWS
+													//save it on flash
+													saveOnflash();
+											}
+											dashboard_menu_indent_level=0;
+											break;
+										case 1: //{'[',' ',']','S','t','a','r','t','&','S','t','o','p'},
+											function_smart_disable_start_stop_enabled=!function_smart_disable_start_stop_enabled;
+											requestToDisableStartAndStop=0;
+											break;
+										case 2: //{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N,'m',},
+											launch_torque_threshold=launch_torque_threshold+25;
+											if(launch_torque_threshold>600) launch_torque_threshold=25;
+											break;
+										case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
+											function_led_strip_controller_enabled = !function_led_strip_controller_enabled;
+											break;
+										case 4: //{'[',' ',']','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
+											function_shift_indicator_enabled=!function_shift_indicator_enabled;
+											break;
+										case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',},
+											shift_threshold=shift_threshold+250;
+											if(shift_threshold>6000) shift_threshold=1500;
+											break;
+										case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
+											function_ipc_my23_is_installed=!function_ipc_my23_is_installed;
+											break;
+										case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
+											function_regeneration_alert_enabled=!function_regeneration_alert_enabled;
+											//just for debug
+											//uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
+											//addToUARTSendQueue(tmpArr3, 1);
 
-								switch(setup_dashboardPageIndex){
-									case 0: //{'S','A','V','E','&','E','X','I','T',},
-										//if some change occurred
-										if(	((uint16_t)function_smart_disable_start_stop_enabled	!= readFromFlash(2)) 	|| //S&S enable status
-											((uint16_t)function_led_strip_controller_enabled		!= readFromFlash(3)) 	|| //LED_STRIP_CONTROLLER_ENABLED
-											((uint16_t)function_shift_indicator_enabled				!= readFromFlash(4)) 	|| //SHIFT_INDICATOR_ENABLED
-											((uint16_t)shift_threshold								!= readFromFlash(5))	|| //SHIFT_THRESHOLD
-											((uint16_t)function_ipc_my23_is_installed				!= readFromFlash(6))	|| //IPC_MY23_IS_INSTALLED
-											((uint16_t)function_route_msg_enabled					!= readFromFlash(7))	|| //ROUTE_MSG
-											((uint16_t)function_dyno_mode_master_enabled			!= readFromFlash(8))	|| //DYNO_MODE_MASTER
-											((uint16_t)function_acc_virtual_pad_enabled				!= readFromFlash(9))	|| //ACC_VIRTUAL_PAD
-											((uint16_t)function_front_brake_forcer_master			!= readFromFlash(10))	|| //FRONT_BRAKE_FORCER_MASTER
-											((uint16_t)function_4wd_disabler_enabled				!= readFromFlash(11))	|| //_4WD_DISABLER
-											((uint16_t)function_remote_start_Enabled				!= readFromFlash(12))	|| //REMOTE_START_ENABLED
-											((uint16_t)function_clear_faults_enabled				!= readFromFlash(13))	|| //CLEAR_FAULTS_ENABLED
-											((uint16_t)function_esc_tc_customizator_enabled			!= readFromFlash(14))	|| //ESC_TC_CUSTOMIZATOR_MASTER
-											((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
-											((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
-											((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	|| //REGENERATION_ALERT_ENABLED
-											((uint16_t)launch_torque_threshold						!= readFromFlash(18))	|| //LAUNCH_ASSIST_THRESHOLD
-											((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	|| //SEATBELT_ALARM_DISABLED
-											((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
-											((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
-											((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
-											((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
-											((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
-											((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
-											((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	){ //OPEN_WINDOWS
-												//save it on flash
-												saveOnflash();
-										}
-										dashboard_menu_indent_level=0;
-										break;
-									case 1: //{'[',' ',']','S','t','a','r','t','&','S','t','o','p'},
-										function_smart_disable_start_stop_enabled=!function_smart_disable_start_stop_enabled;
-										requestToDisableStartAndStop=0;
-										break;
-									case 2: //{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N,'m',},
-										launch_torque_threshold=launch_torque_threshold+25;
-										if(launch_torque_threshold>600) launch_torque_threshold=25;
-										break;
-									case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
-										function_led_strip_controller_enabled = !function_led_strip_controller_enabled;
-										break;
-									case 4: //{'[',' ',']','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
-										function_shift_indicator_enabled=!function_shift_indicator_enabled;
-										break;
-									case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',},
-										shift_threshold=shift_threshold+250;
-										if(shift_threshold>6000) shift_threshold=1500;
-										break;
-									case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
-										function_ipc_my23_is_installed=!function_ipc_my23_is_installed;
-										break;
-									case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
-										function_regeneration_alert_enabled=!function_regeneration_alert_enabled;
-										//just for debug
-										//uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
-										//addToUARTSendQueue(tmpArr3, 1);
+											break;
+										case 8: //{'O',' ',' ','S','e','a','t','b','e','l','t',' ','A','l','a','r','m',' '},
+											function_seatbelt_alarm_enabled=!function_seatbelt_alarm_enabled;
+											break;
+										case 9: //{'[',' ',']','R','o','u','t','e',' ','M','e','s','s','a','g','e','s', },
+											function_route_msg_enabled=!function_route_msg_enabled;
+											break;
+										case 10: //{'[',' ',']','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',},
+											function_esc_tc_customizator_enabled = !function_esc_tc_customizator_enabled;
+											break;
+										case 11: //{'[',' ',']','D','y','n','o',},
+											function_dyno_mode_master_enabled=!function_dyno_mode_master_enabled;
+											break;
+										case 12: //{'[',' ',']','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
+											function_acc_virtual_pad_enabled=!function_acc_virtual_pad_enabled;
+											break;
+										case 13: //{'[',' ',']','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
+											function_front_brake_forcer_master=!function_front_brake_forcer_master;
+											break;
+										case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
+											function_4wd_disabler_enabled=!function_4wd_disabler_enabled;
+											break;
+										case 15: //{'[',' ',']','C','l','e','a','r',' ','F','a','u','l','t','s',},
+											function_clear_faults_enabled=!function_clear_faults_enabled;
+											break;
+										case 16: //{'[',' ',']','R','e','a','d',' ',' ','F','a','u','l','t','s',},
+											function_read_faults_enabled=!function_read_faults_enabled;
+											break;
+										case 17: //{'[',' ',']','R','e','m','o','t','e',' ','S','t','a','r','t',},
+											function_remote_start_Enabled=!function_remote_start_Enabled;
+											break;
+										case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
+											function_is_diesel_enabled=!function_is_diesel_enabled;
+											break;
+										case 19: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
+											function_pedal_booster_enabled++;
+											if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+											//Now let's inform the C2 and BH Baccable
+											uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
+											addToUARTSendQueue(tmpArr1, 3);
+											break;
+										case 20: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
+											function_disable_odometer_blink=!function_disable_odometer_blink;
+											//Now let's inform the BH Baccable
+											uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
+											if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
+											addToUARTSendQueue(tmpArr2, 2);
+											break;
+										case 21: // {'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
+											function_show_race_mask=!function_show_race_mask;
+											//Now let's inform the C2 Baccable
+											uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
+											if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
+											addToUARTSendQueue(tmpArr3, 2);
+											break;
+										case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
+											function_park_mirror=!function_park_mirror;
+											//Now let's inform the BH Baccable
+											uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
+											if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorStoreCurPos;
+											addToUARTSendQueue(tmpArr4, 2);
+											break;
+										case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
+											function_acc_autostart=!function_acc_autostart;
+											break;
+										case 24: //{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
+											function_close_windows_with_door_lock++;
+											if(function_close_windows_with_door_lock>2) function_close_windows_with_door_lock=0;
+											closeWindowsRequest=0;
+											doorLocksRequestsCounter=0;
+											//openWindowsRequest=0;
+											//doorUnlocksRequestsCounter=0;
+											break;
+										case 25: //{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' '},
+											function_open_windows_with_door_lock++;
+											if(function_open_windows_with_door_lock>2) function_open_windows_with_door_lock=0;
+											openWindowsRequest=0;
+											doorUnlocksRequestsCounter=0;
+											break;
+										default:
+											break;
+									}
 
-										break;
-									case 8: //{'O',' ',' ','S','e','a','t','b','e','l','t',' ','A','l','a','r','m',' '},
-										function_seatbelt_alarm_enabled=!function_seatbelt_alarm_enabled;
-										break;
-									case 9: //{'[',' ',']','R','o','u','t','e',' ','M','e','s','s','a','g','e','s', },
-										function_route_msg_enabled=!function_route_msg_enabled;
-										break;
-									case 10: //{'[',' ',']','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',},
-										function_esc_tc_customizator_enabled = !function_esc_tc_customizator_enabled;
-										break;
-									case 11: //{'[',' ',']','D','y','n','o',},
-										function_dyno_mode_master_enabled=!function_dyno_mode_master_enabled;
-										break;
-									case 12: //{'[',' ',']','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
-										function_acc_virtual_pad_enabled=!function_acc_virtual_pad_enabled;
-										break;
-									case 13: //{'[',' ',']','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
-										function_front_brake_forcer_master=!function_front_brake_forcer_master;
-										break;
-									case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
-										function_4wd_disabler_enabled=!function_4wd_disabler_enabled;
-										break;
-									case 15: //{'[',' ',']','C','l','e','a','r',' ','F','a','u','l','t','s',},
-										function_clear_faults_enabled=!function_clear_faults_enabled;
-										break;
-									case 16: //{'[',' ',']','R','e','a','d',' ',' ','F','a','u','l','t','s',},
-										function_read_faults_enabled=!function_read_faults_enabled;
-										break;
-									case 17: //{'[',' ',']','R','e','m','o','t','e',' ','S','t','a','r','t',},
-										function_remote_start_Enabled=!function_remote_start_Enabled;
-										break;
-									case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
-										function_is_diesel_enabled=!function_is_diesel_enabled;
-										break;
-									case 19: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
-										function_pedal_booster_enabled++;
-										if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
-										//Now let's inform the C2 and BH Baccable
-										uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
-										addToUARTSendQueue(tmpArr1, 3);
-										break;
-									case 20: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
-										function_disable_odometer_blink=!function_disable_odometer_blink;
-										//Now let's inform the BH Baccable
-										uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
-										if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
-										addToUARTSendQueue(tmpArr2, 2);
-										break;
-									case 21: // {'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
-										function_show_race_mask=!function_show_race_mask;
-										//Now let's inform the C2 Baccable
-										uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
-										if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
-										addToUARTSendQueue(tmpArr3, 2);
-										break;
-									case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
-										function_park_mirror=!function_park_mirror;
-										//Now let's inform the BH Baccable
-										uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
-										if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorStoreCurPos;
-										addToUARTSendQueue(tmpArr4, 2);
-										break;
-									case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
-										function_acc_autostart=!function_acc_autostart;
-										break;
-									case 24: //{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
-										function_close_windows_with_door_lock++;
-										if(function_close_windows_with_door_lock>2) function_close_windows_with_door_lock=0;
-										closeWindowsRequest=0;
-										doorLocksRequestsCounter=0;
-										//openWindowsRequest=0;
-										//doorUnlocksRequestsCounter=0;
-										break;
-									case 25: //{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' '},
-										function_open_windows_with_door_lock++;
-										if(function_open_windows_with_door_lock>2) function_open_windows_with_door_lock=0;
-										openWindowsRequest=0;
-										doorUnlocksRequestsCounter=0;
-										break;
-									default:
-										break;
-								}
-
-								sendSetupDashboardPageToSlaveBaccable();
-
-							}else{ //we want to return main menu
-								dashboard_menu_indent_level=0;
-								sendMainDashboardPageToSlaveBaccable(); //print menu
+									sendSetupDashboardPageToSlaveBaccable();
+									break;
+								case 10: //PARAMS SETUP MENU
+									switch(params_setup_dashboardPageIndex){
+										case 0: //{'S','A','V','E','&','E','X','I','T',},
+											saveShownParamsOnflash();
+											dashboard_menu_indent_level=0;
+											break;
+										default: //toggle hidden variable of current param
+											shownParamsArray[params_setup_dashboardPageIndex-1]=!shownParamsArray[params_setup_dashboardPageIndex-1];
+											break;
+									}
+									break;
+								default:
+									//we want to return main menu
+									dashboard_menu_indent_level=0;
+									sendMainDashboardPageToSlaveBaccable(); //print menu
 							}
 						}
 

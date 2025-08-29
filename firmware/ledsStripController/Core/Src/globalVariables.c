@@ -84,8 +84,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
-	uint8_t dashboard_main_menu_array_len=10;
-	uint8_t dashboard_main_menu_array[10][DASHBOARD_MESSAGE_MAX_LENGTH]={
+	uint8_t dashboard_main_menu_array_len=11;
+	uint8_t dashboard_main_menu_array[11][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
 			{'S','H','O','W',' ','P','A','R','A','M','S',' ',' ',' ',' ',' ',' ',' '},
 			{'R','E','A','D',' ','F','A','U','L','T','S',' ',' ',' ',' ',' ',' ',' '},
@@ -95,10 +95,10 @@ const char *FW_VERSION=_FW_VERSION;
 			{'T','o','g','g','l','e',' ','E','S','C','/','T','C',' ',' ',' ',' ',' '},
 			{'F','r','o','n','t',' ','B','r','a','k','e',' ','N','o','r','m','a','l'},
 			{'4','W','D',' ',' ','E','n','a','b','l','e','d',' ',' ',' ',' ',' ',' '},
-			{'S','E','T','U','P',' ','M','E','N','U',' ',' ',' ',' ',' ',' ',' ',' '},
+			{'M','A','I','N',' ','S','E','T','U','P',' ','M','E','N','U',' ',' ',' '},
+			{'P','A','R','A','M','S',' ','S','E','T','U','P',' ','M','E','N','U',' '},
 
 	};
-
 	uint8_t setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_setup_dashboard_menu=26;
 	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
@@ -134,16 +134,20 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
 
 	#ifndef DASHBOARD_ITEMS //if no custom params are defined, use the following items
+		uint8_t shownParamsArray[240];
+		uint8_t params_setup_dashboardPageIndex=0;
+		uint8_t total_pages_in_params_setup_dashboard_menu=0;
+
 		uint8_t total_pages_in_dashboard_menu_gasoline=42;
 		uint8_t total_pages_in_dashboard_menu_diesel=46;
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
 		const	uds_param_element uds_params_array[2][60]={
 										{
-												{.name={'P','W','R',' ',},											.reqId=0x20,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'C','V',}						}, //param couple: PWR and Torque
-												{.name={'O','I','L',' ',},											.reqId=0x21,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL pressure and Water Temp.
-												{.name={'O','I','L',' ',},											.reqId=0x22,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL temp. and Water Temp.
-//												{.name={'O','I','L',' ',},											.reqId=0x23,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL level and Oil Quality
-												{.name={'B','A','T',' ',},											.reqId=0x24,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}							}, //param couple: BAT State Of Charge and current
+												{.name={'P','W','R',' ','&',' ','T','O','R','Q','U','E',},				.reqId=0x20,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'C','V',}						}, //param couple: PWR and Torque
+												{.name={'O','i','l','P','r','e','s','&','W','a','t','e','r','T','.',},	.reqId=0x21,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL pressure and Water Temp.
+												{.name={'O','i','l','&','W','a','t','e','r',' ','T','e','m','p','.',},	.reqId=0x22,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL temp. and Water Temp.
+//												{.name={'O','i','l',' ','L','e','v','e','l','&','Q','a','l','y','.',},	.reqId=0x23,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL level and Oil Quality
+												{.name={'B','A','T',' ','S','o','C','&','C','u','r','r','e','n','t',},	.reqId=0x24,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}							}, //param couple: BAT State Of Charge and current
 												{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 												{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
 												{.name={'I','C',' ','A','i','r','O','u','t',':',' '},				.reqId=0x18DA10F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x03221935),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, //TEMPERATURA ARIA uscita INTERCOOLER
@@ -191,11 +195,11 @@ const char *FW_VERSION=_FW_VERSION;
 
 										},
 										{   // Diesel
-											{.name={'P','W','R',' ',},											.reqId=0x20,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'C','V',}						}, //param couple: PWR and Torque
-											{.name={'O','I','L',' ',},											.reqId=0x21,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL pressure and Water Temp.
-											{.name={'O','I','L',' ',},											.reqId=0x22,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL temp and Water Temp.
-//											{.name={'O','I','L',' ',},											.reqId=0x23,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL level and Oil Quality
-											{.name={'B','A','T',' ',},											.reqId=0x24,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}							}, //param couple: BAT State Of Charge and current
+											{.name={'P','W','R',' ','&',' ','T','O','R','Q','U','E',},				.reqId=0x20,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'C','V',}						}, //param couple: PWR and Torque
+											{.name={'O','i','l','P','r','e','s','&','W','a','t','e','r','T','.',},	.reqId=0x21,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL pressure and Water Temp.
+											{.name={'O','i','l','&','W','a','t','e','r',' ','T','e','m','p','.',},	.reqId=0x22,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL temp and Water Temp.
+//											{.name={'O','i','l',' ','L','e','v','e','l','&','Q','a','l','y','.',},	.reqId=0x23,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B','a','r',}					}, //param couple: OIL level and Oil Quality
+											{.name={'B','A','T',' ','S','o','C','&','C','u','r','r','e','n','t',},	.reqId=0x24,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}							}, //param couple: BAT State Of Charge and current
 											{.name={'P','O','W','E','R',':',' ',},								.reqId=0x11,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //devo ricordare di moltiplicare il risultato per RPM
 											{.name={'T','O','R','Q','U','E',':',' ',},							.reqId=0x12,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						},
 											{.name={'D','P','F',':',' ',},										.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218E4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							},
