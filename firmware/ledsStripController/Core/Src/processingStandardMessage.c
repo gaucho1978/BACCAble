@@ -548,7 +548,9 @@ void processingStandardMessage(){
 			break;
 		case 0x000005B0:
 			#if defined(C2baccable)
+
 				if((rx_msg_data[1] == 0x20) && ( DynoStateMachine == 0xff)){ // park assist button was pressed and there is no dyno Start sequence in progress
+					//HAS_buttonPressRequested=1;
 					ParkAssistButtonPressCount++;
 					if (ParkAssistButtonPressCount>5){ // more or less 6 seconds
 						ParkAssistButtonPressCount=0; //reset the count
@@ -557,6 +559,7 @@ void processingStandardMessage(){
 					}
 				}else{
 					ParkAssistButtonPressCount=0;// reset the count assigning it zero
+					//HAS_buttonPressRequested=0;
 				}
 			#endif
 			//the park assistant button press event is on byte 1 bit 5 (1=pressed)

@@ -564,3 +564,7 @@ uint8_t restoreOperativeMirrorsPosition=0;
 uint8_t leftParkMirrorPositionRequired=0;
 uint8_t rightParkMirrorPositionRequired=0;
 uint8_t parkMirrorOperativePositionNotStored=1;
+
+//HAS_FUNCTION_ENABLED
+uint8_t HAS_function_enabled=0;
+uint8_t HAS_buttonPressRequested=0;

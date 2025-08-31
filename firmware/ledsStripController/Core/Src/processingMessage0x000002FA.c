@@ -12,6 +12,17 @@ void processingMessage0x000002FA(){
 	// Button is pressed on left area of the wheel
 	// These Buttons are detected only if the main panel of the car is on.
 
+	#if defined(C2baccable)
+		if(HAS_buttonPressRequested){
+			if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
+				rx_msg_data[1] = rx_msg_data[1] | 0x10; //simulate HAS button presses
+				rx_msg_data[2] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //CRC
+				can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
+
+			}
+		}
+	#endif
+
 	#if defined(C1baccable)
 
 		if(function_acc_autostart){

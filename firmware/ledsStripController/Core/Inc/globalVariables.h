@@ -412,4 +412,9 @@
 		extern uint8_t rightParkMirrorPositionRequired;
 		extern uint8_t parkMirrorOperativePositionNotStored;
 
+
+		//HAS_FUNCTION_ENABLED
+		extern uint8_t HAS_function_enabled;
+		extern uint8_t HAS_buttonPressRequested;
+
 #endif /* INC_GLOBALVARIABLES_H_ */

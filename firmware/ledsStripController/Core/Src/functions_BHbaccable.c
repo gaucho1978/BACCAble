@@ -114,13 +114,13 @@
 
 			if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
 				if(!storeOperativeMirrorPosition){ //if operative position was stored
-					if(currentTime-lastParkMirrorMsgTime>1000){ //each 1000msec send a packet
+					if(currentTime-lastParkMirrorMsgTime>900){ //each 1000msec send a packet
 						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
 						lastParkMirrorMsgTime=currentTime;
 					}
 				}
 				if(restoreOperativeMirrorsPosition){
-					if(currentTime-restoreOperativeMirrorsPositionRequestTime>10000){ //after 6 seconds
+					if(currentTime-restoreOperativeMirrorsPositionRequestTime>15000){ //after 15 seconds
 						restoreOperativeMirrorsPosition=0;
 					}
 				}
