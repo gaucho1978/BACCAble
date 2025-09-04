@@ -57,6 +57,8 @@
 		function_close_windows_with_door_lock=(uint16_t)readFromFlash(25);
 		function_open_windows_with_door_lock=(uint16_t)readFromFlash(26);
 
+		HAS_function_enabled=(uint16_t)readFromFlash(27);
+
 		readShownParamsFromFlash();
 	}
 
@@ -710,20 +712,23 @@
 				}
 				break;
 			case 25:
-					dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_open_windows_with_door_lock];
-					switch(function_open_windows_with_door_lock){
-						case 0: //off
-							dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
-						case 1: //Close Windows 1
-							dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1';
-							break;
-						case 2: //Close Windows 2
-							dashboard_setup_menu_array[setup_dashboardPageIndex][17]='2';
-							break;
-						default: //we will never end here
-							break;
-					}
-					break;
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_open_windows_with_door_lock];
+				switch(function_open_windows_with_door_lock){
+					case 0: //off
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+					case 1: //Close Windows 1
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1';
+						break;
+					case 2: //Close Windows 2
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='2';
+						break;
+					default: //we will never end here
+						break;
+				}
+				break;
+			case 26:
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[HAS_function_enabled];
+				break;
 			default:
 				break;
 		}
@@ -1265,7 +1270,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=26;
+		uint8_t paramsNumber=27;
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1293,6 +1298,7 @@
 		  function_acc_autostart,
 		  function_close_windows_with_door_lock,
 		  function_open_windows_with_door_lock,
+		  HAS_function_enabled,
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -1692,6 +1698,15 @@
 				if(tmpParam>2){
 					#if defined(OPEN_WINDOWS)
 						return OPEN_WINDOWS;
+					#else
+						return 0;
+					#endif
+				}
+				break;
+			case 27: //HAS_VIRTUAL_PAD
+				if(tmpParam>1){
+					#if defined(HAS_VIRTUAL_PAD)
+						return 1;
 					#else
 						return 0;
 					#endif

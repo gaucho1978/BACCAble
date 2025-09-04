@@ -84,8 +84,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
-	uint8_t dashboard_main_menu_array_len=11;
-	uint8_t dashboard_main_menu_array[11][DASHBOARD_MESSAGE_MAX_LENGTH]={
+	uint8_t dashboard_main_menu_array_len=12;
+	uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
 			{'S','H','O','W',' ','P','A','R','A','M','S',' ',' ',' ',' ',' ',' ',' '},
 			{'R','E','A','D',' ','F','A','U','L','T','S',' ',' ',' ',' ',' ',' ',' '},
@@ -97,10 +97,12 @@ const char *FW_VERSION=_FW_VERSION;
 			{'4','W','D',' ',' ','E','n','a','b','l','e','d',' ',' ',' ',' ',' ',' '},
 			{'M','A','I','N',' ','S','E','T','U','P',' ','M','E','N','U',' ',' ',' '},
 			{'P','A','R','A','M','S',' ','S','E','T','U','P',' ','M','E','N','U',' '},
+			{'E','n','a','b','l','e',' ','H','A','S',' ',' ',' ',' ',' ',' ',' ',' '},
+
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=26;
+	uint8_t total_pages_in_setup_dashboard_menu=27;
 	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -128,6 +130,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
 			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' ',},
+			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
 
 		};
 
@@ -446,6 +449,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
 	uint8_t LANEbutton2PressCount=0; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
 
+	uint8_t numberOfLaneButtonClicks=0; //number of times button was pressed(click)
 	//DYNO_MODE
 
 	uint8_t DynoModeEnabled=0;

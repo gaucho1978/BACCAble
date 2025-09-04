@@ -140,6 +140,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C2cmdShowRaceMask: //request to show race mask
 									function_show_race_mask=1;
 									break;
+								case C2cmdToggleHas: //request to press HAS button for more consecutive messages
+									HAS_buttonPressRequested=5;
+									break;
 								default:
 							}
 

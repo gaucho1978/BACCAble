@@ -37,6 +37,17 @@ void processingMessage0x00000384(){
 
 			LANEbuttonPressLastTimeSeen=currentTime;//save current time it was pressed as LANEbuttonPressLastTimeSeen
 			LANEbuttonPressCount++;
+
+			if(LANEbuttonPressCount==1){ //if button was just pressed :-)
+					numberOfLaneButtonClicks++;		// :-)
+					if(numberOfLaneButtonClicks==2){ //if double click
+						numberOfLaneButtonClicks=0; //ensure we don't return here :-)
+						//execute action :-)
+						HAS_buttonPressRequested=5;
+					}
+			}
+
+
 			if (LANEbuttonPressCount>8 ){ //8 is more or less 2 seconds
 				ESCandTCinversion=!ESCandTCinversion; //toggle the status
 				//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
@@ -56,6 +67,7 @@ void processingMessage0x00000384(){
 		}else{
 			if(currentTime-LANEbuttonPressLastTimeSeen>1000){ // if LANEbuttonPressLastTimeSeen, is older than 1 second ago, it means that button was released
 				LANEbuttonPressCount=0;// reset the count assigning it zero
+				numberOfLaneButtonClicks=0; //reset also the counter of the number of consecutive clics :-)
 			}
 		}
 

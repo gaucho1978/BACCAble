@@ -12,8 +12,9 @@ void processingMessage0x000002FA(){
 	// Button is pressed on left area of the wheel
 	// These Buttons are detected only if the main panel of the car is on.
 
-	#if defined(C2baccable)
-		if(HAS_buttonPressRequested){
+	#if defined(C2baccable) || defined(C1baccable)
+		if(HAS_buttonPressRequested){ //Has toggle was requested. ACC is not engaged... r u sure?
+			HAS_buttonPressRequested--;
 			if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
 				rx_msg_data[1] = rx_msg_data[1] | 0x10; //simulate HAS button presses
 				rx_msg_data[2] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //CRC
@@ -111,6 +112,10 @@ void processingMessage0x000002FA(){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex++;
 									}
 
+									if(HAS_function_enabled==0){
+										if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
+									}
+
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 									//onboardLed_blue_on();
 									sendMainDashboardPageToSlaveBaccable();//send dashboard page via usb
@@ -182,6 +187,10 @@ void processingMessage0x000002FA(){
 											if(main_dashboardPageIndex==8) main_dashboardPageIndex++;
 										}
 
+										if(HAS_function_enabled==0){
+											if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
+										}
+
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 										//onboardLed_blue_on();
 										sendMainDashboardPageToSlaveBaccable();//send dashboard page via usb
@@ -232,6 +241,11 @@ void processingMessage0x000002FA(){
 									main_dashboardPageIndex-= 1; //set next page
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
+
+									if(HAS_function_enabled==0){
+										if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
+									}
+
 									if(function_4wd_disabler_enabled==0){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
 										}
@@ -300,6 +314,11 @@ void processingMessage0x000002FA(){
 									case 0: //main menu
 										main_dashboardPageIndex-= 1; //set next page
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
+
+										if(HAS_function_enabled==0){
+											if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
+										}
+
 										if(function_4wd_disabler_enabled==0){
 											if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
 										}
@@ -465,7 +484,12 @@ void processingMessage0x000002FA(){
 								case 9: //setup menu
 								case 10: //params setup menu
 									dashboard_menu_indent_level++;
-
+									break;
+								case 11: //toggle HAS function
+									HAS_buttonPressRequested=5;
+									//inform Slave baccable C2
+									uint8_t tmpArr3[2]={C2BusID,C2cmdToggleHas};
+									addToUARTSendQueue(tmpArr3, 2);
 									break;
 								default:
 									break;
@@ -501,7 +525,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
 												((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
 												((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
-												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	){ //OPEN_WINDOWS
+												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	|| //OPEN_WINDOWS
+												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	){ //HAS_VIRTUAL_PAD
 													//save it on flash
 													saveOnflash();
 											}
@@ -613,6 +638,9 @@ void processingMessage0x000002FA(){
 											openWindowsRequest=0;
 											doorUnlocksRequestsCounter=0;
 											break;
+										case 26: //{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d'},
+											HAS_function_enabled=!HAS_function_enabled;
+											break;
 										default:
 											break;
 									}
@@ -690,7 +718,7 @@ void processingMessage0x000002FA(){
 								lastPressedSpeedUpWheelButtonDuration=0; //unuseful here since it is done when button is released. just to be superstitious :-D.
 								immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status
 								floodTheBus=0; //ensure to reset this even if probably it is not needed
-								if(saveOnflash((uint16_t)immobilizerEnabled)>253){ //if we get error while permanently storeing the parameter on flash
+								if(saveOnflash()>253){ //if we get error while permanently storeing the parameter on flash
 									immobilizerEnabled=!immobilizerEnabled;//toggle immobilizer status to the original status and avoid to report the user anything
 									onboardLed_red_on(); //a problem occurred
 								}else{

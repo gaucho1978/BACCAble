@@ -32,6 +32,8 @@
 	#define C2cmdDynoNotActive				0x26 //second byte of the message to C2 bus, identifies the status dyno Not Active
 	#define C2cmdRaceMaskDefault			0x27 //second byte of the message to C2 bus, identifies the status race mask not requested
 	#define C2cmdShowRaceMask				0x28 //second byte of the message to C2 bus, identifies the status race mask requested
+	#define C2cmdToggleHas					0x29 //second byte of the message to C2 bus, identifies the request to press HAS button for some consecutive messages
+
 
 	#define C2_Bh_cmdSetPedalBoostStatus	0x39 //second byte of the message to C2 and BH bus, identifies the pedal booster function status. Third byte of the message will contain its status
 

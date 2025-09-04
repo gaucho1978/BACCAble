@@ -38,7 +38,7 @@ void processingMessage0x000001EF(){
 						doorCloseTime=currentTime;
 						break;
 					case 0x04: //it is the message to open the car
-					case 0x03: //it is the message to open the car
+					case 0x03: //it is the message to open the car (driver side)
 						closeWindowsRequest=0; //interrupt the action, if in progress
 						doorLocksRequestsCounter=0;
 						break;
@@ -113,16 +113,18 @@ void processingMessage0x000001EF(){
 						break;
 					case 0x04: //it is the message to open the car
 					case 0x03: //it is the message to open the car
-						if(currentTime-doorOpenTime<3000){ //if less than 1 sec from previous unlock click
-							doorUnlocksRequestsCounter++; //if more clicks on the button after first were performed, count them
-						}else{
-							//abort previous requests
-							doorUnlocksRequestsCounter=0;
-							openWindowsRequest=0;
+						if((rx_msg_data[2] & 0b00001110)!=0x04){//if requestor is not Passive Entry (door handle) (RfReq=0x2) (RfReq is on byte 2 bit from 3 to 1).
+							if(currentTime-doorOpenTime<3000){ //if less than 1 sec from previous unlock click
+								doorUnlocksRequestsCounter++; //if more clicks on the button after first were performed, count them
+							}else{
+								//abort previous requests
+								doorUnlocksRequestsCounter=0;
+								openWindowsRequest=0;
 
-							//but...
-							if(function_open_windows_with_door_lock==1){ //if open Windows 1 is selected in setup menu
-								doorUnlocksRequestsCounter=1; //when door opens, we shall open windows
+								//but...
+								if(function_open_windows_with_door_lock==1){ //if open Windows 1 is selected in setup menu
+									doorUnlocksRequestsCounter=1; //when door opens, we shall open windows
+								}
 							}
 						}
 						if(doorUnlocksRequestsCounter>=1){ //if double click, windows opening is requested

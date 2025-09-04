@@ -47,6 +47,8 @@
 	// #define ACC_AUTOSTART					// if uncommented it will allow the ACC+ to automatically restart once the veichle stops for more than 5 seconds. It can changed inside baccable SETUP menu.
 	// #define CLOSE_WINDOWS 1					// if uncommented with value 1 or value 2, actuates windows as described in the manual. It can changed inside baccable SETUP menu.
 	// #define OPEN_WINDOWS 1					// if uncommented with value 1 or value 2, actuates windows as described in the manual. It can changed inside baccable SETUP menu.
+	// #define HAS_VIRTUAL_PAD					// if uncommented, allows "toggle HAS" to appear on main menu. see manual. It can changed inside baccable SETUP menu.
+	
 	
 	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
 	// Note: #define shall be on a single line. That's why we put \ at the end for readability

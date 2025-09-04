@@ -135,7 +135,7 @@
 		extern uint8_t main_dashboardPageIndex;
 		extern uint8_t dashboard_menu_indent_level;
 		extern uint8_t dashboard_main_menu_array_len;
-		extern uint8_t dashboard_main_menu_array[11][DASHBOARD_MESSAGE_MAX_LENGTH];
+		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
 		extern uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH];
@@ -296,6 +296,8 @@
 
 		extern uint8_t LANEbuttonPressCount; //stores number of times this message field was received
 		extern uint8_t LANEbutton2PressCount; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
+
+		extern uint8_t numberOfLaneButtonClicks; //number of times button was pressed(click)
 
 		//DYNO_MODE
 		extern uint8_t DynoModeEnabled;
