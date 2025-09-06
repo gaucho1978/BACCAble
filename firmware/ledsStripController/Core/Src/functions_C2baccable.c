@@ -12,8 +12,8 @@
 			if(currentTime-DynoStateMachineLastUpdateTime> 4000){ //if older than 4 sec
 				DynoStateMachine=0xff; //timeout. stop any sequence
 				//send message to master to inform about the status of Dyno
-				uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
-				if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+				uint8_t tmpArr2[2]={C1BusID,C1cmdDynoNotActive};
+				if(DynoModeEnabled) tmpArr2[1]=C1cmdDynoActive;
 				addToUARTSendQueue(tmpArr2, 2);
 			}
 		}
@@ -30,7 +30,7 @@
 		if(front_brake_forced==255){ //request to disable Front brake
 			front_brake_forced=0;
 			//just reply to C1 baccable
-			uint8_t tmpArr[2]={C1BusID,C2cmdNormalFrontBrake};
+			uint8_t tmpArr[2]={C1BusID,C1cmdNormalFrontBrake};
 			addToUARTSendQueue(tmpArr, 2);
 			can_tx(&rearBrakeMsgHeader[0], rearBrakeMsgData[0]); //send message to return control to ECU
 
@@ -40,7 +40,7 @@
 		if(front_brake_forced==5){
 			front_brake_forced=4;
 			//send reply via serial line to C1 to inform that front brake is going to be forced
-			uint8_t tmpArr[2]={C1BusID,C2cmdForceFrontBrake};
+			uint8_t tmpArr[2]={C1BusID,C1cmdForceFrontBrake};
 			addToUARTSendQueue(tmpArr, 2);
 		}
 

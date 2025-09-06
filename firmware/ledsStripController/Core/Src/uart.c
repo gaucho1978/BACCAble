@@ -79,7 +79,7 @@ void uart_init(){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) {
 		// evaluate received message
-    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_Bh_BusID)){ //if the received char indicates the beginning of a message
+    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_C2_BusID)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
 				#if defined(ACT_AS_CANABLE)
 					onboardLed_blue_on();
@@ -90,19 +90,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 						#if defined(C1baccable)
 							switch(rxBuffer[1]){
-								case C2cmdForceFrontBrake:
+								case C1cmdForceFrontBrake:
 									front_brake_forced=1; //update status
 									launch_assist_enabled=1; //enable launch assist
 									break;
-								case C2cmdNormalFrontBrake:
+								case C1cmdNormalFrontBrake:
 									front_brake_forced=0;
 									launch_assist_enabled=0; //disable launch assist
 									break;
-								case C2cmdDynoActive:
+								case C1cmdDynoActive:
 									DynoModeEnabledOnMaster=1; //dyno active
 									break;
-								case C2cmdDynoNotActive:
+								case C1cmdDynoNotActive:
 									DynoModeEnabledOnMaster=0; //dyno not active
+									break;
+								case C1cmdLaneDoubleTap:
+									if(HAS_function_enabled) HAS_buttonPressRequested=5; //press HAS for 5 times (5 messages)
 									break;
 								default:
 									break;
@@ -110,15 +113,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#endif
 						break;
 					case C2BusID: //message directed to baccable connected to C2 bus
-						#if (defined(C2baccable))
+						#if defined(C2baccable)
 							switch (rxBuffer[1]){
 								case C2cmdtoggleDyno: //dyno request
 									if(front_brake_forced==0) dynoToggle();
 									break;
 								case C2cmdtoggleEscTc: // ESC/TC request
 									//if we can, enable it
-									if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
-
+									if(function_esc_tc_customizator_enabled){
+										if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
+									}
 									if(ESCandTCinversion && function_show_race_mask){ //if enabled and race screen requested, notify C1 and BH
 										uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
 										addToUARTSendQueue(tmpArr1, 2);
@@ -144,6 +148,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									HAS_buttonPressRequested=5;
 									break;
 								default:
+									break;
 							}
 
 
@@ -178,42 +183,34 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							weCanSendAMessageReply=HAL_GetTick();
 						#endif
 						break;
-					case C2_Bh_BusID: //message directed to baccable connected to C2 and BH bus
-						#if defined(C2baccable) || defined(BHbaccable)
-							if(rxBuffer[1]==C2_Bh_cmdSetPedalBoostStatus){
-								//third byte contains the pedal booster status
-								function_pedal_booster_enabled=rxBuffer[2];
+
+					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
+						#if defined(BHbaccable)
+							memcpy(&dashboardPageStringArray[0], &rxBuffer[1], DASHBOARD_MESSAGE_MAX_LENGTH); //copy array that we will use in the main
+
+							if(ESCandTCinversion){ //if esc/tc is active, don't show baccable menu
+								requestToSendOneFrame=0;
+							}else{
+								if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 							}
-							onboardLed_blue_on();
-							#if defined(C2baccable)
-								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 can reply, otherwise errors may arise
-							#endif
+							weCanSendAMessageReply=HAL_GetTick();
+
 						#endif
 						break;
-					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
-							#if defined(BHbaccable)
-								memcpy(&dashboardPageStringArray[0], &rxBuffer[1], DASHBOARD_MESSAGE_MAX_LENGTH); //copy array that we will use in the main
 
-								if(ESCandTCinversion){ //if esc/tc is active, don't show baccable menu
-									requestToSendOneFrame=0;
-								}else{
-									if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
-								}
-								weCanSendAMessageReply=HAL_GetTick();
-
-							#endif
-						break;
 					case BhBusIDgetStatus:
 						#if defined(BHbaccable)
 							weCanSendAMessageReply=HAL_GetTick();
 						#endif
 						break;
+
 					case BhBusChimeRequest:
 						#if defined(BHbaccable)
 							weCanSendAMessageReply=HAL_GetTick();
 							requestToPlayChime=1;
 						#endif
 						break;
+
 					case AllSleep: //message directed to all the modules, in order to request low consumption
 						//Not used for now..
 						break;
@@ -233,17 +230,57 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							#endif
 						#endif
 						break;
+
+					case C1_C2_BusID: //message received by C1 and C2 baccable.
+						#if (defined(C1baccable) || defined(C2baccable))
+							if(rxBuffer[1]==C1_C2_cmdLaneDoubleTap){
+								if(HAS_function_enabled) HAS_buttonPressRequested=5; //press HAS for 5 times (5 messages)
+							}
+						#endif
+						break;
+
 					case C1_Bh_BusID: //message received by C1 and BH baccable.
 						#if (defined(C1baccable) || defined(BHbaccable))
 						//#if defined(C1baccable)
 							if(rxBuffer[1]==C1BHcmdShowRaceScreen){
-								ESCandTCinversion=1;
+								if(function_esc_tc_customizator_enabled) ESCandTCinversion=1;
 							}
 							if(rxBuffer[1]==C1BHcmdStopShowRaceScreen){
 								ESCandTCinversion=0;
 							}
 						#endif
 						break;
+
+					case C2_Bh_BusID: //message directed to baccable connected to C2 and BH bus
+						#if defined(C2baccable) || defined(BHbaccable)
+							switch(rxBuffer[1]){
+								case C2_Bh_cmdSetPedalBoostStatus:
+									//third byte contains the pedal booster status
+									function_pedal_booster_enabled=rxBuffer[2];
+									break;
+								case C2_Bh_cmdFunctHAS_Disabled:
+									HAS_function_enabled=0;
+									break;
+								case C2_Bh_cmdFunctHAS_Enabled:
+									HAS_function_enabled=1;
+									break;
+								case C2_Bh_cmdFunction_ESC_TC_Disabled:
+									function_esc_tc_customizator_enabled=0;
+									ESCandTCinversion=0;
+									break;
+								case C2_Bh_cmdFunction_ESC_TC_Enabled:
+									function_esc_tc_customizator_enabled=1;
+									break;
+								default:
+							}
+
+							onboardLed_blue_on();
+							#if defined(C2baccable)
+								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 can reply, otherwise errors may arise
+							#endif
+						#endif
+						break;
+
 					default:
 						//not expected to end up here
 						break;

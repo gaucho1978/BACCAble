@@ -97,7 +97,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'4','W','D',' ',' ','E','n','a','b','l','e','d',' ',' ',' ',' ',' ',' '},
 			{'M','A','I','N',' ','S','E','T','U','P',' ','M','E','N','U',' ',' ',' '},
 			{'P','A','R','A','M','S',' ','S','E','T','U','P',' ','M','E','N','U',' '},
-			{'E','n','a','b','l','e',' ','H','A','S',' ',' ',' ',' ',' ',' ',' ',' '},
+			{'E','x','E','n','a','b','.','H','A','S','.','S','P','A','R','E',' ',' '},
 
 
 	};
@@ -379,8 +379,6 @@ const char *FW_VERSION=_FW_VERSION;
 	//DYNO_MODE_MASTER
 	uint8_t function_dyno_mode_master_enabled=1; //stored in flash
 
-	//ESC_TC_CUSTOMIZATOR_MASTER)
-	uint8_t function_esc_tc_customizator_enabled=0; //stored in flash
 
 	//FRONT_BRAKE_FORCER_MASTER
 	uint8_t function_front_brake_forcer_master=1; //stored in flash
@@ -442,14 +440,6 @@ const char *FW_VERSION=_FW_VERSION;
 #endif
 
 #if defined(C2baccable)
-	//ESC_TC_CUSTOMIZATOR_ENABLED
-	uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-	uint32_t LANEbutton2PressLastTimeSeen=0; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-
-	uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
-	uint8_t LANEbutton2PressCount=0; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
-
-	uint8_t numberOfLaneButtonClicks=0; //number of times button was pressed(click)
 	//DYNO_MODE
 
 	uint8_t DynoModeEnabled=0;
@@ -490,6 +480,18 @@ const char *FW_VERSION=_FW_VERSION;
 		uint8_t disable_odometer_blink=0;
 	#endif
 #endif
+
+//ESC_TC_CUSTOMIZATOR_MASTER)
+uint8_t function_esc_tc_customizator_enabled=0; //stored in flash
+
+//ESC_TC_CUSTOMIZATOR_ENABLED
+uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+uint32_t LANEbutton2PressLastTimeSeen=0; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+
+uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
+uint8_t LANEbutton2PressCount=0; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
+
+uint8_t numberOfLaneButtonClicks=0; //number of times button was pressed(click)
 
 //PEDAL_BOOSTER_ENABLED
 uint8_t function_pedal_booster_enabled=0; //0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map

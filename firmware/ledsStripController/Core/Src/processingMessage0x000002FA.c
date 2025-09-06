@@ -13,7 +13,7 @@ void processingMessage0x000002FA(){
 	// These Buttons are detected only if the main panel of the car is on.
 
 	#if defined(C2baccable) || defined(C1baccable)
-		if(HAS_buttonPressRequested){ //Has toggle was requested. ACC is not engaged... r u sure?
+		if(HAS_buttonPressRequested){ //Has button press was requested
 			HAS_buttonPressRequested--;
 			if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
 				rx_msg_data[1] = rx_msg_data[1] | 0x10; //simulate HAS button presses
@@ -112,9 +112,9 @@ void processingMessage0x000002FA(){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex++;
 									}
 
-									if(HAS_function_enabled==0){
+									//if(HAS_function_enabled==0){
 										if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
-									}
+									//}
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 									//onboardLed_blue_on();
@@ -187,9 +187,9 @@ void processingMessage0x000002FA(){
 											if(main_dashboardPageIndex==8) main_dashboardPageIndex++;
 										}
 
-										if(HAS_function_enabled==0){
+										//if(HAS_function_enabled==0){
 											if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
-										}
+										//}
 
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 										//onboardLed_blue_on();
@@ -242,9 +242,9 @@ void processingMessage0x000002FA(){
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
 
-									if(HAS_function_enabled==0){
+									//if(HAS_function_enabled==0){
 										if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
-									}
+									//}
 
 									if(function_4wd_disabler_enabled==0){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
@@ -315,9 +315,9 @@ void processingMessage0x000002FA(){
 										main_dashboardPageIndex-= 1; //set next page
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
 
-										if(HAS_function_enabled==0){
+										//if(HAS_function_enabled==0){
 											if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
-										}
+										//}
 
 										if(function_4wd_disabler_enabled==0){
 											if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
@@ -485,12 +485,12 @@ void processingMessage0x000002FA(){
 								case 10: //params setup menu
 									dashboard_menu_indent_level++;
 									break;
-								case 11: //toggle HAS function
-									HAS_buttonPressRequested=5;
-									//inform Slave baccable C2
-									uint8_t tmpArr3[2]={C2BusID,C2cmdToggleHas};
-									addToUARTSendQueue(tmpArr3, 2);
-									break;
+								//case 11: //toggle HAS function
+								//	HAS_buttonPressRequested=5;
+								//	//inform Slave baccable C2
+								//	uint8_t tmpArr3[2]={C2BusID,C2cmdToggleHas};
+								//	addToUARTSendQueue(tmpArr3, 2);
+								//	break;
 								default:
 									break;
 							}
@@ -568,6 +568,14 @@ void processingMessage0x000002FA(){
 											break;
 										case 10: //{'[',' ',']','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',},
 											function_esc_tc_customizator_enabled = !function_esc_tc_customizator_enabled;
+
+											//send messages to slave boards
+											uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
+											if(!function_esc_tc_customizator_enabled){
+												ESCandTCinversion=0; //ensure ESCTC inversion get disabled
+												tmpArr0[1]=C2_Bh_cmdFunction_ESC_TC_Disabled;
+											}
+											addToUARTSendQueue(tmpArr0, 2);
 											break;
 										case 11: //{'[',' ',']','D','y','n','o',},
 											function_dyno_mode_master_enabled=!function_dyno_mode_master_enabled;
@@ -640,6 +648,11 @@ void processingMessage0x000002FA(){
 											break;
 										case 26: //{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d'},
 											HAS_function_enabled=!HAS_function_enabled;
+											//notify to C2 and BH HAS function status
+											uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
+											if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
+											addToUARTSendQueue(tmpArr5, 2);
+
 											break;
 										default:
 											break;

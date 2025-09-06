@@ -207,8 +207,8 @@ void processingExtendedMessage(){
 					DynoStateMachine=0xff; //disable state machine
 
 					//send message to master to inform about the status of Dyno
-					uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
-					if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+					uint8_t tmpArr2[2]={C1BusID,C1cmdDynoNotActive};
+					if(DynoModeEnabled) tmpArr2[1]=C1cmdDynoActive;
 					addToUARTSendQueue(tmpArr2, 2);
 
 					onboardLed_blue_on();
@@ -221,8 +221,8 @@ void processingExtendedMessage(){
 					DynoStateMachine=0xff; //disable state machine
 
 					//send message to master to inform about the status of Dyno
-					uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
-					if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+					uint8_t tmpArr2[2]={C1BusID,C1cmdDynoNotActive};
+					if(DynoModeEnabled) tmpArr2[1]=C1cmdDynoActive;
 					addToUARTSendQueue(tmpArr2, 2);
 
 					onboardLed_blue_on();
@@ -234,8 +234,8 @@ void processingExtendedMessage(){
 					DynoStateMachine=0xff; //disable state machine
 
 					//send message to master to inform about the status of Dyno
-					uint8_t tmpArr2[2]={C1BusID,C2cmdDynoNotActive};
-					if(DynoModeEnabled) tmpArr2[1]=C2cmdDynoActive;
+					uint8_t tmpArr2[2]={C1BusID,C1cmdDynoNotActive};
+					if(DynoModeEnabled) tmpArr2[1]=C1cmdDynoActive;
 					addToUARTSendQueue(tmpArr2, 2);
 
 					onboardLed_blue_on();

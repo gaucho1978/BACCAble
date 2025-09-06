@@ -234,8 +234,6 @@
 		//DYNO_MODE_MASTER
 		extern uint8_t function_dyno_mode_master_enabled; //stored in flash
 
-		//ESC_TC_CUSTOMIZATOR_MASTER)
-		extern uint8_t function_esc_tc_customizator_enabled; //stored in flash
 
 		//FRONT_BRAKE_FORCER_MASTER
 		extern uint8_t function_front_brake_forcer_master; //stored in flash
@@ -290,14 +288,6 @@
 	#endif
 
 	#if defined(C2baccable)
-		//ESC_TC_CUSTOMIZATOR_ENABLED
-		extern uint32_t LANEbuttonPressLastTimeSeen; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-		extern uint32_t LANEbutton2PressLastTimeSeen; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-
-		extern uint8_t LANEbuttonPressCount; //stores number of times this message field was received
-		extern uint8_t LANEbutton2PressCount; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
-
-		extern uint8_t numberOfLaneButtonClicks; //number of times button was pressed(click)
 
 		//DYNO_MODE
 		extern uint8_t DynoModeEnabled;
@@ -334,89 +324,100 @@
 		extern uint8_t disable_odometer_blink;
 	#endif
 
-		//PEDAL_BOOSTER_ENABLED
-		extern uint8_t function_pedal_booster_enabled;
+	//ESC_TC_CUSTOMIZATOR_MASTER)
+	extern uint8_t function_esc_tc_customizator_enabled; //stored in flash
 
-		//CLEAR_FAULTS_ENABLED
-		extern uint8_t function_clear_faults_enabled; //default enabled. saved on flash
-		extern uint8_t clearFaultsRequest; //if enabled, sends messages to clear faults
-		extern uint32_t last_sent_clear_faults_msg;
-		extern uint8_t clearFaults_msg_data[5]; //message to clear DTC
-		extern CAN_TxHeaderTypeDef clearFaults_msg_header;
+	//ESC_TC_CUSTOMIZATOR_ENABLED
+	extern uint32_t LANEbuttonPressLastTimeSeen; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+	extern uint32_t LANEbutton2PressLastTimeSeen; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
 
-		//
-		extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]; //it contains string to print on dashboard
+	extern uint8_t LANEbuttonPressCount; //stores number of times this message field was received
+	extern uint8_t LANEbutton2PressCount; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
 
-		extern float currentSpeed_km_h; //current vehicle speed
-		extern float previousSpeed_km_h; //store speed at previous loop
-		extern uint32_t statistics_0_100_StartTime;
-		extern uint32_t statistics_100_200_StartTime;
+	extern uint8_t numberOfLaneButtonClicks; //number of times button was pressed(click)
 
-		extern uint32_t weCanSendAMessageReply; //defines last time that C2 or BH baccable received a message (used by C2 and BH baccable)
-		extern uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
-		extern uint32_t currentTime; //stores current time in milliseconds, each time we enter the main loop
+	//PEDAL_BOOSTER_ENABLED
+	extern uint8_t function_pedal_booster_enabled;
 
-		extern UART_HandleTypeDef huart2; // this is the serial line between baccables
+	//CLEAR_FAULTS_ENABLED
+	extern uint8_t function_clear_faults_enabled; //default enabled. saved on flash
+	extern uint8_t clearFaultsRequest; //if enabled, sends messages to clear faults
+	extern uint32_t last_sent_clear_faults_msg;
+	extern uint8_t clearFaults_msg_data[5]; //message to clear DTC
+	extern CAN_TxHeaderTypeDef clearFaults_msg_header;
 
-		extern uint32_t currentRpmSpeed;	//used by C1baccable
-		extern uint8_t currentGear; 		//used by C1baccable and BHbaccable
+	//
+	extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]; //it contains string to print on dashboard
 
-		// Storage for status and received message buffer
-		extern CAN_RxHeaderTypeDef rx_msg_header;  //msg header
-		extern uint8_t rx_msg_data[8];  //msg data
+	extern float currentSpeed_km_h; //current vehicle speed
+	extern float previousSpeed_km_h; //store speed at previous loop
+	extern uint32_t statistics_0_100_StartTime;
+	extern uint32_t statistics_100_200_StartTime;
 
-		extern uint8_t msg_buf[]; //msg converted in ascii to send over usb
+	extern uint32_t weCanSendAMessageReply; //defines last time that C2 or BH baccable received a message (used by C2 and BH baccable)
+	extern uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
+	extern uint32_t currentTime; //stores current time in milliseconds, each time we enter the main loop
 
-		extern uint8_t _4wd_disabled; //if =4 disables 4wd
-		extern uint8_t front_brake_forced; //if=5 disables Front brakes
-		extern uint8_t DynoModeEnabledOnMaster; //status of dyno in master board. tells if dyno is active
+	extern UART_HandleTypeDef huart2; // this is the serial line between baccables
 
-		extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
+	extern uint32_t currentRpmSpeed;	//used by C1baccable
+	extern uint8_t currentGear; 		//used by C1baccable and BHbaccable
 
-		extern uint8_t commandsMenuEnabled; //if 0 disables the up-down buttons to change menu position
+	// Storage for status and received message buffer
+	extern CAN_RxHeaderTypeDef rx_msg_header;  //msg header
+	extern uint8_t rx_msg_data[8];  //msg data
 
-		//LOW CONSUME
-		extern uint8_t lowConsumeIsActive; //0=false, 1=true
-		extern uint32_t lastReceivedCanMsgTime;
-		extern uint32_t allProcessorsWakeupTime;
+	extern uint8_t msg_buf[]; //msg converted in ascii to send over usb
 
-		//ESC/TC function (common to C1,C2,BH
-		extern uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
-		extern uint8_t DNA_msg_data[8];
-		extern CAN_TxHeaderTypeDef DNA_msg_header;
-		extern uint32_t lastSent384;
+	extern uint8_t _4wd_disabled; //if =4 disables 4wd
+	extern uint8_t front_brake_forced; //if=5 disables Front brakes
+	extern uint8_t DynoModeEnabledOnMaster; //status of dyno in master board. tells if dyno is active
 
-		extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
+	extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
 
-		//SHOW RACE MASK
-		extern uint8_t function_show_race_mask;
+	extern uint8_t commandsMenuEnabled; //if 0 disables the up-down buttons to change menu position
 
-		//PARK_MIRROR
-		extern uint8_t function_park_mirror;
-		extern uint8_t leftMirrorHorizontalOperativePos;	//current Operative position
-		extern uint8_t leftMirrorVerticalOperativePos; 	//current Operative position
-		extern uint8_t rightMirrorHorizontalOperativePos;//current Operative position
-		extern uint8_t rightMirrorVerticalOperativePos;	//current Operative position
-		extern uint8_t storeOperativeMirrorPosition;//get Operative Operative position boolean
-		extern uint8_t leftParkMirrorVerticalPos; //Stored Park position
-		extern uint8_t leftParkMirrorHorizontalPos; //Stored Park position
-		extern uint8_t rightParkMirrorVerticalPos;	//Stored Park position
-		extern uint8_t rightParkMirrorHorizontalPos; //Stored Park position
-		extern uint8_t storeCurrentParkMirrorPosition; //Store Park mirrors position Request
-		extern uint8_t parkMirrorsSteady; // park mirrors are not moving if this is =1
-		extern uint8_t turnIndicator; //0= center, 1=right, 2=left
-		extern uint8_t parkMirrorMsgData[8];
-		extern CAN_TxHeaderTypeDef parkMirrorMsgHeader;
-		extern uint32_t lastParkMirrorMsgTime;
-		extern uint32_t restoreOperativeMirrorsPositionRequestTime;
-		extern uint8_t restoreOperativeMirrorsPosition;
-		extern uint8_t leftParkMirrorPositionRequired;
-		extern uint8_t rightParkMirrorPositionRequired;
-		extern uint8_t parkMirrorOperativePositionNotStored;
+	//LOW CONSUME
+	extern uint8_t lowConsumeIsActive; //0=false, 1=true
+	extern uint32_t lastReceivedCanMsgTime;
+	extern uint32_t allProcessorsWakeupTime;
 
+	//ESC/TC function (common to C1,C2,BH
+	extern uint8_t currentDNAmode; //0x00=Natural, 0x08=dynamic 0x10=AllWeather, 0x30=race
+	extern uint8_t DNA_msg_data[8];
+	extern CAN_TxHeaderTypeDef DNA_msg_header;
+	extern uint32_t lastSent384;
 
-		//HAS_FUNCTION_ENABLED
-		extern uint8_t HAS_function_enabled;
-		extern uint8_t HAS_buttonPressRequested;
+	extern uint8_t ESCandTCinversion; //0=do't perform anything, 1=disable ESC and TSC in D,N,A modes and enable ESC and TSC in race mode//---// used when ESC_TC_CUSTOMIZATOR_ENABLED is defined (also last 2 declarations)
+
+	//SHOW RACE MASK
+	extern uint8_t function_show_race_mask;
+
+	//PARK_MIRROR
+	extern uint8_t function_park_mirror;
+	extern uint8_t leftMirrorHorizontalOperativePos;	//current Operative position
+	extern uint8_t leftMirrorVerticalOperativePos; 	//current Operative position
+	extern uint8_t rightMirrorHorizontalOperativePos;//current Operative position
+	extern uint8_t rightMirrorVerticalOperativePos;	//current Operative position
+	extern uint8_t storeOperativeMirrorPosition;//get Operative Operative position boolean
+	extern uint8_t leftParkMirrorVerticalPos; //Stored Park position
+	extern uint8_t leftParkMirrorHorizontalPos; //Stored Park position
+	extern uint8_t rightParkMirrorVerticalPos;	//Stored Park position
+	extern uint8_t rightParkMirrorHorizontalPos; //Stored Park position
+	extern uint8_t storeCurrentParkMirrorPosition; //Store Park mirrors position Request
+	extern uint8_t parkMirrorsSteady; // park mirrors are not moving if this is =1
+	extern uint8_t turnIndicator; //0= center, 1=right, 2=left
+	extern uint8_t parkMirrorMsgData[8];
+	extern CAN_TxHeaderTypeDef parkMirrorMsgHeader;
+	extern uint32_t lastParkMirrorMsgTime;
+	extern uint32_t restoreOperativeMirrorsPositionRequestTime;
+	extern uint8_t restoreOperativeMirrorsPosition;
+	extern uint8_t leftParkMirrorPositionRequired;
+	extern uint8_t rightParkMirrorPositionRequired;
+	extern uint8_t parkMirrorOperativePositionNotStored;
+
+	//HAS_FUNCTION_ENABLED
+	extern uint8_t HAS_function_enabled;
+	extern uint8_t HAS_buttonPressRequested;
 
 #endif /* INC_GLOBALVARIABLES_H_ */

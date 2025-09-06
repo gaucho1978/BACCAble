@@ -43,16 +43,22 @@ void processingMessage0x00000384(){
 					if(numberOfLaneButtonClicks==2){ //if double click
 						numberOfLaneButtonClicks=0; //ensure we don't return here :-)
 						//execute action :-)
-						HAS_buttonPressRequested=5;
+						if(HAS_function_enabled){
+							HAS_buttonPressRequested=5;
+							//notify to C1
+							uint8_t tmpArr0[2]={C1BusID,C1cmdLaneDoubleTap};
+							addToUARTSendQueue(tmpArr0, 2);
+						}
 					}
 			}
 
 
 			if (LANEbuttonPressCount>8 ){ //8 is more or less 2 seconds
-				ESCandTCinversion=!ESCandTCinversion; //toggle the status
-				//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
-				if(DynoModeEnabled || DynoStateMachine!=0xff) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
-
+				if(function_esc_tc_customizator_enabled){
+					ESCandTCinversion=!ESCandTCinversion; //toggle the status
+					//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
+					if(DynoModeEnabled || DynoStateMachine!=0xff) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
+				}
 				if(ESCandTCinversion && function_show_race_mask){ //if enabled, notify C1 and BH
 					uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
 					addToUARTSendQueue(tmpArr1, 2);

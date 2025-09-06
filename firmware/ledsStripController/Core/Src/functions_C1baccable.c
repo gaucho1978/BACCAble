@@ -25,6 +25,10 @@
 		function_remote_start_Enabled=(uint8_t)readFromFlash(12);
 		function_clear_faults_enabled=(uint8_t)readFromFlash(13);
 		function_esc_tc_customizator_enabled=(uint8_t)readFromFlash(14);
+		uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
+		if(!function_esc_tc_customizator_enabled) tmpArr0[1]=C2_Bh_cmdFunction_ESC_TC_Disabled;
+		addToUARTSendQueue(tmpArr0, 2);
+
 		function_read_faults_enabled=(uint8_t)readFromFlash(15);
 		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
 		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
@@ -58,6 +62,10 @@
 		function_open_windows_with_door_lock=(uint16_t)readFromFlash(26);
 
 		HAS_function_enabled=(uint16_t)readFromFlash(27);
+		//notify to C2 and BH HAS function status
+		uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
+		if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
+		addToUARTSendQueue(tmpArr5, 2);
 
 		readShownParamsFromFlash();
 	}
@@ -83,6 +91,11 @@
 				instructSlaveBoardsTriggerEnabled=0; //avoid to return here
 
 				//send messages to slave boards
+				uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
+				if(!function_esc_tc_customizator_enabled) tmpArr0[1]=C2_Bh_cmdFunction_ESC_TC_Disabled;
+				addToUARTSendQueue(tmpArr0, 2);
+
+				//send messages to slave boards
 				uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
 				addToUARTSendQueue(tmpArr1, 3);
 
@@ -100,6 +113,11 @@
 				uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
 				if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorEnabled;
 				addToUARTSendQueue(tmpArr4, 2);
+
+				//notify to C2 and BH HAS function status
+				uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
+				if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
+				addToUARTSendQueue(tmpArr5, 2);
 			}
 		}
 

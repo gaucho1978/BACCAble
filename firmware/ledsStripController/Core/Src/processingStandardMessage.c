@@ -236,6 +236,9 @@ void processingStandardMessage(){
 			}
 		   #endif
 		   break;
+		case 0x00000358:
+			//should contain volume position (number of ticks in byte2, and direction in byte 2, bit 6 and 5)
+			break;
 		case 0x00000384:
 			processingMessage0x00000384();
 			break;
@@ -396,6 +399,45 @@ void processingStandardMessage(){
 			//only if lights are OFF, and therefore the dashboard is set to min brightness: setting byte 5 to 0xF0, the brightness reduces for around 100msec (this works for any value between Dx and Fx)
 			//this is the test message to increase brightness: 0x88 0x20 0xC3 0x24 0x00 0x14 0x30 0x00
 			break;
+		case 0x000005A0:
+			#if defined(BHbaccable)
+				//Lane button press on some giulias (most recent?) is only on BH (to be verified), byte4, bit 0
+
+				if((rx_msg_data[4] & 0x01) ==0x01){ // left stalk button was pressed (lane following indicator)
+
+					LANEbuttonPressLastTimeSeen=currentTime;//save current time it was pressed as LANEbuttonPressLastTimeSeen
+					LANEbuttonPressCount++;
+
+					if(LANEbuttonPressCount==1){ //if button was just pressed :-)
+							numberOfLaneButtonClicks++;		// :-)
+							if(numberOfLaneButtonClicks==2){ //if double click
+								numberOfLaneButtonClicks=0; //ensure we don't return here :-)
+								//notify to C2 and C1, that LANE was pressed 2 times (double tap)
+								uint8_t tmpArr1[2]={C1_C2_BusID, C1_C2_cmdLaneDoubleTap};
+								addToUARTSendQueue(tmpArr1, 2);
+							}
+					}
+
+
+					if (LANEbuttonPressCount>8 ){ //8 is more or less 2 seconds
+						//notify to C2, that LANE was pressed for more than 2 seconds -> request to toggle ESC/TC
+						if(function_esc_tc_customizator_enabled){
+							uint8_t tmpArr1[2]={C2BusID, C2cmdtoggleEscTc};
+							addToUARTSendQueue(tmpArr1, 2);
+							onboardLed_blue_on();
+						}
+						LANEbuttonPressCount=0; //reset the count
+					}
+				}else{
+					if(currentTime-LANEbuttonPressLastTimeSeen>1000){ // if LANEbuttonPressLastTimeSeen, is older than 1 second ago, it means that button was released
+						LANEbuttonPressCount=0;// reset the count assigning it zero
+						numberOfLaneButtonClicks=0; //reset also the counter of the number of consecutive clics :-)
+					}
+				}
+
+			#endif
+			break;
+
 		case 0x000005A5:
 			//cruise control ON/OFF status is on byte0 bit7 (0=disabled, 1=enabled)
 			#if defined(C1baccable)
