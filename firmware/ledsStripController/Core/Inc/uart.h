@@ -50,7 +50,7 @@
 	#define	C2_Bh_cmdFunctHAS_Disabled			0x3A //second byte of the message to C2 and BH bus, identifies the request to disable HAS function.
 	#define	C2_Bh_cmdFunctHAS_Enabled			0x3B //second byte of the message to C2 and BH bus, identifies the request to enable HAS function.
 	#define	C2_Bh_cmdFunction_ESC_TC_Disabled	0x3C //second byte of the message to C2 and BH bus, identifies the request to disable ESC/TC function.
-	#define	C2_Bh_cmdFunction_ESC_TC_Enabled	0x3d //second byte of the message to C2 and BH bus, identifies the request to disable ESC/TC function.
+	#define	C2_Bh_cmdFunction_ESC_TC_Enabled	0x3D //second byte of the message to C2 and BH bus, identifies the request to disable ESC/TC function.
 
 	#define C1BHcmdShowRaceScreen				0x40 //second byte of the message to C1 and BH bus, identifies the request to show Race Screen on dashboard
 	#define C1BHcmdStopShowRaceScreen			0x41 //second byte of the message to C1 and BH bus, identifies the request to STOP to show Race Screen on dashboard

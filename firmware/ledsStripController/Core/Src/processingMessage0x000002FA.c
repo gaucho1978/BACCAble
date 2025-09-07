@@ -112,9 +112,9 @@ void processingMessage0x000002FA(){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex++;
 									}
 
-									//if(HAS_function_enabled==0){
+									if(HAS_function_enabled==0){
 										if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
-									//}
+									}
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 									//onboardLed_blue_on();
@@ -187,9 +187,9 @@ void processingMessage0x000002FA(){
 											if(main_dashboardPageIndex==8) main_dashboardPageIndex++;
 										}
 
-										//if(HAS_function_enabled==0){
+										if(HAS_function_enabled==0){
 											if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
-										//}
+										}
 
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 										//onboardLed_blue_on();
@@ -242,9 +242,9 @@ void processingMessage0x000002FA(){
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
 
-									//if(HAS_function_enabled==0){
+									if(HAS_function_enabled==0){
 										if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
-									//}
+									}
 
 									if(function_4wd_disabler_enabled==0){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
@@ -315,9 +315,9 @@ void processingMessage0x000002FA(){
 										main_dashboardPageIndex-= 1; //set next page
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
 
-										//if(HAS_function_enabled==0){
+										if(HAS_function_enabled==0){
 											if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
-										//}
+										}
 
 										if(function_4wd_disabler_enabled==0){
 											if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
@@ -485,12 +485,12 @@ void processingMessage0x000002FA(){
 								case 10: //params setup menu
 									dashboard_menu_indent_level++;
 									break;
-								//case 11: //toggle HAS function
-								//	HAS_buttonPressRequested=5;
-								//	//inform Slave baccable C2
-								//	uint8_t tmpArr3[2]={C2BusID,C2cmdToggleHas};
-								//	addToUARTSendQueue(tmpArr3, 2);
-								//	break;
+								case 11: //toggle HAS function
+									HAS_buttonPressRequested=5;
+									//inform Slave baccable C2
+									uint8_t tmpArr3[2]={C2BusID,C2cmdToggleHas};
+									addToUARTSendQueue(tmpArr3, 2);
+									break;
 								default:
 									break;
 							}

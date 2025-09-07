@@ -110,6 +110,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								default:
 									break;
 							}
+							onboardLed_blue_on();
 						#endif
 						break;
 					case C2BusID: //message directed to baccable connected to C2 bus
@@ -122,15 +123,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									//if we can, enable it
 									if(function_esc_tc_customizator_enabled){
 										if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
-									}
-									if(ESCandTCinversion && function_show_race_mask){ //if enabled and race screen requested, notify C1 and BH
 										uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
-										addToUARTSendQueue(tmpArr1, 2);
-									}else{
-										uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
-										addToUARTSendQueue(tmpArr1, 2);
+										if(ESCandTCinversion && function_show_race_mask){ //if enabled and race screen requested, notify C1 and BH
+											addToUARTSendQueue(tmpArr1, 2);
+										}else{
+											tmpArr1[1]=C1BHcmdStopShowRaceScreen;
+											addToUARTSendQueue(tmpArr1, 2);
+										}
 									}
-
 									break;
 								case C2cmdForceFrontBrake: //force front brake
 									front_brake_forced=5;
@@ -181,6 +181,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								default:
 							}
 							weCanSendAMessageReply=HAL_GetTick();
+							onboardLed_blue_on();
 						#endif
 						break;
 
@@ -194,13 +195,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 							}
 							weCanSendAMessageReply=HAL_GetTick();
-
+							onboardLed_blue_on();
 						#endif
 						break;
 
 					case BhBusIDgetStatus:
 						#if defined(BHbaccable)
 							weCanSendAMessageReply=HAL_GetTick();
+							onboardLed_blue_on();
 						#endif
 						break;
 
@@ -208,6 +210,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						#if defined(BHbaccable)
 							weCanSendAMessageReply=HAL_GetTick();
 							requestToPlayChime=1;
+							onboardLed_blue_on();
 						#endif
 						break;
 
@@ -224,10 +227,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 					case AllResetFaults: //message received by baccable on BH and C2 bus. we shall reset all faults
 						#if (defined(C2baccable) || defined(BHbaccable))
 							clearFaultsRequest=255;
-							onboardLed_blue_on();
+
 							#if defined(C2baccable)
 								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 is allowed to reply
 							#endif
+
+							onboardLed_blue_on();
 						#endif
 						break;
 
@@ -236,6 +241,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							if(rxBuffer[1]==C1_C2_cmdLaneDoubleTap){
 								if(HAS_function_enabled) HAS_buttonPressRequested=5; //press HAS for 5 times (5 messages)
 							}
+							onboardLed_blue_on();
 						#endif
 						break;
 
@@ -248,6 +254,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							if(rxBuffer[1]==C1BHcmdStopShowRaceScreen){
 								ESCandTCinversion=0;
 							}
+							onboardLed_blue_on();
 						#endif
 						break;
 
