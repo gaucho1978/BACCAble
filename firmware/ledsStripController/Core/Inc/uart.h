@@ -24,6 +24,7 @@
 	#define C1_Bh_BusID						0x0C //first byte sent over uart to indentify destinator baccable connected to C1 and BH Can Bus
 	#define C1_C2_BusID						0x0D //first byte sent over uart to indentify destinator baccable connected to C1 and C2 Can Bus
 
+	#define C1cmdLaneSingleTap					0x1F  //second byte of the message to C1 bus, notifies Lane button single tap
 	#define C1cmdLaneDoubleTap					0x20  //second byte of the message to C1 bus, notifies Lane button double tap
 	#define C1cmdNormalFrontBrake				0x21 //second byte of the message to C1 bus, identifies the request to set front Brake to normal
 	#define C1cmdForceFrontBrake				0x22 //second byte of the message to C1 bus, identifies the request to force Front Brake ON

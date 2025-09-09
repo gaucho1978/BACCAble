@@ -107,6 +107,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C1cmdLaneDoubleTap:
 									if(HAS_function_enabled) HAS_buttonPressRequested=5; //press HAS for 5 times (5 messages)
 									break;
+								case C1cmdLaneSingleTap: //request to C2 to execute the ESC/TC toggle
+									uint8_t tmpArr2[2]={C2BusID,C2cmdtoggleEscTc};
+									addToUARTSendQueue(tmpArr2, 2);
+									break;
 								default:
 									break;
 							}

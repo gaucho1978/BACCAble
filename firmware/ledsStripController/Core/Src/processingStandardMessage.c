@@ -401,6 +401,7 @@ void processingStandardMessage(){
 			break;
 		case 0x000005A0:
 			#if defined(BHbaccable)
+
 				//Lane button press on some giulias (most recent?) is only on BH (to be verified), byte4, bit 0
 
 				if((rx_msg_data[4] & 0x01) ==0x01){ // left stalk button was pressed (lane following indicator)
@@ -413,16 +414,17 @@ void processingStandardMessage(){
 							if(numberOfLaneButtonClicks==2){ //if double click
 								numberOfLaneButtonClicks=0; //ensure we don't return here :-)
 								//notify to C2 and C1, that LANE was pressed 2 times (double tap)
-								uint8_t tmpArr1[2]={C1_C2_BusID, C1_C2_cmdLaneDoubleTap};
-								addToUARTSendQueue(tmpArr1, 2);
+// commented on08/09/25								uint8_t tmpArr1[2]={C1_C2_BusID, C1_C2_cmdLaneDoubleTap};
+// commented on08/09/25								addToUARTSendQueue(tmpArr1, 2);
+								onboardLed_red_on();
 							}
 					}
 
 
-					if (LANEbuttonPressCount>8 ){ //8 is more or less 2 seconds
-						//notify to C2, that LANE was pressed for more than 2 seconds -> request to toggle ESC/TC
+					if (LANEbuttonPressCount>12 ){ //12 is more or less 3 seconds
+						//notify to C2, that LANE was pressed for more than 3 seconds -> request to toggle ESC/TC
 						if(function_esc_tc_customizator_enabled){
-							uint8_t tmpArr1[2]={C2BusID, C2cmdtoggleEscTc};
+							uint8_t tmpArr1[2]={C1BusID, C1cmdLaneSingleTap};
 							addToUARTSendQueue(tmpArr1, 2);
 							onboardLed_blue_on();
 						}
