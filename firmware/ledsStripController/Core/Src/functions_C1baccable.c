@@ -31,6 +31,8 @@
 
 		function_read_faults_enabled=(uint8_t)readFromFlash(15);
 		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
+		total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
+
 		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
 		launch_torque_threshold= (uint16_t)readFromFlash(18);
 		function_seatbelt_alarm_enabled= (uint16_t)readFromFlash(19);
@@ -1738,9 +1740,8 @@
 	}
 
 	uint8_t getParamIndexFromReqId(uint32_t searchedReqId){
-		uint8_t totalParams=total_pages_in_dashboard_menu_gasoline;
-		if(function_is_diesel_enabled) totalParams=total_pages_in_dashboard_menu_diesel;
-		for (uint8_t i=0;i<totalParams;i++){
+
+		for (uint8_t i=0;i<total_pages_in_params_setup_dashboard_menu;i++){
 			if(uds_params_array[function_is_diesel_enabled][i].reqId==searchedReqId) return i;
 		}
 		return 0; //means not found, or param0 (it could be an exception)
@@ -1750,28 +1751,22 @@
 
 
 	uint8_t getNextVisibleParam(uint8_t curIndex) {
-	    uint8_t numberOfParams = function_is_diesel_enabled ?
-	                             total_pages_in_dashboard_menu_diesel :
-	                             total_pages_in_dashboard_menu_gasoline;
 
 	    uint8_t index = curIndex;
-	    while (index < numberOfParams && !shownParamsArray[index]) index++;
+	    while (index < total_pages_in_params_setup_dashboard_menu && !shownParamsArray[index]) index++;
 
-	    if (index >= numberOfParams) index = 0; //if all hidden, restart from the beginning
+	    if (index >= total_pages_in_params_setup_dashboard_menu) index = 0; //if all hidden, restart from the beginning
 	    while (index < curIndex && !shownParamsArray[index]) index++;
 
 	    return index;
 	}
 
 	uint8_t getPreviousVisibleParam(uint8_t curIndex) {
-	    uint8_t numberOfParams = function_is_diesel_enabled ?
-	                             total_pages_in_dashboard_menu_diesel :
-	                             total_pages_in_dashboard_menu_gasoline;
 
 	    uint8_t index = curIndex;
 	    while (index >= 0 && !shownParamsArray[index]) index--;
 
-	    if (index >= numberOfParams) index = numberOfParams-1; //if all hidden, restart from the end
+	    if (index >= total_pages_in_params_setup_dashboard_menu) index = total_pages_in_params_setup_dashboard_menu-1; //if all hidden, restart from the end
 	    while (index > curIndex && !shownParamsArray[index]) index--;
 
 	    return index;

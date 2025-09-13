@@ -328,12 +328,12 @@
 	extern uint8_t function_esc_tc_customizator_enabled; //stored in flash
 
 	//ESC_TC_CUSTOMIZATOR_ENABLED
-	extern uint32_t LANEbuttonPressLastTimeSeen; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-	extern uint32_t LANEbutton2PressLastTimeSeen; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-
-	extern uint8_t LANEbuttonPressCount; //stores number of times this message field was received
-	extern uint8_t LANEbutton2PressCount; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
-
+	//extern uint32_t LANEbuttonPressLastTimeSeen; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+	//extern uint32_t LANEbutton2PressLastTimeSeen; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+	extern uint32_t LANEbuttonPressBeginTime;
+	extern uint32_t LANEbuttonFirstClickTime;
+	//extern uint8_t LANEbuttonPressCount; //stores number of times this message field was received
+	//extern uint8_t LANEbutton2PressCount; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
 	extern uint8_t numberOfLaneButtonClicks; //number of times button was pressed(click)
 
 	//PEDAL_BOOSTER_ENABLED

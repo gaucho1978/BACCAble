@@ -358,34 +358,6 @@ void processingStandardMessage(){
 			break;
 		case 0x000004B4:
 			#if defined(C2baccable)
-			/*
-				//this is used on my20 cars, where lane button (left stalk) is not on message 0x384 but it is on msg id 0x4B4, byte 2, bit 6 (1= button pressed)
-				if((rx_msg_data[2] & 0x40) ==0x40){ // left stalk button was pressed (lane following indicator)
-
-					LANEbutton2PressLastTimeSeen=currentTime;//save current time it was pressed as LANEbutton2PressLastTimeSeen
-					LANEbutton2PressCount++;
-					if (LANEbutton2PressCount>4 ){ //4 is more or less 2 seconds
-						//ESCandTCinversion=!ESCandTCinversion; //toggle the status
-						//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
-						if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion; //revert the change. won't do both things
-
-						if(ESCandTCinversion==1){ //if enabled, notify C1 and BH
-							uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
-							addToUARTSendQueue(tmpArr1, 2);
-						}else{
-							uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
-							addToUARTSendQueue(tmpArr1, 2);
-						}
-
-						onboardLed_blue_on();
-						LANEbutton2PressCount=0; //reset the count
-					}
-				}else{
-					if(currentTime-LANEbutton2PressLastTimeSeen>1000){ // if LANEbutton2PressLastTimeSeen, is older than 1 second ago, it means that button was released
-						LANEbutton2PressCount=0;// reset the count assigning it zero
-					}
-				}
-			*/
 			#endif
 
 			break;
@@ -402,41 +374,41 @@ void processingStandardMessage(){
 		case 0x000005A0:
 			#if defined(BHbaccable)
 
-				//Lane button press on some giulias (most recent?) is only on BH (to be verified), byte4, bit 0
+				//Lane button press on some giulias (most recent?) is only on BH, byte4, bit 0. it is sent once per second and on variation
 
 				if((rx_msg_data[4] & 0x01) ==0x01){ // left stalk button was pressed (lane following indicator)
-
-					LANEbuttonPressLastTimeSeen=currentTime;//save current time it was pressed as LANEbuttonPressLastTimeSeen
-					LANEbuttonPressCount++;
-
-					if(LANEbuttonPressCount==1){ //if button was just pressed :-)
-							numberOfLaneButtonClicks++;		// :-)
-							if(numberOfLaneButtonClicks==2){ //if double click
-								numberOfLaneButtonClicks=0; //ensure we don't return here :-)
-								//notify to C2 and C1, that LANE was pressed 2 times (double tap)
-// commented on08/09/25								uint8_t tmpArr1[2]={C1_C2_BusID, C1_C2_cmdLaneDoubleTap};
-// commented on08/09/25								addToUARTSendQueue(tmpArr1, 2);
-								onboardLed_red_on();
-							}
+					if(LANEbuttonPressBeginTime==0){ //if button was not pressed, and now it is pressed
+						LANEbuttonPressBeginTime=currentTime;//save current time it was pressed (press begin)
+						numberOfLaneButtonClicks++;
+						if (numberOfLaneButtonClicks==1) LANEbuttonFirstClickTime=currentTime;
 					}
 
-
-					if (LANEbuttonPressCount>12 ){ //12 is more or less 3 seconds
+					if ((currentTime-LANEbuttonPressBeginTime)>2000) { //if pressed since 2 seconds
 						//notify to C2, that LANE was pressed for more than 3 seconds -> request to toggle ESC/TC
 						if(function_esc_tc_customizator_enabled){
 							uint8_t tmpArr1[2]={C1BusID, C1cmdLaneSingleTap};
 							addToUARTSendQueue(tmpArr1, 2);
 							onboardLed_blue_on();
 						}
-						LANEbuttonPressCount=0; //reset the count
+						LANEbuttonPressBeginTime=0; //reset the timer, like if it was not pressed
+						numberOfLaneButtonClicks=0;
 					}
 				}else{
-					if(currentTime-LANEbuttonPressLastTimeSeen>1000){ // if LANEbuttonPressLastTimeSeen, is older than 1 second ago, it means that button was released
-						LANEbuttonPressCount=0;// reset the count assigning it zero
+					LANEbuttonPressBeginTime=0; //use this value to remember that button is not pressed
+
+					if(currentTime-LANEbuttonFirstClickTime>1000){ // if more than 1 second is passed since first button click
 						numberOfLaneButtonClicks=0; //reset also the counter of the number of consecutive clics :-)
 					}
-				}
 
+
+					if(numberOfLaneButtonClicks>=2){ //if double click
+						numberOfLaneButtonClicks=0; //ensure we don't return here :-)
+						//notify to C2 and C1, that LANE was pressed 2 times (double tap)
+						uint8_t tmpArr1[2]={C1_C2_BusID, C1_C2_cmdLaneDoubleTap};
+						addToUARTSendQueue(tmpArr1, 2);
+						onboardLed_red_on();
+					}
+				}
 			#endif
 			break;
 

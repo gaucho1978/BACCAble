@@ -34,26 +34,14 @@ void processingMessage0x00000384(){
 	#if defined(C2baccable)
 		//on C2 can bus, msg 0x384 contains, in byte3, bit6 contains left stalk button press status (LANE indicator button)
 		if((rx_msg_data[3] & 0x40) ==0x40){ // left stalk button was pressed (lane following indicator)
-
-			LANEbuttonPressLastTimeSeen=currentTime;//save current time it was pressed as LANEbuttonPressLastTimeSeen
-			LANEbuttonPressCount++;
-
-			if(LANEbuttonPressCount==1){ //if button was just pressed :-)
-					numberOfLaneButtonClicks++;		// :-)
-					if(numberOfLaneButtonClicks==2){ //if double click
-						numberOfLaneButtonClicks=0; //ensure we don't return here :-)
-						//execute action :-)
-						if(HAS_function_enabled){
-							HAS_buttonPressRequested=5;
-							//notify to C1
-							uint8_t tmpArr0[2]={C1BusID,C1cmdLaneDoubleTap};
-							addToUARTSendQueue(tmpArr0, 2);
-						}
-					}
+			if(LANEbuttonPressBeginTime==0){ //if button was not pressed, and now it is pressed
+				LANEbuttonPressBeginTime=currentTime;//save current time it was pressed (press begin)
+				numberOfLaneButtonClicks++;
+				if (numberOfLaneButtonClicks==1) LANEbuttonFirstClickTime=currentTime;
 			}
 
+			if ((currentTime-LANEbuttonPressBeginTime)>2000) { //if pressed since 2 seconds
 
-			if (LANEbuttonPressCount>8 ){ //8 is more or less 2 seconds
 				if(function_esc_tc_customizator_enabled){
 					ESCandTCinversion=!ESCandTCinversion; //toggle the status
 					//if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
@@ -68,14 +56,31 @@ void processingMessage0x00000384(){
 				}
 
 				onboardLed_blue_on();
-				LANEbuttonPressCount=0; //reset the count
+
+				LANEbuttonPressBeginTime=0; //reset the timer, like if it was not pressed
+				numberOfLaneButtonClicks=0;
 			}
 		}else{
-			if(currentTime-LANEbuttonPressLastTimeSeen>1000){ // if LANEbuttonPressLastTimeSeen, is older than 1 second ago, it means that button was released
-				LANEbuttonPressCount=0;// reset the count assigning it zero
+			LANEbuttonPressBeginTime=0; //use this value to remember that button is not pressed
+
+			if(currentTime-LANEbuttonFirstClickTime>1000){ // if more than 1 second is passed since first button click
 				numberOfLaneButtonClicks=0; //reset also the counter of the number of consecutive clics :-)
 			}
+
+
+			if(numberOfLaneButtonClicks>=2){ //if double click
+				numberOfLaneButtonClicks=0; //ensure we don't return here :-)
+				//execute action :-)
+				if(HAS_function_enabled){
+					HAS_buttonPressRequested=5;
+					//notify to C1
+					uint8_t tmpArr0[2]={C1BusID,C1cmdLaneDoubleTap};
+					addToUARTSendQueue(tmpArr0, 2);
+				}
+				onboardLed_red_on();
+			}
 		}
+
 
 		if(currentDNAmode!=(rx_msg_data[1]& 0x7C)){ //RDNA mode was changed, reset the ESCandTCinversion
 			ESCandTCinversion=0;

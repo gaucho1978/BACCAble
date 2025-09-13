@@ -485,12 +485,12 @@ const char *FW_VERSION=_FW_VERSION;
 uint8_t function_esc_tc_customizator_enabled=0; //stored in flash
 
 //ESC_TC_CUSTOMIZATOR_ENABLED
-uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-uint32_t LANEbutton2PressLastTimeSeen=0; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
-
-uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
-uint8_t LANEbutton2PressCount=0; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
-
+//uint32_t LANEbuttonPressLastTimeSeen=0; //stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+//uint32_t LANEbutton2PressLastTimeSeen=0; //like previous one but for lane button on my20 cars. Stores time (in milliseconds from power on) when LANE button (left stalk button) press was read last time
+uint32_t LANEbuttonPressBeginTime=0;
+uint32_t LANEbuttonFirstClickTime=0;
+//uint8_t LANEbuttonPressCount=0; //stores number of times this message field was received
+//uint8_t LANEbutton2PressCount=0; //like previous one but for lane button on my20 cars. Stores number of times this message field was received
 uint8_t numberOfLaneButtonClicks=0; //number of times button was pressed(click)
 
 //PEDAL_BOOSTER_ENABLED

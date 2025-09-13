@@ -146,10 +146,7 @@ void processingMessage0x000002FA(){
 									}
 									if(main_dashboardPageIndex==10){ //we are in params setup menu
 										params_setup_dashboardPageIndex+=1;//set next page
-										total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
-										if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
-
-										if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+										if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
 										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
 									break;
@@ -217,10 +214,7 @@ void processingMessage0x000002FA(){
 										}
 										if(main_dashboardPageIndex==10){ //we are in params setup menu
 											params_setup_dashboardPageIndex+=10;//set next page
-											total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
-											if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
-
-											if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+											if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
@@ -292,10 +286,7 @@ void processingMessage0x000002FA(){
 									}
 									if(main_dashboardPageIndex==10){ //we are in params setup menu
 										params_setup_dashboardPageIndex-=1;//set next page
-										total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
-										if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
-
-										if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=total_pages_in_params_setup_dashboard_menu-1; // make a rotative menu
+										if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=total_pages_in_params_setup_dashboard_menu; // make a rotative menu
 										//onboardLed_blue_on();
 										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
@@ -368,10 +359,7 @@ void processingMessage0x000002FA(){
 										}
 										if(main_dashboardPageIndex==10){ //we are in params setup menu
 											params_setup_dashboardPageIndex-=10;//set prev page
-											total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_gasoline;
-											if(function_is_diesel_enabled) total_pages_in_params_setup_dashboard_menu=total_pages_in_dashboard_menu_diesel;
-
-											if(params_setup_dashboardPageIndex>=total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+											if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
@@ -600,6 +588,7 @@ void processingMessage0x000002FA(){
 											break;
 										case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 											function_is_diesel_enabled=!function_is_diesel_enabled;
+											total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
 											break;
 										case 19: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 											function_pedal_booster_enabled++;
