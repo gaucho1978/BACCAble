@@ -48,19 +48,25 @@ Current available functions are:
 - decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip by means of the decoded can bus data, then lighting the leds strip according to accelerator pedal position and gear selection.
 - automatically disable start&stop car functionality
-- act as Immobilizer, by injecting can bus messages when required.
-- show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed
+- act as Immobilizer, by injecting can bus messages when required. It requires proxy alignment if you want Panic alarm too. 
+- show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed. It works only if vehicle race mode is enabled.
 - add a menu to dashboard in order to show additional parameters like dpf occlusion percentage, oil pressure and performance statistics 
 - route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).  
-- enable and disable ESC and TC with left stalk button press (now it also shows race screen, avoiding the need of RDNA selector)
+- enable and disable ESC and TC with left stalk button press (now it also shows race screen, avoiding the need of RDNA selector). It requires proxy alignment.
 - Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
-- ACC_VIRTUAL_PAD allows to enable Adaptive Cruise Control without the need to thange the wheel buttons pad: baccable will detect Cruise Control buttons press and it will send Adaptive Cruise Control messages to ECU.  
-- LOW consumpption, used to reduce current consumption if using the new Baccable pcb board.
+- ACC_VIRTUAL_PAD allows to enable Adaptive Cruise Control without the need to thange the wheel buttons pad: baccable will detect Cruise Control buttons press and it will send Adaptive Cruise Control messages to ECU.  It requires proxy alignment and some car prerequisites.
+- LOW consumption, used to reduce current consumption if using the new Baccable pcb board.
 - enable front brake from dashboard menu, in order to perform burnout start and launch assist based on torque force
 - disable 4wd, for giulias and stelvios with 4wd.
 - Disable seatbelt alarm
 - Disable odometer blink
- 
+- Show Race Mask, shows race masks when using ESC/TC function - SOME BUG REMAINING: if screen flickers, disable this function on your Baccable
+- Park Mirror, when Rear Drive and direction indicator are inserted, moves rear view mirror to mirrors position recorded when function was enabled. It Works only on vehicles with encoders inside mirrors. Just try it to check compatibility with your car.
+- ACC Autostart, when veichle with ACC engaged stops behind the car in front of us, maintain active ACC (When ACC Autorestart function is disabled, ACC disengages after 5 seconds)
+- Close windows, allows to close windows when you close the vehicle (different modes are expected to obtain, depending on single double or triple closure of the veichle, the closure of windows or to le them stay little bit opened.
+- Open windows, allows to open windows when you open the vehicle (different modes are expected to obtain, depending on single or double closure of the veichle, windows opening.
+- HAS Virtual Pad, allows to simulate the button HAS (Highway Assist System) without purchasing the proper wheel keypad. It requires proxy alignment and some car prerequisites.
+
 Youtube overview video (1):
 
 [![BACCABLE 2025 overview - English version](https://img.youtube.com/vi/0mxV7nnITM4/0.jpg)](https://www.youtube.com/watch?v=0mxV7nnITM4)
