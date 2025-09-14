@@ -788,7 +788,17 @@
 				uartTxMsg[1]=checkbox_symbols[shownParamsArray[params_setup_dashboardPageIndex-1]];
 				uartTxMsg[2]=' ';
 				uartTxMsg[3]=' ';
-				memcpy(&uartTxMsg[4], &uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name,UART_BUFFER_SIZE-4);
+				memcpy(&uartTxMsg[4], &uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name,UART_BUFFER_SIZE-4); //copy entire string, to fill it with 0 at the end
+				uint8_t tmpStrLenName=strlen((char *)uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name);
+				uint8_t tmpStrLenUnits=strlen((char *)uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].replyMeasurementUnit);
+				uint8_t tmpCharsToWrite=UART_BUFFER_SIZE-4-tmpStrLenName; //number of chars that we can still use in the string
+				if(tmpCharsToWrite>tmpStrLenUnits+1) tmpCharsToWrite= tmpStrLenUnits+1; //if we have more space than what we have to write, set the total number of chars to write
+				if(tmpCharsToWrite>0){
+					uartTxMsg[4+tmpStrLenName]=' '; //add a space
+					tmpCharsToWrite--;
+				}
+				if(tmpCharsToWrite>0) memcpy(&uartTxMsg[4+tmpStrLenName+1], &uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].replyMeasurementUnit,tmpCharsToWrite);
+
 				break;
 		}
 
