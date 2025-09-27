@@ -1,5 +1,8 @@
 // the definition of ACT_AS_CANABLE shall be placed in main.h
 #include "main.h"
+#ifdef ENABLE_USB_MASS_STORAGE
+#include "ff.h"
+#endif
 
 int main(void){
 	SystemClock_Config(); //set system clocks
@@ -12,7 +15,35 @@ int main(void){
 
 	uart_init();
 
-	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE)
+#ifdef ENABLE_USB_MASS_STORAGE
+	FATFS fs;
+	FIL fil;
+	UINT bw;
+	FRESULT res;
+	BYTE work[FF_MIN_SS];
+
+	res = f_mount(&fs, "", 1);
+	if (res != FR_OK){
+	    MKFS_PARM opt = {.fmt = FM_FAT|FM_SFD, .n_fat = 1, .align = 0, .n_root = 224, .au_size = FF_MIN_SS};
+	    res = f_mkfs("", &opt, work, FF_MIN_SS);
+	    if (res == FR_OK) {
+	        f_setlabel("BACCABLE");
+	        res = f_open(&fil, "hello.txt", FA_WRITE|FA_OPEN_ALWAYS);
+	        if (res == FR_OK) {
+	            f_write(&fil, "Hello, World!\r\n", 15, &bw);
+	            f_close(&fil);
+	        }
+	        res = f_open(&fil, "baccable.txt", FA_WRITE|FA_OPEN_ALWAYS);
+	        if (res == FR_OK) {
+	            f_write(&fil, "Hello, World!\r\n", 15, &bw);
+	            f_close(&fil);
+	        }
+	        f_unmount("");
+	    }
+	}
+#endif
+
+	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
 		MX_USB_DEVICE_Init();
 	#endif
 

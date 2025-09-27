@@ -35,14 +35,17 @@
 	#define LAST_PAGE_ADDRESS_STATISTICS LAST_PAGE_ADDRESS- FLASH_PAGE_SIZE //we will use previous page for statistics
 	#define LAST_PAGE_ADDRESS_SHOWN_PARAMS LAST_PAGE_ADDRESS_STATISTICS- FLASH_PAGE_SIZE //we will use previous page for shown params
 
-#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE)
+#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
 	//#include "usbd_def.h"
 	#include "usb_device.h"
+#ifdef ENABLE_USB_MASS_STORAGE
+	#include "usbd_storage_if.h"
+#else
 	#include "string.h"
 	#include "usbd_cdc_if.h"
-
 #endif
 
+#endif
 
 	#include "onboardLed.h"
 	#include "can.h"

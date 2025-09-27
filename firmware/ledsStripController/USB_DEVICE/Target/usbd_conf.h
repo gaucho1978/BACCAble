@@ -37,7 +37,7 @@
 #include "stm32f0xx_hal.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "compile_time_defines.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup USBD_OTG_DRIVER
@@ -74,7 +74,11 @@
 /*---------- -----------*/
 #define USBD_SELF_POWERED     1
 /*---------- -----------*/
+#ifdef ENABLE_USB_MASS_STORAGE
+#define MSC_MEDIA_PACKET    2048
+#else
 #define MAX_STATIC_ALLOC_SIZE     512
+#endif
 
 /****************************************/
 /* #define for FS and HS identification */

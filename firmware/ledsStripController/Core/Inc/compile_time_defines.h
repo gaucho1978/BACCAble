@@ -271,6 +271,16 @@
 	#endif
 
 
+#ifndef DEBUG_MODE
+#ifndef ACT_AS_CANABLE
+#ifndef C1baccable
+#define ENABLE_USB_MASS_STORAGE
+#endif
+#endif
+#endif
+#define USB_FLASH_START_ADDRESS 0x8010000
+#define TOTAL_USB_DEVICE_SIZE 65536
+
 
 
 #endif
