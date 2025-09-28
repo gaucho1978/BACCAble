@@ -11,7 +11,7 @@
 
 # SOURCES: list of sources in the user application
 SOURCES := $(shell find Core/Src -name "*.c")
-USB_SOURCES_APP = usb_device.c usbd_cdc_if.c usbd_desc.c
+USB_SOURCES_APP = usb_device.c usbd_cdc_if.c usbd_desc.c usbd_storage_if.c
 USB_SOURCES_TARGET = usbd_conf.c
 
 # Get git version and dirty flag
