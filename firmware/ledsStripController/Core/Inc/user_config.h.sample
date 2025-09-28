@@ -48,7 +48,7 @@
 	// #define CLOSE_WINDOWS 1					// if uncommented with value 1 or value 2, actuates windows as described in the manual. It can changed inside baccable SETUP menu.
 	// #define OPEN_WINDOWS 1					// if uncommented with value 1 or value 2, actuates windows as described in the manual. It can changed inside baccable SETUP menu.
 	// #define HAS_VIRTUAL_PAD					// if uncommented, allows "toggle HAS" to appear on main menu. see manual. It can changed inside baccable SETUP menu.
-	
+	// #define QV_EXHAUST_FLAP_FUNCTION_ENABLED // if uncommented, allows to force to open position, the exhaust gas valve of Giulia QV, by means of double clic of Release button located in automatic gear cars. For Manual Giulia, the "Toggle QV Valve" will be available in baccable main menu. It can changed inside baccable SETUP menu.
 	
 	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
 	// Note: #define shall be on a single line. That's why we put \ at the end for readability

@@ -282,6 +282,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C2_Bh_cmdFunction_ESC_TC_Enabled:
 									function_esc_tc_customizator_enabled=1;
 									break;
+								case C2_Bh_cmdFunction_Save_Log_to_File:
+									saveToFilesystem();
+									break;
 								default:
 							}
 
@@ -321,22 +324,31 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	onboardLed_red_on();
-	//onboardLed_red_blink(2);
+
 	if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
 		// Overrun error (buffer pieno, dati persi)
-		//onboardLed_blue_on();
+		//onboardLed_red_on();
 	}
 	if (huart->ErrorCode & HAL_UART_ERROR_FE) {
 		// Framing error
-		//onboardLed_blue_on();
+		//onboardLed_red_on();
 	}
 	if (huart->ErrorCode & HAL_UART_ERROR_NE) {
 		// Noise detected
-
+		//onboardLed_red_on();
 	}
 	if (huart->ErrorCode & HAL_UART_ERROR_PE) {
 		// Parity error
+		//onboardLed_red_on();
+	}
 
+	if (huart->ErrorCode == HAL_UART_ERROR_NONE) {
+	    // Error not classified
+		//onboardLed_red_on();
+	}
+
+	if (huart->ErrorCode & HAL_UART_ERROR_DMA) {
+	    //onboardLed_red_on();
 	}
 
 	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);
@@ -379,6 +391,7 @@ void addToUARTSendQueue(const uint8_t *data, size_t length) {
 		tx_queue->count++;
 	} else {
 		// queue full, ignore the request
+		onboardLed_red_on();
 	}
 
 }
@@ -396,7 +409,7 @@ void processUART() {
 
     //if we are C2 or BH baccable, we can reply only if we received a message directed to us few milliseconds ago
 	#if (defined(C2baccable) || defined(BHbaccable))
-		if(HAL_GetTick()-weCanSendAMessageReply<200){ //if less than 200msec has passed since last message received from master baccable, send a message
+		if(currentTime-weCanSendAMessageReply<200){ //if less than 200msec has passed since last message received from master baccable, send a message
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
 					// update head index in a circular way
@@ -411,7 +424,8 @@ void processUART() {
 
     //if we are C1 baccable, we can send a message each 250msec
 	#if defined(C1baccable)
-    	if(HAL_GetTick()-last_sent_serial_msg_time>250){ //each 250msec send a message (so that we left the time to receiver to reply)
+		if(currentTime<2000) return;
+    	if(currentTime-last_sent_serial_msg_time>250){ //each 250msec send a message (so that we left the time to receiver to reply)
 			last_sent_serial_msg_time=HAL_GetTick();
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
@@ -443,8 +457,8 @@ void processUART() {
 		}
 
 
-    	if(HAL_GetTick()-lastMsgSentToC2Time>1000){
-			lastMsgSentToC2Time=HAL_GetTick();
+    	if(currentTime-lastMsgSentToC2Time>1000){
+			lastMsgSentToC2Time=currentTime;
 			//get status from C2
 			//send request thu serial line
 
@@ -452,8 +466,8 @@ void processUART() {
 			uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
 			addToUARTSendQueue(tmpArr1, 2); //commented for test
 		}
-		if(HAL_GetTick()-lastMsgSentToBHTime>1000){
-			lastMsgSentToBHTime=HAL_GetTick();
+		if(currentTime-lastMsgSentToBHTime>1000){
+			lastMsgSentToBHTime=currentTime;
 			//get status from BH
 			//send request thu serial line
 			//to correct after solving uart framing error

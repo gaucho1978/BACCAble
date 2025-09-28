@@ -135,6 +135,47 @@ void processingStandardMessage(){
 
 			#endif
 			break;
+
+		case 0x00000192:
+			#if defined(C1baccable)
+					//if release button was pressed twice, toggle QV exhaust valve
+					if((rx_msg_data[0] & 0b00001100)==0x04){ //release button is pressed
+						if(ReleasebuttonPressBeginTime==0){ //if button was not pressed, and now it is pressed
+							ReleasebuttonPressBeginTime=currentTime;//save current time it was pressed (press begin)
+							numberOfReleaseButtonClicks++;
+							if (numberOfReleaseButtonClicks==1) ReleasebuttonFirstClickTime=currentTime;
+						}
+
+						if ((currentTime-ReleasebuttonPressBeginTime)>2000) { //if pressed since 2 seconds
+							onboardLed_blue_on();
+							ReleasebuttonPressBeginTime=0; //reset the timer, like if it was not pressed
+							numberOfReleaseButtonClicks=0;
+						}
+
+					}else{
+						ReleasebuttonPressBeginTime=0; //use this value to remember that button is not pressed
+						if(currentTime-ReleasebuttonFirstClickTime>1000){ // if more than 1 second is passed since first button click
+							numberOfReleaseButtonClicks=0; //reset also the counter of the number of consecutive clics :-)
+						}
+						if(numberOfReleaseButtonClicks>=2){ //if double click
+							numberOfReleaseButtonClicks=0; //ensure we don't return here :-)
+							onboardLed_blue_on();
+							//execute action :-)
+							if(QV_exhaust_flap_function_enabled){
+								if(ForceQVexhaustValveOpened==0){
+									ForceQVexhaustValveOpened=1; //start override sequence
+								}else{
+									ForceQVexhaustValveOpened=4; //return control to ecu
+								}
+
+							}
+						}
+					}
+				// P button, located on the gear shift lever, is on byte 0, bit 0 and 1 (3=failure, 2=pressed, 1=not pressed,0=init)
+				// gear shift requested position is on byte 0 da bit 7 a bit 4.
+				// release button, located on the gear shift lever, is on byte 0, bit 3 and 2 (0=not pressed, 1=pressed)
+			#endif
+			break;
 		case 0x000001EF:
 			processingMessage0x000001EF();
 			break;
@@ -406,7 +447,7 @@ void processingStandardMessage(){
 						//notify to C2 and C1, that LANE was pressed 2 times (double tap)
 						uint8_t tmpArr1[2]={C1_C2_BusID, C1_C2_cmdLaneDoubleTap};
 						addToUARTSendQueue(tmpArr1, 2);
-						onboardLed_red_on();
+						onboardLed_blue_on();
 					}
 				}
 			#endif

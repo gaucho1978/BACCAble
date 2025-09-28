@@ -69,11 +69,35 @@
 		if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
 		addToUARTSendQueue(tmpArr5, 2);
 
+		QV_exhaust_flap_function_enabled=(uint16_t)readFromFlash(28);
+
 		readShownParamsFromFlash();
 	}
 
 	void C1baccablePeriodicCheck(){
 		lowConsume_process();
+
+		if(QV_exhaust_flap_function_enabled){
+
+				switch(ForceQVexhaustValveOpened){
+					case 1: //send connection request
+					case 2: //send presence
+					case 3: //overwrite param
+					case 4: //return control to ECU
+						if(currentTime-lastSentQVexhaustValveMsgTime>250){ //each 250msec send a message
+							onboardLed_blue_on();
+							can_tx(&forceQVexhaustValveMsgHeader[ForceQVexhaustValveOpened-1], forceQVexhaustValveMsgData[ForceQVexhaustValveOpened-1]); //send connect message
+							lastSentQVexhaustValveMsgTime=currentTime;
+							if(ForceQVexhaustValveOpened<=2) ForceQVexhaustValveOpened++;
+							if(ForceQVexhaustValveOpened==3) ForceQVexhaustValveOpened--;
+							if(ForceQVexhaustValveOpened==4) ForceQVexhaustValveOpened=0;
+						}
+						break;
+					default: //do nothing
+						break;
+				}
+
+		}
 
 		if(ESCandTCinversion){
 			if((currentTime-lastSent384)>50){
@@ -749,6 +773,9 @@
 			case 26:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[HAS_function_enabled];
 				break;
+			case 27:
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[QV_exhaust_flap_function_enabled];
+				break;
 			default:
 				break;
 		}
@@ -1300,7 +1327,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=27;
+		uint8_t paramsNumber=28;
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1329,6 +1356,7 @@
 		  function_close_windows_with_door_lock,
 		  function_open_windows_with_door_lock,
 		  HAS_function_enabled,
+		  QV_exhaust_flap_function_enabled,
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -1742,6 +1770,16 @@
 					#endif
 				}
 				break;
+			case 28: //QV_EXHAUST_FLAP_FUNCTION_ENABLED
+				if(tmpParam>1){
+					#if defined(QV_EXHAUST_FLAP_FUNCTION_ENABLED)
+						return 1;
+					#else
+						return 0;
+					#endif
+				}
+				break;
+
 			default:
 				return 0;
 				break;

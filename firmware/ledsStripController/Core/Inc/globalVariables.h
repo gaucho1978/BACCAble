@@ -40,12 +40,14 @@
 	#include "usb_device.h"
 #ifdef ENABLE_USB_MASS_STORAGE
 	#include "usbd_storage_if.h"
+	#include "ff.h"
 #else
 	#include "string.h"
 	#include "usbd_cdc_if.h"
 #endif
 
 #endif
+
 
 	#include "onboardLed.h"
 	#include "can.h"
@@ -287,6 +289,15 @@
 		extern uint8_t RF_requestor;
 		extern uint8_t RF_fob_number;
 
+		//QV_EXHAUST_FLAP_FUNCTION_ENABLED
+		extern uint8_t QV_exhaust_flap_function_enabled;
+		extern uint8_t ForceQVexhaustValveOpened;
+		extern uint32_t lastSentQVexhaustValveMsgTime;
+		extern CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4];
+		extern uint8_t forceQVexhaustValveMsgData[4][8];
+		extern uint8_t numberOfReleaseButtonClicks;
+		extern uint32_t ReleasebuttonFirstClickTime;
+		extern uint32_t ReleasebuttonPressBeginTime;
 
 	#endif
 
@@ -422,5 +433,7 @@
 	//HAS_FUNCTION_ENABLED
 	extern uint8_t HAS_function_enabled;
 	extern uint8_t HAS_buttonPressRequested;
+
+	extern uint8_t neverSaved;
 
 #endif /* INC_GLOBALVARIABLES_H_ */

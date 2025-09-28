@@ -26,22 +26,7 @@ void processingMessage0x000002FA(){
 
 	#if defined(C1baccable)
 
-		if(function_acc_autostart){
-			if(ACC_engaged){
-				if(currentSpeed_km_h==0){ //if car is steady
-					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
-						if (rx_msg_data[1] == 0x0A){ //once each 320msec (byte1 low nibble contains a counter from 0 to F)
-							rx_msg_data[0] = 0x90; //Ress button press
-							rx_msg_data[1] = 0x0B; //counter
-							rx_msg_data[2] = 0x0C; //CRC
-							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
-							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
-						}
-					}
-				}
-			}
 
-	    }
 
 
 	  	//function ACC Virtual Pad
@@ -75,6 +60,22 @@ void processingMessage0x000002FA(){
 					ACC_WAS_ENGAGED_WHEN_RES_WAS_PRESSED=0;
 					break;
 				default:
+			}
+		}
+
+		if(function_acc_autostart){
+			if(ACC_engaged){
+				if(currentSpeed_km_h==0){ //if car is steady
+					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
+						if (rx_msg_data[1] == 0x0A){ //once each 320msec (byte1 low nibble contains a counter from 0 to F)
+							rx_msg_data[0] = 0x90; //Ress button press
+							rx_msg_data[1] = 0x0B; //counter
+							rx_msg_data[2] = 0x0C; //CRC
+							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
+							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
+						}
+					}
+				}
 			}
 		}
 
@@ -114,6 +115,10 @@ void processingMessage0x000002FA(){
 
 									if(HAS_function_enabled==0){
 										if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
+									}
+
+									if(QV_exhaust_flap_function_enabled==0){
+										if(main_dashboardPageIndex==12) main_dashboardPageIndex++;
 									}
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
@@ -188,6 +193,10 @@ void processingMessage0x000002FA(){
 											if(main_dashboardPageIndex==11) main_dashboardPageIndex++;
 										}
 
+										if(QV_exhaust_flap_function_enabled==0){
+											if(main_dashboardPageIndex==12) main_dashboardPageIndex++;
+										}
+
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 										//onboardLed_blue_on();
 										sendMainDashboardPageToSlaveBaccable();//send dashboard page via usb
@@ -236,9 +245,14 @@ void processingMessage0x000002FA(){
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
 
+									if(QV_exhaust_flap_function_enabled==0){
+										if(main_dashboardPageIndex==12) main_dashboardPageIndex--;
+									}
+
 									if(HAS_function_enabled==0){
 										if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
 									}
+
 
 									if(function_4wd_disabler_enabled==0){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
@@ -305,6 +319,10 @@ void processingMessage0x000002FA(){
 									case 0: //main menu
 										main_dashboardPageIndex-= 1; //set next page
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
+
+										if(QV_exhaust_flap_function_enabled==0){
+											if(main_dashboardPageIndex==12) main_dashboardPageIndex--;
+										}
 
 										if(HAS_function_enabled==0){
 											if(main_dashboardPageIndex==11) main_dashboardPageIndex--;
@@ -479,6 +497,20 @@ void processingMessage0x000002FA(){
 									uint8_t tmpArr3[2]={C2BusID,C2cmdToggleHas};
 									addToUARTSendQueue(tmpArr3, 2);
 									break;
+								case 12: //toggle QV Exhaust Valve
+									if(ForceQVexhaustValveOpened==0){
+										ForceQVexhaustValveOpened=1; //start override sequence
+									}else{
+										ForceQVexhaustValveOpened=4; //return control to ecu
+									}
+
+									break;
+								case 13: //save Log to filesystem
+									//inform Slave baccable C2 and BH
+									uint8_t tmpArr4[2]={C2_Bh_BusID,C2_Bh_cmdFunction_Save_Log_to_File};
+									addToUARTSendQueue(tmpArr4, 2);
+
+									break;
 								default:
 									break;
 							}
@@ -514,7 +546,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
 												((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
 												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	|| //OPEN_WINDOWS
-												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	){ //HAS_VIRTUAL_PAD
+												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	|| //HAS_VIRTUAL_PAD
+												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	){ //QV_EXHAUST_FLAP_FUNCTION_ENABLED
 													//save it on flash
 													saveOnflash();
 											}
@@ -642,6 +675,9 @@ void processingMessage0x000002FA(){
 											if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
 											addToUARTSendQueue(tmpArr5, 2);
 
+											break;
+										case 27: //{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p'},
+											QV_exhaust_flap_function_enabled=!QV_exhaust_flap_function_enabled;
 											break;
 										default:
 											break;

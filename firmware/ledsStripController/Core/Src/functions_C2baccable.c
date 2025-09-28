@@ -18,6 +18,7 @@
 			}
 		}
 
+
 		if(DynoModeEnabled){
 			//send tester presence each 450msec if dyno is enabled
 			if(currentTime-last_sent_tester_presence_msg_time>500){ //enter here once each 500msec

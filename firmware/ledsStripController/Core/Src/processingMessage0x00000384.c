@@ -77,7 +77,8 @@ void processingMessage0x00000384(){
 					uint8_t tmpArr0[2]={C1BusID,C1cmdLaneDoubleTap};
 					addToUARTSendQueue(tmpArr0, 2);
 				}
-				onboardLed_red_on();
+				onboardLed_blue_on();
+
 			}
 		}
 

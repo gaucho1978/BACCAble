@@ -84,25 +84,27 @@ const char *FW_VERSION=_FW_VERSION;
 
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
-	uint8_t dashboard_main_menu_array_len=12;
+	uint8_t dashboard_main_menu_array_len=14;
 	uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
-			{'S','H','O','W',' ','P','A','R','A','M','S',' ',' ',' ',' ',' ',' ',' '},
-			{'R','E','A','D',' ','F','A','U','L','T','S',' ',' ',' ',' ',' ',' ',' '},
-			{'C','L','E','A','R',' ','F','A','U','L','T','S',' ',' ',' ',' ',' ',' '},
+			{'S','h','o','w',' ','P','a','r','a','m','e','t','e','r','s',' ',' ',' '},
+			{'R','e','a','d',' ','F','a','u','l','t','s',' ',' ',' ',' ',' ',' ',' '},
+			{'C','l','e','a','r',' ','F','a','u','l','t','s',' ',' ',' ',' ',' ',' '},
 			{'I','m','m','o','b','i','l','i','z','e','r',' ',' ','O','N',' ',' ',' '},
 			{'T','o','g','g','l','e',' ','D','Y','N','O',' ',' ',' ',' ',' ',' ',' '},
 			{'T','o','g','g','l','e',' ','E','S','C','/','T','C',' ',' ',' ',' ',' '},
 			{'F','r','o','n','t',' ','B','r','a','k','e',' ','N','o','r','m','a','l'},
 			{'4','W','D',' ',' ','E','n','a','b','l','e','d',' ',' ',' ',' ',' ',' '},
-			{'M','A','I','N',' ',' ',' ','S','e','t','u','p',' ','M','e','n','u',' '},
-			{'P','A','R','A','M','S',' ','S','e','t','u','p',' ','M','e','n','u',' '},
+			{'M','a','i','n',' ','S','e','t','u','p',' ','M','e','n','u',' ',' ',' '},
+			{'P','a','r','a','m','s',' ','S','e','t','u','p',' ','M','e','n','u',' '},
 			{'E','n','a','b','l','e',' ','H','A','S',' ',' ',' ',' ',' ',' ',' ',' '},
+			{'T','o','g','g','l','e',' ','Q','V',' ','V','a','l','v','e',' ',' ',' '},
+			{'S','a','v','e',' ','L','o','g',' ','t','o',' ','F','i','l','e',' ',' '},
 
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=27;
+	uint8_t total_pages_in_setup_dashboard_menu=28;
 	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -131,6 +133,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
+			{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p',},
 
 		};
 
@@ -440,6 +443,16 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t RF_requestor=0;
 	uint8_t RF_fob_number=0;
 
+	//QV_EXHAUST_FLAP_FUNCTION_ENABLED
+	uint8_t QV_exhaust_flap_function_enabled=0;
+	uint8_t ForceQVexhaustValveOpened=0; //state machine: 0=valve automatically selected by ECU, 1=connection request to send, 2=tester present to send, 3=temporary param overwrite, 4=return control to ECU to send
+	uint32_t lastSentQVexhaustValveMsgTime=0;
+	CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4] ={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=7},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=5}};
+	uint8_t forceQVexhaustValveMsgData[4][8]= {{0x02, 0x10, 0x03,},{0x02, 0x3E, 0x00,}, {0x06, 0x2F, 0x51, 0x90, 0x03, 0x00, 0x00,},{0x04, 0x2F, 0x51, 0x90, 0x00,}}; //from first to last we have: diag session, tester present, IO Control - Short Term Adjustment(open Valve) (periodic), return control to ECU
+	uint8_t numberOfReleaseButtonClicks=0;
+	uint32_t ReleasebuttonFirstClickTime=0;
+	uint32_t ReleasebuttonPressBeginTime=0;
+
 #endif
 
 #if defined(C2baccable)
@@ -577,3 +590,5 @@ uint8_t parkMirrorOperativePositionNotStored=1;
 //HAS_FUNCTION_ENABLED
 uint8_t HAS_function_enabled=0;
 uint8_t HAS_buttonPressRequested=0;
+
+uint8_t neverSaved=1;
