@@ -37,6 +37,7 @@ USER_INCLUDES += -IUSB_DEVICE/App
 # USB_INCLUDES: includes for the usb library
 USB_INCLUDES = -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc
 USB_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
+USB_INCLUDES += -IMiddlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc
 
 # USER_CFLAGS: user C flags (enable warnings, enable debug info)
 USER_CFLAGS = -Os -std=gnu11 -DUSE_HAL_DRIVER -DSTM32F072xB -static --specs=nano.specs -mthumb -mfloat-abi=soft -Wl,--start-group -lc -lm -Wl,--end-group -Wl,--gc-sections  -Wall -fstack-usage -fno-exceptions -ffunction-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fdata-sections
@@ -133,7 +134,7 @@ $(CUBELIB_BUILD_DIR):
 #######################################
 USB_MIDDLEWARE_PATH = ./Middlewares/ST/STM32_USB_Device_Library/
 USB_BUILD_DIR = $(BUILD_DIR)/usb
-USB_SOURCES += usbd_ctlreq.c usbd_ioreq.c usbd_core.c usbd_cdc.c
+USB_SOURCES += usbd_ctlreq.c usbd_ioreq.c usbd_core.c usbd_cdc.c usbd_msc_bot.c usbd_msc_data.c usbd_msc_scsi.c usbd_msc.c
 # list of usb library objects
 USB_OBJECTS += $(addprefix $(USB_BUILD_DIR)/,$(notdir $(USB_SOURCES:.c=.o)))
 
@@ -143,6 +144,9 @@ $(USB_BUILD_DIR)/%.o: $(USB_MIDDLEWARE_PATH)/Core/Src/%.c | $(USB_BUILD_DIR)
 	$(CC) -Os $(CFLAGS) -c -o $@ $^
 
 $(USB_BUILD_DIR)/%.o: $(USB_MIDDLEWARE_PATH)/Class/CDC/Src/%.c | $(USB_BUILD_DIR)
+	$(CC) -Os $(CFLAGS) -c -o $@ $^
+
+$(USB_BUILD_DIR)/%.o: $(USB_MIDDLEWARE_PATH)/Class/MSC/Src/%.c | $(USB_BUILD_DIR)
 	$(CC) -Os $(CFLAGS) -c -o $@ $^
 
 $(USB_BUILD_DIR):
