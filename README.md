@@ -62,7 +62,7 @@ Current available functions are:
 - Disable odometer blink
 - Show Race Mask, shows race masks when using ESC/TC function - SOME BUG REMAINING: if screen flickers, disable this function on your Baccable
 - Park Mirror, when Rear Drive and direction indicator are inserted, moves rear view mirror to mirrors position recorded when function was enabled. It Works only on vehicles with encoders inside mirrors. Just try it to check compatibility with your car.
-- ACC Autostart, when veichle with ACC engaged stops behind the car in front of us, maintain active ACC (When ACC Autorestart function is disabled, ACC disengages after 5 seconds)
+- ACC Autostart, when veichle with ACC engaged stops behind the car in front of us, maintain active ACC (When ACC Autorestart function is disabled, ACC disengages after 5 seconds). There are 2 options: R (res button press is simulated to autorestart the veichle) and + (ACC speed up button press is simulated to autorestart the veichle).
 - Close windows, allows to close windows when you close the vehicle (different modes are expected to obtain, depending on single double or triple closure of the veichle, the closure of windows or to le them stay little bit opened.
 - Open windows, allows to open windows when you open the vehicle (different modes are expected to obtain, depending on single or double closure of the veichle, windows opening.
 - HAS Virtual Pad, allows to simulate the button HAS (Highway Assist System) without purchasing the proper wheel keypad. It requires proxy alignment and some car prerequisites.
