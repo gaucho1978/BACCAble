@@ -44,7 +44,7 @@
 	// #define DISABLE_ODOMETER_BLINK			// if uncommented it will disable odometer blink on dashboard.  It can changed inside baccable SETUP menu.
 	// #define SHOW_RACE_MASK					// if uncommented it will show race screen when the function ESC/TC is in use.  It can changed inside baccable SETUP menu.
 	// #define HIDE_DASHBOARD_MENU				// if uncommented it will permanently hide baccable dashboard menu. Useful to statically set some functions like immo and start&stop without the availability of baccable menu commands.
-	// #define ACC_AUTOSTART					// if uncommented it will allow the ACC+ to automatically restart once the veichle stops for more than 5 seconds. It can changed inside baccable SETUP menu.
+	// #define ACC_AUTOSTART 1					// if uncommented it will allow the ACC+ to automatically restart once the veichle stops for more than 5 seconds. 1=restart simulating the periodic press of RES button. 2= restart simulating the periodic press of ACC speed gently up button. It can changed inside baccable SETUP menu.
 	// #define CLOSE_WINDOWS 1					// if uncommented with value 1 or value 2, actuates windows as described in the manual. It can changed inside baccable SETUP menu.
 	// #define OPEN_WINDOWS 1					// if uncommented with value 1 or value 2, actuates windows as described in the manual. It can changed inside baccable SETUP menu.
 	// #define HAS_VIRTUAL_PAD					// if uncommented, allows "toggle HAS" to appear on main menu. see manual. It can changed inside baccable SETUP menu.

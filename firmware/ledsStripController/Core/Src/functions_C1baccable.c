@@ -78,6 +78,7 @@
 		lowConsume_process();
 
 		if(QV_exhaust_flap_function_enabled){
+				//if engine off, close valves
 
 				switch(ForceQVexhaustValveOpened){
 					case 1: //send connection request
@@ -85,6 +86,7 @@
 					case 3: //overwrite param
 					case 4: //return control to ECU
 						if(currentTime-lastSentQVexhaustValveMsgTime>250){ //each 250msec send a message
+							if(currentRpmSpeed==0) ForceQVexhaustValveOpened=4; //return control to ecu
 							onboardLed_blue_on();
 							can_tx(&forceQVexhaustValveMsgHeader[ForceQVexhaustValveOpened-1], forceQVexhaustValveMsgData[ForceQVexhaustValveOpened-1]); //send connect message
 							lastSentQVexhaustValveMsgTime=currentTime;
@@ -100,6 +102,7 @@
 		}
 
 		if(ESCandTCinversion){
+			if(currentRpmSpeed==0) ESCandTCinversion=0;
 			if((currentTime-lastSent384)>50){
 				lastSent384=currentTime;
 				DNA_msg_data[1] = (DNA_msg_data[1] & ~0x7C) | 0x30;  //set Race mode (0x30) to show on IPC the race screen
@@ -738,13 +741,27 @@
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_park_mirror];
 				break;
 			case 23:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_acc_autostart];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_acc_autostart];
+				switch(function_acc_autostart){
+					case 0: //off
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 1: //simulates RES button press
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='R';
+						break;
+					case 2: //simulates + button press
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='+';
+						break;
+					default: //we will never end here
+						break;
+				}
 				break;
 			case 24:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_close_windows_with_door_lock];
 				switch(function_close_windows_with_door_lock){
 					case 0: //off
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
 					case 1: //Close Windows 1
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1';
 						break;
@@ -760,6 +777,7 @@
 				switch(function_open_windows_with_door_lock){
 					case 0: //off
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
 					case 1: //Close Windows 1
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1';
 						break;
@@ -1735,9 +1753,9 @@
 				}
 				break;
 			case 24: //ACC_AUTOSTART
-				if(tmpParam>1){
+				if(tmpParam>2){
 					#if defined(ACC_AUTOSTART)
-						return 1;
+						return ACC_AUTOSTART;
 					#else
 						return 0;
 					#endif

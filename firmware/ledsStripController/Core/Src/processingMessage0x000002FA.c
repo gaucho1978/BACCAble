@@ -68,9 +68,15 @@ void processingMessage0x000002FA(){
 				if(currentSpeed_km_h==0){ //if car is steady
 					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
 						if (rx_msg_data[1] == 0x0A){ //once each 320msec (byte1 low nibble contains a counter from 0 to F)
-							rx_msg_data[0] = 0x90; //Ress button press
+							rx_msg_data[0] = 0x90; //Res button press
 							rx_msg_data[1] = 0x0B; //counter
 							rx_msg_data[2] = 0x0C; //CRC
+
+							if(function_acc_autostart==2){
+								rx_msg_data[0] = 0x08; //ACC gently up button press
+								rx_msg_data[1] = 0x0B; //counter
+								rx_msg_data[2] = 0x2B; //CRC
+							}
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
 							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
 						}
@@ -652,7 +658,8 @@ void processingMessage0x000002FA(){
 											addToUARTSendQueue(tmpArr4, 2);
 											break;
 										case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
-											function_acc_autostart=!function_acc_autostart;
+											function_acc_autostart++;
+											if(function_acc_autostart>2) function_acc_autostart=0;
 											break;
 										case 24: //{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
 											function_close_windows_with_door_lock++;
