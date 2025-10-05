@@ -85,14 +85,26 @@
 					case 2: //send presence
 					case 3: //overwrite param
 					case 4: //return control to ECU
-						if(currentTime-lastSentQVexhaustValveMsgTime>250){ //each 250msec send a message
+						if(currentTime-lastSentQVexhaustValveMsgTime>150){ //each 150msec send a message
 							if(currentRpmSpeed==0) ForceQVexhaustValveOpened=4; //return control to ecu
 							onboardLed_blue_on();
 							can_tx(&forceQVexhaustValveMsgHeader[ForceQVexhaustValveOpened-1], forceQVexhaustValveMsgData[ForceQVexhaustValveOpened-1]); //send connect message
 							lastSentQVexhaustValveMsgTime=currentTime;
-							if(ForceQVexhaustValveOpened<=2) ForceQVexhaustValveOpened++;
-							if(ForceQVexhaustValveOpened==3) ForceQVexhaustValveOpened--;
-							if(ForceQVexhaustValveOpened==4) ForceQVexhaustValveOpened=0;
+							switch(ForceQVexhaustValveOpened){
+								case 1: //connection request was sent
+								case 2: //presence was sent
+									ForceQVexhaustValveOpened++; //prepare to send next
+									break;
+								case 3: //param overwrite was sent
+									ForceQVexhaustValveOpened--; //prepare to send tester presence
+									break;
+								case 4: //return control to ECU was sent
+									ForceQVexhaustValveOpened=0; //sequence end
+									break;
+								default:  //we will never come here
+									break;
+							}
+
 						}
 						break;
 					default: //do nothing
