@@ -517,6 +517,8 @@ void processingMessage0x000002FA(){
 									addToUARTSendQueue(tmpArr4, 2);
 
 									break;
+								case 14: //reset statistics
+									resetStatisticsOnFlash();
 								default:
 									break;
 							}

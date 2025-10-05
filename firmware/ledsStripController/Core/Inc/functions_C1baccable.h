@@ -20,6 +20,7 @@
 	float scaleVolume(uint8_t vol);
 	uint8_t scaleColorSet(uint8_t col);
 	uint8_t saveOnflash();
+	uint8_t resetStatisticsOnFlash();
 	uint8_t saveStatisticsOnFlash();
 	uint8_t saveShownParamsOnflash();
 	void compress_to_uint16(const uint8_t *input, size_t input_len, uint16_t *output);

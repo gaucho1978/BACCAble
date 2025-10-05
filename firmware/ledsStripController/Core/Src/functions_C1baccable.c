@@ -1390,6 +1390,25 @@
 		return 0;
 	}
 
+	uint8_t resetStatisticsOnFlash(){
+
+	HAL_FLASH_Unlock(); //unlock flash
+
+			//erase flash
+			FLASH_EraseInitTypeDef eraseInitStruct;
+			uint32_t pageError=0;
+			eraseInitStruct.TypeErase= FLASH_TYPEERASE_PAGES;
+			eraseInitStruct.PageAddress=LAST_PAGE_ADDRESS_STATISTICS;
+			eraseInitStruct.NbPages=1;
+			if(HAL_FLASHEx_Erase(&eraseInitStruct,&pageError)!=HAL_OK){ //error during erase
+				HAL_FLASH_Lock();
+				onboardLed_red_blink(8);
+				return 254; //error
+			}
+			HAL_FLASH_Lock();
+			return 0;
+	}
+
 	uint8_t saveStatisticsOnFlash(){
 		//compare current stats with best stored times
 		uint8_t weShallWriteFlash=0;
