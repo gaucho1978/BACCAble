@@ -85,9 +85,10 @@
 					case 2: //send presence
 					case 3: //overwrite param
 					case 4: //return control to ECU
-						if(currentTime-lastSentQVexhaustValveMsgTime>150){ //each 150msec send a message
+						if(currentTime-lastSentQVexhaustValveMsgTime>500){ //each 500msec send a message
 							if(currentRpmSpeed==0) ForceQVexhaustValveOpened=4; //return control to ecu
 							onboardLed_blue_on();
+							onboardLed_red_on();
 							can_tx(&forceQVexhaustValveMsgHeader[ForceQVexhaustValveOpened-1], forceQVexhaustValveMsgData[ForceQVexhaustValveOpened-1]); //send connect message
 							lastSentQVexhaustValveMsgTime=currentTime;
 							switch(ForceQVexhaustValveOpened){

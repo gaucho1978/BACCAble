@@ -447,7 +447,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t QV_exhaust_flap_function_enabled=0;
 	uint8_t ForceQVexhaustValveOpened=0; //state machine: 0=valve automatically selected by ECU, 1=connection request to send, 2=tester present to send, 3=temporary param overwrite, 4=return control to ECU to send
 	uint32_t lastSentQVexhaustValveMsgTime=0;
-	CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4] ={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=7},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .StdId=0x18DA17F1, .DLC=5}};
+	CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4] ={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=7},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=5}};
 	uint8_t forceQVexhaustValveMsgData[4][8]= {{0x02, 0x10, 0x03,},{0x02, 0x3E, 0x00,}, {0x06, 0x2F, 0x51, 0x90, 0x03, 0x00, 0x00,},{0x04, 0x2F, 0x51, 0x90, 0x00,}}; //from first to last we have: diag session, tester present, IO Control - Short Term Adjustment(open Valve) (periodic), return control to ECU
 	uint8_t numberOfReleaseButtonClicks=0;
 	uint32_t ReleasebuttonFirstClickTime=0;
