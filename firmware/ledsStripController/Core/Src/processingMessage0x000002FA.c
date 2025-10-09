@@ -67,7 +67,7 @@ void processingMessage0x000002FA(){
 			if(ACC_engaged){
 				if(currentSpeed_km_h==0){ //if car is steady
 					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
-						if (rx_msg_data[1] == 0x0A){ //once each 320msec (byte1 low nibble contains a counter from 0 to F)
+						if (currentTime-lastSentAutostartMsg>2000){ //once each 2 seconds
 							rx_msg_data[0] = 0x90; //Res button press
 							rx_msg_data[1] = 0x0B; //counter
 							rx_msg_data[2] = 0x0C; //CRC
@@ -79,6 +79,7 @@ void processingMessage0x000002FA(){
 							}
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
 							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
+							lastSentAutostartMsg=currentTime;
 						}
 					}
 				}

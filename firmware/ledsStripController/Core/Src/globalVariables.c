@@ -427,7 +427,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//ACC Autostart
 	uint8_t function_acc_autostart=0;
-
+	uint32_t lastSentAutostartMsg=0;
 
 	//CLOSE_WINDOWS
 	uint8_t function_close_windows_with_door_lock=0; //0=disabled, 1=close windows1, 2=close windows2

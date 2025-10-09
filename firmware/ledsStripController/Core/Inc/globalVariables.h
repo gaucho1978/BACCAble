@@ -274,6 +274,7 @@
 
 		//ACC Autostart
 		extern uint8_t function_acc_autostart;
+		extern uint32_t lastSentAutostartMsg;
 
 		//CLOSE_WINDOWS
 		extern uint8_t function_close_windows_with_door_lock;
