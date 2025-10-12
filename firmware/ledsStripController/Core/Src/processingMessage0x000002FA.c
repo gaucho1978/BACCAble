@@ -69,19 +69,18 @@ void processingMessage0x000002FA(){
 					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
 						if (currentTime-lastSentAutostartMsg>2000){ //once each 2 seconds
 							rx_msg_data[0] = 0x90; //Res button press
-							rx_msg_data[1] = 0x0B; //counter
-							rx_msg_data[2] = 0x0C; //CRC
 
 							if(function_acc_autostart==2){
 								rx_msg_data[0] = 0x08; //ACC gently up button press
-								rx_msg_data[1] = 0x0B; //counter
-								rx_msg_data[2] = 0x2B; //CRC
 							}
+							rx_msg_data[1] = (rx_msg_data[1] & 0xF0) | (((rx_msg_data[1] & 0x0F) + 1) % 16); //increase the counter
+							rx_msg_data[2]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
+
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
-							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
+							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours with subsequent pieces of code
 							//increase a counter
 							AutostartMsgCounter++;
-							if (AutostartMsgCounter>= 25){
+							if (AutostartMsgCounter>= 15){ //we are simulating a 300msec button press event
 								AutostartMsgCounter=0;
 								lastSentAutostartMsg=currentTime;
 							}
