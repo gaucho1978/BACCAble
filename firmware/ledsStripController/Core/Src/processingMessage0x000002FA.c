@@ -1,5 +1,5 @@
 /*
- * processingMessage0x00000226.c
+ * processingMessage0x000002FA.c
  *
  *  Created on: May 3, 2025
  *      Author: GauchoHP
@@ -65,7 +65,7 @@ void processingMessage0x000002FA(){
 
 		if(function_acc_autostart){
 			if(ACC_engaged){
-				if(currentSpeed_km_h==0){ //if car is steady
+				if(carSteadyCounter==200 ){ //if car is steady
 					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
 						if (currentTime-lastSentAutostartMsg>2000){ //once each 2 seconds
 							rx_msg_data[0] = 0x90; //Res button press
@@ -79,7 +79,12 @@ void processingMessage0x000002FA(){
 							}
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send message to simulate RES button press
 							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours in case function_acc_virtual_pad_enabled=1 (look next lines to understand)
-							lastSentAutostartMsg=currentTime;
+							//increase a counter
+							AutostartMsgCounter++;
+							if (AutostartMsgCounter>= 25){
+								AutostartMsgCounter=0;
+								lastSentAutostartMsg=currentTime;
+							}
 						}
 					}
 				}
@@ -415,7 +420,7 @@ void processingMessage0x000002FA(){
 									break;
 								case 5: // toggle dyno status
 									//send request thu serial line
-									if(currentSpeed_km_h==0){
+									if(carSteadyCounter>=100){ //car is steady since at least 1 second
 										uint8_t tmpArr1[2]={C2BusID,C2cmdtoggleDyno};
 										addToUARTSendQueue(tmpArr1, 2);
 									}else{
@@ -482,7 +487,7 @@ void processingMessage0x000002FA(){
 										dashboard_main_menu_array[main_dashboardPageIndex][6]='n';
 										commandsMenuEnabled=1;//enable menu commands
 									}else{
-										if(currentSpeed_km_h==0){
+										if(carSteadyCounter>=100){ //car is steady since at least one second
 											_4wd_disabled=4;
 											//update text
 											dashboard_main_menu_array[main_dashboardPageIndex][4]='D'; //disabled

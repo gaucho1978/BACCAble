@@ -275,6 +275,8 @@
 		//ACC Autostart
 		extern uint8_t function_acc_autostart;
 		extern uint32_t lastSentAutostartMsg;
+		extern uint8_t AutostartMsgCounter;
+		extern uint8_t carSteadyCounter; //tells how many seconds car is steady (200 max value = 2000msec)
 
 		//CLOSE_WINDOWS
 		extern uint8_t function_close_windows_with_door_lock;

@@ -90,6 +90,13 @@ void processingStandardMessage(){
 					//get vehicle speed
 					currentSpeed_km_h= (float)((((uint16_t)rx_msg_data[0] << 11) & 0b0001111111111111) | ((uint16_t)rx_msg_data[1] <<3) | ((uint16_t)rx_msg_data[2] >>5))/16;
 
+					if(currentSpeed_km_h==0){
+						carSteadyCounter++;//increase a counter
+						if(carSteadyCounter>200) carSteadyCounter=200; //car is steady since 2 seconds
+					}else{
+						carSteadyCounter=0; //reset counter
+					}
+
 					//Execute Statistics
 					if((previousSpeed_km_h<0.0625) && (currentSpeed_km_h>=0.0625)){ //we started. Let's count the time
 						statistics_0_100_StartTime=currentTime-10;
@@ -306,7 +313,7 @@ void processingStandardMessage(){
 		case 0x0000041A:
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC>=6){
-				//	batteryStateOfCharge= (rx_msg_data[1] & 0b01111111); //set Most Significant Bit to zero
+					batteryStateOfCharge= (rx_msg_data[1] & 0b01111111); //set Most Significant Bit to zero
 					batteryCurrent= (rx_msg_data[4] << 4 | (rx_msg_data[5] >> 4));
 				}
 			#endif
@@ -316,7 +323,7 @@ void processingStandardMessage(){
 		case 0x00000420:
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC>=6){
-					batteryStateOfCharge=rx_msg_data[0];
+					//batteryStateOfCharge=rx_msg_data[0];
 
 				}
 			#endif
