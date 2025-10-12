@@ -67,7 +67,7 @@ void processingMessage0x000002FA(){
 			if(ACC_engaged){
 				if(carSteadyCounter==200 ){ //if car is steady
 					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
-						if (currentTime-lastSentAutostartMsg>2000){ //once each 2 seconds
+						if (currentTime-lastSentAutostartMsg>1500){ //once each 1,5 seconds
 							rx_msg_data[0] = 0x90; //Res button press
 
 							if(function_acc_autostart==2){
