@@ -65,9 +65,9 @@ void processingMessage0x000002FA(){
 
 		if(function_acc_autostart){
 			if(ACC_engaged){
-				if(carSteadyCounter==200 ){ //if car is steady
+				if(carSteadyCounter==200 && brakeIntervention_ACC_ESC_ASR){ //if car is steady and brake is pressed by ACC
 					if(rx_msg_data[0]==0x10){ //if no button was pressed on cruise control pad
-						if (currentTime-lastSentAutostartMsg>1500){ //once each 1,5 seconds
+						if (currentTime-lastSentAutostartMsg>500){ //once each 1,5 seconds
 							rx_msg_data[0] = 0x90; //Res button press
 
 							if(function_acc_autostart==2){
@@ -80,7 +80,7 @@ void processingMessage0x000002FA(){
 							rx_msg_data[0]=0x10; //restore value 10 to avoid unwanted behaviours with subsequent pieces of code
 							//increase a counter
 							AutostartMsgCounter++;
-							if (AutostartMsgCounter>= 15){ //we are simulating a 300msec button press event
+							if (AutostartMsgCounter>= 5){ //we are simulating a 100msec button press event
 								AutostartMsgCounter=0;
 								lastSentAutostartMsg=currentTime;
 							}

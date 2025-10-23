@@ -430,6 +430,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t lastSentAutostartMsg=0;
 	uint8_t AutostartMsgCounter=0;
 	uint8_t carSteadyCounter=0; //tells how many seconds car is steady (200 max value = 2000msec)
+	uint8_t brakeIntervention_ACC_ESC_ASR=0; //tells if brake is pressed
 
 	//CLOSE_WINDOWS
 	uint8_t function_close_windows_with_door_lock=0; //0=disabled, 1=close windows1, 2=close windows2
@@ -454,6 +455,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t numberOfReleaseButtonClicks=0;
 	uint32_t ReleasebuttonFirstClickTime=0;
 	uint32_t ReleasebuttonPressBeginTime=0;
+
 
 #endif
 
