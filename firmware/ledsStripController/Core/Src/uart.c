@@ -151,12 +151,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C2cmdToggleHas: //request to press HAS button for more consecutive messages
 									HAS_buttonPressRequested=5;
 									break;
+								case C2cmdGetStatus:
+									//nothing to do, since we just need to set weCanSendAMessageReply
+									break;
 								default:
 									break;
 							}
 
 
-							//if(rxBuffer[1]==C2cmdGetStatus){};//nothing to do, since we just need to set weCanSendAMessageReply
 							onboardLed_blue_on();
 							weCanSendAMessageReply=HAL_GetTick();
 						#endif
@@ -402,7 +404,28 @@ void addToUARTSendQueue(const uint8_t *data, size_t length) {
 
 
 void processUART() {
-    if (tx_queue->count == 0) {
+
+#if defined(C1baccable)
+	if(currentTime<2000) return;
+	if(currentTime-lastMsgSentToC2Time>1000){
+		lastMsgSentToC2Time=currentTime;
+		//get status from C2
+		//send request thu serial line
+		uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
+		addToUARTSendQueue(tmpArr1, 2); //commented for test
+		onboardLed_blue_on();
+	}
+	if(currentTime-lastMsgSentToBHTime>1000){
+		lastMsgSentToBHTime=currentTime;
+		//get status from BH
+		//send request thu serial line
+		uint8_t tmpArr2[1]={BhBusIDgetStatus};
+		addToUARTSendQueue(tmpArr2, 1);
+		onboardLed_blue_on();
+	}
+#endif
+
+	if (tx_queue->count == 0) {
         // queue empty
         return;
     }
@@ -424,7 +447,7 @@ void processUART() {
 
     //if we are C1 baccable, we can send a message each 250msec
 	#if defined(C1baccable)
-		if(currentTime<2000) return;
+
     	if(currentTime-last_sent_serial_msg_time>250){ //each 250msec send a message (so that we left the time to receiver to reply)
 			last_sent_serial_msg_time=HAL_GetTick();
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
@@ -457,23 +480,6 @@ void processUART() {
 		}
 
 
-    	if(currentTime-lastMsgSentToC2Time>1000){
-			lastMsgSentToC2Time=currentTime;
-			//get status from C2
-			//send request thu serial line
-
-			//to correct after solving uart framing error
-			uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
-			addToUARTSendQueue(tmpArr1, 2); //commented for test
-		}
-		if(currentTime-lastMsgSentToBHTime>1000){
-			lastMsgSentToBHTime=currentTime;
-			//get status from BH
-			//send request thu serial line
-			//to correct after solving uart framing error
-			uint8_t tmpArr2[1]={BhBusIDgetStatus};
-			addToUARTSendQueue(tmpArr2, 1);
-		}
 
 	#endif
 }

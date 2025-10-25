@@ -737,7 +737,7 @@ void processingMessage0x000002FA(){
 
 							baccableDashboardMenuVisible=!baccableDashboardMenuVisible; //toggle visualizazion of the menu
 
-							LOG("Dashboard vis: %d\r\n", baccableDashboardMenuVisible);
+							//LOG("Dashboard vis: %d\r\n", baccableDashboardMenuVisible);
 
 							if(!baccableDashboardMenuVisible){ //if menu needs to be hidden, print spaces to clear the string on dashboard
 								clearDashboardBaccableMenu();
