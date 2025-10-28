@@ -103,37 +103,6 @@ int main(void){
 			}
 		#endif
 
-		// If CAN message receive is pending, process the message
-		if(is_can_msg_pending(CAN_RX_FIFO0)){
-			// If message received from bus, parse the frame
-			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
-
-				#if defined(ACT_AS_CANABLE)
-					uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
-					onboardLed_blue_on();
-					if(msg_len){
-						CDC_Transmit_FS(msg_buf, msg_len); //transmit data via usb
-					}
-				#endif
-
-				#if defined(C1baccable)
-					lastReceivedCanMsgTime=currentTime;
-				#endif
-
-				if (rx_msg_header.RTR == CAN_RTR_DATA){
-					switch(rx_msg_header.IDE){
-						case CAN_ID_EXT:
-							processingExtendedMessage();
-							break;
-						case CAN_ID_STD: //if standard ID
-							processingStandardMessage();
-							break;
-						default:
-					}
-				}
-			}
-		}
-
 		//for debug, measure the loop duration
 		if (HAL_GetTick()-currentTime>2){
 			onboardLed_red_on();
@@ -141,7 +110,35 @@ int main(void){
 	}
 }
 
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+	if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
 
+		#if defined(ACT_AS_CANABLE)
+			uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
+			onboardLed_blue_on();
+			if(msg_len){
+				CDC_Transmit_FS(msg_buf, msg_len); //transmit data via usb
+			}
+		#endif
+
+		#if defined(C1baccable)
+			lastReceivedCanMsgTime=currentTime;
+		#endif
+
+		if (rx_msg_header.RTR == CAN_RTR_DATA){
+			switch(rx_msg_header.IDE){
+				case CAN_ID_EXT:
+					processingExtendedMessage();
+					break;
+				case CAN_ID_STD: //if standard ID
+					processingStandardMessage();
+					break;
+				default:
+			}
+		}
+	}
+}
 
 
 

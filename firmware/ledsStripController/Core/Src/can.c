@@ -64,7 +64,10 @@ void can_enable(void)
     	can_handle.Init.AutoRetransmission = can_autoretransmit;
     	can_handle.Init.ReceiveFifoLocked = DISABLE;
     	can_handle.Init.TransmitFifoPriority = ENABLE;
-        HAL_CAN_Init(&can_handle);
+        if (HAL_CAN_Init(&can_handle) == HAL_OK)
+        {
+        	HAL_CAN_ActivateNotification(&can_handle, CAN_IT_RX_FIFO0_MSG_PENDING);
+        }
 
 		CAN_FilterTypeDef filter;
 		filter.FilterIdHigh = 0;
