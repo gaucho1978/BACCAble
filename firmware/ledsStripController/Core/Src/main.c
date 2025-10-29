@@ -1,6 +1,8 @@
 // the definition of ACT_AS_CANABLE shall be placed in main.h
 #include "main.h"
+#include <stdbool.h>
 
+static bool initialized = false;
 
 int main(void){
 	SystemClock_Config(); //set system clocks
@@ -27,6 +29,8 @@ int main(void){
 	#if (defined(BHbaccable))
 		BHbaccableInitCheck();
 	#endif
+
+	initialized = true;
 
 	while (1){
 
@@ -112,7 +116,7 @@ int main(void){
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
+	if (initialized && can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
 
 		#if defined(ACT_AS_CANABLE)
 			uint16_t msg_len = slcan_parse_frame((uint8_t *)&msg_buf, &rx_msg_header, rx_msg_data);
