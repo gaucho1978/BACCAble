@@ -14,7 +14,7 @@
 
 
 
-
+	#define currentTime HAL_GetTick()
 
 	#define ENGINE_NORMAL				0
 	#define ENGINE_DPF_REGEN_LO			1
@@ -23,6 +23,7 @@
 	#define ENGINE_NSC_DE_SOX_REGEN		4
 	#define ENGINE_SCR_HEATUP_STRATEGY	5
 
+	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
 	//this is used to invert bytes order in a 32 bit integer
 	#define SWAP_UINT32(x) (((uint32_t)(x) >> 24) & 0x000000FF) | \
@@ -374,7 +375,7 @@
 
 	extern uint32_t weCanSendAMessageReply; //defines last time that C2 or BH baccable received a message (used by C2 and BH baccable)
 	extern uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
-	extern uint32_t currentTime; //stores current time in milliseconds, each time we enter the main loop
+	extern uint32_t currentTimeMainLoopDebug; //stores current time in milliseconds, each time we enter the main loop
 
 	extern UART_HandleTypeDef huart2; // this is the serial line between baccables
 

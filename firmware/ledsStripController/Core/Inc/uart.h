@@ -1,9 +1,8 @@
 #ifndef _UART_H
-#define _UART_H
-
+	#define _UART_H
 
 	#include "stm32f0xx_hal.h"
-
+	#include "globalVariables.h"
 
 	#include "onboardLed.h"
 	#include "string.h"
@@ -60,7 +59,6 @@
 	#define C1_C2_cmdLaneDoubleTap				0x50 //second byte of the message to C1 and C2 bus, notifies LANE button double tap
 
 
-	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
 
 	
@@ -71,5 +69,7 @@
 	void resetOtherProcessorsSleepStatus();
 	uint8_t getOtherProcessorsSleepingStatus();
 	void addToUARTSendQueue(const uint8_t *data, size_t length);
+	void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length);
+
 	void processUART();
 #endif

@@ -170,9 +170,10 @@ void SystemClock_Config(void){
 
 
 void Error_Handler(void){
-  LOGS("System error\r\n");
-  __disable_irq();
-  while (1){}
+	onboardLed_red_on();
+	LOGS("System error\r\n");
+	__disable_irq();
+	while (1){}
 }
 
 // Disable all interrupts

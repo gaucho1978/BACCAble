@@ -47,16 +47,16 @@
 	// Process time-based events
 	void lowConsume_process(void){
 		if(lowConsumeIsActive){ //se siamo in basso consumo
-			//se l'ultimo messaggio ricevuto é meno vecchio di un minuto, risveglia gli altri chip
-			if(currentTime-lastReceivedCanMsgTime<60000){
+			//se l'ultimo messaggio ricevuto é meno vecchio di 5 secondi, risveglia gli altri chip
+			if(currentTime-lastReceivedCanMsgTime<5000){
 				wakeUpAllProcessorsAndTransceivers();
 				lowConsumeIsActive=0;
 				allProcessorsWakeupTime=currentTime;
 				instructSlaveBoardsTriggerEnabled=1;
 			}
 		}else{ //altrimenti se non siamo in basso consumo
-			//se l'ultimo messaggio ricevuto é piú vecchio di un minuto, riduci i consumi
-			if(currentTime-lastReceivedCanMsgTime>60000){
+			//se l'ultimo messaggio ricevuto é piú vecchio di 5 secondi, riduci i consumi
+			if(currentTime-lastReceivedCanMsgTime>5000){
 				reduceConsumption();
 				lowConsumeIsActive=1;
 			}

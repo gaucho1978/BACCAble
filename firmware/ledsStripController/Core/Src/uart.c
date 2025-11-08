@@ -1,7 +1,7 @@
 #include "uart.h"
 #include "stm32f0xx_hal.h"
 #include "main.h"
-#include "globalVariables.h"
+//#include "globalVariables.h"
 extern void Error_Handler(void);
 
 #define QUEUE_SIZE 10  // max queue size
@@ -109,7 +109,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									break;
 								case C1cmdLaneSingleTap: //request to C2 to execute the ESC/TC toggle
 									uint8_t tmpArr2[2]={C2BusID,C2cmdtoggleEscTc};
-									addToUARTSendQueue(tmpArr2, 2);
+									addToUARTSendQueueDuringInterrupt(tmpArr2, 2);
 									break;
 								default:
 									break;
@@ -129,10 +129,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 										if(!(DynoModeEnabled || DynoStateMachine!=0xff)) ESCandTCinversion=!ESCandTCinversion;
 										uint8_t tmpArr1[2]={C1_Bh_BusID, C1BHcmdShowRaceScreen};
 										if(ESCandTCinversion && function_show_race_mask){ //if enabled and race screen requested, notify C1 and BH
-											addToUARTSendQueue(tmpArr1, 2);
+											addToUARTSendQueueDuringInterrupt(tmpArr1, 2);
 										}else{
 											tmpArr1[1]=C1BHcmdStopShowRaceScreen;
-											addToUARTSendQueue(tmpArr1, 2);
+											addToUARTSendQueueDuringInterrupt(tmpArr1, 2);
 										}
 									}
 									break;
@@ -160,7 +160,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 
 							onboardLed_blue_on();
-							weCanSendAMessageReply=HAL_GetTick();
+							weCanSendAMessageReply=currentTime;
 						#endif
 
 						break;
@@ -186,7 +186,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									break;
 								default:
 							}
-							weCanSendAMessageReply=HAL_GetTick();
+							weCanSendAMessageReply=currentTime;
 							onboardLed_blue_on();
 						#endif
 						break;
@@ -200,21 +200,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							}else{
 								if (requestToSendOneFrame<=2) requestToSendOneFrame +=1;//Send one frame
 							}
-							weCanSendAMessageReply=HAL_GetTick();
+							weCanSendAMessageReply=currentTime;
 							onboardLed_blue_on();
 						#endif
 						break;
 
 					case BhBusIDgetStatus:
 						#if defined(BHbaccable)
-							weCanSendAMessageReply=HAL_GetTick();
+							weCanSendAMessageReply=currentTime;
 							onboardLed_blue_on();
 						#endif
 						break;
 
 					case BhBusChimeRequest:
 						#if defined(BHbaccable)
-							weCanSendAMessageReply=HAL_GetTick();
+							weCanSendAMessageReply=currentTime;
 							requestToPlayChime=1;
 							onboardLed_blue_on();
 						#endif
@@ -235,7 +235,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 							clearFaultsRequest=255;
 
 							#if defined(C2baccable)
-								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 is allowed to reply
+								weCanSendAMessageReply=currentTime; //we decided that only C2 is allowed to reply
 							#endif
 
 							onboardLed_blue_on();
@@ -292,7 +292,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 							onboardLed_blue_on();
 							#if defined(C2baccable)
-								weCanSendAMessageReply=HAL_GetTick(); //we decided that only C2 can reply, otherwise errors may arise
+								weCanSendAMessageReply=currentTime; //we decided that only C2 can reply, otherwise errors may arise
 							#endif
 						#endif
 						break;
@@ -332,7 +332,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 		//onboardLed_red_on();
 	}
 	if (huart->ErrorCode & HAL_UART_ERROR_FE) {
-		// Framing error
+		// Framing error (08/11/25: when we go to sleep a framing error is arised. why?)
 		//onboardLed_red_on();
 	}
 	if (huart->ErrorCode & HAL_UART_ERROR_NE) {
@@ -345,16 +345,18 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	}
 
 	if (huart->ErrorCode == HAL_UART_ERROR_NONE) {
-	    // Error not classified
+		// Error not classified
 		//onboardLed_red_on();
 	}
 
 	if (huart->ErrorCode & HAL_UART_ERROR_DMA) {
-	    //onboardLed_red_on();
+		//onboardLed_red_on();
 	}
-
-	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);
-
+	if (huart->Instance == USART2) {
+		(void)(huart->Instance->RDR); //clears errors FE, NE, ORE, RXNE and deletes last received byte from the rx buffer
+		syncObtained=0; //we lost sync
+		HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //restart receiving one byte
+	}
 }
 /*
 void enter_standby_mode(void) {
@@ -384,6 +386,12 @@ uint8_t getOtherProcessorsSleepingStatus(){
 
 
 void addToUARTSendQueue(const uint8_t *data, size_t length) {
+	__disable_irq(); //__HAL_UART_DISABLE_IT(&huart2,UART_IT_RXNE);
+	addToUARTSendQueueDuringInterrupt(data,length);
+	__enable_irq(); //__HAL_UART_ENABLE_IT(&huart2,UART_IT_RXNE);
+}
+
+void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 
 	if (tx_queue->count < QUEUE_SIZE) {  // Controlla se la coda è piena
 		memset(tx_queue->tx_buffer[tx_queue->tail], 0x20, UART_BUFFER_SIZE);
@@ -395,35 +403,37 @@ void addToUARTSendQueue(const uint8_t *data, size_t length) {
 		// queue full, ignore the request
 		onboardLed_red_on();
 	}
-
 }
 
 
 
 
 
-
 void processUART() {
-
-#if defined(C1baccable)
 	if(currentTime<2000) return;
-	if(currentTime-lastMsgSentToC2Time>1000){
-		lastMsgSentToC2Time=currentTime;
-		//get status from C2
-		//send request thu serial line
-		uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
-		addToUARTSendQueue(tmpArr1, 2); //commented for test
-		onboardLed_blue_on();
-	}
-	if(currentTime-lastMsgSentToBHTime>1000){
-		lastMsgSentToBHTime=currentTime;
-		//get status from BH
-		//send request thu serial line
-		uint8_t tmpArr2[1]={BhBusIDgetStatus};
-		addToUARTSendQueue(tmpArr2, 1);
-		onboardLed_blue_on();
-	}
-#endif
+
+	#if defined(C1baccable)
+		if(lowConsumeIsActive==0){
+			if(currentTime-allProcessorsWakeupTime>3000){
+				if(currentTime-lastMsgSentToC2Time>1010){
+					lastMsgSentToC2Time=currentTime;
+					//get status from C2
+					//send request thu serial line
+					uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
+					addToUARTSendQueue(tmpArr1, 2); //commented for test
+					onboardLed_blue_on();
+				}
+				if(currentTime-lastMsgSentToBHTime>1260){
+					lastMsgSentToBHTime=currentTime;
+					//get status from BH
+					//send request thu serial line
+					uint8_t tmpArr2[1]={BhBusIDgetStatus};
+					addToUARTSendQueue(tmpArr2, 1);
+					onboardLed_blue_on();
+				}
+			}
+		}
+	#endif
 
 	if (tx_queue->count == 0) {
         // queue empty
@@ -449,7 +459,7 @@ void processUART() {
 	#if defined(C1baccable)
 
     	if(currentTime-last_sent_serial_msg_time>250){ //each 250msec send a message (so that we left the time to receiver to reply)
-			last_sent_serial_msg_time=HAL_GetTick();
+			last_sent_serial_msg_time=currentTime;
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
 					//save time
@@ -457,18 +467,16 @@ void processUART() {
 						case C2BusID:
 						case C2_Bh_BusID: //only C2 is allowed to reply when this msg is received
 						case AllResetFaults: //only C2 is allowed to reply when this msg is received
-							lastMsgSentToC2Time=HAL_GetTick();
+							lastMsgSentToC2Time=currentTime;
 							break;
 						case BhBusIDparamString:
 						case BhBusIDgetStatus:
 						case BhBusChimeRequest:
 						case BhBusID:
-							lastMsgSentToBHTime=HAL_GetTick();
+							lastMsgSentToBHTime=currentTime;
 							break;
 						default:
 					}
-
-
 
 					// update head index in a circular way
 					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;

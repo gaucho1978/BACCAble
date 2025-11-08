@@ -533,7 +533,7 @@ uint32_t statistics_100_200_StartTime=0;
 
 uint32_t weCanSendAMessageReply=0; //defines last time that C2 or BH baccable received a message (used by C2 and BH baccable)
 uint8_t uartTxMsg[UART_BUFFER_SIZE]; // it contains string to send over uart
-uint32_t currentTime; //stores current time in milliseconds, each time we enter the main loop
+uint32_t currentTimeMainLoopDebug; //stores current time in milliseconds, each time we enter the main loop
 
 UART_HandleTypeDef huart2; // this is the serial line between baccables
 

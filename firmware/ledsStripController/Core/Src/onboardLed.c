@@ -11,7 +11,7 @@ static uint32_t led_blue_laston = 0;
 static uint32_t led_red_laston = 0;
 static uint32_t led_blue_lastoff = 0;
 static uint32_t led_red_lastoff = 0;
-extern uint8_t led_light_on_bit; //declared in main.c
+//extern uint8_t led_light_on_bit; //declared in main.c
 
 // Initialize LED GPIOs
 void onboardLed_init(){

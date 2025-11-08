@@ -218,7 +218,7 @@ void processingStandardMessage(){
 		case 0x00000226:
 			processingMessage0x00000226();
 			break;
-		case 0x0000025A:
+		case 0x0000025A: //msg received by DriveStyle control module
 			#if defined(BHbaccable)
 				if (ESCandTCinversion){
 					if(currentDNAmode!=0x0C){ //if we are not in race
@@ -342,8 +342,9 @@ void processingStandardMessage(){
 				currentDNAmode=rx_msg_data[7] & 0x1F; //1F is the mask from bit 4 to 0
 				if (ESCandTCinversion){
 					if(currentDNAmode!=0x0C){ //if not in race
-						rx_msg_data[7] = (rx_msg_data[7] & ~0x1F) | 0x0C;  //set Race mode (0x30) to show on IPC the race screen
+						rx_msg_data[7] = (rx_msg_data[7] & ~0x1F) | 0x0C;  //set Race mode (0x30) to show on IPC the race screen (msg from body to IPC, ETM, ESEM)
 						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+						can_process(); //we try to send it ASAP
 						//onboardLed_blue_on();
 					}
 
@@ -354,13 +355,14 @@ void processingStandardMessage(){
 			#endif
 			break;
 		case 0x000004AF:
-			#if defined(C1baccable) || defined(C2baccable)
+			#if defined(C1baccable) || defined(C2baccable)  //we will test it to understand messages changing style on IPC
 				if (ESCandTCinversion){
 					if(currentDNAmode!=0x30){ //if we're not in race
 						if(((rx_msg_data[0] & 0x01)!=0x01) || ((rx_msg_data[1] & 0x04)!=0x04)){  //if not set as expected in race
-							rx_msg_data[0] = rx_msg_data[0] | 0x01;  //set function bit
-							rx_msg_data[1] = rx_msg_data[1] | 0x04;  //set function bit
+							rx_msg_data[0] = rx_msg_data[0] | 0x01;  //set functionstatus bit (on C1 it is a msg from BSM to TCM, ORc, IPC, ECM, DTCM, DCTM, DASM, BCM) (on C2 it is a msg from BSM to HALF, BCM)
+							rx_msg_data[1] = rx_msg_data[1] | 0x04;  //set function2status bit (on C1 it is a msg from BSM to IPC, DASM, CDCM)
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+							can_process(); //we try to send it ASAP
 						}
 					}
 				}
@@ -537,13 +539,14 @@ void processingStandardMessage(){
 			//when in race, byte 4 bit 3-6 has value 6
 			#if defined(C1baccable)
 				if (ESCandTCinversion){
-					if((rx_msg_data[4] & 0x78)!=0x30){  //if not race
+					if((rx_msg_data[4] & 0x78)!=0x30){  //if not race (on C1 it is a msg from TCM or DCTM and received by ECM)
 						rx_msg_data[4] = (rx_msg_data[4] & ~0x78) | 0x30;  //set track mode (race)
 						uint8_t tmpCounter=(rx_msg_data[6] & 0x0F)+1;
 						if(tmpCounter>0x0F) tmpCounter=0;
 						rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
 						rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
 						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+						can_process(); //we try to send it ASAP
 					}
 				}
 			#endif

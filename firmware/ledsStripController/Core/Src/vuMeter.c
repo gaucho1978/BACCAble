@@ -60,13 +60,13 @@ void vuMeterInit(void){
 	case 2:
 		if(datasentflag==1){ //wait the frame to be sent
 			datasentflag = 0; //restore the flag for next frame
-			newInternalDelay=HAL_GetTick();
+			newInternalDelay=currentTime;
 			vuMeterInitState++;
 		}
 		break;
 	case 3:
 		//let's sleep for 1 second. but if time is elapsed, go inside if
-		if(newInternalDelay+1000<HAL_GetTick()){
+		if(newInternalDelay+1000<currentTime){
 			vuMeterInitState++;
 		}
 		break;
@@ -95,13 +95,13 @@ void vuMeterInit(void){
 	case 6:
 		if(datasentflag==1){ //wait the frame to be sent
 			datasentflag = 0; //restore the flag for next frame
-			newInternalDelay=HAL_GetTick();
+			newInternalDelay=currentTime;
 			vuMeterInitState++;
 		}
 		break;
 	case 7:
 		//let's sleep for 50msec. but if time is elapsed, go inside if
-		if(newInternalDelay+50<HAL_GetTick()){
+		if(newInternalDelay+50<currentTime){
 			newInternalIndex++;
 			vuMeterInitState=5;
 		}
@@ -116,26 +116,26 @@ void vuMeterInit(void){
 		}else{
 			//jump to nex phase
 			vuMeterInitState=11;
-			newInternalDelay=HAL_GetTick(); //prepare to sleep
+			newInternalDelay=currentTime; //prepare to sleep
 		}
 		break;
 	case 9:
 		if(datasentflag==1){ //wait the frame to be sent
 			datasentflag = 0; //restore the flag for next frame
-			newInternalDelay=HAL_GetTick();
+			newInternalDelay=currentTime;
 			vuMeterInitState++;
 		}
 		break;
 	case 10:
 		//let's sleep for 50msec. but if time is elapsed, go inside if
-		if(newInternalDelay+50<HAL_GetTick()){
+		if(newInternalDelay+50<currentTime){
 			newInternalIndex--;
 			vuMeterInitState=8;
 		}
 		break;
 	case 11:
 		//let's sleep for 500msec. but if time is elapsed, go inside if
-		if(newInternalDelay+500<HAL_GetTick()){
+		if(newInternalDelay+500<currentTime){
 			vuMeterInitState++;
 			newInternalIndex=0; //reset the index counter for newt phase
 		}
@@ -156,13 +156,13 @@ void vuMeterInit(void){
 	case 13: //ex 6:
 		if(datasentflag==1){ //wait the frame to be sent
 			datasentflag = 0; //restore the flag for next frame
-			newInternalDelay=HAL_GetTick();
+			newInternalDelay=currentTime;
 			vuMeterInitState++;
 		}
 		break;
 	case 14: //ex 7:
 		//let's sleep for 50msec. but if time is elapsed, go inside if
-		if(newInternalDelay+50<HAL_GetTick()){
+		if(newInternalDelay+50<currentTime){
 			newInternalIndex++;
 			vuMeterInitState=12;
 		}
@@ -177,26 +177,26 @@ void vuMeterInit(void){
 		}else{
 			//jump to nex phase
 			vuMeterInitState=18;
-			newInternalDelay=HAL_GetTick(); //prepare to sleep
+			newInternalDelay=currentTime; //prepare to sleep
 		}
 		break;
 	case 16: // ex 9:
 		if(datasentflag==1){ //wait the frame to be sent
 			datasentflag = 0; //restore the flag for next frame
-			newInternalDelay=HAL_GetTick();
+			newInternalDelay=currentTime;
 			vuMeterInitState++;
 		}
 		break;
 	case 17: //ex 10:
 		//let's sleep for 50msec. but if time is elapsed, go inside if
-		if(newInternalDelay+50<HAL_GetTick()){
+		if(newInternalDelay+50<currentTime){
 			newInternalIndex--;
 			vuMeterInitState=15;
 		}
 		break;
 	case 18: //ex 11:
 		//let's sleep for 500msec. but if time is elapsed, go inside if
-		if(newInternalDelay+500<HAL_GetTick()){
+		if(newInternalDelay+500<currentTime){
 			vuMeterInitState++;
 			newInternalIndex=0; //reset the index counter for newt phase
 		}
@@ -341,10 +341,10 @@ void vuMeterUpdate(float volume, uint8_t colorPreset ){
 		currentColorPreset=colorPreset;
 	}
 	UNUSED(lastVumeterUpdate);
-	if(lastVumeterUpdate+10 > HAL_GetTick()) { //enter update function only once each 10 msec.
+	if(lastVumeterUpdate+10 > currentTime) { //enter update function only once each 10 msec.
 		return;
 	}
-	lastVumeterUpdate=HAL_GetTick();
+	lastVumeterUpdate=currentTime;
 
 	//if the frame was not completely sent, exit, otherwise send another frame
 	if (datasentflag){
@@ -374,7 +374,7 @@ void setLedsVumeter(uint8_t volume){
 	uint8_t j;
 	uint8_t distanzaDalSetpoint;
 	//for debug, measure function duration
-	//debugTimer=HAL_GetTick();
+	//debugTimer=currentTime;
 
 	if(volume>15) volume=15; //clip values to avoid overflows
 
@@ -442,7 +442,7 @@ void setLedsVumeter(uint8_t volume){
 	}
 
 	//for debug, measure function duration
-	//if (HAL_GetTick()>debugTimer+1){
+	//if (currentTime>debugTimer+1){
 	//	onboardLed_red_on();
 	//}
 
@@ -503,7 +503,7 @@ void WS2812_Send (void){
 	//}
 
 	//prendi il tempo, per debug
-	//debugTimer=HAL_GetTick();
+	//debugTimer=currentTime;
 	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_4, (uint32_t *)pwmData, 24*MAX_LED+50);
 
 }
@@ -598,7 +598,7 @@ void MX_DMA_Init(void){
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
 	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);
 	datasentflag=1;
-	//if (HAL_GetTick()>debugTimer+20){
+	//if (currentTime>debugTimer+20){
 	//	onboardLed_red_on();
 	//}
 

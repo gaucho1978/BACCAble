@@ -30,7 +30,7 @@ int main(void){
 
 	while (1){
 
-		currentTime=HAL_GetTick();
+		currentTimeMainLoopDebug=currentTime;
 		onboardLed_process();
 		can_process();
 		processUART();
@@ -135,7 +135,7 @@ int main(void){
 		}
 
 		//for debug, measure the loop duration
-		if (HAL_GetTick()-currentTime>2){
+		if (currentTime-currentTimeMainLoopDebug>2){
 			onboardLed_red_on();
 		}
 	}
