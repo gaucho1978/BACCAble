@@ -25,7 +25,7 @@ void processingMessage0x00000384(){
 			//rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
 			rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
 			can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-			can_process(); //we try to send it ASAP
+			//can_process(); //we try to send it ASAP - I commented it since It had no success
 			//onboardLed_blue_on();
 		}
 		//memcpy(&DNA_msg_data, &rx_msg_data, 8);
@@ -103,7 +103,7 @@ void processingMessage0x00000384(){
 			//rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
 			//rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
 			can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-			can_process(); //we try to send it ASAP
+			//can_process(); //we try to send it ASAP - I commented it since it had no success
 			//onboardLed_blue_on();
 		}
 	#endif

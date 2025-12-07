@@ -9,7 +9,7 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V.2.16.13"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V.3.0.0"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
 	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
@@ -65,8 +65,9 @@
 	#endif
 
 	#ifndef DISABLE_UCAN_BOARD_LED_INVERSION //optional compile time define with -D, default: undefined
-		#pragma message("Ucan Board or New Baccable Board is used")
 		#define UCAN_BOARD_LED_INVERSION //ucan fysect board (and  new BACCAble board) requires UCAN_BOARD_LED_INVERSION, since the led onboard are physically connected differently (status is inverted)
+	#else
+		#pragma message("Canable Board is used")
 	#endif
 
 	//optional compile time defines for C1
@@ -74,20 +75,21 @@
 		#pragma message("Building C1 BACCAble") //adds a message in the compilation log
 
 		#ifndef DISABLE_CLEAR_FAULTS_ENABLED //optional compile time define with -D, default: undefined
-			#pragma message("CLEAR_FAULTS_ENABLED functionality is active")
 			#define CLEAR_FAULTS_ENABLED //baccable menu will allow to reset faults on all 3 baccable
+		#else
+			#pragma message("CLEAR_FAULTS_ENABLED functionality is Disabled")
 		#endif
 
 		#ifndef DISABLE_LOW_CONSUME //optional compile time define with -D, default: undefined
-			#pragma message("Low Consume is Enabled")
 			#define LOW_CONSUME //master baccable will put other 2 chips and the other 2 can transceivers to sleep.
+		#else
+			#pragma message("Low Consume is Disabled")
 		#endif
 
 		#ifndef IS_GASOLINE //optional compile time define with -D, default: undefined
-			#pragma message("Will select default diesel engine parameters")
 			#define IS_DIESEL
 		#else
-			#pragma message("Will select default gasoline engine parameters")
+			#pragma message("Gasoline engine parameters Selected")
 		#endif
 
 		#ifdef PERMANENTLY_DISABLE_IMMO
@@ -96,18 +98,21 @@
 		#endif
 
 		#ifndef DISABLE_IMMOBILIZER //optional compile time define with -D, default: undefined
-			#pragma message("Enabling immobilizer")
 			#define IMMOBILIZER_ENABLED
+		#else
+			#pragma message("Immobilizer Disabled")
 		#endif
 
 		#ifndef DISABLE_THE_FUNCTION_SMART_DISABLE_START_STOP //optional compile time define with -D, default: undefined
-			#pragma message("Enabling SMART_DISABLE_START_STOP functionality")
 			#define SMART_DISABLE_START_STOP //start&stop will be automatically disabled with can message
+		#else
+			#pragma message("SMART_DISABLE_START_STOP functionality Disabled")
 		#endif
 
 		#ifndef SHIFT_THRESHOLD //optional compile time define with -D, default: undefined
-			#pragma message("Setting Default Shift Threshold")
 			#define SHIFT_THRESHOLD 4500 //default shift threshold. 2 more thresholds are automatically defined: 500rpm and 1000 rpm higher than SHIFT_THRESHOLD value
+		#else
+			#pragma message("Custom Shift Threshold Set")
 		#endif
 
 		#ifdef SHIFT_INDICATOR_ENABLED//optional compile time define with -D, default: undefined
@@ -159,13 +164,15 @@
 		#endif
 
 		#ifndef DISABLE_DPF_REGEN_VISUAL_ALERT//optional compile time define with -D, default: undefined
-			#pragma message("Enabling visual alert for DPF regeneration")
 			#define DPF_REGEN_VISUAL_ALERT //BACCAble displays visual alert for DPF regeneration
+		#else
+			#pragma message("Visual alert for DPF regeneration Disabled")
 		#endif
 
 		#ifndef DISABLE_DPF_REGEN_SOUND_ALERT//optional compile time define with -D, default: undefined
-			#pragma message("Enabling sound alert for DPF regeneration")
 			#define DPF_REGEN_SOUND_ALERT //BACCAble emits sound alert for DPF regeneration (belts alarm)
+		#else
+			#pragma message("Sound alert for DPF regeneration Disabled")
 		#endif
 
 		#ifdef SEATBELT_ALARM_DISABLED //optional compile time define with -D, default: undefined
@@ -211,23 +218,27 @@
 		#pragma message("Building C2 BACCAble")
 
 		#ifndef DISABLE_ESC_TC_CUSTOMIZATOR //optional compile time define with -D, default: undefined
-			#pragma message("Enabling ESC_TC_CUSTOMIZATOR functionality")
 			#define ESC_TC_CUSTOMIZATOR_ENABLED // enable/disable ESC and Traction control (also controlled by C1 baccable) (by pressing LANE button (left stak) for 2 seconds it inverts current enabling status of ESC and TC features). it works only in race mode
+		#else
+			#pragma message("ESC_TC_CUSTOMIZATOR functionality Disabled")
 		#endif
 
 		#ifndef DISABLE_DYNO_MODE //optional compile time define with -D, default: undefined
-			#pragma message("Enabling DYNO_MODE functionality")
 			#define DYNO_MODE //disables all the controls (roll bench mode of MES) (also controlled by C1 baccable).
+		#else
+			#pragma message("DYNO_MODE functionality Disabled")
 		#endif
 
 		#ifndef DISABLE_FRONT_BRAKE_FORCER //optional compile time define with -D, default: undefined
-			#pragma message("Enabling FRONT_BRAKE_FORCER functionality")
 			#define FRONT_BRAKE_FORCER //disables front brakes (controlled by C1baccable).
+		#else
+			#pragma message("FRONT_BRAKE_FORCER functionality Disabled")
 		#endif
 
 		#ifndef DISABLE_CLEAR_FAULTS_C2 //optional compile time define with -D, default: undefined
-			#pragma message("Enabling CLEAR_FAULTS functionality")
 			#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru C2baccable too
+		#else
+			#pragma message("CLEAR_FAULTS functionality Disabled")
 		#endif
 
 	#endif
@@ -239,8 +250,9 @@
 			#define DISPLAY_INFO_CODE 0x09
 		#endif
 		#ifndef DISABLE_CLEAR_FAULTS_BH //optional compile time define with -D, default: undefined
-			#pragma message("Enabling CLEAR_FAULTS functionality")
 			#define CLEAR_FAULTS_ENABLED //if enabled the C1baccable menu will allow to reset faults thru BHbaccable too
+		#else
+			#pragma message("CLEAR_FAULTS functionality Disabled")
 		#endif
 
 		#ifdef DISABLE_ODOMETER_BLINK //optional compile time define with -D, default: undefined
@@ -278,6 +290,7 @@
 #endif
 #endif
 #endif
+
 #define USB_FLASH_START_ADDRESS 0x8010000
 #define TOTAL_USB_DEVICE_SIZE 65536
 

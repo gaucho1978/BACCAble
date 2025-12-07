@@ -10,22 +10,25 @@
 	#include "globalVariables.h"
 	#include "functions_Common.h"
 
-	void C1baccableInitCheck();
-	void C1baccablePeriodicCheck();
-	void sendMainDashboardPageToSlaveBaccable();
-	void sendSetupDashboardPageToSlaveBaccable();
-	void sendParamsSetupDashboardPageToSlaveBaccable();
-	void sendDashboardPageToSlaveBaccable(float param);
-	void clearDashboardBaccableMenu();
+	void C1baccableInitCheck(void);
+	void C1baccablePeriodicCheck(void);
+	void sendMainDashboardPageToSlaveBaccable(void);
+	void sendSetupDashboardPageToSlaveBaccable(void);
+	void sendParamsSetupDashboardPageToSlaveBaccable(void);
+	void sendDashboardPageToSlaveBaccable(void);
+	float getNativeParam(uint8_t paramId);
+	void buildLineWithFormat(const char* template, float values[2], const uint8_t paramId[2], char* result);
+	uint8_t removePatterns(char *str);
+	void clearDashboardBaccableMenu(void);
 	float scaleVolume(uint8_t vol);
 	uint8_t scaleColorSet(uint8_t col);
-	uint8_t saveOnflash();
+	uint8_t saveOnflash(void);
 	uint8_t resetStatisticsOnFlash();
-	uint8_t saveStatisticsOnFlash();
-	uint8_t saveShownParamsOnflash();
+	uint8_t saveStatisticsOnFlash(void);
+	uint8_t saveShownParamsOnflash(void);
 	void compress_to_uint16(const uint8_t *input, size_t input_len, uint16_t *output);
 	void decompress_from_uint16(const uint16_t *input, size_t input_len, uint8_t *output, size_t output_len);
-	void readShownParamsFromFlash();
+	void readShownParamsFromFlash(void);
 	uint16_t readFromFlash(uint8_t paramId);
 	float readStatisticsFromFlash(uint8_t paramId);
 	uint8_t getParamIndexFromReqId(uint32_t searchedReqId);

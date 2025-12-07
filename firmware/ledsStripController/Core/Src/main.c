@@ -15,6 +15,7 @@ int main(void){
 
 
 	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
+		//HAL_Delay(500);//wait 500 msec - This is used for debug
 		MX_USB_DEVICE_Init();
 	#endif
 

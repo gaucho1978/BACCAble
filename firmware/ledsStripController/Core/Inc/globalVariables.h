@@ -25,11 +25,7 @@
 
 	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
-	//this is used to invert bytes order in a 32 bit integer
-	#define SWAP_UINT32(x) (((uint32_t)(x) >> 24) & 0x000000FF) | \
-						   (((uint32_t)(x) >> 8)  & 0x0000FF00) | \
-						   (((uint32_t)(x) << 8)  & 0x00FF0000) | \
-						   (((uint32_t)(x) << 24) & 0xFF000000)
+
 
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
 			//la flash inizia a 0x08000000  e finisce a 0x0801FFFF, -0x800 +1 di una pagina fa 0x0801F800
@@ -61,27 +57,12 @@
 	#if defined(C1baccable)
 		#include "vuMeter.h" //this is used to control led strip through usb pin
 		#include "lowConsume.h"
+		#include "uds_parameters.h"
 		extern uint32_t lastReceivedCanMsgTime;
 	#endif
 
 
-	#if defined(C1baccable)
-		typedef struct{
-			uint8_t		name[DASHBOARD_MESSAGE_MAX_LENGTH - 3];
-			uint32_t 	reqId;
-			uint8_t		reqLen;
-			uint32_t 	reqData;
-			uint32_t 	replyId;
-			uint8_t		replyLen;
-			uint8_t		replyOffset;
-			int32_t		replyValOffset;
-			float		replyScale;
-			int32_t		replyScaleOffset;
-			uint8_t		replyMeasurementUnit[7];
-			uint8_t		replyDecimalDigits;
-		} uds_param_element;
 
-	#endif
 
 
 		//all variables of globalVariables.c shall be repeated here as extern
@@ -136,7 +117,6 @@
 		extern uint8_t requestToDisableStartAndStop; //if set to 1 sends message simulating s&s button press
 
 		//
-		extern uint8_t gearArray[11];
 
 		extern uint8_t main_dashboardPageIndex;
 		extern uint8_t dashboard_menu_indent_level;
@@ -146,15 +126,15 @@
 		extern uint8_t total_pages_in_setup_dashboard_menu;
 		extern uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH];
 
-		extern uint8_t params_setup_dashboardPageIndex;
-		extern uint8_t shownParamsArray[240];
-		extern uint8_t total_pages_in_params_setup_dashboard_menu;
+		//extern uint8_t params_setup_dashboardPageIndex;
+		//extern uint8_t shownParamsArray[240];
+		//extern uint8_t total_pages_in_params_setup_dashboard_menu;
 
 		extern uint8_t function_is_diesel_enabled; //stored in flash. defines if we use gasoline (0) or diesel (1) params
-		extern uint8_t total_pages_in_dashboard_menu_diesel;
-		extern uint8_t total_pages_in_dashboard_menu_gasoline;
+		//extern uint8_t total_pages_in_dashboard_menu_diesel;
+		//extern uint8_t total_pages_in_dashboard_menu_gasoline;
 		// uds_params_array[0] contais gasoline params, , uds_params_array[1] contains diesel params
-		extern const	uds_param_element uds_params_array[2][60]; // initializes all the uds parameters request to send and reply to receive
+		//extern const	uds_param_element uds_params_array[2][60]; // initializes all the uds parameters request to send and reply to receive
 
 		extern CAN_TxHeaderTypeDef uds_parameter_request_msg_header;
 		extern uint8_t baccableDashboardMenuVisible;

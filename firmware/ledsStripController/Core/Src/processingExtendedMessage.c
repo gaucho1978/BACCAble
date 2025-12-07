@@ -56,11 +56,11 @@ void processingExtendedMessage(){
 			}
 		} //end of immobilizer section
 
-		if ((rx_msg_header.ExtId==uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyId) && baccableDashboardMenuVisible){ //if we received udf message with current selected parameter, let's aquire it
+		if ((rx_msg_header.ExtId==single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyId) && baccableDashboardMenuVisible){ //if we received UDS message with current selected parameter, let's aquire it
 			if(dashboard_menu_indent_level==1 && main_dashboardPageIndex==1){ //if we are in show params menu
 				onboardLed_blue_on();
-				if (rx_msg_header.DLC>=4+uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyOffset+uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyLen){
-					uint8_t numberOfBytesToRead=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyLen;
+				if (rx_msg_header.DLC>=4+single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyOffset+single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyLen){
+					uint8_t numberOfBytesToRead=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyLen;
 					// Limita il numero di byte a un massimo di 4 per evitare overflow
 					if (numberOfBytesToRead > 4) {
 						numberOfBytesToRead = 4;
@@ -69,14 +69,19 @@ void processingExtendedMessage(){
 
 					// Costruisce il valore a partire dai byte ricevuti
 					for (size_t i = 0; i < numberOfBytesToRead; i++) {
-						tmpVal |= ((uint32_t)rx_msg_data[4+uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyOffset+i]) << (8 * (numberOfBytesToRead - 1 - i));
+						tmpVal |= ((uint32_t)rx_msg_data[4+single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyOffset+i]) << (8 * (numberOfBytesToRead - 1 - i));
 					}
 
-					tmpVal+=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyValOffset;
-					float tmpVal2 =tmpVal * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
-					tmpVal2 +=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
+					tmpVal+=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyValOffset;
+					float tmpVal2 =tmpVal * single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyScale;
+					tmpVal2 +=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyScaleOffset;
 
-					sendDashboardPageToSlaveBaccable(tmpVal2);//send parameter
+					if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]== uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[!currentParamElementSelection]){
+						currentParamElementSelection=0; //single param
+					}
+
+					dashboardParamCouple[currentParamElementSelection]=tmpVal2;//aquire param in a variabile
+					sendDashboardPageToSlaveBaccable();//send parameters to BH
 				}
 			}
 		}

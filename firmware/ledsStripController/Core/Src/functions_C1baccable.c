@@ -332,23 +332,22 @@
 				case 1:
 					if(main_dashboardPageIndex==1){ //we are in show params submenu
 						clearFaultsRequest=0; //ensure we don't perform more tasks simoultaneously
-						if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
+						currentParamElementSelection=!currentParamElementSelection;
+						if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]== uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[!currentParamElementSelection]){
+							currentParamElementSelection=0; //single param
+						}
+
+						if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
 							//request current parameter to ECU
-							uds_parameter_request_msg_header.ExtId=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId;
+							uds_parameter_request_msg_header.ExtId=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqId;
 
-
-							memcpy(&uds_parameter_request_msg_data[0],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqData,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen );
-							uds_parameter_request_msg_header.DLC=uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqLen;
-							//uds_parameter_request_msg_header.ExtId=0x18DA40F1;
-							//uds_parameter_request_msg_header.DLC=4;
-							//uds_parameter_request_msg_data[0]=0x03;
-							//uds_parameter_request_msg_data[1]=0x22;
-							//uds_parameter_request_msg_data[2]=0x10;
-							//uds_parameter_request_msg_data[3]=0x05;
+							memcpy(&uds_parameter_request_msg_data[0],&single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqData,single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen );
+							uds_parameter_request_msg_header.DLC=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen;
 							//onboardLed_blue_on();
 							can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
-						}else{ //0xff reqId is a special value that we use to send particular values. now we use to send baccable FW version and oil pressure, for now
-							sendDashboardPageToSlaveBaccable(-3400000000000000000);
+						}else{ //0xff reqId is a special value that we use to get particular values
+							dashboardParamCouple[currentParamElementSelection]=getNativeParam((uint8_t)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]);//aquire param in a variabile
+							sendDashboardPageToSlaveBaccable();  //Send params to BH board
 						}
 					}
 
@@ -846,16 +845,29 @@
 				uartTxMsg[1]=checkbox_symbols[shownParamsArray[params_setup_dashboardPageIndex-1]];
 				uartTxMsg[2]=' ';
 				uartTxMsg[3]=' ';
-				memcpy(&uartTxMsg[4], &uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name,UART_BUFFER_SIZE-4); //copy entire string, to fill it with 0 at the end
-				uint8_t tmpStrLenName=strlen((char *)uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name);
-				uint8_t tmpStrLenUnits=strlen((char *)uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].replyMeasurementUnit);
-				uint8_t tmpCharsToWrite=UART_BUFFER_SIZE-4-tmpStrLenName; //number of chars that we can still use in the string
-				if(tmpCharsToWrite>tmpStrLenUnits+1) tmpCharsToWrite= tmpStrLenUnits+1; //if we have more space than what we have to write, set the total number of chars to write
-				if(tmpCharsToWrite>0){
-					uartTxMsg[4+tmpStrLenName]=' '; //add a space
-					tmpCharsToWrite--;
-				}
-				if(tmpCharsToWrite>0) memcpy(&uartTxMsg[4+tmpStrLenName+1], &uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].replyMeasurementUnit,tmpCharsToWrite);
+
+				char tmpName[DASHBOARD_MESSAGE_MAX_LENGTH + 5];
+
+				memcpy(
+				    tmpName,
+				    uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex - 1].name,
+				    strlen(uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex - 1].name) + 1
+				);
+
+				uint8_t tmpStrLen=removePatterns(tmpName); //remove special patterns from template
+				if(tmpStrLen>UART_BUFFER_SIZE-4) tmpStrLen=UART_BUFFER_SIZE-4;
+				memcpy(&uartTxMsg[4], tmpName,tmpStrLen); //copy entire string, to fill it with 0 at the end.
+				memset(&uartTxMsg[4+tmpStrLen], 0x20, UART_BUFFER_SIZE-4-tmpStrLen);
+
+				//uint8_t tmpStrLenName=strlen((char *)uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].name);
+				//uint8_t tmpStrLenUnits=strlen((char *)single_uds_params_array[uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].udsParamId[currentParamElementSelection]].replyMeasurementUnit);
+				//uint8_t tmpCharsToWrite=UART_BUFFER_SIZE-4-tmpStrLenName; //number of chars that we can still use in the string
+				//if(tmpCharsToWrite>tmpStrLenUnits+1) tmpCharsToWrite= tmpStrLenUnits+1; //if we have more space than what we have to write, set the total number of chars to write
+				//if(tmpCharsToWrite>0){
+				//	uartTxMsg[4+tmpStrLenName]=' '; //add a space
+				//	tmpCharsToWrite--;
+				//}
+				//if(tmpCharsToWrite>0) memcpy(&uartTxMsg[4+tmpStrLenName+1], &single_uds_params_array[uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex-1].udsParamId[currentParamElementSelection]].replyMeasurementUnit,tmpCharsToWrite);
 
 				break;
 		}
@@ -866,446 +878,213 @@
 
 	}
 
-	void sendDashboardPageToSlaveBaccable(float param){
-		uint8_t tmpStrLen=0;
-		uint8_t tmpStrLen2=0;
-		uint8_t tmpStrLen3=0;
-
+	void sendDashboardPageToSlaveBaccable(){
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 
-		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){ //do preliminary additional stuff for special parameters (not uds)
-			case 0x10: //print oil pressure
-				param=(float) oilPressure * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
-				break;
-			case 0x11: //power in CV
-				param=(float)torque * (float)currentRpmSpeed * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale ;
-				break;
-			case 0x12: //torque in NM
-				param=(float)torque;
-				break;
-			case 0x13: //battery state of charge (%)
-				param=(float)batteryStateOfCharge  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale;
-				break;
-			case 0x14: //battery current (A)
-				param=((float)batteryCurrent  * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
-				break;
-			case 0x15: //engine oil temperature
-				param=((float)oilTemperature * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
-				break;
-			case 0x16: //transmission temperature
-				param=((float)transmissionTemperature * uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScale) + uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyScaleOffset;
-				break;
-			case 0x17: //current gear
-				param=(float)(currentGear>>4);
-				break;
-			case 0x18: //current speed (km/h)
-				param=currentSpeed_km_h;
-				break;
-			case 0x1A: //stat 0-100km/h
-				param=chronometerElapsedTime_0_100_km_h; // >=20=MISSED , increase in progress= GO
-				break;
-			case 0x1B: //stat 100-200km/h
-				param=chronometerElapsedTime_100_200_km_h; // >=40=MISSED , increase in progress= GO
-				break;
-			case 0x1C: //Best stat 0-100km/h
-				param=readStatisticsFromFlash(1);
-				break;
-			case 0x1D: //Best stat 100-200km/h
-				param=readStatisticsFromFlash(2);
-				break;
-			case 0x1E: //seat belt alarm status
-				param=seatbeltAlarmDisabled;
-				break;
-			case 0x1F://debug param.
-				break;
-			case 0x20://param couple 1: PWR and Torque
-				break;
-			default:
-				break;
-		}
 
-		uint8_t tmpString1[18];
-		char tmpfloatString1[10];
+		char stringToPrint[25];
+		buildLineWithFormat( uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name ,  dashboardParamCouple, uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId, stringToPrint); //build string to print
 
-		switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId){
-			case 0: //print baccable menu
-				tmpStrLen=strlen(FW_VERSION);
-				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
-				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
-				break;
-			case 0x19: //if diesel engine mode status
-				tmpStrLen=18;
-				switch(dieselEngineRegenerationMode){
-					case 0:
-						memcpy(&uartTxMsg[1], "REGEN.: NONE      ", tmpStrLen);
-						break;
-					case 1:
-						memcpy(&uartTxMsg[1], "REGEN.: DPF LO    ", tmpStrLen);
-						break;
-					case 2:
-						memcpy(&uartTxMsg[1], "REGEN.: DPF HI    ", tmpStrLen);
-						break;
-					case 3:
-						memcpy(&uartTxMsg[1], "REGEN.: NSC De-NOx", tmpStrLen);
-						break;
-					case 4:
-						memcpy(&uartTxMsg[1], "REGEN.: NSC De-SOx", tmpStrLen);
-						break;
-					case 5:
-						memcpy(&uartTxMsg[1], "REGEN.: SCR HeatUp", tmpStrLen);
-						break;
-					default:
-						memcpy(&uartTxMsg[1], "REGEN.: NONE.     ", tmpStrLen);
-						break;
-				}
-				break;
-			case 0x1F: //debug string
-				tmpStrLen=18;
-				//dobbiamo stampare: stato di sleep degli altri due chip
-				// 					 tempo da ultimo messaggio ricevuto su C1
-				//					 tempo da ultimo intervento IMMO
+		uint8_t tmpStrLen=strlen(stringToPrint);
+		if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH; //truncate it. no space left
+		memcpy(&uartTxMsg[1], &stringToPrint,tmpStrLen); //prepare name of parameter
 
-				if(lowConsumeIsActive){
-					tmpString1[0]='O';
-					tmpString1[1]='f';
-					tmpString1[2]='f';
-
-				}else{
-					tmpString1[0]='O';
-					tmpString1[1]='n';
-					tmpString1[2]=' ';
-				}
-				tmpString1[3]=' ';
-				tmpString1[4]='T';
-				tmpString1[5]='w';
-				tmpString1[6]='k';
-				tmpString1[7]='p';
-
-
-
-				float allProcessorsWakeupElapsedTime=((float)currentTime-(float)allProcessorsWakeupTime)/(float)1000.0;
-				if(allProcessorsWakeupElapsedTime>999.0){
-					tmpString1[8]= '>';
-					tmpString1[9]= '9';
-					tmpString1[10]='9';
-				}else{
-					//scriviamo il valore
-					floatToStr(tmpfloatString1,(float)allProcessorsWakeupElapsedTime, 0,4);
-					memcpy(&tmpString1[8],tmpfloatString1,strlen(tmpfloatString1));
-					if(strlen(tmpfloatString1)<3) tmpString1[10]=' ';
-					if(strlen(tmpfloatString1)<2) tmpString1[9] =' ';
-
-				}
-				tmpString1[11]=' ';
-				tmpString1[12]='I';
-				tmpString1[13]='m';
-				tmpString1[14]='m';
-				float tmpLastImmoElapsedTime=((float)currentTime-(float)floodTheBusStartTime)/(float)1000.0;
-				if(tmpLastImmoElapsedTime>999.0){
-					tmpString1[15]= '>';
-					tmpString1[16]= '9';
-					tmpString1[17]= '9';
-				}else{
-					//scriviamo il valore
-					floatToStr(tmpfloatString1,(float)tmpLastImmoElapsedTime,0,4);
-					memcpy(&tmpString1[15],tmpfloatString1,strlen(tmpfloatString1));
-					if(strlen(tmpfloatString1)<3) tmpString1[17]=' ';
-					if(strlen(tmpfloatString1)<2) tmpString1[16]=' ';
-				}
-
-
-				memcpy(&uartTxMsg[1],tmpString1,18);
-				break;
-			case 0x20://param couple 1: PWR and Torque
-				tmpStrLen=18;
-
-				tmpString1[0]='P';
-				tmpString1[1]='W';
-				tmpString1[2]='R';
-				tmpString1[3]=' ';
-
-				//scriviamo il valore
-				float tmpPwr=(float)torque * (float)currentRpmSpeed * 0.000142378F ;
-				floatToStr(tmpfloatString1,tmpPwr, 0,4);
-				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
-				tmpString1[7]= 'C';
-				tmpString1[8]= 'V';
-				tmpString1[9]= ' ';
-				tmpString1[10]=' ';
-				tmpString1[11]=' ';
-
-				floatToStr(tmpfloatString1,torque, 0,4);
-				memcpy(&tmpString1[12],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[14]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[13]= ' ';
-				tmpString1[15]= 'N';
-				tmpString1[16]= 'm';
-				tmpString1[17]= ' ';
-
-				memcpy(&uartTxMsg[1],tmpString1,18);
-				break;
-			case 0x21://param couple 2: Oil pressure and Water Temp.
-				tmpStrLen=18;
-
-				tmpString1[0]='O';
-				tmpString1[1]='I';
-				tmpString1[2]='L';
-				tmpString1[3]=' ';
-
-				//scriviamo il valore
-				floatToStr(tmpfloatString1,(float) oilPressure * 0.1F, 1,4);
-				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
-				tmpString1[7]= 'B';
-				tmpString1[8]= 'a';
-				tmpString1[9]= 'r';
-				tmpString1[10]=' ';
-				tmpString1[11]='W';
-				tmpString1[12]='.';
-
-				floatToStr(tmpfloatString1,(float)waterTemperature-40.0F, 0,4);
-				memcpy(&tmpString1[13],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[15]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[14]= ' ';
-				tmpString1[16]= 0xB0;
-				tmpString1[17]= 'C';
-
-				memcpy(&uartTxMsg[1],tmpString1,18);
-				break;
-			case 0x22://param couple 3: Oil temp. and Water Temp.
-				tmpStrLen=18;
-
-				tmpString1[0]='O';
-				tmpString1[1]='I';
-				tmpString1[2]='L';
-				tmpString1[3]=' ';
-
-				//scriviamo il valore
-				floatToStr(tmpfloatString1,(float) oilTemperature -40.0F, 0,4);
-				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
-				tmpString1[7] = 0xB0;
-				tmpString1[8] = 'C';
-				tmpString1[9] = ' ';
-				tmpString1[10]= ' ';
-				tmpString1[11]= 'W';
-				tmpString1[12]= '.';
-
-				floatToStr(tmpfloatString1,(float)waterTemperature -40.0F, 0,4);
-				memcpy(&tmpString1[13],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[15]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[14]= ' ';
-				tmpString1[16]= 0xB0;
-				tmpString1[17]= 'C';
-
-				memcpy(&uartTxMsg[1],tmpString1,18);
-				break;
-
-			case 0x23://param couple 4: Oil Level and Oil Quality.
-				tmpStrLen=18;
-
-				tmpString1[0]='O';
-				tmpString1[1]='I';
-				tmpString1[2]='L';
-				tmpString1[3]=' ';
-
-				//scriviamo il valore
-				floatToStr(tmpfloatString1,(float) oilLevel * 7.142857142857143F, 0,4);
-				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
-				tmpString1[7]= '%';
-				tmpString1[8]= ' ';
-				tmpString1[9]= 'Q';
-				tmpString1[10]='a';
-				tmpString1[11]='l';
-				tmpString1[12]='y';
-				tmpString1[13]='.';
-				uint8_t OilQuality=0; //this shall be implemented. currently we don't have oil quality
-				floatToStr(tmpfloatString1,(float)OilQuality, 0,4);
-				memcpy(&tmpString1[14],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[16]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[15]= ' ';
-				tmpString1[17]= '%';
-
-				memcpy(&uartTxMsg[1],tmpString1,18);
-				break;
-			case 0x24://param couple 5: BAT State Of Charge and Current.
-				tmpStrLen=18;
-
-				tmpString1[0]='B';
-				tmpString1[1]='A';
-				tmpString1[2]='T';
-				tmpString1[3]=' ';
-
-				//scriviamo il valore
-				floatToStr(tmpfloatString1, (float)batteryStateOfCharge , 0,4);
-				memcpy(&tmpString1[4],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<3) tmpString1[6] =' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[5] =' ';
-				tmpString1[7]= '%';
-				tmpString1[8]= ' ';
-				tmpString1[9]= ' ';
-
-				floatToStr(tmpfloatString1,((float)batteryCurrent * 0.1F)-250.0F, 1,7);
-				memcpy(&tmpString1[10],tmpfloatString1,strlen(tmpfloatString1));
-				if(strlen(tmpfloatString1)<6) tmpString1[15]= ' ';
-				if(strlen(tmpfloatString1)<5) tmpString1[14]= ' ';
-				if(strlen(tmpfloatString1)<4) tmpString1[13]= ' ';
-				if(strlen(tmpfloatString1)<3) tmpString1[12]= ' ';
-				if(strlen(tmpfloatString1)<2) tmpString1[11]= ' ';
-				tmpString1[16]= 'A';
-				tmpString1[17]= ' ';
-
-				memcpy(&uartTxMsg[1],tmpString1,18);
-				break;
-
-			default:
-				tmpStrLen=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name);
-				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH; //truncate it. no space left
-				memcpy(&uartTxMsg[1], &uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name,tmpStrLen); //prepare name of parameter
-				if(param!=-3400000000000000000){ //if different than special value (since special value means no value to send)
-					//scale param still done, we don't need to do it here
-
-					//convert param from float to string
-					char tmpfloatString[10];
-
-					switch(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].reqId) {
-						case 0x17: //if Current gear request data - currentGear
-							if ((uint8_t)param<11){
-								tmpfloatString[0]=gearArray[(uint8_t)param];
-							}else{
-								tmpfloatString[0] = '-';
-							}
-
-							tmpfloatString[1] =0;
-							break;
-						case 0x1A: //0-100 stat
-							if(param>20.0){ //missed
-								tmpfloatString[0]='M';
-								tmpfloatString[1]='I';
-								tmpfloatString[2]='S';
-								tmpfloatString[3]='S';
-								tmpfloatString[4]='E';
-								tmpfloatString[5]='D';
-								tmpfloatString[6]=' ';
-								tmpfloatString[7]=0;
-							}else{
-								if(statistics_0_100_started){
-									tmpfloatString[0]='G';
-									tmpfloatString[1]='O';
-									tmpfloatString[2]=' ';
-									tmpfloatString[3]=' ';
-									tmpfloatString[4]=' ';
-									tmpfloatString[5]=' ';
-									tmpfloatString[6]=' ';
-									tmpfloatString[7]=0;
-								}else{ //show time
-									floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
-								}
-							}
-							break;
-						case 0x1B: //100-200 stat
-							if(param>40.0){ //missed
-								tmpfloatString[0]='M';
-								tmpfloatString[1]='I';
-								tmpfloatString[2]='S';
-								tmpfloatString[3]='S';
-								tmpfloatString[4]='E';
-								tmpfloatString[5]='D';
-								tmpfloatString[6]=0;
-							}else{
-								if(statistics_100_200_started){
-									tmpfloatString[0]='G';
-									tmpfloatString[1]='O';
-									tmpfloatString[2]=' ';
-									tmpfloatString[3]=' ';
-									tmpfloatString[4]=' ';
-									tmpfloatString[5]=' ';
-									tmpfloatString[6]=0;
-								}else{ //show time
-									floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
-								}
-							}
-							break;
-						case 0x1C: //Best 0-100
-							if(param>20.0){ //missed
-								tmpfloatString[0]='M';
-								tmpfloatString[1]='I';
-								tmpfloatString[2]='S';
-								tmpfloatString[3]='S';
-								tmpfloatString[4]='E';
-								tmpfloatString[5]='D';
-								tmpfloatString[6]=' ';
-								tmpfloatString[7]=0;
-							}else{
-								floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
-							}
-							break;
-						case 0x1D: //Best 100-200
-							if(param>40.0){ //missed
-								tmpfloatString[0]='M';
-								tmpfloatString[1]='I';
-								tmpfloatString[2]='S';
-								tmpfloatString[3]='S';
-								tmpfloatString[4]='E';
-								tmpfloatString[5]='D';
-								tmpfloatString[6]=' ';
-								tmpfloatString[7]=0;
-							}else{
-								floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
-							}
-							break;
-						case 0x1E: //seat belt alarm status
-							//we use an enumerated
-							switch (seatbeltAlarmDisabled){
-								case 1:
-									tmpfloatString[0]='O';
-									tmpfloatString[1]='F';
-									tmpfloatString[2]='F';
-									tmpfloatString[3]=0;
-									break;
-								case 0:
-									tmpfloatString[0]='O';
-									tmpfloatString[1]='N';
-									tmpfloatString[2]=0;
-									break;
-								default:
-									tmpfloatString[0]='?';
-									tmpfloatString[1]=0;
-							}
-
-							break;
-						default:
-							floatToStr(tmpfloatString,param,uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyDecimalDigits,sizeof(tmpfloatString));
-					}
-
-					//add param to the page String
-					tmpStrLen2=strlen(tmpfloatString);
-					if(tmpStrLen+tmpStrLen2>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen2=DASHBOARD_MESSAGE_MAX_LENGTH-tmpStrLen; //truncate it. no space left
-					memcpy(&uartTxMsg[1+tmpStrLen],tmpfloatString,tmpStrLen2);
-
-					//float tmpVal9=200000.45601928209374; ///ADDED FOR TEST.......
-					//char *tmpStr9=(char*)malloc(10);
-
-					//floatToStr(tmpfloatString,param,2,sizeof(tmpfloatString));
-					//tmpStrLen2=strlen(tmpfloatString);
-					//memcpy(&dashboardPageStringArray[tmpStrLen],tmpfloatString,tmpStrLen2);
-				}
-				//add measurement unit
-				tmpStrLen3=strlen((const char *)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit);
-				if(tmpStrLen+tmpStrLen2+tmpStrLen3>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen3=DASHBOARD_MESSAGE_MAX_LENGTH-tmpStrLen-tmpStrLen2; //truncate it. no space left
-				memcpy(&uartTxMsg[1+tmpStrLen+tmpStrLen2],&uds_params_array[function_is_diesel_enabled][dashboardPageIndex].replyMeasurementUnit,tmpStrLen3);
-		}
-		if (tmpStrLen+tmpStrLen2+tmpStrLen3 < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with zeros
-			memset(&uartTxMsg[1+tmpStrLen+tmpStrLen2+tmpStrLen3], ' ', UART_BUFFER_SIZE-(1+tmpStrLen+tmpStrLen2+tmpStrLen3)); //set to zero remaining chars
+		if (tmpStrLen < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with zeros
+			memset(&uartTxMsg[1+tmpStrLen], ' ', UART_BUFFER_SIZE-(1+tmpStrLen)); //set to zero remaining chars
 		}
 		addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
+	}
 
+	float getNativeParam(uint8_t paramId){
+
+		switch(paramId){ //do preliminary additional stuff for special parameters (not uds)
+			case 0: //print oil pressure
+				return (float) oilPressure * single_uds_params_array[paramId].replyScale;
+				break;
+			case 1: //power in CV
+				return (float)torque * (float)currentRpmSpeed * single_uds_params_array[paramId].replyScale ;
+				break;
+			case 2: //torque in NM
+				return (float)torque;
+				break;
+			case 3: //battery state of charge (%)
+				return (float)batteryStateOfCharge  * single_uds_params_array[paramId].replyScale;
+				break;
+			case 4: //battery current (A)
+				return ((float)batteryCurrent  * single_uds_params_array[paramId].replyScale) + single_uds_params_array[paramId].replyScaleOffset;
+				break;
+			case 5: //engine oil temperature
+				return ((float)oilTemperature * single_uds_params_array[paramId].replyScale) + single_uds_params_array[paramId].replyScaleOffset;
+				break;
+			case 6: //current gear
+				return (float)(currentGear>>4);
+				break;
+			case 7: //current speed (km/h)
+				return currentSpeed_km_h;
+				break;
+			case 8: //DPF Regeneration type
+				return (float)dieselEngineRegenerationMode;
+				break;
+			case 9: //stat 0-100km/h
+				return chronometerElapsedTime_0_100_km_h; // >=20=MISSED , increase in progress= GO
+				break;
+			case 10: //stat 100-200km/h
+				return chronometerElapsedTime_100_200_km_h; // >=40=MISSED , increase in progress= GO
+				break;
+			case 11: //Best stat 0-100km/h
+				return readStatisticsFromFlash(1);
+				break;
+			case 12: //Best stat 100-200km/h
+				return readStatisticsFromFlash(2);
+				break;
+			case 13: //seat belt alarm status
+				return seatbeltAlarmDisabled;
+				break;
+			case 14://debug param.
+				break;
+			case 15://current Drive Style
+				return currentDNAmode;
+				break;
+			default:
+				break;
+		}
+		return 0;
+		}
+
+	//buildLineWithFormat composes string to print, starting from template string and float parameters
+	// syntax: $n.yf or $enum
+	// n = 0..6 (integer part), y = 0..3 (decimal)
+
+	void buildLineWithFormat(const char* template, float values[2], const uint8_t paramId[2], char* result) {
+	    int i = 0;   // indice output
+	    int which = 0; // 0 = val1, 1 = val2
+
+	    for (const char* p = template; *p && i < 18; p++) {
+	        if (*p == '$'){ //special char. it could be a param in the format $x.yf or in the format $enum
+	        	if (*(p+2) == '.'){ //it should be a param in the format $x.yf
+	        		if(*(p+4) == 'f'){
+	        			if ((*(p+1) >= '0' && *(p+1) <= '9')  && (*(p+3) >= '0' && *(p+3) <= '9')) {
+							int n = *(p+1) - '0'; // parte intera max
+							int y = *(p+3) - '0'; // decimali
+							int maxLen = n + (y>0 ? 1 : 0) + y;
+
+							char buf[maxLen+1]; // buffer dimensionato sul campo
+
+							switch(single_uds_params_array[paramId[which]].reqId){
+								case 0x1A: //0-100 stat
+									if(values[which]>20.0){ //missed
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+									}else{
+										if(statistics_0_100_started){
+											for (const char* q=speedStatisticEnumStrings[1]; *q && i<18 ; q++) result[i++] = *q; //GO
+										}else{ //show time
+											floatToStr(buf, values[which], y, maxLen+1);
+											for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+										}
+									}
+									break;
+								case 0x1B: //100-200 stat
+									if(values[which]>40.0){ //missed
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+									}else{
+										if(statistics_100_200_started){
+											for (const char* q=speedStatisticEnumStrings[1]; *q && i<18 ; q++) result[i++] = *q; //GO
+										}else{ //show time
+											floatToStr(buf, values[which], y, maxLen+1);
+											for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+										}
+									}
+									break;
+								case 0x1C: //Best 0-100
+									if(values[which]>20.0){ //missed
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+									}else{
+										floatToStr(buf, values[which], y, maxLen+1);
+										for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+									}
+									break;
+								case 0x1D: //Best 100-200
+									if(values[which]>40.0){ //missed
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+									}else{
+										floatToStr(buf, values[which], y, maxLen+1);
+										for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+									}
+									break;
+								default:
+									floatToStr(buf, values[which], y, maxLen+1);
+
+									for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+							}
+
+
+							which++;
+							p += 4; // salta "n.yf"
+	        			}else { result[i++] = *p; }
+	        		}else { result[i++] = *p; }
+	        	}else if (*(p+4) == 'm'){ //$enum enumerator
+
+	        		switch(single_uds_params_array[paramId[which]].reqId){
+						case 0x17: //if Current gear request data - currentGear
+							if ((uint8_t)values[which]<11){
+								result[i++] = gearArray[(uint8_t)values[which]];
+							}else{
+								result[i++] = '-';
+							}
+							break;
+						case 0x19:
+							if((uint8_t)values[which]>6) values[which]=7;
+							for (const char* q=dpfRegenEnumStrings[(uint8_t)values[which]]; *q && i<18 ; q++) result[i++] = *q;
+							break;
+
+						case 0x1E:
+							if((uint8_t)values[which]>1) values[which]=2;
+							for (const char* q=setbeltEnumStrings[(uint8_t)values[which]]; *q && i<18 ; q++) result[i++] = *q;
+							break;
+						case 0x20:
+							switch(currentDNAmode){
+								case 0x00: //Natural
+									result[i++]='N';
+									break;
+								case 0x08: //Dynamic
+									result[i++]='D';
+									break;
+								case 0x10: //All Weather
+									result[i++]='A';
+									break;
+								case 0x30: //Race
+									result[i++]='R';
+									break;
+								default:
+									result[i++]='?';
+							}
+							break;
+						default:
+							break;
+	        		}
+	        		which++;
+	        		p += 4; // salta "enum"
+	        	}else { result[i++] = *p; }
+	        }else { result[i++] = *p; }
+	    }
+	    result[i] = '\0';
+	}
+
+	uint8_t removePatterns(char *str) {
+	    char *p;
+	    while ((p = strstr(str, "$")) != NULL) {
+	        // Controllo che ci siano almeno 5 caratteri dopo '$'
+	        if (strlen(p) >= 5) {
+	            // pattern valido se termina con 'f' o 'm'
+	            if (p[4] == 'f' || p[4] == 'm') {
+	                // Rimuovo i 5 caratteri ($xxx[fm])
+	                memmove(p, p + 5, strlen(p + 5) + 1);
+	                continue; // riparto da qui
+	            }
+	        }
+	        str = p + 1; // continuo la ricerca
+	    }
+	    return (uint8_t)strlen(str);
 
 	}
 
@@ -1840,7 +1619,11 @@
 	uint8_t getParamIndexFromReqId(uint32_t searchedReqId){
 
 		for (uint8_t i=0;i<total_pages_in_params_setup_dashboard_menu;i++){
-			if(uds_params_array[function_is_diesel_enabled][i].reqId==searchedReqId) return i;
+			if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][i].udsParamId[0]].reqId==searchedReqId) return i;
+		}
+		//if not found, search it in second param
+		for (uint8_t i=0;i<total_pages_in_params_setup_dashboard_menu;i++){
+			if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][i].udsParamId[1]].reqId==searchedReqId) return i;
 		}
 		return 0; //means not found, or param0 (it could be an exception)
 	}

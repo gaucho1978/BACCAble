@@ -147,7 +147,10 @@ void processingMessage0x000002FA(){
 
 										dashboardPageIndex=getNextVisibleParam(dashboardPageIndex);
 										//onboardLed_blue_on();
-										sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+										dashboardParamCouple[0]=NAN;//zeroize params
+										dashboardParamCouple[1]=NAN;//zeroize params
+
+										sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 									}
 									if(main_dashboardPageIndex==9){ //we are in setup menu
 										setup_dashboardPageIndex+=1;//set next page
@@ -210,7 +213,7 @@ void processingMessage0x000002FA(){
 
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 										//onboardLed_blue_on();
-										sendMainDashboardPageToSlaveBaccable();//send dashboard page via usb
+										sendMainDashboardPageToSlaveBaccable();//send dashboard page to BH
 										break;
 									case 1:
 										if(main_dashboardPageIndex==1){ //we are in show params submenu
@@ -222,7 +225,9 @@ void processingMessage0x000002FA(){
 											}
 											dashboardPageIndex=getNextVisibleParam(dashboardPageIndex);
 												//onboardLed_blue_on();
-											sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+											dashboardParamCouple[0]=NAN;//zeroize params
+											dashboardParamCouple[1]=NAN;//zeroize params
+											sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 										}
 										if(main_dashboardPageIndex==9){ //we are in setup menu
 											setup_dashboardPageIndex+=10;//set next page
@@ -298,7 +303,9 @@ void processingMessage0x000002FA(){
 										}
 										dashboardPageIndex=getPreviousVisibleParam(dashboardPageIndex);
 										//onboardLed_blue_on();
-										sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+										dashboardParamCouple[0]=NAN;//zeroize params
+										dashboardParamCouple[1]=NAN;//zeroize params
+										sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 									}
 									if(main_dashboardPageIndex==9){ //we are in setup menu
 										setup_dashboardPageIndex-=1;//set next page
@@ -376,7 +383,9 @@ void processingMessage0x000002FA(){
 
 
 											//onboardLed_blue_on();
-											sendDashboardPageToSlaveBaccable(-3400000000000000000); //send dashboard page via usb
+											dashboardParamCouple[0]=NAN;//zeroize params
+											dashboardParamCouple[1]=NAN;//zeroize params
+											sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 										}
 										if(main_dashboardPageIndex==9){ //we are in setup menu
 											setup_dashboardPageIndex-=10;//set prev page
@@ -406,7 +415,9 @@ void processingMessage0x000002FA(){
 							switch(main_dashboardPageIndex){
 								case 1: //show params
 									dashboard_menu_indent_level++;
-									sendDashboardPageToSlaveBaccable(-3400000000000000000);
+									dashboardParamCouple[0]=NAN;//zeroize params
+									dashboardParamCouple[1]=NAN;//zeroize params
+									sendDashboardPageToSlaveBaccable();
 									break;
 								case 2: //read faults
 									//To Be Done

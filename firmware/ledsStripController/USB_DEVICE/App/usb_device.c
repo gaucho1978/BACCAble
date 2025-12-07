@@ -40,6 +40,8 @@ void MX_USB_DEVICE_Init(void){
   /* Init Device Library, add supported class and start the library. */
   if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK)
   {
+	onboardLed_red_on();
+	onboardLed_blue_on();
     Error_Handler();
   }
 #ifdef ENABLE_USB_MASS_STORAGE
@@ -48,6 +50,8 @@ void MX_USB_DEVICE_Init(void){
   if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC) != USBD_OK)
 #endif
   {
+	onboardLed_red_on();
+	onboardLed_blue_on();
     Error_Handler();
   }
 #ifdef ENABLE_USB_MASS_STORAGE
@@ -56,11 +60,17 @@ void MX_USB_DEVICE_Init(void){
   if (USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS) != USBD_OK)
 #endif
   {
+	onboardLed_red_on();
+	onboardLed_blue_on();
     Error_Handler();
   }
+#ifdef ENABLE_USB_MASS_STORAGE    //Just for test I disable USB start - looking for a bug...
+#else
   if (USBD_Start(&hUsbDeviceFS) != USBD_OK)
   {
+	onboardLed_red_on();
+	onboardLed_blue_on();
     Error_Handler();
   }
-
+#endif
 }

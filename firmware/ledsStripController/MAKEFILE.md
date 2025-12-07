@@ -20,14 +20,9 @@ For BH bus
 $ CFLAGS="-DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1" make clean all
 ```
 
-For Diesel C1 bus
+For C1 bus
 ```
 $ CFLAGS="-DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1" make clean all
-```
-
-For Gasoline C1 bus
-```
-$ CFLAGS="-DRELEASE_FLAVOR=C1_FLAVOR -DIS_GASOLINE -DC1_FLAVOR=1" make clean all
 ```
 
 For C2 bus

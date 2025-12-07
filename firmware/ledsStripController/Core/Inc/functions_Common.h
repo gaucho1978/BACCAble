@@ -10,6 +10,7 @@
 	#include "globalVariables.h"
 
 	void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen);
+
 	uint8_t calculateCRC(uint8_t* data, uint8_t arraySize);
 
 	void SystemClock_Config(void);

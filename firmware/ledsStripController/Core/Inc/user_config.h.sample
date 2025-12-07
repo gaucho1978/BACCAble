@@ -3,7 +3,7 @@
  *
  * This is a sample file; You should make a copy of it named "user_config.h" and then:
  * -if compiling with GCC use "-DINCLUDE_USER_CONFIG_H",
- * -if compiling with STM IDE select, on build drop down menu, "C1baccableDiesel+user_config" or any other "....+user_config"
+ * -if compiling with STM IDE select, on build drop down menu, "C1baccable+user_config" or any other "....+user_config"
  *
  * Build drop down menu in STM IDE is populated with compilation options.
  * The compilation options are defined in menu "Project" -> "Properties" -> "C/C++ Build" -> "Settings" -> "MCU GCC Compiler" -> "Preprocessor"
@@ -50,27 +50,6 @@
 	// #define HAS_VIRTUAL_PAD					// if uncommented, allows "toggle HAS" to appear on main menu. see manual. It can changed inside baccable SETUP menu.
 	// #define QV_EXHAUST_FLAP_FUNCTION_ENABLED // if uncommented, allows to force to open position, the exhaust gas valve of Giulia QV, by means of double clic of Release button located in automatic gear cars. For Manual Giulia, the "Toggle QV Valve" will be available in baccable main menu. It can changed inside baccable SETUP menu.
 	
-	// Demo on how to customize dashboard items inside SHOW PARAMS menù.
-	// Note: #define shall be on a single line. That's why we put \ at the end for readability
-	//
-	// X() params are:
-	//
-	// _itemUniqueId, _name, _reqId, _reqLen, _reqData, _replyId, _replyLen, _replyOffset, _replyValOffset, _replyScale, _replyScaleOffset, _replyDecimalDigits, _replyMeasurementUnit
-	//
-	// _itemUniqueId must be unique as the name suggests and it's up to the user (if not unique it won't compile)
-	//
-	// have a look at uds_params_array in globalVariables.c to get an idea of values you should put for you engine type
-	//
-	// This example show just 4 params; when building for Diesel then the Gasoline list of params will just have 1 element labeled as "Missing"
-	// and vice versa
-	// if uncommented it will use the following items to popupate  SHOW PARAMS menu
-	/*
-	#define DASHBOARD_ITEMS \
-		X(IT_POWER, "Power: ", 0x11, 4, 0, 0xFB, 2, 0, -500, 0.000142378, 0, 1, "Hp") \
-		X(IT_TORQUE, "Torque: ", 0x12, 4, 0, 0xFB, 2, 0, 0, 1, -500, 0, "Nm") \
-		X(IT_OIL_PRESS, "Oil press: ", 0x10, 4, 0, 0x04B2, 2, 0, 0, 0.1, 0, 1, "bar") \
-		X(IT_WATER_TEMP, "Water: ", 0x18DA10F1, 4, 0x03221003, 0x18DAF110, 2, 0, 0, 0.02, -40, 1, "\xB0" "C")
-	*/
 	
 	
 	// The following defines are used, if uncommented, by C2baccable board:

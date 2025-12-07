@@ -344,7 +344,7 @@ void processingStandardMessage(){
 					if(currentDNAmode!=0x0C){ //if not in race
 						rx_msg_data[7] = (rx_msg_data[7] & ~0x1F) | 0x0C;  //set Race mode (0x30) to show on IPC the race screen (msg from body to IPC, ETM, ESEM)
 						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-						can_process(); //we try to send it ASAP
+						//can_process(); //we try to send it ASAP - I commented it since it is not solving the delay problem as expected
 						//onboardLed_blue_on();
 					}
 
@@ -362,7 +362,7 @@ void processingStandardMessage(){
 							rx_msg_data[0] = rx_msg_data[0] | 0x01;  //set functionstatus bit (on C1 it is a msg from BSM to TCM, ORc, IPC, ECM, DTCM, DCTM, DASM, BCM) (on C2 it is a msg from BSM to HALF, BCM)
 							rx_msg_data[1] = rx_msg_data[1] | 0x04;  //set function2status bit (on C1 it is a msg from BSM to IPC, DASM, CDCM)
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-							can_process(); //we try to send it ASAP
+							//can_process(); //we try to send it ASAP - Commented since it is not solving delay problem
 						}
 					}
 				}
@@ -546,7 +546,7 @@ void processingStandardMessage(){
 						rx_msg_data[6]= (rx_msg_data[6] & 0xF0) | tmpCounter;   //increment counter
 						rx_msg_data[7]=calculateCRC(rx_msg_data,rx_msg_header.DLC); //update CRC
 						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-						can_process(); //we try to send it ASAP
+						// can_process(); //we try to send it ASAP - Commented since it is not solving the delay problem as expected
 					}
 				}
 			#endif

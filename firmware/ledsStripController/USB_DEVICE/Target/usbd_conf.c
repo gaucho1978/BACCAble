@@ -32,10 +32,12 @@
 #include "usbd_def.h"
 #include "usbd_core.h"
 #ifdef ENABLE_USB_MASS_STORAGE
-#include "usbd_msc.h"
+	#include "usbd_msc.h"
 #else
-#include "usbd_cdc.h"
+	#include "usbd_cdc.h"
 #endif
+
+#include "onboardLed.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -324,6 +326,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   hpcd_USB_FS.Init.battery_charging_enable = DISABLE;
   if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
   {
+	onboardLed_red_on();
     Error_Handler( );
   }
 
