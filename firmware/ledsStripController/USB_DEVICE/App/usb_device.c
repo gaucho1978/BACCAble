@@ -37,40 +37,45 @@
 USBD_HandleTypeDef hUsbDeviceFS;
 
 void MX_USB_DEVICE_Init(void){
-  /* Init Device Library, add supported class and start the library. */
-  if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK)
-  {
-	onboardLed_red_on();
-	onboardLed_blue_on();
-    Error_Handler();
-  }
-#ifdef ENABLE_USB_MASS_STORAGE
-  if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_MSC) != USBD_OK)
-#else
-  if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC) != USBD_OK)
-#endif
-  {
-	onboardLed_red_on();
-	onboardLed_blue_on();
-    Error_Handler();
-  }
-#ifdef ENABLE_USB_MASS_STORAGE
-  if (USBD_MSC_RegisterStorage(&hUsbDeviceFS, &USBD_Storage_Interface_fops_FS) != USBD_OK)
-#else
-  if (USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS) != USBD_OK)
-#endif
-  {
-	onboardLed_red_on();
-	onboardLed_blue_on();
-    Error_Handler();
-  }
-#ifdef ENABLE_USB_MASS_STORAGE    //Just for test I disable USB start - looking for a bug...
-#else
-  if (USBD_Start(&hUsbDeviceFS) != USBD_OK)
-  {
-	onboardLed_red_on();
-	onboardLed_blue_on();
-    Error_Handler();
-  }
-#endif
+	/* Init Device Library, add supported class and start the library. */
+
+	/*commented for test in V.3.0.0a
+	if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK){
+		onboardLed_red_on();
+		onboardLed_blue_on();
+		Error_Handler();
+	}
+
+	*/
+
+	/*commented for test in V.3.0.0a and V.3.0.0b
+	#ifdef ENABLE_USB_MASS_STORAGE
+		if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_MSC) != USBD_OK){
+	#else
+		if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC) != USBD_OK){
+	#endif
+			onboardLed_red_on();
+			onboardLed_blue_on();
+			Error_Handler();
+		}
+	 */
+
+	/*commented for test in V.3.0.0a, V.3.0.0b and V.3.0.0c
+	#ifdef ENABLE_USB_MASS_STORAGE
+		if (USBD_MSC_RegisterStorage(&hUsbDeviceFS, &USBD_Storage_Interface_fops_FS) != USBD_OK){
+	#else
+		if (USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS) != USBD_OK){
+	#endif
+			onboardLed_red_on();
+			onboardLed_blue_on();
+			Error_Handler();
+		}
+
+	if (USBD_Start(&hUsbDeviceFS) != USBD_OK){
+		onboardLed_red_on();
+		onboardLed_blue_on();
+		Error_Handler();
+	}
+
+	*/
 }

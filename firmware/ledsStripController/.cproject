@@ -219,8 +219,6 @@
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
 									<listOptionValue builtIn="false" value="../USB_DEVICE/App"/>
 									<listOptionValue builtIn="false" value="../USB_DEVICE/Target"/>
-									<listOptionValue builtIn="false" value="../USB_HOST/App"/>
-									<listOptionValue builtIn="false" value="../USB_HOST/Target"/>
 									<listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Core/Inc"/>
 									<listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
 								</option>
@@ -613,22 +611,25 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="ReleaseC1BACCAble"/>
+		<configuration configurationName="ReleaseC2BACCAble + user_config"/>
+		<configuration configurationName="ReleaseBHBACCAble + user_config"/>
+		<configuration configurationName="ReleaseCANable"/>
+		<configuration configurationName="ReleaseC2BACCAble"/>
+		<configuration configurationName="ReleaseBHBACCAble"/>
+		<configuration configurationName="ReleaseC1BACCAble + user_config"/>
+	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1105153861.1250504827.965293886.1052133146.1742225919;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1105153861.1250504827.965293886.1052133146.1742225919.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1283614961;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.532989207">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.528487957;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.528487957.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1850013089;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.445591377">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1105153861;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1105153861.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.240685902;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.635780301">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-	</storageModule>
-	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="ReleaseC2BACCAble + user_config"/>
-		<configuration configurationName="ReleaseBHBACCAble + user_config"/>
-		<configuration configurationName="ReleaseCANable"/>
-		<configuration configurationName="ReleaseC1BACCAble + user_config"/>
-		<configuration configurationName="ReleaseC2BACCAble"/>
-		<configuration configurationName="ReleaseC1BACCAble"/>
-		<configuration configurationName="ReleaseBHBACCAble"/>
 	</storageModule>
 </cproject>
