@@ -36,6 +36,10 @@ int main(void){
 		can_process();
 		processUART();
 
+		//if(currentTime>1000 && usbInited==0){ //just for test, execute with delay V.3.0.0d
+		//	usbInited=1;
+		//	MX_USB_DEVICE_Init();
+		//}
 
 		#if defined(ACT_AS_CANABLE)
 			cdc_process(); //processa dati usb

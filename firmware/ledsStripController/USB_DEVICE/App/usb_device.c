@@ -58,7 +58,7 @@ void MX_USB_DEVICE_Init(void){
 			onboardLed_blue_on();
 			Error_Handler();
 		}
-	 */
+	*/
 
 	/*commented for test in V.3.0.0a, V.3.0.0b and V.3.0.0c
 	#ifdef ENABLE_USB_MASS_STORAGE

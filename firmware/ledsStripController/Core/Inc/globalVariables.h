@@ -420,5 +420,6 @@
 	extern uint8_t HAS_buttonPressRequested;
 
 	extern uint8_t neverSaved;
+	extern uint8_t usbInited;
 
 #endif /* INC_GLOBALVARIABLES_H_ */
