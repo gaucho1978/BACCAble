@@ -178,7 +178,13 @@ void Error_Handler(void){
 	onboardLed_red_on();
 	LOGS("System error\r\n");
 	__disable_irq();
-	while (1){}
+	uint8_t tmpBool01=0;
+	while (1){
+
+		HAL_Delay(500);
+		HAL_GPIO_WritePin(LED_RED, tmpBool01);
+		tmpBool01=!tmpBool01;
+	}
 }
 
 // Disable all interrupts
