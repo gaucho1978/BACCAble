@@ -26,6 +26,8 @@ jobs:
 
       - name: Clone
         uses: actions/checkout@v3
+        with:
+         fetch-depth: 0
 
       - name: Set short git commit SHA
         run: |
@@ -69,6 +71,13 @@ jobs:
         if: ${{ contains(env.CFLAGS, '-DDEBUG_MODE')}}
         run: |
           echo "EMPTY" > baccableActAsCanable_beta.elf
+
+      - name: Move tag to latest commit
+        run: |
+         git config user.name "github-actions"
+         git config user.email "github-actions@github.com"
+         git tag -f ${{ github.event.inputs.TAG_NAME }}
+         git push -f origin ${{ github.event.inputs.TAG_NAME }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
