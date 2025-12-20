@@ -144,7 +144,7 @@ void SystemClock_Config(void){
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK){
-    Error_Handler();
+    Error_Handler(2000);
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
@@ -156,7 +156,7 @@ void SystemClock_Config(void){
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK){
-    Error_Handler();
+    Error_Handler(1500);
   }
 
   //the following part is used by usb, used by canable
@@ -167,21 +167,21 @@ void SystemClock_Config(void){
   PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
 
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK){
-	  Error_Handler();
+	  Error_Handler(1000);
   }
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
 }
 
 
-void Error_Handler(void){
+void Error_Handler(uint16_t halfPeriod){
 	onboardLed_red_on();
 	LOGS("System error\r\n");
 	__disable_irq();
 	uint8_t tmpBool01=0;
 	while (1){
 
-		HAL_Delay(500);
+		HAL_Delay(halfPeriod);
 		HAL_GPIO_WritePin(LED_RED, tmpBool01);
 		tmpBool01=!tmpBool01;
 	}

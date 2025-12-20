@@ -2,7 +2,7 @@
 #include "stm32f0xx_hal.h"
 #include "main.h"
 //#include "globalVariables.h"
-extern void Error_Handler(void);
+//extern void Error_Handler(void);
 
 #define QUEUE_SIZE 10  // max queue size
 
@@ -58,7 +58,7 @@ void uart_init(){
 
     if (HAL_HalfDuplex_Init(&huart2) != HAL_OK) {
     	//onboardLed_red_blink(15); //error
-        Error_Handler();
+        Error_Handler(500);
     }
 
     // **Enable Half-Duplex mode manually by setting HDSEL bit in CR3**

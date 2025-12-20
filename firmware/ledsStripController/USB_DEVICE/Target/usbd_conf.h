@@ -30,15 +30,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "globalVariables.h"
-//#include "main.h"
 
 #include "stm32f0xx.h"
 #include "stm32f0xx_hal.h"
 
 /* USER CODE BEGIN INCLUDE */
 #include "compile_time_defines.h"
-/* USER CODE END INCLUDE */
+
+ /* USER CODE END INCLUDE */
 
 /** @addtogroup USBD_OTG_DRIVER
   * @{
@@ -157,9 +156,11 @@
 /* Exported functions -------------------------------------------------------*/
 void *USBD_static_malloc(uint32_t size);
 void USBD_static_free(void *p);
+
 /**
   * @}
   */
+
 
 /**
   * @}

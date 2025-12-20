@@ -6,6 +6,7 @@
 
 	#include "math.h"
 	#include "onboardLed.h"
+	#include "functions_Common.h"
 
 	void vuMeterInit(void);
 	void vuMeterUpdate(float volume, uint8_t colorPreset );
@@ -23,6 +24,5 @@
 	void MX_DMA_Init(void);
 	void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 	void MX_GPIO_Init(void);
-	extern void Error_Handler(void);
 	uint8_t myAbs(int8_t num);
 #endif /* INC_VUMETER_H_ */

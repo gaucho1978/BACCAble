@@ -108,7 +108,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     hdma_tim1_ch4_trig_com.Init.Priority = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_tim1_ch4_trig_com) != HAL_OK)
     {
-      Error_Handler();
+      Error_Handler(2500);
     }
 
     /* Several peripheral DMA handle pointers point to the same DMA handle.

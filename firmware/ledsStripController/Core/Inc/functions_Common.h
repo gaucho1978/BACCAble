@@ -17,6 +17,6 @@
 	void system_irq_disable(void);
 	void system_irq_enable(void);
 	void system_hex32(char *out, uint32_t val);
-	void Error_Handler(void);
+	void Error_Handler(uint16_t halfPeriod);
 	void saveToFilesystem(void);
 #endif /* INC_FUNCTIONS_COMMON_H_ */

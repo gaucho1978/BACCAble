@@ -50,7 +50,7 @@ void MX_USB_DEVICE_Init(void){
 	if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK){
 		onboardLed_red_on();
 		//onboardLed_blue_on();
-		Error_Handler();
+		Error_Handler(6000);
 	}
 
 	//*/
@@ -63,7 +63,7 @@ void MX_USB_DEVICE_Init(void){
 	#endif
 			onboardLed_red_on();
 			//onboardLed_blue_on();
-			Error_Handler();
+			Error_Handler(6500);
 		}
 	//*/
 
@@ -75,13 +75,13 @@ void MX_USB_DEVICE_Init(void){
 	#endif
 			onboardLed_red_on();
 			//onboardLed_blue_on();
-			Error_Handler();
+			Error_Handler(7000);
 		}
 
 	if (USBD_Start(&hUsbDeviceFS) != USBD_OK){
 		onboardLed_red_on();
 		//onboardLed_blue_on();
-		Error_Handler();
+		Error_Handler(7500);
 	}
 
 	//*/

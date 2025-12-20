@@ -53,7 +53,8 @@
 /* USER CODE END PV */
 
 PCD_HandleTypeDef hpcd_USB_FS;
-void Error_Handler(void);
+//void Error_Handler(void);
+extern void Error_Handler(uint16_t halfPeriod );
 
 /* USER CODE BEGIN 0 */
 
@@ -187,7 +188,7 @@ void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
 
   if ( hpcd->Init.speed != PCD_SPEED_FULL)
   {
-    Error_Handler();
+    Error_Handler(8000);
   }
     /* Set Speed. */
   USBD_LL_SetSpeed((USBD_HandleTypeDef*)hpcd->pData, speed);
@@ -328,7 +329,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   {
 	onboardLed_red_on();
 	onboardLed_blue_on(); //added for test by Gaucho 13/12/2025
-    Error_Handler( );
+    Error_Handler(8500 );
   }
 
 #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
