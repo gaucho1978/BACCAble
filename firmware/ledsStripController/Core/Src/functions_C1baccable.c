@@ -959,7 +959,7 @@
 	    int i = 0;   // indice output
 	    int which = 0; // 0 = val1, 1 = val2
 
-	    for (const char* p = template; *p && i < 18; p++) {
+	    for (const char* p = template; *p && i < DASHBOARD_MESSAGE_MAX_LENGTH; p++) {
 	        if (*p == '$'){ //special char. it could be a param in the format $x.yf or in the format $enum
 	        	if (*(p+2) == '.'){ //it should be a param in the format $x.yf
 	        		if(*(p+4) == 'f'){
@@ -973,48 +973,48 @@
 							switch(single_uds_params_array[paramId[which]].reqId){
 								case 0x1A: //0-100 stat
 									if(values[which]>20.0){ //missed
-										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q; //MISSED
 									}else{
 										if(statistics_0_100_started){
-											for (const char* q=speedStatisticEnumStrings[1]; *q && i<18 ; q++) result[i++] = *q; //GO
+											for (const char* q=speedStatisticEnumStrings[1]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q; //GO
 										}else{ //show time
 											floatToStr(buf, values[which], y, maxLen+1);
-											for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+											for (char* q=buf; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH && (q-buf)<maxLen; q++) result[i++] = *q;
 										}
 									}
 									break;
 								case 0x1B: //100-200 stat
 									if(values[which]>40.0){ //missed
-										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q; //MISSED
 									}else{
 										if(statistics_100_200_started){
-											for (const char* q=speedStatisticEnumStrings[1]; *q && i<18 ; q++) result[i++] = *q; //GO
+											for (const char* q=speedStatisticEnumStrings[1]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q; //GO
 										}else{ //show time
 											floatToStr(buf, values[which], y, maxLen+1);
-											for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+											for (char* q=buf; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH && (q-buf)<maxLen; q++) result[i++] = *q;
 										}
 									}
 									break;
 								case 0x1C: //Best 0-100
 									if(values[which]>20.0){ //missed
-										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q; //MISSED
 									}else{
 										floatToStr(buf, values[which], y, maxLen+1);
-										for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+										for (char* q=buf; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH && (q-buf)<maxLen; q++) result[i++] = *q;
 									}
 									break;
 								case 0x1D: //Best 100-200
 									if(values[which]>40.0){ //missed
-										for (const char* q=speedStatisticEnumStrings[0]; *q && i<18 ; q++) result[i++] = *q; //MISSED
+										for (const char* q=speedStatisticEnumStrings[0]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q; //MISSED
 									}else{
 										floatToStr(buf, values[which], y, maxLen+1);
-										for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+										for (char* q=buf; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH && (q-buf)<maxLen; q++) result[i++] = *q;
 									}
 									break;
 								default:
 									floatToStr(buf, values[which], y, maxLen+1);
 
-									for (char* q=buf; *q && i<18 && (q-buf)<maxLen; q++) result[i++] = *q;
+									for (char* q=buf; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH && (q-buf)<maxLen; q++) result[i++] = *q;
 							}
 
 
@@ -1034,12 +1034,12 @@
 							break;
 						case 0x19:
 							if((uint8_t)values[which]>6) values[which]=7;
-							for (const char* q=dpfRegenEnumStrings[(uint8_t)values[which]]; *q && i<18 ; q++) result[i++] = *q;
+							for (const char* q=dpfRegenEnumStrings[(uint8_t)values[which]]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q;
 							break;
 
 						case 0x1E:
 							if((uint8_t)values[which]>1) values[which]=2;
-							for (const char* q=setbeltEnumStrings[(uint8_t)values[which]]; *q && i<18 ; q++) result[i++] = *q;
+							for (const char* q=setbeltEnumStrings[(uint8_t)values[which]]; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH ; q++) result[i++] = *q;
 							break;
 						case 0x20:
 							switch(currentDNAmode){
