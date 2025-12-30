@@ -20,7 +20,7 @@ void NMI_Handler(void){
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
 	uint8_t tmpBool01=0;
 	while (1){
-		HAL_Delay(1000);
+		for (volatile uint32_t i = 0; i < 10000000; i++);
 		HAL_GPIO_WritePin(LED_RED, tmpBool01);
 		HAL_GPIO_WritePin(LED_BLUE, tmpBool01);
 		tmpBool01=!tmpBool01;
@@ -36,7 +36,7 @@ void HardFault_Handler(void){
 	/* USER CODE END HardFault_IRQn 0 */
 	uint8_t tmpBool01=0;
 	while (1){
-		HAL_Delay(1000);
+		for (volatile uint32_t i = 0; i < 10000000; i++);
 		HAL_GPIO_WritePin(LED_RED, tmpBool01);
 		HAL_GPIO_WritePin(LED_BLUE, !tmpBool01);
 		tmpBool01=!tmpBool01;
