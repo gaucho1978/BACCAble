@@ -422,4 +422,6 @@
 	extern uint8_t neverSaved;
 	extern uint8_t usbInited;
 
+	extern uint32_t lastUartErrorCallback;
+
 #endif /* INC_GLOBALVARIABLES_H_ */

@@ -325,7 +325,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
-	onboardLed_red_on();
+
+	if ((currentTime-lastUartErrorCallback)>1000) onboardLed_red_on();
+	lastUartErrorCallback=currentTime;
 
 	if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
 		// Overrun error (buffer pieno, dati persi)

@@ -435,3 +435,5 @@ uint8_t HAS_buttonPressRequested=0;
 
 uint8_t neverSaved=1;
 uint8_t usbInited;
+
+uint32_t lastUartErrorCallback;

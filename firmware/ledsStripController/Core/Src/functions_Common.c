@@ -175,8 +175,8 @@ void SystemClock_Config(void){
 
 
 void Error_Handler(uint16_t halfPeriod){
-	onboardLed_red_on();
-	LOGS("System error\r\n");
+	//onboardLed_red_on();
+	//LOGS("System error\r\n");
 	__disable_irq();
 	uint8_t tmpBool01=0;
 	while (1){

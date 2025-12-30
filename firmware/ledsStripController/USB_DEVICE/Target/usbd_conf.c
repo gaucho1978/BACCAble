@@ -328,7 +328,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
   {
 	onboardLed_red_on();
-	onboardLed_blue_on(); //added for test by Gaucho 13/12/2025
+	//onboardLed_blue_on(); //added for test by Gaucho 13/12/2025
     Error_Handler(8500 );
   }
 
