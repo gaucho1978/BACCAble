@@ -662,11 +662,13 @@ void processingMessage0x000002FA(){
 											addToUARTSendQueue(tmpArr2, 2);
 											break;
 										case 21: // {'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
-											function_show_race_mask=!function_show_race_mask;
-											//Now let's inform the C2 Baccable
-											uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
-											if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
-											addToUARTSendQueue(tmpArr3, 2);
+											/*commented out since it is not working
+												function_show_race_mask=!function_show_race_mask;
+												//Now let's inform the C2 Baccable
+												uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
+												if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
+												addToUARTSendQueue(tmpArr3, 2);
+											*/
 											break;
 										case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 											function_park_mirror=!function_park_mirror;

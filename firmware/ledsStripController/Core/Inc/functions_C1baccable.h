@@ -19,6 +19,7 @@
 	float getNativeParam(uint8_t paramId);
 	void buildLineWithFormat(const char* template, float values[2], const uint8_t paramId[2], char* result);
 	uint8_t removePatterns(char *str);
+	uint32_t getFreeRAM(void);
 	void clearDashboardBaccableMenu(void);
 	float scaleVolume(uint8_t vol);
 	uint8_t scaleColorSet(uint8_t col);

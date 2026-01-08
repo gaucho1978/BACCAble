@@ -13,11 +13,8 @@ void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
 
     // Gestione dei casi speciali NaN e Inf
     if (num != num) {  // NaN check
-        //if (maxLen > 3) {  //this if is required only if we want to print NaN, but if we want to pad with spaces we don't need it
-            //str[0] = 'N'; str[1] = 'a'; str[2] = 'N'; str[3] = '\0';
-        	memset(&str[0], ' ', sizeof(maxLen-1)); //pad with spaces
-        	str[maxLen - 1] = '\0';
-        //}
+        memset(&str[0], ' ', maxLen-1); //pad with spaces
+        str[maxLen - 1] = '\0';
         return;
     }
     if (num == (float)INFINITY) {
@@ -106,7 +103,7 @@ void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
 
     // Aggiungere terminatore di stringa
     if (i < maxLen) {
-    	memset(&str[i], ' ', sizeof(maxLen-i-1)); //pad with spaces
+    	memset(&str[i], ' ', maxLen-i-1); //pad with spaces
         str[maxLen - 1] = '\0'; //if instead we want to close the string without padding, we would just need str[i] = '\0' without memset.
     } else if (maxLen > 0) {
         str[maxLen - 1] = '\0';

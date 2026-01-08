@@ -14,15 +14,21 @@ extern UART_HandleTypeDef huart2;
   * @brief This function handles Non maskable interrupt.
   */
 void NMI_Handler(void){
-  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
+	RCC->AHBENR |=RCC_AHBENR_GPIOAEN; //ensure clock is enabled on port gpioA
 
-  /* USER CODE END NonMaskableInt_IRQn 0 */
-  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
 	uint8_t tmpBool01=0;
 	while (1){
-		for (volatile uint32_t i = 0; i < 10000000; i++);
-		HAL_GPIO_WritePin(LED_RED, tmpBool01);
-		HAL_GPIO_WritePin(LED_BLUE, tmpBool01);
+		for (volatile uint32_t i = 0; i < 10000000; i++){
+			__asm("nop");
+		}
+		//now toggle leds without using HAL, to be more resilient
+		if(tmpBool01){
+			GPIOA->BSRR= GPIO_PIN_1 | GPIO_PIN_0 ; //set PA1 high (blue led) and set PA0 high (red led)
+
+		}else{
+			GPIOA->BSRR= (GPIO_PIN_1<<16) | (GPIO_PIN_0<<16) ; //set PA1 low (blue led) and set PA0 low (red led)
+		}
+
 		tmpBool01=!tmpBool01;
 	}
   /* USER CODE END NonMaskableInt_IRQn 1 */
@@ -32,13 +38,26 @@ void NMI_Handler(void){
   * @brief This function handles Hard fault interrupt.
   */
 void HardFault_Handler(void){
-	/* USER CODE BEGIN HardFault_IRQn 0 */
-	/* USER CODE END HardFault_IRQn 0 */
+
+	NVIC_SystemReset(); //reset the chip (temporary mask problems)
+	//execution ends here
+
+	RCC->AHBENR |=RCC_AHBENR_GPIOAEN; //ensure clock is enabled on port gpioA
+
+
 	uint8_t tmpBool01=0;
 	while (1){
-		for (volatile uint32_t i = 0; i < 10000000; i++);
-		HAL_GPIO_WritePin(LED_RED, tmpBool01);
-		HAL_GPIO_WritePin(LED_BLUE, !tmpBool01);
+		for (volatile uint32_t i = 0; i < 10000000; i++){
+			__asm("nop");
+		}
+		//now toggle leds without using HAL, to be more resilient
+		if(tmpBool01){
+			GPIOA->BSRR= GPIO_PIN_1 | (GPIO_PIN_0 <<16); //set PA1 high (blue led) and set PA0 low (red led)
+
+		}else{
+			GPIOA->BSRR= (GPIO_PIN_1<<16) | GPIO_PIN_0 ; //set PA1 low (blue led) and set PA0 high (red led)
+		}
+
 		tmpBool01=!tmpBool01;
   }
 }

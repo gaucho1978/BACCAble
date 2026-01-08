@@ -7,11 +7,15 @@
  */
 #include <functions_C1baccable.h>
 
+	extern uint32_t _end;      // Fine della sezione .bss (fornito dal linker)
+	extern uint32_t _estack;   // Top dello stack (fornito dal linker)
+
 #if defined(C1baccable)
 	void C1baccableInitCheck(){
 		lowConsume_init();
 		immobilizerEnabled = (uint8_t)readFromFlash(1);  //parameter1 stored in ram, so that we can get it. By default Immo is enabled
 		if(immobilizerEnabled) executeDashboardBlinks=2; //shows the user that the immobilizer is active (or not)
+
 		function_smart_disable_start_stop_enabled=(uint8_t)readFromFlash(2);  //parameter2 stored in ram, so that we can get it. By default S&S is enabled
 		function_led_strip_controller_enabled=(uint8_t)readFromFlash(3); //By default led is disabled
 		function_shift_indicator_enabled=(uint8_t)readFromFlash(4); //By default it is disabled
@@ -25,10 +29,6 @@
 		function_remote_start_Enabled=(uint8_t)readFromFlash(12);
 		function_clear_faults_enabled=(uint8_t)readFromFlash(13);
 		function_esc_tc_customizator_enabled=(uint8_t)readFromFlash(14);
-		uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
-		if(!function_esc_tc_customizator_enabled) tmpArr0[1]=C2_Bh_cmdFunction_ESC_TC_Disabled;
-		addToUARTSendQueue(tmpArr0, 2);
-
 		function_read_faults_enabled=(uint8_t)readFromFlash(15);
 		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
 		total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
@@ -37,39 +37,18 @@
 		launch_torque_threshold= (uint16_t)readFromFlash(18);
 		function_seatbelt_alarm_enabled= (uint16_t)readFromFlash(19);
 		function_pedal_booster_enabled= (uint16_t)readFromFlash(20);
-		uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
-		addToUARTSendQueue(tmpArr1, 3);
-
 		function_disable_odometer_blink= (uint16_t)readFromFlash(21);
-		//send the message to BH to inform about the status of the function disable_odometer_blink
-		uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
-		if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
-		addToUARTSendQueue(tmpArr2, 2);
-
 		function_show_race_mask= (uint16_t)readFromFlash(22);
-		//Now let's inform the C2 Baccable
-		uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
-		if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
-		addToUARTSendQueue(tmpArr3, 2);
-
 		function_park_mirror= (uint16_t)readFromFlash(23);
-		//Now let's inform the BH Baccable
-		uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
-		if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorEnabled;
-		addToUARTSendQueue(tmpArr4, 2);
-
 		function_acc_autostart= (uint16_t)readFromFlash(24);
-
 		function_close_windows_with_door_lock=(uint16_t)readFromFlash(25);
 		function_open_windows_with_door_lock=(uint16_t)readFromFlash(26);
-
 		HAS_function_enabled=(uint16_t)readFromFlash(27);
-		//notify to C2 and BH HAS function status
-		uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
-		if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
-		addToUARTSendQueue(tmpArr5, 2);
-
 		QV_exhaust_flap_function_enabled=(uint16_t)readFromFlash(28);
+
+		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
+		allProcessorsWakeupTime=currentTime;
+		instructSlaveBoardsTriggerEnabled=1;
 
 		readShownParamsFromFlash();
 	}
@@ -345,7 +324,7 @@
 							uds_parameter_request_msg_header.DLC=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen;
 							//onboardLed_blue_on();
 							can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
-						}else{ //0xff reqId is a special value that we use to get particular values
+						}else{ //<0xff reqId means special value that we use to get particular values
 							dashboardParamCouple[currentParamElementSelection]=getNativeParam((uint8_t)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]);//aquire param in a variabile
 							sendDashboardPageToSlaveBaccable();  //Send params to BH board
 						}
@@ -945,6 +924,9 @@
 			case 15://current Drive Style
 				return currentDNAmode;
 				break;
+			case 16://free RAM
+				return getFreeRAM();
+				break;
 			default:
 				break;
 		}
@@ -1011,6 +993,7 @@
 										for (char* q=buf; *q && i<DASHBOARD_MESSAGE_MAX_LENGTH && (q-buf)<maxLen; q++) result[i++] = *q;
 									}
 									break;
+
 								default:
 									floatToStr(buf, values[which], y, maxLen+1);
 
@@ -1087,6 +1070,27 @@
 	    return (uint8_t)strlen(str);
 
 	}
+
+
+	/**
+	 * Calcola la RAM libera approssimativa
+	 * Ritorna: bytes di RAM libera tra heap e stack
+	 */
+	uint32_t getFreeRAM(void) {
+	    uint32_t stack_top;
+	    uint32_t heap_end = (uint32_t)&_end;
+
+	    // Ottieni il valore corrente dello stack pointer
+	    stack_top = (uint32_t)__get_MSP();
+
+	    // La RAM libera è lo spazio tra la fine dell'heap e lo stack corrente
+	    if (stack_top > heap_end) {
+	        return stack_top - heap_end;
+	    }
+	    return 0;
+	}
+
+
 
 	void clearDashboardBaccableMenu(){
 		//prepare empty message
