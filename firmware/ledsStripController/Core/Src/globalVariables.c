@@ -294,6 +294,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t ReleasebuttonFirstClickTime=0;
 	uint32_t ReleasebuttonPressBeginTime=0;
 
+	uint8_t usbConnectedToSlave=0;
 
 #endif
 

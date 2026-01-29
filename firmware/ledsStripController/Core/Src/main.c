@@ -1,6 +1,6 @@
 // the definition of ACT_AS_CANABLE shall be placed in main.h
 #include "main.h"
-
+#include "stm32f0xx_it.h"
 
 int main(void){
 	SystemClock_Config(); //set system clocks
@@ -25,8 +25,12 @@ int main(void){
 		can_enable(); //enable can port
 	#endif
 
-	#if (defined(BHbaccable))
+	#if (defined(BHbaccable) )
 		BHbaccableInitCheck();
+	#endif
+		//HAL_Delay (100);
+	#if (defined(BHbaccable) || defined(C2baccable))
+		storage_init();
 	#endif
 
 	while (1){
@@ -72,9 +76,13 @@ int main(void){
 
 		#if defined(C1baccable)
 			C1baccablePeriodicCheck();
+
 			//if(currentTime>30000 && neverSaved){
+				//neverSaved=0;
 				//just for test, we can execute here something
+				//lastReceivedCanMsgTime=currentTime;
 			//}
+
 		#endif
 
 		#if defined(C2baccable)

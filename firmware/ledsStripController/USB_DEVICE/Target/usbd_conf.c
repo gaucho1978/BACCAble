@@ -285,7 +285,7 @@ static void PCD_ConnectCallback(PCD_HandleTypeDef *hpcd)
 void HAL_PCD_ConnectCallback(PCD_HandleTypeDef *hpcd)
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 {
-  USBD_LL_DevConnected((USBD_HandleTypeDef*)hpcd->pData);
+	USBD_LL_DevConnected((USBD_HandleTypeDef*)hpcd->pData);
 }
 
 /**

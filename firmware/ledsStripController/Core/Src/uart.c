@@ -74,6 +74,19 @@ void uart_init(){
     //onboardLed_blue_blink(10); //ok
 }
 
+//pause uart2
+void pauseUart2(void){
+	HAL_UART_DeInit(&huart2); //stop serial line between chips
+}
+
+//wake up serial line after pause
+void restartUart2(void){
+	HAL_HalfDuplex_Init(&huart2);   // <-- ripristina half-duplex
+	huart2.Instance->CR3 |= USART_CR3_HDSEL; // se vuoi forzarlo comunque
+	syncObtained = 0; // sync lost
+	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  //restart receiving one byte
+}
+
 
 //interrupt called when message is received
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
@@ -110,6 +123,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C1cmdLaneSingleTap: //request to C2 to execute the ESC/TC toggle
 									uint8_t tmpArr2[2]={C2BusID,C2cmdtoggleEscTc};
 									addToUARTSendQueueDuringInterrupt(tmpArr2, 2);
+									break;
+								case C1usbConnected: //usb connected to slave. avoid sleep
+									usbConnectedToSlave=1;
 									break;
 								default:
 									break;
@@ -302,15 +318,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 						break;
 				}
 
-				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE); //receive next frame
+				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE); //receive next frame  //commented for test
 			}else{ //otherwise we were not sync, therefore we need to receive the remaining part of the message
 				syncObtained=1;
-				HAL_UART_Receive_IT(&huart2, &rxBuffer[1], UART_BUFFER_SIZE-1); //receive remaining part of the frame
+				HAL_UART_Receive_IT(&huart2, &rxBuffer[1], UART_BUFFER_SIZE-1); //receive remaining part of the frame  //commented for test
 			}
     	}else { //we did not receive the begin of the message. discard it
 			syncObtained=0; //we lost sync
 			//onboardLed_blue_on();
-			HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //receive one char
+			HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //receive one char  //commented for test
 		}
     }
 }
@@ -354,11 +370,22 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	if (huart->ErrorCode & HAL_UART_ERROR_DMA) {
 		//onboardLed_red_on();
 	}
-	if (huart->Instance == USART2) {
-		(void)(huart->Instance->RDR); //clears errors FE, NE, ORE, RXNE and deletes last received byte from the rx buffer
-		syncObtained=0; //we lost sync
+
+	// delete correctly all UARTS errors
+	__HAL_UART_CLEAR_FLAG(huart,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+
+	// Reset HAL status
+	huart->ErrorCode = HAL_UART_ERROR_NONE;
+	huart->State = HAL_UART_STATE_READY;
+
+
+	// only for USART2
+	if ((huart->Instance == USART2) && (lowConsumeIsActive==0)) {
+		syncObtained = 0; // sync lost
 		HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //restart receiving one byte
 	}
+
+
 }
 /*
 void enter_standby_mode(void) {
@@ -412,12 +439,13 @@ void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 
 
 void processUART() {
-	if(currentTime<2000) return;
+	if(currentTime<2000) return;  //too early
+	if(lowConsumeIsActive==1) return; //other chips are under reset, avoid to send messages
 
 	#if defined(C1baccable)
 		if(lowConsumeIsActive==0){
 			if(currentTime-allProcessorsWakeupTime>3000){
-				if(currentTime-lastMsgSentToC2Time>1010){
+				if(currentTime-lastMsgSentToC2Time>1010){ //1010
 					lastMsgSentToC2Time=currentTime;
 					//get status from C2
 					//send request thu serial line
@@ -425,7 +453,7 @@ void processUART() {
 					addToUARTSendQueue(tmpArr1, 2); //commented for test
 					onboardLed_blue_on();
 				}
-				if(currentTime-lastMsgSentToBHTime>1260){
+				if(currentTime-lastMsgSentToBHTime>1260){ //1260
 					lastMsgSentToBHTime=currentTime;
 					//get status from BH
 					//send request thu serial line
@@ -444,8 +472,11 @@ void processUART() {
 
     //if we are C2 or BH baccable, we can reply only if we received a message directed to us few milliseconds ago
 	#if (defined(C2baccable) || defined(BHbaccable))
+
 		if(currentTime-weCanSendAMessageReply<200){ //if less than 200msec has passed since last message received from master baccable, send a message
+			onboardLed_blue_on();
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
+
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
 					// update head index in a circular way
 					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;

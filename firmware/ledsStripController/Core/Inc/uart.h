@@ -27,6 +27,7 @@
 	#define C1cmdLaneDoubleTap					0x20  //second byte of the message to C1 bus, notifies Lane button double tap
 	#define C1cmdNormalFrontBrake				0x21 //second byte of the message to C1 bus, identifies the request to set front Brake to normal
 	#define C1cmdForceFrontBrake				0x22 //second byte of the message to C1 bus, identifies the request to force Front Brake ON
+	#define C1usbConnected						0x23 //second byte of the message to C1 bus, identifies the connection to usb connector of the slave board
 	#define C1cmdDynoActive						0x25 //second byte of the message to C2 bus, identifies the status dyno Active
 	#define C1cmdDynoNotActive					0x26 //second byte of the message to C2 bus, identifies the status dyno Not Active
 
@@ -63,6 +64,9 @@
 
 	
 	void uart_init();
+	void pauseUart2(void);
+	void restartUart2(void);
+
 	//void uart_transmit_data(char*  message);
 	void process_received_data();
 	void enter_standby_mode();

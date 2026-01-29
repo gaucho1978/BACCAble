@@ -58,7 +58,7 @@
 		#include "vuMeter.h" //this is used to control led strip through usb pin
 		#include "lowConsume.h"
 		#include "uds_parameters.h"
-		extern uint32_t lastReceivedCanMsgTime;
+		//extern uint32_t lastReceivedCanMsgTime;
 	#endif
 
 
@@ -225,7 +225,7 @@
 		extern uint8_t function_front_brake_forcer_master; //stored in flash
 		extern uint16_t launch_torque_threshold; //stored in flash
 
-		extern uint32_t lastReceivedCanMsgTime; //this is not in global C file, but comes from another C file
+		//extern uint32_t lastReceivedCanMsgTime; //this is not in global C file, but comes from another C file
 
 		//SEAT BELT DISABLE messages and function
 		// diag session request 	0x02,0x10,0x03
@@ -284,6 +284,7 @@
 		extern uint32_t ReleasebuttonFirstClickTime;
 		extern uint32_t ReleasebuttonPressBeginTime;
 
+		extern uint8_t usbConnectedToSlave;
 	#endif
 
 	#if defined(C2baccable)

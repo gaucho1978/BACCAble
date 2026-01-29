@@ -108,7 +108,7 @@
 
 
 		if(instructSlaveBoardsTriggerEnabled){
-			if((currentTime-allProcessorsWakeupTime)>5000){
+			if((currentTime-allProcessorsWakeupTime)>2500){
 				instructSlaveBoardsTriggerEnabled=0; //avoid to return here
 
 				//send messages to slave boards

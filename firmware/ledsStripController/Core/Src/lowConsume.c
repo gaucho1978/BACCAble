@@ -46,25 +46,36 @@
 
 	// Process time-based events
 	void lowConsume_process(void){
-		if(lowConsumeIsActive){ //se siamo in basso consumo
+		if(lowConsumeIsActive==1){ //se siamo in basso consumo
+
 			//se l'ultimo messaggio ricevuto é meno vecchio di 5 secondi, risveglia gli altri chip
-			if(currentTime-lastReceivedCanMsgTime<5000){
+			if(currentTime-lastReceivedCanMsgTime<2400){
+
 				wakeUpAllProcessorsAndTransceivers();
+
+				//restart serial line between chips
+				//restartUart2();
+
 				lowConsumeIsActive=0;
 				allProcessorsWakeupTime=currentTime;
 				instructSlaveBoardsTriggerEnabled=1;
 			}
 		}else{ //altrimenti se non siamo in basso consumo
 			//se l'ultimo messaggio ricevuto é piú vecchio di 5 secondi, riduci i consumi
-			if(currentTime-lastReceivedCanMsgTime>5000){
-				reduceConsumption();
-				lowConsumeIsActive=1;
+			if(currentTime-lastReceivedCanMsgTime>2500){
+				if(usbConnectedToSlave==0){
+					//pauseUart2(); //stop serial line between chips
+					reduceConsumption();
+					lowConsumeIsActive=1;
+				}
 			}
 		}
 	}
 
 	void reduceConsumption(void){
-		if(!lowConsumeIsActive){
+		if(lowConsumeIsActive==0){
+
+
 			//CAN_LOW_CONSUME_On(); //reduce consumption of other can transceivers (set then as only RX)
 			Reset_Other_Chips(); //reduce consumption of other chips (left under reset)
 			front_brake_forced=0;//ensure we disabled relative functions status in master baccable

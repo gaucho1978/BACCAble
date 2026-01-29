@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_storage_if.h"
-
+#include "globalVariables.h"
 /* USER CODE BEGIN INCLUDE */
 
 /* USER CODE END INCLUDE */
@@ -174,8 +174,16 @@ USBD_StorageTypeDef USBD_Storage_Interface_fops_FS =
   * @param  lun:
   * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
-int8_t STORAGE_Init_FS(uint8_t lun)
-{
+int8_t STORAGE_Init_FS(uint8_t lun){
+	//USB was plugged
+	//if BH or C2, send message to C1
+	#if (defined(BHbaccable) || defined(C2baccable))
+		//onboardLed_blue_on();
+		uint8_t tmpArr2[2]={C1BusID,C1usbConnected};
+		addToUARTSendQueue(tmpArr2, 2);
+		weCanSendAMessageReply=currentTime+1500; //enable sending the message thru serial line to C1, for 1 second from now
+	#endif
+
   /* USER CODE BEGIN 2 */
   return (USBD_OK);
   /* USER CODE END 2 */

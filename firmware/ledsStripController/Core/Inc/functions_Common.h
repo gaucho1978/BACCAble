@@ -19,4 +19,5 @@
 	void system_hex32(char *out, uint32_t val);
 	void Error_Handler(uint16_t halfPeriod);
 	void saveToFilesystem(void);
+	void storage_init(void);
 #endif /* INC_FUNCTIONS_COMMON_H_ */

@@ -1,7 +1,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_it.h"
-#include "main.h"
+//#include "main.h"
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 extern PCD_HandleTypeDef hpcd_USB_FS;
@@ -39,7 +39,7 @@ void NMI_Handler(void){
   */
 void HardFault_Handler(void){
 
-	NVIC_SystemReset(); //reset the chip (temporary mask problems)
+	//NVIC_SystemReset(); //reset the chip (temporary mask problems)
 	//execution ends here
 
 	RCC->AHBENR |=RCC_AHBENR_GPIOAEN; //ensure clock is enabled on port gpioA
