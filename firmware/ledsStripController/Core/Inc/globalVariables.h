@@ -32,16 +32,35 @@
 	#define LAST_PAGE_ADDRESS_STATISTICS LAST_PAGE_ADDRESS- FLASH_PAGE_SIZE //we will use previous page for statistics
 	#define LAST_PAGE_ADDRESS_SHOWN_PARAMS LAST_PAGE_ADDRESS_STATISTICS- FLASH_PAGE_SIZE //we will use previous page for shown params
 
+	#define TIMING__ALL___SERIAL_IGNORE_WINDOW_MS										2000	//msec
+	#define TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS						TIMING__ALL___SERIAL_IGNORE_WINDOW_MS+100	//msec
+	#define TIMING__C1____DELAY_BEFORE_SERIAL_PROCESS_AFTER_OTHER_CHIP_WAKE_MS			TIMING__ALL___SERIAL_IGNORE_WINDOW_MS+100	//msec
+	#define TIMING__C1____DELAY_BEFORE_OTHER_CHIP_STATUS_REQUEST_MS						TIMING__ALL___SERIAL_IGNORE_WINDOW_MS+1000	//msec
+
+	#define TIMING__C1____CAN_INACTIVITY_TIMEOUT_BEFORE_SLEEP_MS						3500	//msec
+	#define TIMING__C1____CAN_ACTIVITY_WINDOW_FOR_WAKEUP_MS								TIMING__C1____CAN_INACTIVITY_TIMEOUT_BEFORE_SLEEP_MS-100	//msec
+	#define TIMING__C1____DELAY_BEFORE_SERIAL_INSTRUCT_OF_C2BH_AFTER_OTHER_CHIP_WAKE_MS	TIMING__C1____CAN_INACTIVITY_TIMEOUT_BEFORE_SLEEP_MS+2	//msec
+
+
+	#define TIMING__C1____C2_STATUS_REQUEST_TIMEOUT_MS									1010	//msec
+	#define TIMING__C1____BH_STATUS_REQUEST_TIMEOUT_MS									TIMING__C1____C2_STATUS_REQUEST_TIMEOUT_MS+250	//msec
+
+	#define TIMING__C1____SERIAL_TIMEOUT_REPLY_MS										250		//msec
+	#define TIMING__C2_BH_SERIAL_TIMEOUT_REPLY_MS										TIMING__C1____SERIAL_TIMEOUT_REPLY_MS-50		//msec
+
+
+
 #if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
 	//#include "usbd_def.h"
 	#include "usb_device.h"
-#ifdef ENABLE_USB_MASS_STORAGE
-	#include "usbd_storage_if.h"
-	#include "ff.h"
-#else
-	#include "string.h"
-	#include "usbd_cdc_if.h"
-#endif
+
+	#ifdef ENABLE_USB_MASS_STORAGE
+		#include "usbd_storage_if.h"
+		#include "ff.h"
+	#else
+		#include "string.h"
+		#include "usbd_cdc_if.h"
+	#endif
 
 #endif
 
@@ -284,7 +303,7 @@
 		extern uint32_t ReleasebuttonFirstClickTime;
 		extern uint32_t ReleasebuttonPressBeginTime;
 
-		extern uint8_t usbConnectedToSlave;
+
 	#endif
 
 	#if defined(C2baccable)
@@ -322,6 +341,10 @@
 		extern CAN_TxHeaderTypeDef CHIME_msg_header;
 		extern uint8_t requestToPlayChime;
 		extern uint8_t disable_odometer_blink;
+	#endif
+
+	#if defined(C2baccable) || defined(BHbaccable)
+		extern FATFS fs; //filesystem
 	#endif
 
 	//ESC_TC_CUSTOMIZATOR_MASTER)
@@ -424,5 +447,7 @@
 	extern uint8_t usbInited;
 
 	extern uint32_t lastUartErrorCallback;
+
+	extern uint8_t usbConnectedToSlave;
 
 #endif /* INC_GLOBALVARIABLES_H_ */

@@ -9,6 +9,7 @@
 
 	extern uint32_t _end;      // Fine della sezione .bss (fornito dal linker)
 	extern uint32_t _estack;   // Top dello stack (fornito dal linker)
+	//uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
 
 #if defined(C1baccable)
 	void C1baccableInitCheck(){
@@ -108,8 +109,10 @@
 
 
 		if(instructSlaveBoardsTriggerEnabled){
-			if((currentTime-allProcessorsWakeupTime)>2500){
+			if((currentTime-allProcessorsWakeupTime)>TIMING__C1____DELAY_BEFORE_SERIAL_INSTRUCT_OF_C2BH_AFTER_OTHER_CHIP_WAKE_MS){
+				//onboardLed_red_blink(5);
 				instructSlaveBoardsTriggerEnabled=0; //avoid to return here
+
 
 				//send messages to slave boards
 				uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
@@ -303,6 +306,7 @@
 		//baccableDashboardMenuVisible=1; //force menu always on, just for debug
 		if((currentTime-last_sent_uds_parameter_request_Time>500) && baccableDashboardMenuVisible ){
 			last_sent_uds_parameter_request_Time=currentTime;
+
 
 			switch(dashboard_menu_indent_level){
 				case 0: //main menu
@@ -938,6 +942,7 @@
 	// n = 0..6 (integer part), y = 0..3 (decimal)
 
 	void buildLineWithFormat(const char* template, float values[2], const uint8_t paramId[2], char* result) {
+		//onboardLed_red_blink(5);
 	    int i = 0;   // indice output
 	    int which = 0; // 0 = val1, 1 = val2
 

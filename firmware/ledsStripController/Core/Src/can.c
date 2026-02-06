@@ -96,6 +96,7 @@ void can_disable(void)
         bus_state = OFF_BUS;
 
         onboardLed_red_on();
+
     }
 }
 
@@ -164,6 +165,7 @@ void can_set_silent(uint8_t silent)
     }
 
     onboardLed_red_on();
+
 }
 
 
@@ -183,6 +185,7 @@ void can_set_autoretransmit(uint8_t autoretransmit)
     }
 
     onboardLed_red_on();
+
 }
 
 

@@ -14,6 +14,10 @@ int main(void){
 	uart_init();
 
 
+	#if (defined(BHbaccable) || defined(C2baccable))
+		storage_init();
+	#endif
+
 	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
 		//HAL_Delay(500);//wait 500 msec - This is used for debug
 		MX_USB_DEVICE_Init();
@@ -29,9 +33,7 @@ int main(void){
 		BHbaccableInitCheck();
 	#endif
 		//HAL_Delay (100);
-	#if (defined(BHbaccable) || defined(C2baccable))
-		storage_init();
-	#endif
+
 
 	while (1){
 
@@ -40,10 +42,11 @@ int main(void){
 		can_process();
 		processUART();
 
-		//if(currentTime>1000 && usbInited==0){ //just for test, execute with delay V.3.0.0d
-		//	usbInited=1;
-		//	MX_USB_DEVICE_Init();
-		//}
+		#if (defined(BHbaccable) || defined(C2baccable))
+			if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave){  //if we are using it as usb pen drive, stop serial line to avoid interferences
+				pauseUart2(); //stop serial line between chips
+			}
+		#endif
 
 		#if defined(ACT_AS_CANABLE)
 			cdc_process(); //processa dati usb
@@ -77,11 +80,15 @@ int main(void){
 		#if defined(C1baccable)
 			C1baccablePeriodicCheck();
 
-			//if(currentTime>30000 && neverSaved){
-				//neverSaved=0;
-				//just for test, we can execute here something
-				//lastReceivedCanMsgTime=currentTime;
+			//wake up each 10 seconds for test
+
+			//if (currentTime<5000) lastReceivedCanMsgTime = currentTime;
+
+			//if ((currentTime - lastReceivedCanMsgTime) >= 10000) {  // 10 seconds // && neverSaved){ //neverSaved=0;
+			//    lastReceivedCanMsgTime = currentTime;
 			//}
+
+
 
 		#endif
 
@@ -117,7 +124,7 @@ int main(void){
 		#endif
 
 		// If CAN message receive is pending, process the message
-		if(is_can_msg_pending(CAN_RX_FIFO0)){
+		if( is_can_msg_pending(CAN_RX_FIFO0)){
 			// If message received from bus, parse the frame
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
 
@@ -150,6 +157,8 @@ int main(void){
 		//for debug, measure the loop duration
 		if (currentTime-currentTimeMainLoopDebug>2){
 			onboardLed_red_on();
+
+
 		}
 	}
 }

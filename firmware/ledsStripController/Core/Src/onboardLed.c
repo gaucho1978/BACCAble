@@ -40,7 +40,7 @@ void onboardLed_init(){
 void onboardLed_red_on(void){
 	// Make sure the LED has been off for at least LED_DURATION before turning on again
 	// This prevents a solid status LED on a busy canbus
-	if(led_red_laston == 0 && HAL_GetTick() - led_red_lastoff > LED_DURATION){
+	if((led_red_laston == 0) && ((HAL_GetTick() - led_red_lastoff) > LED_DURATION)){
 		HAL_GPIO_WritePin(LED_RED, led_light_on_bit);
 		led_red_laston = HAL_GetTick();
 	}
@@ -79,7 +79,7 @@ void onboardLed_red_blink(uint8_t numblinks){
 void onboardLed_blue_on(void){
 	// Make sure the LED has been off for at least LED_DURATION before turning on again
 	// This prevents a solid status LED on a busy canbus
-	if(led_blue_laston == 0 && HAL_GetTick() - led_blue_lastoff > LED_DURATION){
+	if((led_blue_laston == 0) && ((HAL_GetTick() - led_blue_lastoff) > LED_DURATION)){
 		HAL_GPIO_WritePin(LED_BLUE, led_light_on_bit);
 		led_blue_laston = HAL_GetTick();
 	}
@@ -93,14 +93,14 @@ void onboardLed_blue_off(void){
 // Process time-based LED events
 void onboardLed_process(void){
 	// If LED has been on for long enough, turn it off
-	if(led_blue_laston > 0 && HAL_GetTick() - led_blue_laston > LED_DURATION){
+	if((led_blue_laston > 0) && ((currentTime - led_blue_laston) > LED_DURATION)){
 		HAL_GPIO_WritePin(LED_BLUE, !led_light_on_bit);
 		led_blue_laston = 0;
 		led_blue_lastoff = HAL_GetTick();
 	}
 
 	// If LED has been on for long enough, turn it off
-	if(led_red_laston > 0 && HAL_GetTick() - led_red_laston > LED_DURATION){
+	if((led_red_laston > 0) && ((currentTime - led_red_laston) > LED_DURATION)){
 		HAL_GPIO_WritePin(LED_RED, !led_light_on_bit);
 		led_red_laston = 0;
 		led_red_lastoff = HAL_GetTick();

@@ -14,12 +14,12 @@
 
 	#define CHIP_RESET_DURATION 500 //time in milliseconds
 
-	void lowConsume_init();
-	void Reset_Other_Chips();
-	void Remove_Reset_From_Other_Chips();
-	void CAN_LOW_CONSUME_On();
-	void CAN_LOW_CONSUME_Off();
-	void lowConsume_process();
+	void lowConsume_init(void);
+	void Reset_Other_Chips(void);
+	void Remove_Reset_From_Other_Chips(void);
+	void CAN_LOW_CONSUME_On(void);
+	void CAN_LOW_CONSUME_Off(void);
+	void lowConsume_process(void);
 	void reduceConsumption(void);
 	void wakeUpAllProcessorsAndTransceivers(void);
 

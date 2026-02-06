@@ -9,6 +9,7 @@
 #include "debug.h"
 
 void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
+
     uint8_t i = 0;
 
     // Gestione dei casi speciali NaN e Inf
@@ -215,7 +216,7 @@ void system_hex32(char *out, uint32_t val){
 
 void saveToFilesystem(void){
 	#ifdef ENABLE_USB_MASS_STORAGE
-		FATFS fs;
+
 		FIL fil;
 		UINT bw;
 		FRESULT res;
@@ -225,51 +226,64 @@ void saveToFilesystem(void){
 			res = f_open(&fil, "hello.txt", FA_WRITE|FA_OPEN_ALWAYS);
 			if (res == FR_OK) {
 				f_write(&fil, "Hello, World!\r\n", 15, &bw);
+				f_sync(&fil);
 				f_close(&fil);
 				onboardLed_blue_on();
 			}
-			f_unmount("");
+
 
 		}
-
+		f_unmount("");
 
 	#endif
 }
 
 
 void storage_init(void){
-#ifdef ENABLE_USB_MASS_STORAGE
-    FATFS fs;
-    FIL fil;
-    UINT bw;
-    FRESULT res;
-    BYTE work[FF_MIN_SS];
 
-    res = f_mount(&fs, "", 1);
-    if (res != FR_OK){
-    	//onboardLed_blue_on();
-        MKFS_PARM opt = {.fmt = FM_FAT | FM_SFD, .n_fat = 1, .align = 0, .n_root = 224, .au_size = FF_MIN_SS};
-        res = f_mkfs("", &opt, work, FF_MIN_SS);
-        if (res == FR_OK){
-            res = f_setlabel("BACCABLE "
-				#ifdef ACT_AS_CANABLE
-            		"Sniffer"
-				#elif defined(C1baccable)
-            		"C1"
-				#elif defined(C2baccable)
-            		"C2"
-				#elif defined(BHbaccable)
-            		"BH"
-				#endif
-            );
-            res = f_open(&fil, "BaccableVersion.txt", FA_WRITE | FA_OPEN_ALWAYS);
-            if (res == FR_OK){
-                res = f_write(&fil, _FW_VERSION, strlen(_FW_VERSION), &bw);
-                f_close(&fil);
-            }
-        }
-    }
+	#ifdef ENABLE_USB_MASS_STORAGE
+		//FATFS fs;
+		FIL fil;
+		UINT bw;
+		FRESULT res;
+		BYTE work[FF_MIN_SS];
 
-    res = f_unmount("");
-#endif
+		res = f_mount(&fs, "", 1);
+		if (res != FR_OK){
+			//onboardLed_blue_on();
+			MKFS_PARM opt = {.fmt = FM_FAT | FM_SFD, .n_fat = 1, .align = 0, .n_root = 32, .au_size = FF_MIN_SS};
+			res = f_mkfs("", &opt, work, FF_MIN_SS);
+			if (res == FR_OK){
+				res = f_setlabel("BACCABLE "
+					#ifdef ACT_AS_CANABLE
+						"Sniffer"
+					#elif defined(C1baccable)
+						"C1"
+					#elif defined(C2baccable)
+						"C2"
+					#elif defined(BHbaccable)
+						"BH"
+					#endif
+				);
+				res = f_open(&fil, "Version.txt", FA_CREATE_ALWAYS | FA_WRITE);
+
+				if (res == FR_OK){
+					onboardLed_blue_on();
+
+					f_write(&fil, _FW_VERSION, strlen(_FW_VERSION), &bw);
+					f_close(&fil);
+				}else{
+					onboardLed_red_on();
+				}
+			}
+
+		}
+
+		res = f_unmount("");
+
+
+
+
+
+	#endif
 }

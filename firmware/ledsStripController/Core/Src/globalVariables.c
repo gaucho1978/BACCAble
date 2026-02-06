@@ -294,7 +294,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t ReleasebuttonFirstClickTime=0;
 	uint32_t ReleasebuttonPressBeginTime=0;
 
-	uint8_t usbConnectedToSlave=0;
+
 
 #endif
 
@@ -338,6 +338,10 @@ const char *FW_VERSION=_FW_VERSION;
 	#else
 		uint8_t disable_odometer_blink=0;
 	#endif
+#endif
+
+#if defined(C2baccable) || defined(BHbaccable)
+		FATFS fs; //filesystem
 #endif
 
 //ESC_TC_CUSTOMIZATOR_MASTER)
@@ -438,3 +442,5 @@ uint8_t neverSaved=1;
 uint8_t usbInited;
 
 uint32_t lastUartErrorCallback;
+
+uint8_t usbConnectedToSlave=0; //tells if usb port is connected to BH or C2

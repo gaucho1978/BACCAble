@@ -66,10 +66,10 @@ DRESULT disk_read(
 
 typedef struct FlashPage
 {
+    struct FlashPage *next;
     uint32_t page_start;
     LBA_t sectors[SECTORS_PER_PAGE];
     uint32_t sector_data_index[SECTORS_PER_PAGE];
-    struct FlashPage *next;
 } FlashPage;
 
 FlashPage* new_flash_page()
@@ -164,6 +164,7 @@ DRESULT disk_write(
         ret = HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError);
         if (ret != HAL_OK)
         {
+            HAL_FLASH_Lock();
             ret = RES_NOTRDY;
             break;
         }

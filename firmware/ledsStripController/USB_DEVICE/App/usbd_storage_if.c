@@ -178,10 +178,11 @@ int8_t STORAGE_Init_FS(uint8_t lun){
 	//USB was plugged
 	//if BH or C2, send message to C1
 	#if (defined(BHbaccable) || defined(C2baccable))
-		//onboardLed_blue_on();
+		onboardLed_blue_on();
+		usbConnectedToSlave=1; //we use this to avoid to unmount the disk
 		uint8_t tmpArr2[2]={C1BusID,C1usbConnected};
 		addToUARTSendQueue(tmpArr2, 2);
-		weCanSendAMessageReply=currentTime+1500; //enable sending the message thru serial line to C1, for 1 second from now
+		weCanSendAMessageReply=TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS; //enable sending the message thru serial line to C1, for a offset from now
 	#endif
 
   /* USER CODE BEGIN 2 */
