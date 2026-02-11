@@ -88,7 +88,7 @@ int main(void){
 			//if ((currentTime - lastReceivedCanMsgTime) >= 10000) {  // 10 seconds // && neverSaved){ //neverSaved=0;
 			//    lastReceivedCanMsgTime = currentTime;
 			//}
-
+/*
 			if ((currentTime - lastTrigger) >= 14000) {
 			    // parte una nuova finestra
 				lastTrigger = currentTime;
@@ -100,7 +100,7 @@ int main(void){
 				lastReceivedCanMsgTime = currentTime;
 			}
 
-
+*/
 
 		#endif
 
