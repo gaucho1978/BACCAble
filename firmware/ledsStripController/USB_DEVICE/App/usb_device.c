@@ -39,7 +39,6 @@
 USBD_HandleTypeDef hUsbDeviceFS;
 
 void MX_USB_DEVICE_Init(void){
-
 	// --- Reset USB core --- prevents problems when exiting from a Hardware Reset
 	__HAL_RCC_USB_FORCE_RESET();
 	HAL_Delay(2);

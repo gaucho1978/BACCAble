@@ -178,11 +178,24 @@ void Error_Handler(uint16_t halfPeriod){
 	//__disable_irq();
 	//NVIC_SystemReset();
 
+
+
+	RCC->AHBENR |=RCC_AHBENR_GPIOAEN; //ensure clock is enabled on port gpioA
+
+
 	uint8_t tmpBool01=0;
 	while (1){
+		for (volatile uint32_t i = 0; i < (12500*halfPeriod) ; i++){ //12500cycles=1msec
+			__asm("nop");
+		}
+		//now toggle leds without using HAL, to be more resilient
+		if(tmpBool01){
+			GPIOA->BSRR= GPIO_PIN_0 <<16; //set PA0 low (red led)
 
-		HAL_Delay(halfPeriod);
-		HAL_GPIO_WritePin(LED_RED, tmpBool01);
+		}else{
+			GPIOA->BSRR= GPIO_PIN_0 ; //set PA0 high (red led)
+		}
+
 		tmpBool01=!tmpBool01;
 	}
 }

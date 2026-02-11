@@ -59,7 +59,7 @@ void HardFault_Handler(void){
 		}
 
 		tmpBool01=!tmpBool01;
-  }
+	}
 }
 
 /**

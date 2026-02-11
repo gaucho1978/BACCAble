@@ -399,6 +399,9 @@ uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change men
 //LOW CONSUME
 uint8_t lowConsumeIsActive=0; //0=false, 1=true
 uint32_t lastReceivedCanMsgTime=0;
+uint32_t lastTrigger=0;
+uint8_t tmpCounter=1;
+
 uint32_t allProcessorsWakeupTime=0;
 
 //ESC/TC function (common to C1,C2,BH

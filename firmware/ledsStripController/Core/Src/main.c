@@ -78,6 +78,7 @@ int main(void){
 		#endif
 
 		#if defined(C1baccable)
+
 			C1baccablePeriodicCheck();
 
 			//wake up each 10 seconds for test
@@ -87,6 +88,17 @@ int main(void){
 			//if ((currentTime - lastReceivedCanMsgTime) >= 10000) {  // 10 seconds // && neverSaved){ //neverSaved=0;
 			//    lastReceivedCanMsgTime = currentTime;
 			//}
+
+			if ((currentTime - lastTrigger) >= 14000) {
+			    // parte una nuova finestra
+				lastTrigger = currentTime;
+				tmpCounter++;
+			}
+
+			if ((currentTime - lastTrigger) < tmpCounter) {
+
+				lastReceivedCanMsgTime = currentTime;
+			}
 
 
 

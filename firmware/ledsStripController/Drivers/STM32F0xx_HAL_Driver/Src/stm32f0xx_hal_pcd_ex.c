@@ -157,23 +157,20 @@ HAL_StatusTypeDef HAL_PCDEx_DeActivateBCD(PCD_HandleTypeDef *hpcd)
   * @param  hpcd PCD handle
   * @retval HAL status
   */
-void HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef *hpcd)
-{
+void HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef *hpcd){
+
   USB_TypeDef *USBx = hpcd->Instance;
   uint32_t tickstart = HAL_GetTick();
 
   /* Wait Detect flag or a timeout is happen*/
-  while ((USBx->BCDR & USB_BCDR_DCDET) == 0U)
-  {
+  while ((USBx->BCDR & USB_BCDR_DCDET) == 0U){
     /* Check for the Timeout */
-    if ((HAL_GetTick() - tickstart) > 1000U)
-    {
-#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
-      hpcd->BCDCallback(hpcd, PCD_BCD_ERROR);
-#else
-      HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_ERROR);
-#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
-
+    if ((HAL_GetTick() - tickstart) > 1000U){
+		#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
+			  hpcd->BCDCallback(hpcd, PCD_BCD_ERROR);
+		#else
+			  HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_ERROR);
+		#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
       return;
     }
   }
@@ -181,13 +178,12 @@ void HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef *hpcd)
   HAL_Delay(200U);
 
   /* Data Pin Contact ? Check Detect flag */
-  if ((USBx->BCDR & USB_BCDR_DCDET) == USB_BCDR_DCDET)
-  {
-#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
-    hpcd->BCDCallback(hpcd, PCD_BCD_CONTACT_DETECTION);
-#else
-    HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_CONTACT_DETECTION);
-#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
+  if ((USBx->BCDR & USB_BCDR_DCDET) == USB_BCDR_DCDET){
+		#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
+			hpcd->BCDCallback(hpcd, PCD_BCD_CONTACT_DETECTION);
+		#else
+			HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_CONTACT_DETECTION);
+		#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
   }
   /* Primary detection: checks if connected to Standard Downstream Port
   (without charging capability) */
@@ -197,8 +193,7 @@ void HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef *hpcd)
   HAL_Delay(50U);
 
   /* If Charger detect ? */
-  if ((USBx->BCDR & USB_BCDR_PDET) == USB_BCDR_PDET)
-  {
+  if ((USBx->BCDR & USB_BCDR_PDET) == USB_BCDR_PDET){
     /* Start secondary detection to check connection to Charging Downstream
     Port or Dedicated Charging Port */
     USBx->BCDR &= ~(USB_BCDR_PDEN);
@@ -207,42 +202,37 @@ void HAL_PCDEx_BCD_VBUSDetect(PCD_HandleTypeDef *hpcd)
     HAL_Delay(50U);
 
     /* If CDP ? */
-    if ((USBx->BCDR & USB_BCDR_SDET) == USB_BCDR_SDET)
-    {
-      /* Dedicated Downstream Port DCP */
-#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
-      hpcd->BCDCallback(hpcd, PCD_BCD_DEDICATED_CHARGING_PORT);
-#else
-      HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_DEDICATED_CHARGING_PORT);
-#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
+    if ((USBx->BCDR & USB_BCDR_SDET) == USB_BCDR_SDET){
+    	/* Dedicated Downstream Port DCP */
+		#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
+			  hpcd->BCDCallback(hpcd, PCD_BCD_DEDICATED_CHARGING_PORT);
+		#else
+			  HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_DEDICATED_CHARGING_PORT);
+		#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
+    }else{
+    	/* Charging Downstream Port CDP */
+		#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
+			  hpcd->BCDCallback(hpcd, PCD_BCD_CHARGING_DOWNSTREAM_PORT);
+		#else
+			  HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_CHARGING_DOWNSTREAM_PORT);
+		#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
     }
-    else
-    {
-      /* Charging Downstream Port CDP */
-#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
-      hpcd->BCDCallback(hpcd, PCD_BCD_CHARGING_DOWNSTREAM_PORT);
-#else
-      HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_CHARGING_DOWNSTREAM_PORT);
-#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
-    }
-  }
-  else /* NO */
-  {
-    /* Standard Downstream Port */
-#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
-    hpcd->BCDCallback(hpcd, PCD_BCD_STD_DOWNSTREAM_PORT);
-#else
-    HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_STD_DOWNSTREAM_PORT);
-#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
+  }else{ /* NO */
+		/* Standard Downstream Port */
+		#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
+			hpcd->BCDCallback(hpcd, PCD_BCD_STD_DOWNSTREAM_PORT);
+		#else
+			HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_STD_DOWNSTREAM_PORT);
+		#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
   }
 
   /* Battery Charging capability discovery finished Start Enumeration */
   (void)HAL_PCDEx_DeActivateBCD(hpcd);
-#if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
-  hpcd->BCDCallback(hpcd, PCD_BCD_DISCOVERY_COMPLETED);
-#else
-  HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_DISCOVERY_COMPLETED);
-#endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
+  #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
+	hpcd->BCDCallback(hpcd, PCD_BCD_DISCOVERY_COMPLETED);
+  #else
+	HAL_PCDEx_BCD_Callback(hpcd, PCD_BCD_DISCOVERY_COMPLETED);
+  #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
 }
 
 

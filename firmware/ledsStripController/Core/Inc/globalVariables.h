@@ -403,6 +403,9 @@
 	//LOW CONSUME
 	extern uint8_t lowConsumeIsActive; //0=false, 1=true
 	extern uint32_t lastReceivedCanMsgTime;
+	extern uint32_t lastTrigger; //temporary debug variable
+	extern uint8_t tmpCounter;
+
 	extern uint32_t allProcessorsWakeupTime;
 
 	//ESC/TC function (common to C1,C2,BH

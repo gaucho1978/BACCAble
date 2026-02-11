@@ -76,16 +76,30 @@ void uart_init(){
 
 //pause uart2
 void pauseUart2(void){
-    __HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE); //disable RX interrupt (RXNE)
+	__HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE); //disable RX interrupt (RXNE)
     __HAL_UART_DISABLE_IT(&huart2, UART_IT_ERR); //disable error interrupts (ORE overrun, FE framing, NE noise)
 
-    huart2.RxXferCount = 0;
+    // delete correctly all UARTS errors
+    __HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+
+    // Clear hardware error flags
+	//__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF);
+	//__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_FEF);
+	//__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_NEF);
+
+	// Clear RXNE by flushing the data register
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+
+
+	// Reset HAL internal state
+	huart2.RxXferCount = 0;
 	huart2.RxXferSize  = 0;
 	huart2.pRxBuffPtr  = NULL;
+	huart2.ErrorCode   = HAL_UART_ERROR_NONE;
+	//onboardLed_red_blink(20);
 
+    //huart2.State = HAL_UART_STATE_READY; //return to READY state
 
-	huart2.ErrorCode = HAL_UART_ERROR_NONE;
-    huart2.State = HAL_UART_STATE_READY; //return to READY state
 }
 
 //wake up serial line after pause
@@ -95,14 +109,16 @@ void restartUart2(void){
 
 	// delete correctly all UARTS errors
 	__HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
-	// Reset HAL Status
 
+	// Clear RXNE by flushing the data register
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+
+
+	// Reset HAL internal state
 	huart2.RxXferCount = 0;
 	huart2.RxXferSize  = 0;
 	huart2.pRxBuffPtr  = NULL;
-
-	huart2.ErrorCode = HAL_UART_ERROR_NONE;
-	huart2.State = HAL_UART_STATE_READY;
+	huart2.ErrorCode   = HAL_UART_ERROR_NONE;
 
 	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  //restart receiving one byte
 	last_sent_serial_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
@@ -111,6 +127,8 @@ void restartUart2(void){
 
 //interrupt called when message is received
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+
+
     if (huart->Instance == USART2) {
 		// evaluate received message
     	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_C2_BusID)){ //if the received char indicates the beginning of a message
@@ -354,7 +372,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 // interrupt called when message send is complete
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-    if (huart->Instance == USART2){
+
+	if (huart->Instance == USART2){
         //message sent. what do we do?
     	onboardLed_blue_on(); //successfully sent
     }
@@ -395,8 +414,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	}
 
 	*/
-
-
 
 
 
@@ -445,6 +462,7 @@ uint8_t getOtherProcessorsSleepingStatus(){
 
 
 void addToUARTSendQueue(const uint8_t *data, size_t length) {
+
 	__disable_irq(); //__HAL_UART_DISABLE_IT(&huart2,UART_IT_RXNE);
 	addToUARTSendQueueDuringInterrupt(data,length);
 	__enable_irq(); //__HAL_UART_ENABLE_IT(&huart2,UART_IT_RXNE);
@@ -470,11 +488,13 @@ void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 
 
 void processUART() {
+
 	if(currentTime<TIMING__ALL___SERIAL_IGNORE_WINDOW_MS) return;  //too early
 
 	#if(defined(C1baccable))
 		if(lowConsumeIsActive)  return; //other chips are under reset, avoid to send messages   //|| (allProcessorsWakeupTime<TIMING__C1____DELAY_BEFORE_SERIAL_PROCESS_AFTER_OTHER_CHIP_WAKE_MS))
 		//onboardLed_blue_on();
+
 		if(currentTime-allProcessorsWakeupTime>TIMING__C1____DELAY_BEFORE_OTHER_CHIP_STATUS_REQUEST_MS){
 			if(currentTime-lastMsgSentToC2Time>TIMING__C1____C2_STATUS_REQUEST_TIMEOUT_MS){ //1010
 				lastMsgSentToC2Time=currentTime;

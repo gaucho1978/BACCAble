@@ -603,8 +603,7 @@ uint32_t USBD_LL_GetRxDataSize(USBD_HandleTypeDef *pdev, uint8_t ep_addr)
   * @param  Delay: Delay in ms
   * @retval None
   */
-void USBD_LL_Delay(uint32_t Delay)
-{
+void USBD_LL_Delay(uint32_t Delay){
   HAL_Delay(Delay);
 }
 
