@@ -145,6 +145,20 @@ void SystemClock_Config(void){
     Error_Handler(2000);
   }
 
+  // configure CRS to stabilize HSI48
+  __HAL_RCC_CRS_CLK_ENABLE();
+
+  RCC_CRSInitTypeDef crs = {0};
+  crs.Prescaler = RCC_CRS_SYNC_DIV1;
+  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+  crs.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
+  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+  crs.ErrorLimitValue = RCC_CRS_ERRORLIMIT_DEFAULT;
+  crs.HSI48CalibrationValue = 0x20;
+  HAL_RCCEx_CRSConfig(&crs);
+
+
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -185,9 +199,7 @@ void Error_Handler(uint16_t halfPeriod){
 
 	uint8_t tmpBool01=0;
 	while (1){
-		for (volatile uint32_t i = 0; i < (12500*halfPeriod) ; i++){ //12500cycles=1msec
-			__asm("nop");
-		}
+
 		//now toggle leds without using HAL, to be more resilient
 		if(tmpBool01){
 			GPIOA->BSRR= GPIO_PIN_0 <<16; //set PA0 low (red led)
@@ -197,6 +209,10 @@ void Error_Handler(uint16_t halfPeriod){
 		}
 
 		tmpBool01=!tmpBool01;
+
+		for (volatile uint32_t i = 0; i < (12500*halfPeriod) ; i++){ //12500cycles=1msec
+			__asm("nop");
+		}
 	}
 }
 

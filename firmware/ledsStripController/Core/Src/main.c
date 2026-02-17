@@ -19,8 +19,11 @@ int main(void){
 	#endif
 
 	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
-		//HAL_Delay(500);//wait 500 msec - This is used for debug
-		MX_USB_DEVICE_Init();
+		//because of condensation usb could fail and chip remain stuck. the following line,
+		// ensures USB init only if we are coming from first powering and not from a reset.
+		if(RCC->CSR & RCC_CSR_PORRSTF) MX_USB_DEVICE_Init(); //if first poweron, init usb port.
+
+
 	#endif
 
 	#if (defined(C1baccable) || defined(C2baccable) )  //if required, let's automatically open the can bus
@@ -81,13 +84,7 @@ int main(void){
 
 			C1baccablePeriodicCheck();
 
-			//wake up each 10 seconds for test
-
-			//if (currentTime<5000) lastReceivedCanMsgTime = currentTime;
-
-			//if ((currentTime - lastReceivedCanMsgTime) >= 10000) {  // 10 seconds // && neverSaved){ //neverSaved=0;
-			//    lastReceivedCanMsgTime = currentTime;
-			//}
+			//wake up each 14 seconds for 3,5sec+ tmpCounter , just for testing
 /*
 			if ((currentTime - lastTrigger) >= 14000) {
 			    // parte una nuova finestra
@@ -99,8 +96,8 @@ int main(void){
 
 				lastReceivedCanMsgTime = currentTime;
 			}
-
 */
+
 
 		#endif
 
