@@ -21,7 +21,11 @@ int main(void){
 	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
 		//because of condensation usb could fail and chip remain stuck. the following line,
 		// ensures USB init only if we are coming from first powering and not from a reset.
-		if(RCC->CSR & RCC_CSR_PORRSTF) MX_USB_DEVICE_Init(); //if first poweron, init usb port.
+		if(RCC->CSR & RCC_CSR_PORRSTF){
+			//onboardLed_red_blink(2);
+			MX_USB_DEVICE_Init(); //if first poweron, init usb port.
+		}
+		RCC->CSR |= RCC_CSR_RMVF; //delete reset flags
 
 
 	#endif
