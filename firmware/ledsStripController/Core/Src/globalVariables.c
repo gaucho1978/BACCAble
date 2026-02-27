@@ -21,6 +21,10 @@ const char *FW_VERSION=_FW_VERSION;
 
 
 #if defined(C1baccable)
+	UART_HandleTypeDef huart1; // this is the serial line toward schizzaforte
+	uint8_t currentSchizzaforteMap='-';
+	uint32_t last_sent_schizzaforte_msg_Time=0;
+
 	float chronometerElapsedTime_0_100_km_h=60; //stores time statistic in seconds
 	float chronometerElapsedTime_100_200_km_h=60; //stores time statistic in seconds
 	uint8_t statistics_0_100_started=0; //stores id the statistic timer has started

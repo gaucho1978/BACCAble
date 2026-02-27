@@ -447,6 +447,7 @@ void processingStandardMessage(){
 
 					if ((currentTime-LANEbuttonPressBeginTime)>2000) { //if pressed since 2 seconds
 						//notify to C2, that LANE was pressed for more than 3 seconds -> request to toggle ESC/TC
+						//onboardLed_red_on();
 						if(function_esc_tc_customizator_enabled){
 							uint8_t tmpArr1[2]={C1BusID, C1cmdLaneSingleTap};
 							addToUARTSendQueue(tmpArr1, 2);

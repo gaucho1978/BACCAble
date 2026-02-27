@@ -19,10 +19,20 @@ SendQueue *tx_queue = &queue_instance;
 
 
 uint32_t last_sent_serial_msg_time=0;
+
 uint32_t lastMsgSentToC2Time=0;
 uint32_t lastMsgSentToBHTime=0;
 
 uint8_t rxBuffer[UART_BUFFER_SIZE]; //buffer to receive the message from uart
+
+#if defined(C1baccable)
+	uint32_t last_sent_serial_to_schizzaForte_msg_time=0;
+	uint8_t rxBufferUart1[UART1_BUFFER_SIZE]; //buffer to receive the message from uart (schizzaForte)
+	SendQueue queue_instance_uart1= {0};
+	SendQueue *tx_queue_uart1 = &queue_instance_uart1;
+
+#endif
+
 uint8_t rxIndex = 0;
 uint8_t syncObtained=0;
 
@@ -33,8 +43,7 @@ uint8_t syncObtained=0;
 
 void uart_init(){
 
-    __HAL_RCC_USART2_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE(); //enable clock for Uart2
 
     // Configure PA14 as Half-Duplex TX/RX
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -44,6 +53,19 @@ void uart_init(){
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF1_USART2;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	#if defined(C1baccable)
+		__HAL_RCC_GPIOB_CLK_ENABLE(); //enable clock for Uart1 (to schizzaforte)
+
+		// Configure PB6 as Half-Duplex TX/RX (to schizzaforte)
+		GPIO_InitStruct.Pin = GPIO_PIN_6;
+		//GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+		//GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Alternate = GPIO_AF0_USART1;
+		HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	#endif
+
+	__HAL_RCC_USART2_CLK_ENABLE(); //enable clock for usart2
 
     // Configure USART2 in Half-Duplex mode
     huart2.Instance = USART2;
@@ -62,63 +84,72 @@ void uart_init(){
     }
 
     // **Enable Half-Duplex mode manually by setting HDSEL bit in CR3**
-    huart2.Instance->CR3 |= USART_CR3_HDSEL;
-
-    // **Enable reception in interrupt mode**
-    HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  // Start receiving one byte
-
+    //huart2.Instance->CR3 |= USART_CR3_HDSEL;  //not needed because it is done inside init
 
     // **Enable the interrupt in the NVIC (if not already set in CubeMX)**
     HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(USART2_IRQn);
-    //onboardLed_blue_blink(10); //ok
+
+    // **Enable reception in interrupt mode**
+    HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  // Start receiving one byte
+
+	#if defined(C1baccable)
+		__HAL_RCC_USART1_CLK_ENABLE(); //enable clock for usart1 (to schizzaforte)
+
+		huart1.Instance = USART1;
+		huart1.Init.BaudRate = 9600;
+		huart1.Init.WordLength = UART_WORDLENGTH_8B;
+		huart1.Init.StopBits = UART_STOPBITS_1;
+		huart1.Init.Parity = UART_PARITY_NONE;
+		huart1.Init.Mode = UART_MODE_TX_RX;   // richiesto anche in half-duplex
+		huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+
+		if (HAL_HalfDuplex_Init(&huart1) != HAL_OK) {
+			//onboardLed_red_blink(15); //error
+			Error_Handler(750);
+		}
+
+		// **Enable the interrupt in the NVIC (if not already set in CubeMX)**
+		HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+		HAL_NVIC_EnableIRQ(USART1_IRQn);
+		// **Enable reception in interrupt mode**
+		HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1);  // Start receiving one byte
+	#endif
+
 }
 
 //pause uart2
 void pauseUart2(void){
+
+	//HAL_NVIC_DisableIRQ(USART2_IRQn);
+	//__HAL_UART_DISABLE(&huart2);
+
 	__HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE); //disable RX interrupt (RXNE)
     __HAL_UART_DISABLE_IT(&huart2, UART_IT_ERR); //disable error interrupts (ORE overrun, FE framing, NE noise)
 
     // delete correctly all UARTS errors
     __HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
 
-    // Clear hardware error flags
-	//__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF);
-	//__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_FEF);
-	//__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_NEF);
-
 	// Clear RXNE by flushing the data register
 	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 
-
-	// Reset HAL internal state
-	huart2.RxXferCount = 0;
-	huart2.RxXferSize  = 0;
-	huart2.pRxBuffPtr  = NULL;
-	huart2.ErrorCode   = HAL_UART_ERROR_NONE;
-	//onboardLed_red_blink(20);
-
-    //huart2.State = HAL_UART_STATE_READY; //return to READY state
-
+	__HAL_UART_DISABLE(&huart2);
 }
 
 //wake up serial line after pause
 void restartUart2(void){
-	//HAL_Delay(1);
 	syncObtained = 0; // sync lost
-
-	// delete correctly all UARTS errors
-	__HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
-
 	// Clear RXNE by flushing the data register
+	__HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
 	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 
+	__HAL_UART_ENABLE(&huart2);
 
 	// Reset HAL internal state
-	huart2.RxXferCount = 0;
-	huart2.RxXferSize  = 0;
-	huart2.pRxBuffPtr  = NULL;
 	huart2.ErrorCode   = HAL_UART_ERROR_NONE;
+	huart2.State    = HAL_UART_STATE_READY;
 
 	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  //restart receiving one byte
 	last_sent_serial_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
@@ -127,9 +158,37 @@ void restartUart2(void){
 
 //interrupt called when message is received
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	#if defined(C1baccable)
+		if (huart->Instance == USART1) { //message from schizzaForte
+			//record current mode
+			switch(rxBuffer[0]){ // 0x10=Bypass, 0x59=All weather, 0xa2=Natural, 0xeb=Dynamic, 0x34=Race
+				case 0x10:
+					currentSchizzaforteMap='B';
+					break;
+				case 0x59:
+					currentSchizzaforteMap='A';
+					break;
+				case 0xa2:
+					currentSchizzaforteMap='N';
+					break;
+				case 0xeb:
+					currentSchizzaforteMap='D';
+					break;
+				case 0x34:
+					currentSchizzaforteMap='R';
+					break;
+				default:
+					currentSchizzaforteMap='?';
+					break;
+			}
+			// rxBufferUart1[0]
+			onboardLed_blue_on();
+			HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1); //receive one char
+		}
 
+	#endif
 
-    if (huart->Instance == USART2) {
+    if (huart->Instance == USART2) { //message from other baccable chips
 		// evaluate received message
     	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_C2_BusID)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
@@ -160,6 +219,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									if(HAS_function_enabled) HAS_buttonPressRequested=5; //press HAS for 5 times (5 messages)
 									break;
 								case C1cmdLaneSingleTap: //request to C2 to execute the ESC/TC toggle
+									onboardLed_red_on();
 									uint8_t tmpArr2[2]={C2BusID,C2cmdtoggleEscTc};
 									addToUARTSendQueueDuringInterrupt(tmpArr2, 2);
 									break;
@@ -373,7 +433,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 // interrupt called when message send is complete
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
-	if (huart->Instance == USART2){
+	if (huart->Instance == USART2 || huart->Instance == USART1){
         //message sent. what do we do?
     	onboardLed_blue_on(); //successfully sent
     }
@@ -414,24 +474,33 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	}
 
 	*/
+	__HAL_UART_DISABLE(huart);
 
+	__HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
+	__HAL_UART_DISABLE_IT(huart, UART_IT_ERR);
 
+	// delete correctly all UARTS errors
+	__HAL_UART_CLEAR_FLAG(huart,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+	__HAL_UART_FLUSH_DRREGISTER(huart);
+
+	// Reset HAL status
+	huart->ErrorCode = HAL_UART_ERROR_NONE;
+	huart->State = HAL_UART_STATE_READY;
+
+	__HAL_UART_ENABLE(huart);
 
 	// only for USART2
 	if ((huart->Instance == USART2) && (lowConsumeIsActive==0)) {
-
-		// delete correctly all UARTS errors
-		__HAL_UART_CLEAR_FLAG(huart,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
-
-		// Reset HAL status
-		huart->ErrorCode = HAL_UART_ERROR_NONE;
-		huart->State = HAL_UART_STATE_READY;
-
 		syncObtained = 0; // sync lost
 		HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //restart receiving one byte
-
 	}
 
+	#if(defined(C1baccable))
+		if (huart->Instance == USART1) { // only for USART1 (toward schizzaForte)
+			HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1); //restart receiving one byte
+			last_sent_serial_to_schizzaForte_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
+		}
+	#endif
 
 }
 /*
@@ -462,11 +531,13 @@ uint8_t getOtherProcessorsSleepingStatus(){
 
 
 void addToUARTSendQueue(const uint8_t *data, size_t length) {
-
-	__disable_irq(); //__HAL_UART_DISABLE_IT(&huart2,UART_IT_RXNE);
+	__disable_irq();
 	addToUARTSendQueueDuringInterrupt(data,length);
-	__enable_irq(); //__HAL_UART_ENABLE_IT(&huart2,UART_IT_RXNE);
+	__enable_irq();
 }
+
+
+
 
 void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 
@@ -484,10 +555,53 @@ void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 }
 
 
+#if(defined(C1baccable))
 
+	void addToUART1SendQueue(const uint8_t *data, size_t length) { //add to queue message to schizzaforte
+		__disable_irq();
+		addToUART1SendQueueDuringInterrupt(data,length);
+		__enable_irq();
+	}
 
+	void addToUART1SendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 
-void processUART() {
+		if (tx_queue_uart1->count < QUEUE_SIZE) {  // Controlla se la coda è piena
+			memset(tx_queue_uart1->tx_buffer[tx_queue_uart1->tail], 0x20, UART1_BUFFER_SIZE);
+			if (length>UART1_BUFFER_SIZE) length= UART1_BUFFER_SIZE;
+			memcpy(tx_queue_uart1->tx_buffer[tx_queue_uart1->tail], data, length);
+			tx_queue_uart1->tail = (tx_queue_uart1->tail + 1) % QUEUE_SIZE;
+			tx_queue_uart1->count++;
+		} else {
+			// queue full, ignore the request
+			onboardLed_red_on();
+
+		}
+	}
+
+	void processUART1(void) { //process uart toward schizzaForte
+		if(currentTime<TIMING__ALL___SERIAL_IGNORE_WINDOW_MS) return;  //give time to schizzaforte to start
+		//process messages to schizzaForte
+
+		if (tx_queue_uart1->count == 0) return; // queue empty
+
+		if(currentTime-last_sent_serial_to_schizzaForte_msg_time>TIMING__C1____SERIAL_TIMEOUT_REPLY_MS){ //each 250msec send a message (so that we left the time to receiver to reply)
+    		last_sent_serial_to_schizzaForte_msg_time=currentTime;
+			if( __HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
+				if (HAL_UART_Transmit_IT(&huart1, tx_queue_uart1->tx_buffer[tx_queue_uart1->head], UART1_BUFFER_SIZE) == HAL_OK){
+					// update head index in a circular way
+					tx_queue_uart1->head = (tx_queue_uart1->head + 1) % QUEUE_SIZE;
+					tx_queue_uart1->count--;
+				}else{
+					onboardLed_red_on();
+				}
+			}
+		}
+
+	}
+
+#endif
+
+void processUART(void) {
 
 	if(currentTime<TIMING__ALL___SERIAL_IGNORE_WINDOW_MS) return;  //too early
 
@@ -515,10 +629,7 @@ void processUART() {
 		}
 	#endif
 
-	if (tx_queue->count == 0) {
-        // queue empty
-        return;
-    }
+	if (tx_queue->count == 0) return; // queue empty
 
     //if we are C2 or BH baccable, we can reply only if we received a message directed to us few milliseconds ago
 	#if (defined(C2baccable) || defined(BHbaccable))
@@ -526,7 +637,7 @@ void processUART() {
 		if(currentTime-weCanSendAMessageReply<TIMING__C2_BH_SERIAL_TIMEOUT_REPLY_MS){ //if less than 200msec has passed since last message received from master baccable, send a message
 
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
-
+				if(tx_queue->tx_buffer[tx_queue->head][1]==C1cmdLaneSingleTap) onboardLed_red_on(); //just for test
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
 					// update head index in a circular way
 					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;

@@ -146,16 +146,16 @@ void SystemClock_Config(void){
   }
 
   // configure CRS to stabilize HSI48
-  __HAL_RCC_CRS_CLK_ENABLE();
-
-  RCC_CRSInitTypeDef crs = {0};
-  crs.Prescaler = RCC_CRS_SYNC_DIV1;
-  crs.Source = RCC_CRS_SYNC_SOURCE_USB;
-  crs.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
-  crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
-  crs.ErrorLimitValue = RCC_CRS_ERRORLIMIT_DEFAULT;
-  crs.HSI48CalibrationValue = 0x20;
-  HAL_RCCEx_CRSConfig(&crs);
+  //__HAL_RCC_CRS_CLK_ENABLE();
+  //
+  //RCC_CRSInitTypeDef crs = {0};
+  //crs.Prescaler = RCC_CRS_SYNC_DIV1;
+  //crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+  //crs.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
+  //crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+  //crs.ErrorLimitValue = RCC_CRS_ERRORLIMIT_DEFAULT;
+  //crs.HSI48CalibrationValue = 0x20;
+  //HAL_RCCEx_CRSConfig(&crs);
 
 
 

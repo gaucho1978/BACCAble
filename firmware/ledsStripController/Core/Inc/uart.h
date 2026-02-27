@@ -68,12 +68,17 @@
 	void restartUart2(void);
 
 	//void uart_transmit_data(char*  message);
-	void process_received_data();
-	void enter_standby_mode();
-	void resetOtherProcessorsSleepStatus();
-	uint8_t getOtherProcessorsSleepingStatus();
+	//void process_received_data();
+	//void enter_standby_mode();
+	//void resetOtherProcessorsSleepStatus();
+	//uint8_t getOtherProcessorsSleepingStatus();
 	void addToUARTSendQueue(const uint8_t *data, size_t length);
 	void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length);
 
+	#if(defined(C1baccable))
+		void addToUART1SendQueue(const uint8_t *data, size_t length);
+		void addToUART1SendQueueDuringInterrupt(const uint8_t *data, size_t length);
+		void processUART1(void);
+	#endif
 	void processUART();
 #endif

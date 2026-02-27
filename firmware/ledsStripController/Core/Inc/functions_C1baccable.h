@@ -11,6 +11,7 @@
 	#include "functions_Common.h"
 
 	void C1baccableInitCheck(void);
+	void setSchizzaforteMap(uint8_t map);
 	void C1baccablePeriodicCheck(void);
 	void sendMainDashboardPageToSlaveBaccable(void);
 	void sendSetupDashboardPageToSlaveBaccable(void);

@@ -25,6 +25,7 @@
 
 	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
+	#define UART1_BUFFER_SIZE 6  //legth for schizzaforte messages
 
 
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
@@ -91,6 +92,10 @@
 
 
 	#if defined(C1baccable)
+		extern UART_HandleTypeDef huart1; // this is the serial line toward schizzaforte
+		extern uint8_t currentSchizzaforteMap;
+		extern uint32_t last_sent_schizzaforte_msg_Time;
+
 		extern float chronometerElapsedTime_0_100_km_h; //stores time statistic in seconds
 		extern float chronometerElapsedTime_100_200_km_h; //stores time statistic in seconds
 		extern uint8_t statistics_0_100_started; //stores id the statistic timer has started

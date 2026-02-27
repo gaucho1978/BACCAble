@@ -49,6 +49,7 @@ int main(void){
 		can_process();
 		processUART();
 
+
 		#if (defined(BHbaccable) || defined(C2baccable))
 			if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave){  //if we are using it as usb pen drive, stop serial line to avoid interferences
 				pauseUart2(); //stop serial line between chips
@@ -85,11 +86,11 @@ int main(void){
 		#endif
 
 		#if defined(C1baccable)
-
+			processUART1();
 			C1baccablePeriodicCheck();
 
 			//wake up each 14 seconds for 3,5sec+ tmpCounter , just for testing
-/*
+
 			if ((currentTime - lastTrigger) >= 14000) {
 			    // parte una nuova finestra
 				lastTrigger = currentTime;
@@ -100,7 +101,7 @@ int main(void){
 
 				lastReceivedCanMsgTime = currentTime;
 			}
-*/
+
 
 
 		#endif
@@ -109,6 +110,8 @@ int main(void){
 			C2PeriodicCheck();
 			//ESCandTCinversion=1;
 		#endif
+
+		if(ESCandTCinversion==1) onboardLed_red_on(); //just for test
 
 		#if defined(BHbaccable) //this is the baccable slave
 			BHperiodicCheck();

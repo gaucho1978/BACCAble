@@ -54,6 +54,60 @@
 		readShownParamsFromFlash();
 	}
 
+	void setSchizzaforteMap(uint8_t map){
+		uint8_t tmpArr0[9]={'#',0xb6,};
+
+		// Schizzaforte Operative commands:
+		//				First Character: #
+		//				Second Character:	0x00=set Bypass map, 0x49=set All weather map, 0x92=set Natural map, 0xdb=set Dynamic map,
+		//													0x24=set Race map, 0x6d=get current Map, 0xb6=define a Map
+		//				Next Characters:	In case of command 0xb6(Define a Map), more 7 chars are sent:
+		//													3)map to write (0x00=set Bypass map, 0x49=set All weather map, 0x92=set Natural map,
+		//														0xdb=set Dynamic map, 0x24=set Race map),
+		//													4)polynomialcurve[][0]
+		//													5)polynomialcurve[][1]
+		//													6)polynomialcurve[][2]
+		//													7)polynomialcurve[][3]
+		//													8)polynomialcurve[][4]
+		//													9)checksum (calculated....TBD)
+		// Current selected Map is sent as Reply: 0x10=Bypass, 0x59=All weather, 0xa2=Natural, 0xeb=Dynamic, 0x34=Race
+
+		//map: 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+		switch(map){
+		case 3: //A map
+			tmpArr0[2]=0x49;	//A map
+			tmpArr0[3]=96;	//amplitude
+			tmpArr0[4]=128;		//width
+			tmpArr0[5]=154;		//position
+			break;
+		case 4: //N map
+			tmpArr0[2]=0x92;
+			break;
+		case 5: //D Map
+			tmpArr0[2]=0xdb;
+			tmpArr0[3]=192;		//amplitude
+			tmpArr0[4]=128;		//width
+			tmpArr0[5]=154;		//position
+			break;
+		case 6: //R map
+			tmpArr0[2]=0x24;
+			tmpArr0[3]=230;		//amplitude
+			tmpArr0[4]=128;		//width
+			tmpArr0[5]=154;		//position
+			break;
+		case 2: //bypass
+		default: //bypass
+			tmpArr0[2]=0x00;
+			break;
+		}
+
+		//send message
+		addToUART1SendQueue(tmpArr0, 9);
+		last_sent_schizzaforte_msg_Time=currentTime;
+
+	}
+
+
 	void C1baccablePeriodicCheck(){
 		lowConsume_process();
 
@@ -293,6 +347,31 @@
 			}
 		}
 
+		if(function_pedal_booster_enabled){ //if enabled, communicate with schizzaForte each 250msec
+			if(currentTime-last_sent_schizzaforte_msg_Time>250 ){
+				if(function_pedal_booster_enabled==1){ // 1=auto //set mode according to DNAR current selection
+					//function_pedal_booster_enabled: 0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+					switch(currentDNAmode){
+						case 0x00: //Natural
+							setSchizzaforteMap(4);
+							break;
+						case 0x08: //Dynamic
+							setSchizzaforteMap(5);
+							break;
+						case 0x10: //All Weather
+							setSchizzaforteMap(3);
+							break;
+						case 0x30: //Race
+							setSchizzaforteMap(6);
+							break;
+						default:
+							setSchizzaforteMap(2);
+					}
+				}else{
+					setSchizzaforteMap(function_pedal_booster_enabled);
+				}
+			}
+		}
 
 		if(shutdownDashboardMenuRequestTime>0){
 			if(currentTime-shutdownDashboardMenuRequestTime>39000){
