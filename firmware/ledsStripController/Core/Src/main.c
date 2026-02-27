@@ -90,7 +90,7 @@ int main(void){
 			C1baccablePeriodicCheck();
 
 			//wake up each 14 seconds for 3,5sec+ tmpCounter , just for testing
-
+/*
 			if ((currentTime - lastTrigger) >= 14000) {
 			    // parte una nuova finestra
 				lastTrigger = currentTime;
@@ -102,7 +102,7 @@ int main(void){
 				lastReceivedCanMsgTime = currentTime;
 			}
 
-
+*/
 
 		#endif
 
