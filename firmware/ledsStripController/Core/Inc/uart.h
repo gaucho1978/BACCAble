@@ -64,8 +64,8 @@
 
 	
 	void uart_init();
-	void pauseUart2(void);
-	void restartUart2(void);
+	void pauseUart(UART_HandleTypeDef *huart);
+	void restartUart(UART_HandleTypeDef *huart);
 
 	//void uart_transmit_data(char*  message);
 	//void process_received_data();

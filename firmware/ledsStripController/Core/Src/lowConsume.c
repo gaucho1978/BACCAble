@@ -55,7 +55,7 @@
 
 				wakeUpAllProcessorsAndTransceivers();
 
-				restartUart2();//restart serial line between chips
+				restartUart(&huart2);//restart serial line between chips
 
 				lowConsumeIsActive=0;
 
@@ -68,7 +68,7 @@
 				if(usbConnectedToSlave==0){
 					lowConsumeIsActive=1;
 
-					pauseUart2(); //stop serial line between chips
+					pauseUart(&huart2); //stop serial line between chips
 
 					reduceConsumption();
 				}

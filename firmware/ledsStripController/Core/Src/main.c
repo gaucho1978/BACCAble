@@ -52,7 +52,7 @@ int main(void){
 
 		#if (defined(BHbaccable) || defined(C2baccable))
 			if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave){  //if we are using it as usb pen drive, stop serial line to avoid interferences
-				pauseUart2(); //stop serial line between chips
+				pauseUart(&huart2); //stop serial line between chips
 			}
 		#endif
 
@@ -92,17 +92,13 @@ int main(void){
 			//wake up each 14 seconds for 3,5sec+ tmpCounter , just for testing
 /*
 			if ((currentTime - lastTrigger) >= 14000) {
-			    // parte una nuova finestra
-				lastTrigger = currentTime;
+				lastTrigger = currentTime; // new window begin
 				tmpCounter++;
 			}
 
-			if ((currentTime - lastTrigger) < tmpCounter) {
-
-				lastReceivedCanMsgTime = currentTime;
-			}
-
+			if ((currentTime - lastTrigger) < tmpCounter) lastReceivedCanMsgTime = currentTime;
 */
+
 
 		#endif
 

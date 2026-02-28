@@ -120,42 +120,6 @@ void uart_init(){
 
 }
 
-//pause uart2
-void pauseUart2(void){
-
-	//HAL_NVIC_DisableIRQ(USART2_IRQn);
-	//__HAL_UART_DISABLE(&huart2);
-
-	__HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE); //disable RX interrupt (RXNE)
-    __HAL_UART_DISABLE_IT(&huart2, UART_IT_ERR); //disable error interrupts (ORE overrun, FE framing, NE noise)
-
-    // delete correctly all UARTS errors
-    __HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
-
-	// Clear RXNE by flushing the data register
-	__HAL_UART_FLUSH_DRREGISTER(&huart2);
-
-	__HAL_UART_DISABLE(&huart2);
-}
-
-//wake up serial line after pause
-void restartUart2(void){
-	syncObtained = 0; // sync lost
-	// Clear RXNE by flushing the data register
-	__HAL_UART_CLEAR_FLAG(&huart2,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
-	__HAL_UART_FLUSH_DRREGISTER(&huart2);
-
-	__HAL_UART_ENABLE(&huart2);
-
-	// Reset HAL internal state
-	huart2.ErrorCode   = HAL_UART_ERROR_NONE;
-	huart2.State    = HAL_UART_STATE_READY;
-
-	HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  //restart receiving one byte
-	last_sent_serial_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
-}
-
-
 //interrupt called when message is received
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	#if defined(C1baccable)
@@ -439,16 +403,54 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
     }
 }
 
+//pause uart
+void pauseUart(UART_HandleTypeDef *huart){
+	__HAL_UART_DISABLE_IT(huart, UART_IT_RXNE); //disable RX interrupt (RXNE)
+    __HAL_UART_DISABLE_IT(huart, UART_IT_ERR); //disable error interrupts (ORE overrun, FE framing, NE noise)
+
+    // deletes all UARTS errors
+    __HAL_UART_CLEAR_FLAG(huart,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+
+	__HAL_UART_FLUSH_DRREGISTER(huart); // Clear RXNE by flushing the data register
+
+	//__HAL_UART_DISABLE(huart);
+}
+
+//wake up serial line after pause
+void restartUart(UART_HandleTypeDef *huart){
+	syncObtained = 0; // sync lost
+	// Clear RXNE by flushing the data register
+	__HAL_UART_CLEAR_FLAG(huart,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+	__HAL_UART_FLUSH_DRREGISTER(huart);
+
+	//__HAL_UART_ENABLE(huart);
+
+	// Reset HAL internal state
+	huart->ErrorCode	= HAL_UART_ERROR_NONE;
+	huart->State		= HAL_UART_STATE_READY;
+
+	#if defined(C1baccable)
+		if (huart->Instance == USART1) {
+			HAL_UART_Receive_IT(huart, &rxBufferUart1[0], 1); //restart receiving one byte
+			last_sent_serial_to_schizzaForte_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
+		}
+	#endif
+
+	if (huart->Instance == USART2) {
+		HAL_UART_Receive_IT(huart, &rxBuffer[0], 1);  //restart receiving one byte
+		last_sent_serial_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
+	}
+}
+
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 
 	if (( currentTime - lastUartErrorCallback)>1000) onboardLed_red_on();
-
 	lastUartErrorCallback = currentTime;
 
 	/*
 	if (huart->ErrorCode & HAL_UART_ERROR_ORE) {
-		// Overrun error (buffer pieno, dati persi)
+		// Overrun error (full buffer, data loss)
 		//onboardLed_red_on();
 	}
 	if (huart->ErrorCode & HAL_UART_ERROR_FE) {
@@ -474,33 +476,9 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	}
 
 	*/
-	__HAL_UART_DISABLE(huart);
 
-	__HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
-	__HAL_UART_DISABLE_IT(huart, UART_IT_ERR);
-
-	// delete correctly all UARTS errors
-	__HAL_UART_CLEAR_FLAG(huart,UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
-	__HAL_UART_FLUSH_DRREGISTER(huart);
-
-	// Reset HAL status
-	huart->ErrorCode = HAL_UART_ERROR_NONE;
-	huart->State = HAL_UART_STATE_READY;
-
-	__HAL_UART_ENABLE(huart);
-
-	// only for USART2
-	if ((huart->Instance == USART2) && (lowConsumeIsActive==0)) {
-		syncObtained = 0; // sync lost
-		HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1); //restart receiving one byte
-	}
-
-	#if(defined(C1baccable))
-		if (huart->Instance == USART1) { // only for USART1 (toward schizzaForte)
-			HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1); //restart receiving one byte
-			last_sent_serial_to_schizzaForte_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
-		}
-	#endif
+	pauseUart(huart);
+	if ((lowConsumeIsActive==0) || (huart->Instance == USART1)) restartUart(huart);
 
 }
 /*
