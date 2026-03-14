@@ -13,6 +13,8 @@
 	void C1baccableInitCheck(void);
 	void setSchizzaforteMap(uint8_t map);
 	void C1baccablePeriodicCheck(void);
+	uint8_t mapCommandNotApplied(void);
+
 	void sendMainDashboardPageToSlaveBaccable(void);
 	void sendSetupDashboardPageToSlaveBaccable(void);
 	void sendParamsSetupDashboardPageToSlaveBaccable(void);

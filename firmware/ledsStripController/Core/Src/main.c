@@ -41,7 +41,6 @@ int main(void){
 	#endif
 		//HAL_Delay (100);
 
-
 	while (1){
 
 		currentTimeMainLoopDebug=currentTime;
@@ -97,8 +96,30 @@ int main(void){
 			}
 
 			if ((currentTime - lastTrigger) < tmpCounter) lastReceivedCanMsgTime = currentTime;
-*/
 
+*/
+		//	lastReceivedCanMsgTime = currentTime; //always awake, just for test
+
+			//just for test
+
+			//if(currentDNAmode==0 && (currentRpmSpeed> 400) && neverSaved && currentTime>30000){ //engine on and drive style Natural
+			//	neverSaved=0;
+			//	playMotorJingle=255;
+			//}
+
+			/*
+			lastReceivedCanMsgTime = currentTime; //always awake, just for test
+			currentRpmSpeed=1000;
+			if ((currentTime - lastTrigger) >= 10000) {
+				lastTrigger = currentTime; // new window begin
+				QV_exhaust_flap_function_enabled=1;
+				if (chineseValveIsOpened==0){ //if valves are closed,
+					ChineseExhaustValveRequest='O'; //open request
+				}else{
+					ChineseExhaustValveRequest='C'; //close request
+				}
+			}
+			*/
 
 		#endif
 
@@ -107,7 +128,7 @@ int main(void){
 			//ESCandTCinversion=1;
 		#endif
 
-		if(ESCandTCinversion==1) onboardLed_red_on(); //just for test
+		//if(ESCandTCinversion==1) onboardLed_red_on(); //just for test
 
 		#if defined(BHbaccable) //this is the baccable slave
 			BHperiodicCheck();

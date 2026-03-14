@@ -156,7 +156,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
-
+#include "globalVariables.h"
 /** @addtogroup STM32F0xx_HAL_Driver
   * @{
   */
@@ -837,7 +837,7 @@ HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *huart, uint8_t *pData
 
     /* Enable the UART Transmit Data Register Empty Interrupt */
     __HAL_UART_ENABLE_IT(huart, UART_IT_TXE);
-
+    //onboardLed_red_on();
     return HAL_OK;
   }
   else
@@ -853,14 +853,9 @@ HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *huart, uint8_t *pData
   * @param Size: amount of data to be received.
   * @retval HAL status
   */
-HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size)
-{
-  if((huart->State == HAL_UART_STATE_READY) || (huart->State == HAL_UART_STATE_BUSY_TX))
-  {
-    if((pData == NULL ) || (Size == 0))
-    {
-      return HAL_ERROR;
-    }
+HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size){
+  if((huart->State == HAL_UART_STATE_READY) || (huart->State == HAL_UART_STATE_BUSY_TX)){
+    if((pData == NULL ) || (Size == 0)) return HAL_ERROR;
 
     /* Process Locked */
     __HAL_LOCK(huart);
@@ -874,31 +869,26 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *huart, uint8_t *pData,
 
     huart->ErrorCode = HAL_UART_ERROR_NONE;
     /* Check if a transmit process is ongoing or not */
-    if(huart->State == HAL_UART_STATE_BUSY_TX)
-    {
+    if(huart->State == HAL_UART_STATE_BUSY_TX){
       huart->State = HAL_UART_STATE_BUSY_TX_RX;
-    }
-    else
-    {
+    }else{
       huart->State = HAL_UART_STATE_BUSY_RX;
     }
 
-    /* Enable the UART Parity Error Interrupt */
+    // Enable the UART Parity Error Interrupt
     __HAL_UART_ENABLE_IT(huart, UART_IT_PE);
 
-    /* Enable the UART Error Interrupt: (Frame error, noise error, overrun error) */
+    // Enable the UART Error Interrupt: (Frame error, noise error, overrun error)
     __HAL_UART_ENABLE_IT(huart, UART_IT_ERR);
 
-    /* Process Unlocked */
+    // Process Unlocked
     __HAL_UNLOCK(huart);
 
-    /* Enable the UART Data Register not empty Interrupt */
+    // Enable the UART Data Register not empty Interrupt
     __HAL_UART_ENABLE_IT(huart, UART_IT_RXNE);
 
     return HAL_OK;
-  }
-  else
-  {
+  }else{
     return HAL_BUSY;
   }
 }

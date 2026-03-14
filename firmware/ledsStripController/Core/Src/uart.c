@@ -61,13 +61,18 @@ void uart_init(){
 		GPIO_InitStruct.Pin = GPIO_PIN_6;
 		//GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 		//GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
 		GPIO_InitStruct.Alternate = GPIO_AF0_USART1;
 		HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+
 	#endif
 
+	HAL_Delay(4); //let's wait that electric signal on serial line get stabilized.
+	//HAL_Delay(100);onboardLed_red_on();
 	__HAL_RCC_USART2_CLK_ENABLE(); //enable clock for usart2
 
-    // Configure USART2 in Half-Duplex mode
+	// Configure USART2 in Half-Duplex mode
     huart2.Instance = USART2;
     huart2.Init.BaudRate = 38400; //38400;
     huart2.Init.WordLength = UART_WORDLENGTH_8B;
@@ -78,13 +83,7 @@ void uart_init(){
     huart2.Init.OverSampling = UART_OVERSAMPLING_16;
     huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-    if (HAL_HalfDuplex_Init(&huart2) != HAL_OK) {
-    	//onboardLed_red_blink(15); //error
-        Error_Handler(500);
-    }
-
-    // **Enable Half-Duplex mode manually by setting HDSEL bit in CR3**
-    //huart2.Instance->CR3 |= USART_CR3_HDSEL;  //not needed because it is done inside init
+    if (HAL_HalfDuplex_Init(&huart2) != HAL_OK) Error_Handler(500); //error
 
     // **Enable the interrupt in the NVIC (if not already set in CubeMX)**
     HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
@@ -94,7 +93,7 @@ void uart_init(){
     HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);  // Start receiving one byte
 
 	#if defined(C1baccable)
-		__HAL_RCC_USART1_CLK_ENABLE(); //enable clock for usart1 (to schizzaforte)
+    	__HAL_RCC_USART1_CLK_ENABLE(); //enable clock for usart1 (to schizzaforte)
 
 		huart1.Instance = USART1;
 		huart1.Init.BaudRate = 9600;
@@ -106,16 +105,21 @@ void uart_init(){
 		huart1.Init.OverSampling = UART_OVERSAMPLING_16;
 		huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 
-		if (HAL_HalfDuplex_Init(&huart1) != HAL_OK) {
-			//onboardLed_red_blink(15); //error
-			Error_Handler(750);
-		}
+		//volatile uint32_t tmp = huart1.Instance->CR1; //fake reading, just to let uart1 be prepared
+		//(void)tmp;
+
+		//for (voltile int i = 0; i < 10000; i++); //just for test, to allow electric signal to stabilize
+
+		if (HAL_HalfDuplex_Init(&huart1) != HAL_OK) Error_Handler(750);
 
 		// **Enable the interrupt in the NVIC (if not already set in CubeMX)**
 		HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
 		HAL_NVIC_EnableIRQ(USART1_IRQn);
+
 		// **Enable reception in interrupt mode**
 		HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1);  // Start receiving one byte
+
+
 	#endif
 
 }
@@ -125,7 +129,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	#if defined(C1baccable)
 		if (huart->Instance == USART1) { //message from schizzaForte
 			//record current mode
-			switch(rxBuffer[0]){ // 0x10=Bypass, 0x59=All weather, 0xa2=Natural, 0xeb=Dynamic, 0x34=Race
+			switch(rxBufferUart1[0]){ // 0x10=Bypass, 0x59=All weather, 0xa2=Natural, 0xeb=Dynamic, 0x34=Race
 				case 0x10:
 					currentSchizzaforteMap='B';
 					break;
@@ -183,7 +187,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									if(HAS_function_enabled) HAS_buttonPressRequested=5; //press HAS for 5 times (5 messages)
 									break;
 								case C1cmdLaneSingleTap: //request to C2 to execute the ESC/TC toggle
-									onboardLed_red_on();
+									//onboardLed_red_on();
 									uint8_t tmpArr2[2]={C2BusID,C2cmdtoggleEscTc};
 									addToUARTSendQueueDuringInterrupt(tmpArr2, 2);
 									break;
@@ -397,10 +401,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 // interrupt called when message send is complete
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
-	if (huart->Instance == USART2 || huart->Instance == USART1){
+	if (huart->Instance == USART2){
         //message sent. what do we do?
     	onboardLed_blue_on(); //successfully sent
     }
+
+	#if defined(C1baccable)
+		if(huart->Instance == USART1){
+			//onboardLed_blue_on(); //successfully sent
+			CLEAR_BIT(huart1.Instance->CR1, USART_CR1_TE);		//disable TX
+			SET_BIT(huart1.Instance->CR1, USART_CR1_RE);		//enable RX
+			HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1); //restart RX
+		}
+	#endif
 }
 
 //pause uart
@@ -431,6 +444,7 @@ void restartUart(UART_HandleTypeDef *huart){
 
 	#if defined(C1baccable)
 		if (huart->Instance == USART1) {
+
 			HAL_UART_Receive_IT(huart, &rxBufferUart1[0], 1); //restart receiving one byte
 			last_sent_serial_to_schizzaForte_msg_time=currentTime; //avoid to send message in the same moment when interrupt was restarted
 		}
@@ -476,7 +490,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 	}
 
 	*/
-
 	pauseUart(huart);
 	if ((lowConsumeIsActive==0) || (huart->Instance == USART1)) restartUart(huart);
 
@@ -562,16 +575,19 @@ void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 
 		if (tx_queue_uart1->count == 0) return; // queue empty
 
-		if(currentTime-last_sent_serial_to_schizzaForte_msg_time>TIMING__C1____SERIAL_TIMEOUT_REPLY_MS){ //each 250msec send a message (so that we left the time to receiver to reply)
+		if(currentTime-last_sent_serial_to_schizzaForte_msg_time>TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS){ //each 250msec send a message (so that we left the time to receiver to reply)
     		last_sent_serial_to_schizzaForte_msg_time=currentTime;
-			if( __HAL_UART_GET_FLAG(&huart1, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
-				if (HAL_UART_Transmit_IT(&huart1, tx_queue_uart1->tx_buffer[tx_queue_uart1->head], UART1_BUFFER_SIZE) == HAL_OK){
-					// update head index in a circular way
-					tx_queue_uart1->head = (tx_queue_uart1->head + 1) % QUEUE_SIZE;
-					tx_queue_uart1->count--;
-				}else{
-					onboardLed_red_on();
-				}
+
+    		CLEAR_BIT(huart1.Instance->CR1, USART_CR1_RE);	// disable RX
+    		SET_BIT(huart1.Instance->CR1, USART_CR1_TE);	// enable TX
+    		__HAL_UART_CLEAR_FLAG(&huart1, UART_CLEAR_OREF | UART_CLEAR_NEF | UART_CLEAR_TCF); //clear any error
+    		//onboardLed_red_on();
+			if (HAL_UART_Transmit_IT(&huart1, tx_queue_uart1->tx_buffer[tx_queue_uart1->head], UART1_BUFFER_SIZE) == HAL_OK){
+				// update head index in a circular way
+				tx_queue_uart1->head = (tx_queue_uart1->head + 1) % QUEUE_SIZE;
+				tx_queue_uart1->count--;
+			}else{
+				onboardLed_red_on();
 			}
 		}
 
@@ -617,6 +633,7 @@ void processUART(void) {
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if(tx_queue->tx_buffer[tx_queue->head][1]==C1cmdLaneSingleTap) onboardLed_red_on(); //just for test
 				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
+
 					// update head index in a circular way
 					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;
 					tx_queue->count--;

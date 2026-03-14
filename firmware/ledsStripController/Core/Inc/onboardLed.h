@@ -16,6 +16,13 @@
 	#define START_STOP_DISABLER_Port GPIOA
 	#define START_STOP_DISABLER START_STOP_DISABLER_Port , START_STOP_DISABLER_Pin
 
+	#define Q10mosfet_Pin GPIO_PIN_8 //PA8
+	#define Q10mosfet_Port GPIOA
+	#define Q10mosfet Q10mosfet_Port , Q10mosfet_Pin
+
+	#define Q11mosfet_Pin GPIO_PIN_7 //PA7
+	#define Q11mosfet_Port GPIOA
+	#define Q11mosfet Q11mosfet_Port , Q11mosfet_Pin
 
 	#define LED_DURATION 25
 

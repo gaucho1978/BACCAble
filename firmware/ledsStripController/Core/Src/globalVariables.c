@@ -23,7 +23,87 @@ const char *FW_VERSION=_FW_VERSION;
 #if defined(C1baccable)
 	UART_HandleTypeDef huart1; // this is the serial line toward schizzaforte
 	uint8_t currentSchizzaforteMap='-';
-	uint32_t last_sent_schizzaforte_msg_Time=0;
+	int8_t pedal_map_power=0; //pedal map amplification, between -10 and +10
+	uint8_t pedal_map_power_adapted=0; //adaptation depending on current map
+	uint32_t last_queued_serial_to_schizzaForte_msg_time=TIMING__ALL___SERIAL_IGNORE_WINDOW_MS;
+	uint8_t playMotorJingle=0; //position of the execution of the jingle. set to 255 to play jingle
+
+	uint8_t jingleArray[255] = {
+	    // 0 ×10
+	    0,0,0,0,0,0,0,0,0,0,
+
+	    // 11 ×10
+	    11,11,11,11,11,11,11,11,11,11,
+
+	    // 22 ×10
+	    22,22,22,22,22,22,22,22,22,22,
+
+	    // 33 ×10
+	    33,33,33,33,33,33,33,33,33,33,
+
+	    // 44 ×10
+	    44,44,44,44,44,44,44,44,44,44,
+
+	    // 55 ×10
+	    55,55,55,55,55,55,55,55,55,55,
+
+	    // 66 ×10
+	    66,66,66,66,66,66,66,66,66,66,
+
+	    // 77 ×10
+	    77,77,77,77,77,77,77,77,77,77,
+
+	    // 88 ×10
+	    88,88,88,88,88,88,88,88,88,88,
+
+	    // 99 ×10
+	    99,99,99,99,99,99,99,99,99,99,
+
+	    // 110 ×10
+	    110,110,110,110,110,110,110,110,110,110,
+
+	    // 121 ×10
+	    121,121,121,121,121,121,121,121,121,121,
+
+	    // 132 ×10
+	    132,132,132,132,132,132,132,132,132,132,
+
+	    // 143 ×10
+	    143,143,143,143,143,143,143,143,143,143,
+
+	    // 154 ×10
+	    154,154,154,154,154,154,154,154,154,154,
+
+	    // 165 ×10
+	    165,165,165,165,165,165,165,165,165,165,
+
+	    // 176 ×10
+	    176,176,176,176,176,176,176,176,176,176,
+
+	    // 187 ×10
+	    187,187,187,187,187,187,187,187,187,187,
+
+	    // 198 ×10
+	    198,198,198,198,198,198,198,198,198,198,
+
+	    // 209 ×10
+	    209,209,209,209,209,209,209,209,209,209,
+
+	    // 220 ×10
+	    220,220,220,220,220,220,220,220,220,220,
+
+	    // 231 ×10
+	    231,231,231,231,231,231,231,231,231,231,
+
+	    // 242 ×10
+	    242,242,242,242,242,242,242,242,242,242,
+
+	    // 253 ×10
+	    253,253,253,253,253,253,253,253,253,253,
+
+	    // Zeri finali per arrivare a 255
+	    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	};
 
 	float chronometerElapsedTime_0_100_km_h=60; //stores time statistic in seconds
 	float chronometerElapsedTime_100_200_km_h=60; //stores time statistic in seconds
@@ -128,9 +208,9 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','R','e','a','d',' ',' ','F','a','u','l','t','s',' ',' ',' '},
 			{'O',' ',' ','R','e','m','o','t','e',' ','S','t','a','r','t',' ',' ',' '},
 			{0xD8,' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
-			{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 			{'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
-			{'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
+			{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
+			{'P','e','d','a','l',' ','P','o','w','e','r',':',' ','0',' ',' ',' ',' '},
 			{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 			{'O',' ',' ','A','C','C',' ','A','u','t','o','s','t','a','r','t',' ',' '},
 			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' ',},
@@ -298,6 +378,10 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t ReleasebuttonFirstClickTime=0;
 	uint32_t ReleasebuttonPressBeginTime=0;
 
+	//variables for chinese valves management (radiocontrol buttons pressed by baccable C1)
+	uint32_t exhaustValveMosfetCommandTime=0; //time when mosfet was closed
+	uint8_t ChineseExhaustValveRequest=0; //0=no request, 'O'=open request, 'C'=Close request
+	uint8_t chineseValveIsOpened=0; //0=closed, 1=opened
 
 
 #endif

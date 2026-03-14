@@ -46,7 +46,7 @@
 		function_open_windows_with_door_lock=(uint16_t)readFromFlash(26);
 		HAS_function_enabled=(uint16_t)readFromFlash(27);
 		QV_exhaust_flap_function_enabled=(uint16_t)readFromFlash(28);
-
+		pedal_map_power=(int8_t)(uint8_t)readFromFlash(29);
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
 		instructSlaveBoardsTriggerEnabled=1;
@@ -55,7 +55,7 @@
 	}
 
 	void setSchizzaforteMap(uint8_t map){
-		uint8_t tmpArr0[9]={'#',0xb6,};
+		uint8_t tmpArr0[UART1_BUFFER_SIZE]={'#',0xb6,};
 
 		// Schizzaforte Operative commands:
 		//				First Character: #
@@ -69,41 +69,78 @@
 		//													6)polynomialcurve[][2]
 		//													7)polynomialcurve[][3]
 		//													8)polynomialcurve[][4]
-		//													9)checksum (calculated....TBD)
+		//													9)checksum (calculated)
 		// Current selected Map is sent as Reply: 0x10=Bypass, 0x59=All weather, 0xa2=Natural, 0xeb=Dynamic, 0x34=Race
 
 		//map: 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+
+
+
 		switch(map){
-		case 3: //A map
-			tmpArr0[2]=0x49;	//A map
-			tmpArr0[3]=96;	//amplitude
-			tmpArr0[4]=128;		//width
-			tmpArr0[5]=154;		//position
-			break;
-		case 4: //N map
-			tmpArr0[2]=0x92;
-			break;
-		case 5: //D Map
-			tmpArr0[2]=0xdb;
-			tmpArr0[3]=192;		//amplitude
-			tmpArr0[4]=128;		//width
-			tmpArr0[5]=154;		//position
-			break;
-		case 6: //R map
-			tmpArr0[2]=0x24;
-			tmpArr0[3]=230;		//amplitude
-			tmpArr0[4]=128;		//width
-			tmpArr0[5]=154;		//position
-			break;
-		case 2: //bypass
-		default: //bypass
-			tmpArr0[2]=0x00;
-			break;
+			case 3: //A map
+				//prepare power amplification factor
+				//input range -10+10, output range -16+16
+				if (pedal_map_power >= 0){
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 1.6f+0.5f);
+				}else{
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 0.6f-0.5f);
+				}
+
+				tmpArr0[2]=0x49;	//A map
+				tmpArr0[3]=96+pedal_map_power_adapted;	//amplitude
+				tmpArr0[4]=128;		//width
+				tmpArr0[5]=154;		//position
+				break;
+			case 4: //N map
+				//prepare power amplification factor
+				//input range -10+10, output range -16+32
+				if (pedal_map_power >= 0) {
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 3.2f + 0.5f);
+				} else {
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 1.6f - 0.5f);
+				}
+
+				tmpArr0[2]=0x92;
+				tmpArr0[3]=128+pedal_map_power_adapted;		//amplitude
+				tmpArr0[4]=128;		//width
+				tmpArr0[5]=154;		//position
+				break;
+			case 5: //D Map
+				//prepare power amplification factor
+				//input range -10+10, output range -32+20
+				if (pedal_map_power >= 0) {
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 2.0f + 0.5f);
+				} else {
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 3.2f - 0.5f);
+				}
+				tmpArr0[2]=0xdb;
+				tmpArr0[3]=192+pedal_map_power_adapted;		//amplitude
+				tmpArr0[4]=128;		//width
+				tmpArr0[5]=154;		//position
+				break;
+			case 6: //R map
+				//prepare power amplification factor
+				//input range -10+10, output range -18+24
+				if (pedal_map_power >= 0) {
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 2.4f + 0.5f);
+				} else {
+					pedal_map_power_adapted = (int8_t)(pedal_map_power * 1.8f - 0.5f);
+				}
+				tmpArr0[2]=0x24;
+				tmpArr0[3]=230+pedal_map_power_adapted;		//amplitude
+				tmpArr0[4]=128;		//width
+				tmpArr0[5]=154;		//position
+				break;
+			case 2: //bypass
+			default: //bypass
+				tmpArr0[2]=0x00;
+				break;
 		}
+
+		tmpArr0[8]=calculateCRC(tmpArr0,UART1_BUFFER_SIZE); //calculate checksum
 
 		//send message
 		addToUART1SendQueue(tmpArr0, 9);
-		last_sent_schizzaforte_msg_Time=currentTime;
 
 	}
 
@@ -112,39 +149,63 @@
 		lowConsume_process();
 
 		if(QV_exhaust_flap_function_enabled){
-				//if engine off, close valves
 
-				switch(ForceQVexhaustValveOpened){
-					case 1: //send connection request
-					case 2: //send presence
-					case 3: //overwrite param
-					case 4: //return control to ECU
-						if(currentTime-lastSentQVexhaustValveMsgTime>500){ //each 500msec send a message
-							if(currentRpmSpeed==0) ForceQVexhaustValveOpened=4; //return control to ecu
-							onboardLed_blue_on();
-							//onboardLed_red_on();
-							can_tx(&forceQVexhaustValveMsgHeader[ForceQVexhaustValveOpened-1], forceQVexhaustValveMsgData[ForceQVexhaustValveOpened-1]); //send connect message
-							lastSentQVexhaustValveMsgTime=currentTime;
-							switch(ForceQVexhaustValveOpened){
-								case 1: //connection request was sent
-								case 2: //presence was sent
-									ForceQVexhaustValveOpened++; //prepare to send next
-									break;
-								case 3: //param overwrite was sent
-									ForceQVexhaustValveOpened--; //prepare to send tester presence
-									break;
-								case 4: //return control to ECU was sent
-									ForceQVexhaustValveOpened=0; //sequence end
-									break;
-								default:  //we will never come here
-									break;
-							}
-
-						}
-						break;
-					default: //do nothing
-						break;
+			// Timeout management for chinese valves radiocontrol
+			if (exhaustValveMosfetCommandTime) {
+				if(currentTime - exhaustValveMosfetCommandTime > 1000){ //if timeout has passed
+					HAL_GPIO_WritePin(Q10mosfet, GPIO_PIN_RESET); //open the transistor (release the button)
+					HAL_GPIO_WritePin(Q11mosfet, GPIO_PIN_RESET); //open the transistor (release the button)
+					exhaustValveMosfetCommandTime = 0;
 				}
+			}
+
+			// if a request to press the button on the radiocontrol was made
+			if (ChineseExhaustValveRequest){ //O=open, C=close, 0x00=none
+			    HAL_GPIO_WritePin(Q10mosfet_Port,(ChineseExhaustValveRequest == 'O') ? Q10mosfet_Pin : Q11mosfet_Pin,GPIO_PIN_SET); //close transistor (press button)
+			    chineseValveIsOpened = (ChineseExhaustValveRequest == 'O'); //store valves status
+			    exhaustValveMosfetCommandTime = currentTime; //store time when button was pressed
+			    ChineseExhaustValveRequest = 0; //mark the request as executed
+			}
+
+			// if valve was open and engine had been shutted off
+			if (chineseValveIsOpened && currentRpmSpeed == 0){
+			    HAL_GPIO_WritePin(Q11mosfet, GPIO_PIN_SET); //close transistor
+			    exhaustValveMosfetCommandTime = currentTime; //store time when button was pressed
+			    chineseValveIsOpened = 0; //update valves status
+			}
+
+
+			switch(ForceQVexhaustValveOpened){
+				case 1: //send connection request
+				case 2: //send presence
+				case 3: //overwrite param
+				case 4: //return control to ECU
+					if(currentTime-lastSentQVexhaustValveMsgTime>500){ //each 500msec send a message
+						if(currentRpmSpeed==0) ForceQVexhaustValveOpened=4; //return control to ecu
+						onboardLed_blue_on();
+						//onboardLed_red_on();
+						can_tx(&forceQVexhaustValveMsgHeader[ForceQVexhaustValveOpened-1], forceQVexhaustValveMsgData[ForceQVexhaustValveOpened-1]); //send connect message
+						lastSentQVexhaustValveMsgTime=currentTime;
+						switch(ForceQVexhaustValveOpened){
+							case 1: //connection request was sent
+							case 2: //presence was sent
+								ForceQVexhaustValveOpened++; //prepare to send next
+								break;
+							case 3: //param overwrite was sent
+								ForceQVexhaustValveOpened--; //prepare to send tester presence
+								break;
+							case 4: //return control to ECU was sent
+								ForceQVexhaustValveOpened=0; //sequence end
+								break;
+							default:  //we will never come here
+								break;
+						}
+
+					}
+					break;
+				default: //do nothing
+					break;
+			}
 
 		}
 
@@ -348,30 +409,81 @@
 		}
 
 		if(function_pedal_booster_enabled){ //if enabled, communicate with schizzaForte each 250msec
-			if(currentTime-last_sent_schizzaforte_msg_Time>250 ){
-				if(function_pedal_booster_enabled==1){ // 1=auto //set mode according to DNAR current selection
-					//function_pedal_booster_enabled: 0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
-					switch(currentDNAmode){
-						case 0x00: //Natural
-							setSchizzaforteMap(4);
-							break;
-						case 0x08: //Dynamic
-							setSchizzaforteMap(5);
-							break;
-						case 0x10: //All Weather
-							setSchizzaforteMap(3);
-							break;
-						case 0x30: //Race
-							setSchizzaforteMap(6);
-							break;
-						default:
-							setSchizzaforteMap(2);
+			if(mapCommandNotApplied()){ //only if the map command was not correctly received
+				if((currentTime - last_queued_serial_to_schizzaForte_msg_time)>(4 * TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS) ){
+					last_queued_serial_to_schizzaForte_msg_time=currentTime; //avoid to Return Here
+
+					if(function_pedal_booster_enabled==1){ // 1=auto //set mode according to DNAR current selection
+						//function_pedal_booster_enabled: 0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+						switch(currentDNAmode){
+							case 0x00: //Natural
+								setSchizzaforteMap(4);
+								break;
+							case 0x08: //Dynamic
+								setSchizzaforteMap(5);
+								break;
+							case 0x10: //All Weather
+								setSchizzaforteMap(3);
+								break;
+							case 0x30: //Race
+								setSchizzaforteMap(6);
+								break;
+							default:
+								setSchizzaforteMap(2); //bypass
+						}
+					}else{
+
+						setSchizzaforteMap(function_pedal_booster_enabled);
 					}
-				}else{
-					setSchizzaforteMap(function_pedal_booster_enabled);
 				}
 			}
 		}
+
+		if(playMotorJingle){ //if  jingle was requested, check if we have to disable it
+			if(currentDNAmode!=0 || currentRpmSpeed< 400){ //engine off or drive style not Natural
+				playMotorJingle=0;
+			}
+		}
+
+		if(playMotorJingle){ //if we have to execute jingle
+
+
+			//once each 400msec play one note with the engine
+			if((currentTime - last_queued_serial_to_schizzaForte_msg_time)>(4 * TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS) ){
+				last_queued_serial_to_schizzaForte_msg_time=currentTime; //avoid to Return Here
+				//play it: force motor RPM for one time slot
+
+				// Schizzaforte Operative commands:
+				//				First Character: #
+				//				Second Character:	0x6d=get current Map, 0xb6=define a Map, 0xff=set accelerator percentage
+				//				Next Characters:	In case of command 0xb6(Define a Map), more 7 chars are sent:
+				//													3)map to write (0x00=set Bypass map, 0x49=set All weather map, 0x92=set Natural map,
+				//														0xdb=set Dynamic map, 0x24=set Race map),
+				//													4)polynomialcurve[][0]
+				//													5)polynomialcurve[][1]
+				//													6)polynomialcurve[][2]
+				//													7)polynomialcurve[][3]
+				//													8)polynomialcurve[][4]
+				//													9)checksum (calculated)
+				//				Next Characters:	In case of command 0xff (set Accelerator), more 7 chars are sent:
+				//													3)accelerator value (0-255= 0 to 1 percentage)
+				//													4)0 //not used
+				//													5)0 //not used
+				//													6)0 //not used
+				//													7)0 //not used
+				//													8)0 //not used
+				//													9)checksum (calculated)
+				// Current selected Map is sent as Reply to any request: 0x10=Bypass, 0x59=All weather, 0xa2=Natural, 0xeb=Dynamic, 0x34=Race
+
+				uint8_t tmpArr0[UART1_BUFFER_SIZE]={'#',0xff,};
+				tmpArr0[2]=jingleArray[255-(playMotorJingle--)]; //set accelerator value from jingle array
+				tmpArr0[8]=calculateCRC(tmpArr0,UART1_BUFFER_SIZE); //calculate checksum
+
+				//send message
+				addToUART1SendQueue(tmpArr0, 9);
+			}
+		}
+
 
 		if(shutdownDashboardMenuRequestTime>0){
 			if(currentTime-shutdownDashboardMenuRequestTime>39000){
@@ -424,6 +536,54 @@
 					break; //unexpected
 			}
 		}
+	}
+
+	//verifies if message sent to schizzaforte was correctly applied
+	uint8_t mapCommandNotApplied(void){
+
+		switch(function_pedal_booster_enabled){
+			case 0: //0=disabled
+				//return 0; //not required to set map
+				break;
+			case 1: //1=Automatic Map
+				switch(currentDNAmode){
+					case 0x00: //Natural
+						if(currentSchizzaforteMap=='N') return 0; //map applied
+						break;
+					case 0x08: //Dynamic
+						if(currentSchizzaforteMap=='D') return 0; //map applied
+						break;
+					case 0x10: //All Weather
+						if(currentSchizzaforteMap=='A') return 0; //map applied
+						break;
+					case 0x30: //Race
+						if(currentSchizzaforteMap=='R') return 0; //map applied
+						break;
+					default:
+						//
+				}
+
+				break;
+			case 2: //2=Bypass
+				if(currentSchizzaforteMap=='B') return 0; //map applied
+				break;
+			case 3: //3=All Weather Map
+				if(currentSchizzaforteMap=='A') return 0; //map applied
+				break;
+			case 4: //4=Natural Map
+				if(currentSchizzaforteMap=='N') return 0; //map applied
+				break;
+			case 5: //5=Dynamic Map
+				if(currentSchizzaforteMap=='D') return 0; //map applied
+				break;
+			case 6: //6=Race Map
+				if(currentSchizzaforteMap=='R') return 0; //map applied
+				break;
+			default:
+				//return 1; //not correctly applied
+		}
+
+		return 1; //not correctly applied
 	}
 
 	void sendMainDashboardPageToSlaveBaccable(){
@@ -728,7 +888,10 @@
 					dashboard_setup_menu_array[setup_dashboardPageIndex][10]='e';
 				}
 				break;
-			case 19: //{'[',' ',']','P','e','d','a','l',' ','B','o','o','s','t','e','r'},
+			case 19: //odometer blink
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_disable_odometer_blink];
+				break;
+			case 20: //{'[',' ',']','P','e','d','a','l',' ','B','o','o','s','t','e','r'},
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_pedal_booster_enabled]; // double ! coerces to bool
 				switch(function_pedal_booster_enabled){
 					case 0: //off
@@ -740,6 +903,8 @@
 						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='r';
 						dashboard_setup_menu_array[setup_dashboardPageIndex][16]=' ';
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+
+
 						break;
 					case 1: //Auto
 						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
@@ -805,11 +970,12 @@
 						break;
 				}
 				break;
-			case 20:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_disable_odometer_blink];
-				break;
-			case 21:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_show_race_mask];
+			case 21: // 'P','e','d','a','l',' ','P','o','w','e','r',':',' ','0',' ',' ',' ',' '
+				floatToStr(tmpfloatString,(float)pedal_map_power,0,4);
+				dashboard_setup_menu_array[setup_dashboardPageIndex][12]=tmpfloatString[0];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][13]=tmpfloatString[1];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[2];
+				dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[3];
 				break;
 			case 22:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_park_mirror];
@@ -1010,6 +1176,9 @@
 			case 16://free RAM
 				return getFreeRAM();
 				break;
+			case 17://Pedal current Map
+				return currentSchizzaforteMap;
+				break;
 			default:
 				break;
 		}
@@ -1126,6 +1295,9 @@
 									result[i++]='?';
 							}
 							break;
+						case 0x22: //current Pedal Map
+							result[i++]=currentSchizzaforteMap;
+							break;
 						default:
 							break;
 	        		}
@@ -1225,7 +1397,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=28;
+		uint8_t paramsNumber=29;
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1255,6 +1427,7 @@
 		  function_open_windows_with_door_lock,
 		  HAS_function_enabled,
 		  QV_exhaust_flap_function_enabled,
+		  (uint8_t)pedal_map_power,
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -1696,7 +1869,15 @@
 					#endif
 				}
 				break;
-
+			case 29: //pedal map amplification factor
+				if(tmpParam==0xFFFF){
+					#if defined(PEDAL_MAP_POWER)
+						return PEDAL_MAP_POWER;
+					#else
+						return 0; // another default value
+					#endif
+				}
+				break;
 			default:
 				return 0;
 				break;

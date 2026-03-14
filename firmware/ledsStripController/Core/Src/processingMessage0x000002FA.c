@@ -520,10 +520,17 @@ void processingMessage0x000002FA(){
 									addToUARTSendQueue(tmpArr3, 2);
 									break;
 								case 12: //toggle QV Exhaust Valve
-									if(ForceQVexhaustValveOpened==0){
+									if(ForceQVexhaustValveOpened==0){ //if valves are closed,
 										ForceQVexhaustValveOpened=1; //start override sequence
 									}else{
 										ForceQVexhaustValveOpened=4; //return control to ecu
+									}
+
+									//equivalent activity for chinese valves
+									if (chineseValveIsOpened==0){ //if valves are closed,
+									ChineseExhaustValveRequest='O'; //open request
+									}else{
+									ChineseExhaustValveRequest='C'; //close request
 									}
 
 									break;
@@ -571,7 +578,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
 												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	|| //OPEN_WINDOWS
 												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	|| //HAS_VIRTUAL_PAD
-												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	){ //QV_EXHAUST_FLAP_FUNCTION_ENABLED
+												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	|| //QV_EXHAUST_FLAP_FUNCTION_ENABLED
+												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	){ //PEDAL_MAP_POWER
 													//save it on flash
 													saveOnflash();
 											}
@@ -647,28 +655,27 @@ void processingMessage0x000002FA(){
 											function_is_diesel_enabled=!function_is_diesel_enabled;
 											total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
 											break;
-										case 19: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
-											function_pedal_booster_enabled++;
-											if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
-											//Now let's inform the C2 and BH Baccable
-											uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
-											addToUARTSendQueue(tmpArr1, 3);
-											break;
-										case 20: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
+										case 19: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
 											function_disable_odometer_blink=!function_disable_odometer_blink;
 											//Now let's inform the BH Baccable
 											uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
 											if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
 											addToUARTSendQueue(tmpArr2, 2);
 											break;
-										case 21: // {'O',' ',' ','S','h','o','w',' ','R','a','c','e',' ','M','a','s','k',' '},
-											/*commented out since it is not working
-												function_show_race_mask=!function_show_race_mask;
-												//Now let's inform the C2 Baccable
-												uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
-												if(function_show_race_mask) tmpArr3[1]=C2cmdShowRaceMask;
-												addToUARTSendQueue(tmpArr3, 2);
-											*/
+										case 20: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
+											function_pedal_booster_enabled++;
+											if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+
+											if(function_pedal_booster_enabled==0) setSchizzaforteMap(2); //set bypass map, before to stop to send messages to schizzaForte
+
+											//Now let's inform the C2 and BH Baccable
+											uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
+											addToUARTSendQueue(tmpArr1, 3);
+											break;
+										case 21: // 'P','e','d','a','l',' ','P','o','w','e','r',':',' ','0',' ',' ',' '
+											pedal_map_power=pedal_map_power+2;
+											if(pedal_map_power>10) pedal_map_power=-10;
+
 											break;
 										case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 											function_park_mirror=!function_park_mirror;

@@ -24,6 +24,14 @@ void onboardLed_init(){
     GPIO_InitStruct.Alternate = 0;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    //init mosfet too
+    GPIO_InitStruct.Pin = Q10mosfet_Pin | Q11mosfet_Pin  ;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+    GPIO_InitStruct.Alternate = 0;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
     //it doesn't work anymore. we have to work on it if we need it
 	//#if defined(DISABLE_START_STOP)
 	//	GPIO_InitStruct.Pin = GPIO_PIN_14  ; //PA14 is used to disable start &stop car functionality

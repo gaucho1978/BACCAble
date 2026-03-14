@@ -25,7 +25,7 @@
 
 	#define UART_BUFFER_SIZE DASHBOARD_MESSAGE_MAX_LENGTH + 1
 
-	#define UART1_BUFFER_SIZE 6  //legth for schizzaforte messages
+	#define UART1_BUFFER_SIZE 9  //legth for schizzaforte messages
 
 
 	#define LAST_PAGE_ADDRESS (FLASH_BANK1_END - FLASH_PAGE_SIZE +1) // 0x0801F800 //valid only for stm32F072 i suppose
@@ -49,6 +49,8 @@
 	#define TIMING__C1____SERIAL_TIMEOUT_REPLY_MS										250		//msec
 	#define TIMING__C2_BH_SERIAL_TIMEOUT_REPLY_MS										TIMING__C1____SERIAL_TIMEOUT_REPLY_MS-50		//msec
 
+
+	#define TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS							100		//msec
 
 
 #if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
@@ -94,7 +96,11 @@
 	#if defined(C1baccable)
 		extern UART_HandleTypeDef huart1; // this is the serial line toward schizzaforte
 		extern uint8_t currentSchizzaforteMap;
-		extern uint32_t last_sent_schizzaforte_msg_Time;
+		extern int8_t pedal_map_power; //pedal map amplification, between -10 and +10
+		extern uint8_t pedal_map_power_adapted; //adaptation depending on current map
+		extern uint32_t last_queued_serial_to_schizzaForte_msg_time;
+		extern uint8_t playMotorJingle; //position of the execution of the jingle. set to 255 to start execution
+		extern uint8_t jingleArray[255];
 
 		extern float chronometerElapsedTime_0_100_km_h; //stores time statistic in seconds
 		extern float chronometerElapsedTime_100_200_km_h; //stores time statistic in seconds
@@ -308,6 +314,10 @@
 		extern uint32_t ReleasebuttonFirstClickTime;
 		extern uint32_t ReleasebuttonPressBeginTime;
 
+		//variables for chinese valves management (radiocontrol buttons pressed by baccable C1)
+		extern uint32_t exhaustValveMosfetCommandTime; //time when mosfet was closed
+		extern uint8_t ChineseExhaustValveRequest; //0=no request, 'O'=open request, 'C'=Close request
+		extern uint8_t chineseValveIsOpened; //0=closed, 1=opened
 
 	#endif
 
