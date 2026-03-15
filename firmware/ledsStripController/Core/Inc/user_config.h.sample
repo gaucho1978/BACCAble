@@ -14,7 +14,8 @@
 	#define INC_USER_CONFIG_H_SAMPLE_
 
 	// The following defines are used, if uncommented, by C1baccable board:
-
+	// #define ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER			//if uncommented, will let baccable work as a usbd serial adapter toward schizzaForte. any byte will be forwarded to schizzaforte half duplex serial line. This define is not compatible with any other define in this file.
+	// #define ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER_LOOPBACK	//if ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER is defined, and you uncomment the define ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER_LOOPBACK, any byte reiceved thru usb, will be echoed back to usb. useful for debug
 	// #define LARGE_DISPLAY 					// if uncommented it uses longer strings on dashboard. Note: requires adaptations to array strings in order to show some more longer text. Under development. don't use it.
 	// #define DISABLE_UCAN_BOARD_LED_INVERSION	// if uncommented it uses onboard leds configuration for canable board (default value is used for ucan board and baccable custom board).
 	// #define DISABLE_CLEAR_FAULTS_ENABLED		// if uncommented it disables the clear faults functionality.  It can disabled inside baccable SETUP menu.

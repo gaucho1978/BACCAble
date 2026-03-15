@@ -20,7 +20,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 
 
-#if defined(C1baccable)
+#if defined(C1baccable) || defined (ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 	UART_HandleTypeDef huart1; // this is the serial line toward schizzaforte
 	uint8_t currentSchizzaforteMap='-';
 	int8_t pedal_map_power=0; //pedal map amplification, between -10 and +10

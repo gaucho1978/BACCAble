@@ -586,6 +586,7 @@ void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length) {
 				// update head index in a circular way
 				tx_queue_uart1->head = (tx_queue_uart1->head + 1) % QUEUE_SIZE;
 				tx_queue_uart1->count--;
+
 			}else{
 				onboardLed_red_on();
 			}
@@ -641,6 +642,8 @@ void processUART(void) {
 				}else{
 					onboardLed_red_on();
 				}
+			}else{
+				onboardLed_red_on();
 			}
 		}
 	#endif

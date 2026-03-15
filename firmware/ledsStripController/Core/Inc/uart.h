@@ -75,7 +75,7 @@
 	void addToUARTSendQueue(const uint8_t *data, size_t length);
 	void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length);
 
-	#if(defined(C1baccable))
+	#if(defined(C1baccable) || defined (ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER))
 		void addToUART1SendQueue(const uint8_t *data, size_t length);
 		void addToUART1SendQueueDuringInterrupt(const uint8_t *data, size_t length);
 		void processUART1(void);

@@ -53,7 +53,7 @@
 	#define TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS							100		//msec
 
 
-#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
+#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 	//#include "usbd_def.h"
 	#include "usb_device.h"
 
@@ -93,7 +93,7 @@
 
 
 
-	#if defined(C1baccable)
+	#if defined(C1baccable) || defined (ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 		extern UART_HandleTypeDef huart1; // this is the serial line toward schizzaforte
 		extern uint8_t currentSchizzaforteMap;
 		extern int8_t pedal_map_power; //pedal map amplification, between -10 and +10

@@ -16,6 +16,8 @@ static int8_t CDC_DeInit_FS(void);
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 
+
+
 // CDC Interface
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 {
@@ -29,6 +31,8 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
   * @brief  Initializes the CDC media low layer over the FS USB IP
   * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
+
+
 static int8_t CDC_Init_FS(void)
 {
   USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
@@ -140,11 +144,12 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 	// spot in the cirbuf as we are doing now
 	if( ((UserRxBufferFS.head + 1) % NUM_RX_BUFS) == UserRxBufferFS.tail)
 	{
+
 		error_assert(ERR_FULLBUF_USBRX);
 
 		// Listen again on the same buffer. Old data will be overwritten.
-	    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS.buf[UserRxBufferFS.head]);
-	    USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+		USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS.buf[UserRxBufferFS.head]);
+		USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 		return HAL_ERROR;
 	}
 	else
@@ -154,37 +159,55 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 		UserRxBufferFS.head = (UserRxBufferFS.head + 1) % NUM_RX_BUFS;
 
 		// Start listening on next buffer. Previous buffer will be processed in main loop.
-	    USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS.buf[UserRxBufferFS.head]);
-	    USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-	    return (USBD_OK);
+		USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS.buf[UserRxBufferFS.head]);
+		USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+
+		return (USBD_OK);
 	}
 }
 
 // Process incoming USB-CDC messages from RX FIFO
 void cdc_process(void){
+
+	uint8_t *buf=NULL;
+	uint32_t len;
 	system_irq_disable();
 	//onboardLed_blue_on();
 	if(UserRxBufferFS.tail != UserRxBufferFS.head){
 		//  Process one whole buffer
-		onboardLed_red_on();
-		for (uint32_t i = 0; i < UserRxBufferFS.msglen[UserRxBufferFS.tail]; i++){
+		//onboardLed_red_on();
+		buf = UserRxBufferFS.buf[UserRxBufferFS.tail];
+		len = UserRxBufferFS.msglen[UserRxBufferFS.tail];
 
-			if (UserRxBufferFS.buf[UserRxBufferFS.tail][i] == '\r'){
-				#if defined(ACT_AS_CANABLE)
-					int8_t result = slcan_parse_str(slcan_str, slcan_str_index);
-					UNUSED(result); //avoid the warning of unused variable
-				#endif
-				slcan_str_index = 0;
-			}else{
-				// Check for overflow of buffer
-				if(slcan_str_index >= SLCAN_MTU){
-					// TODO: Return here and discard this CDC buffer?
+		#if defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
+			static uint8_t uart1_copy_buf[RX_BUF_SIZE];   // ✔️ buffer stabile
+			memcpy(uart1_copy_buf, buf, len);
+			// 1) loopback USB dell’intero pacchetto
+			#ifdef ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER_LOOPBACK
+				CDC_Transmit_FS(buf, (uint16_t)len);
+			#endif
+
+			addToUART1SendQueue(uart1_copy_buf, len);
+
+		#else
+			//normal act as canable
+			for (uint32_t i = 0; i < len; i++){
+				if (buf[i] == '\r'){
+					#if defined(ACT_AS_CANABLE)
+						int8_t result = slcan_parse_str(slcan_str, slcan_str_index);
+						UNUSED(result); //avoid the warning of unused variable
+					#endif
 					slcan_str_index = 0;
+				}else{
+					// Check for overflow of buffer
+					if(slcan_str_index >= SLCAN_MTU){
+						// TODO: Return here and discard this CDC buffer?
+						slcan_str_index = 0;
+					}
+					slcan_str[slcan_str_index++] = buf[i];
 				}
-				slcan_str[slcan_str_index++] = UserRxBufferFS.buf[UserRxBufferFS.tail][i];
 			}
-		}
-
+		#endif
 		// Move on to next buffer
 		UserRxBufferFS.tail = (UserRxBufferFS.tail + 1) % NUM_RX_BUFS;
 	}

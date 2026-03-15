@@ -13,7 +13,9 @@
 
 #if defined(C1baccable)
 	void C1baccableInitCheck(){
-		lowConsume_init();
+		#ifndef DISABLE_LOW_CONSUME
+			lowConsume_init();
+		#endif
 		immobilizerEnabled = (uint8_t)readFromFlash(1);  //parameter1 stored in ram, so that we can get it. By default Immo is enabled
 		if(immobilizerEnabled) executeDashboardBlinks=2; //shows the user that the immobilizer is active (or not)
 
@@ -146,7 +148,9 @@
 
 
 	void C1baccablePeriodicCheck(){
-		lowConsume_process();
+		#ifndef DISABLE_LOW_CONSUME
+			lowConsume_process();
+		#endif
 
 		if(QV_exhaust_flap_function_enabled){
 

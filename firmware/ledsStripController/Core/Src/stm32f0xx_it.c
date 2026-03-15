@@ -132,7 +132,7 @@ void USART2_IRQHandler(void) {
     HAL_UART_IRQHandler(&huart2);
 }
 
-#if defined(C1baccable)
+#if defined(C1baccable) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 	void USART1_IRQHandler(void) {
 		HAL_UART_IRQHandler(&huart1);
 	}

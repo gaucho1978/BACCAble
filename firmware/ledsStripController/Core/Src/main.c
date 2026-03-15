@@ -18,7 +18,7 @@ int main(void){
 		storage_init();
 	#endif
 
-	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE)
+	#if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 		//because of condensation usb could fail and chip remain stuck. the following line,
 		// ensures USB init only if we are coming from first powering and not from a reset.
 		if(RCC->CSR & RCC_CSR_PORRSTF){
@@ -55,8 +55,11 @@ int main(void){
 			}
 		#endif
 
-		#if defined(ACT_AS_CANABLE)
+		#if defined(ACT_AS_CANABLE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 			cdc_process(); //processa dati usb
+			//#if defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
+			//	processUART1(); //process schizzaForte serial messages
+			//#endif
 			//just for test
 			//char *data = "Hello World from USB CDC\n";
 			//CDC_Transmit_FS((uint8_t*)data, strlen(data));
@@ -98,11 +101,12 @@ int main(void){
 			if ((currentTime - lastTrigger) < tmpCounter) lastReceivedCanMsgTime = currentTime;
 
 */
-		//	lastReceivedCanMsgTime = currentTime; //always awake, just for test
+			//lastReceivedCanMsgTime = currentTime; //always awake, just for test
 
 			//just for test
-
-			//if(currentDNAmode==0 && (currentRpmSpeed> 400) && neverSaved && currentTime>30000){ //engine on and drive style Natural
+			//currentDNAmode=0;
+			//currentRpmSpeed= 1000;
+			//if(currentDNAmode==0 && (currentRpmSpeed> 400) && neverSaved && currentTime>10000){ //engine on and drive style Natural
 			//	neverSaved=0;
 			//	playMotorJingle=255;
 			//}
