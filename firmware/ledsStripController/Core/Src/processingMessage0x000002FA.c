@@ -675,6 +675,7 @@ void processingMessage0x000002FA(){
 										case 21: // 'P','e','d','a','l',' ','P','o','w','e','r',':',' ','0',' ',' ',' '
 											pedal_map_power=pedal_map_power+2;
 											if(pedal_map_power>10) pedal_map_power=-10;
+											currentSchizzaforteMap='-';//forget previous setting
 
 											break;
 										case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},

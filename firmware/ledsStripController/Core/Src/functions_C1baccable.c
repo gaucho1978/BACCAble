@@ -413,7 +413,8 @@
 		}
 
 		if(function_pedal_booster_enabled){ //if enabled, communicate with schizzaForte each 250msec
-			if(mapCommandNotApplied()){ //only if the map command was not correctly received
+			if(currentRpmSpeed<400) currentSchizzaforteMap='-'; //if engine is stopped. Forget the pedal map setting, so that baccable will be forced to set it again on schizzaforte
+			if(mapCommandNotApplied() && (currentRpmSpeed>400)){ //only if the map command was not correctly received and engine is on
 				if((currentTime - last_queued_serial_to_schizzaForte_msg_time)>(4 * TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS) ){
 					last_queued_serial_to_schizzaForte_msg_time=currentTime; //avoid to Return Here
 
