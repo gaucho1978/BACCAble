@@ -283,6 +283,41 @@ void processingStandardMessage(){
 		case 0x000002FA:
 			processingMessage0x000002FA();
 			break;
+		case 0x00000354:
+			#if defined(BHbaccable)
+				if(function_lights_animation_enabled){
+					switch(lights_animation_state_machine){
+					case 4: //turn on direction lights
+					case 3:
+						//change msg 00 80 23 00
+						rx_msg_data[1]=0x80;
+						rx_msg_data[2]=0x23;
+
+						//send message
+						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //retransmit the packet
+
+						lights_animation_state_machine--;
+						break;
+					case 2: //turn off direction lights
+					case 1:
+					case 0:
+						//change msg 00 00 03 00
+						rx_msg_data[1]=0x00;
+						rx_msg_data[2]=0x03;
+
+						//send message
+						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //retransmit the packet
+
+						if(lights_animation_state_machine==0) lights_animation_state_machine=5; //restart
+						lights_animation_state_machine--;
+						break;
+					default: //do nothing
+						break;
+					}
+				}
+			#endif
+
+			break;
 		case 0x00000356:
 		   #if defined(BHbaccable)
 			if(disable_odometer_blink){

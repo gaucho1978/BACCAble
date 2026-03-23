@@ -356,6 +356,10 @@
 		extern CAN_TxHeaderTypeDef CHIME_msg_header;
 		extern uint8_t requestToPlayChime;
 		extern uint8_t disable_odometer_blink;
+
+		//function animation lights
+		extern uint8_t function_lights_animation_enabled;
+		extern uint8_t lights_animation_state_machine;
 	#endif
 
 	#if defined(C2baccable) || defined(BHbaccable)

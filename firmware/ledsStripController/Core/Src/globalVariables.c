@@ -426,6 +426,11 @@ const char *FW_VERSION=_FW_VERSION;
 	#else
 		uint8_t disable_odometer_blink=0;
 	#endif
+
+	//function animation lights
+	uint8_t function_lights_animation_enabled=0;
+	uint8_t lights_animation_state_machine=4;
+
 #endif
 
 #if defined(C2baccable) || defined(BHbaccable)
