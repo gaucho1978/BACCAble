@@ -53,6 +53,11 @@ void processingStandardMessage(){
 			//UTF text 2 is on byte 4 and byte 5
 			//UTF text 3 is on byte 6 and byte 7
 			break;
+		case 0x000000FA:
+			#if defined(C2baccable)
+				//break pedal position byte0 bit 3 and 2 (10=pressed, 01=released)
+			#endif
+			break;
 		case 0x000000FB:
 
 			#if defined(C1baccable)
@@ -285,36 +290,23 @@ void processingStandardMessage(){
 			break;
 		case 0x00000354:
 			#if defined(BHbaccable)
-				if(function_lights_animation_enabled){
-					switch(lights_animation_state_machine){
-					case 4: //turn on direction lights
-					case 3:
-						//change msg 00 80 23 00
-						rx_msg_data[1]=0x80;
-						rx_msg_data[2]=0x23;
+				/*
+				 msg from body to IPC and others:
+					0x354 : 0x10 0x00 0x00 0x00 (fendinebbia frontali)
+					0x354 : 0x04 0x00 0x00 0x00 (abbaglianti)
+					0x354 : 0x02 0x00 0x00 0x00 (luci di posizione sinistra)
+					0x354 : 0x00 0x80 0x00 0x00 (freccia sinistra)
+					0x354 : 0x00 0x40 0x00 0x00 (anabbaglianti)
+					0x354 : 0x00 0x04 0x00 0x00 (fendinebbia posteriori)
+					0x354 : 0x00 0x00 0x80 0x00 (luci di posizione destra)
+					0x354 : 0x00 0x00 0x20 0x00 (freccia destra)
+					0x354 : 0x00 0x00 0x08 0x00 (automatic high beam)
+					0x354 : 0x00 0x00 0x04 0x00 (stop)
+					0x354 : 0x00 0x00 0x02 0x00 (attivazione frecce sinistra)
+					0x354 : 0x00 0x00 0x01 0x00 (attivazione frecce destra)
+					0x354 : 0x00 0x00 0x00 0x40 (automatic low beam)
+				 */
 
-						//send message
-						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //retransmit the packet
-
-						lights_animation_state_machine--;
-						break;
-					case 2: //turn off direction lights
-					case 1:
-					case 0:
-						//change msg 00 00 03 00
-						rx_msg_data[1]=0x00;
-						rx_msg_data[2]=0x03;
-
-						//send message
-						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //retransmit the packet
-
-						if(lights_animation_state_machine==0) lights_animation_state_machine=5; //restart
-						lights_animation_state_machine--;
-						break;
-					default: //do nothing
-						break;
-					}
-				}
 			#endif
 
 			break;
@@ -712,6 +704,110 @@ void processingStandardMessage(){
 			#endif
 			//contains status of ACC on byte 7, from bit 6 to 4 (0=disabled, 1=enabled, 2=engaged 3=engaged brake only, 4=override, 5=cancel)
 			break;
+		case 0x0000073E:
+			/*
+				Message 0x73E is a message on C2 bus from Body to adaptive front light module
+				It flows on C1 bus too, directed elsewhere
+				Period: 250msec
+					-0x73E : 0x10 0x00 0x00 0x00 (fendinebbia frontali solo su C2)
+					-0x73E : 0x04 0x00 0x00 0x00 (abbaglianti)
+					-0x73E : 0x02 0x00 0x00 0x00 (luce di parcheggio sinistra solo su C1)
+					-0x73E : 0x00 0x80 0x00 0x00 (freccia sinistra solo su C1)
+					-0x73E : 0x00 0x40 0x00 0x00 (anabbaglianti solo su C2)
+					-0x73E : 0x00 0x00 0x80 0x00 (luce di parcheggio destra solo su C1)
+					-0x73E : 0x00 0x00 0x20 0x00 (freccia destra solo su C1)
+					-0x73E : 0x00 0x00 0x08 0x00 (automatic high beam, solo su C2)
+					-0x73E : 0x00 0x00 0x04 0x00 (stop solo su C1)
+					-0x73E : 0x00 0x00 0x02 0x00 (attivazione frecce sinistra, solo su C2)
+					-0x73E : 0x00 0x00 0x01 0x00 (attivazione frecce destra, solo su C2)
+
+			 */
+
+			#if defined(C1baccable)
+
+				if(function_lights_animation_enabled){
+					if(lights_animation_state_machine){
+						switch(lights_animation_state_machine){
+							case 22: //High beam light (C1 and C2) 	0x04 0x00 0x00 0x00
+							case 21:
+								rx_msg_data[0]=0x04;
+								rx_msg_data[1]=0x00;
+								rx_msg_data[2]=0x00;
+								rx_msg_data[3]=0x00;
+								break;
+							case 20: //front fog light(only on C2)	0x10 0x00 0x00 0x00
+							case 19:
+								rx_msg_data[0]=0x10;
+								rx_msg_data[1]=0x00;
+								rx_msg_data[2]=0x00;
+								rx_msg_data[3]=0x00;
+								break;
+							case 18: //left park light (C1)			0x02 0x00 0x00 0x00
+							case 17:
+								rx_msg_data[0]=0x02;
+								rx_msg_data[1]=0x00;
+								rx_msg_data[2]=0x00;
+								rx_msg_data[3]=0x00;
+								break;
+							case 16: //left direction light (C1)			0x00 0x80 0x00 0x00
+									 //left direction light activation(C2)	0x00 0x00 0x02 0x00
+							case 15:
+								rx_msg_data[0]=0x00;
+								rx_msg_data[1]=0x80;
+								rx_msg_data[2]=0x02;
+								rx_msg_data[3]=0x00;
+								break;
+							case 14: //low beam light (C2)			0x00 0x40 0x00 0x00
+							case 13:
+								rx_msg_data[0]=0x00;
+								rx_msg_data[1]=0x40;
+								rx_msg_data[2]=0x00;
+								rx_msg_data[3]=0x00;
+								break;
+							case 12: //right direction light (C1)			0x00 0x00 0x20 0x00
+									 //right direction light activation(C2)	0x00 0x00 0x01 0x00
+							case 11:
+								rx_msg_data[0]=0x00;
+								rx_msg_data[1]=0x00;
+								rx_msg_data[2]=0x21;
+								rx_msg_data[3]=0x00;
+								break;
+							case 10: //right parking light (C1)		0x00 0x00 0x80 0x00
+							case 9:
+								rx_msg_data[0]=0x00;
+								rx_msg_data[1]=0x00;
+								rx_msg_data[2]=0x80;
+								rx_msg_data[3]=0x00;
+								break;
+							case 8: //stop light(C1)				0x00 0x00 0x04 0x00
+							case 7:
+								rx_msg_data[0]=0x00;
+								rx_msg_data[1]=0x00;
+								rx_msg_data[2]=0x04;
+								rx_msg_data[3]=0x00;
+								break;
+							case 6:
+							case 5:
+								lights_animation_state_machine=1; //stop the animation
+								break;
+							case 4: //not used
+							case 3: //not used
+								break;
+							case 2: //not used
+							case 1: //not used
+								break;
+							default: //do nothing
+								break;
+						}
+
+						//send message
+						can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //retransmit the packet
+						lights_animation_state_machine--;
+					}
+				}
+			#endif
+			break;
+
 		default:
 	}
 

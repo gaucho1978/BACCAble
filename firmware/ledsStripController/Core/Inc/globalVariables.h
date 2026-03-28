@@ -321,6 +321,12 @@
 
 	#endif
 
+	#if defined (C1baccable) || defined (C2baccable)
+		//function animation lights
+		extern uint8_t function_lights_animation_enabled;
+		extern uint8_t lights_animation_state_machine;
+	#endif
+
 	#if defined(C2baccable)
 
 		//DYNO_MODE
@@ -338,6 +344,7 @@
 
 		extern CAN_TxHeaderTypeDef rearBrakeMsgHeader[4];
 		extern uint8_t rearBrakeMsgData[4][8]; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(disable front brakes) (periodic)
+
 
 	#endif
 
@@ -357,9 +364,6 @@
 		extern uint8_t requestToPlayChime;
 		extern uint8_t disable_odometer_blink;
 
-		//function animation lights
-		extern uint8_t function_lights_animation_enabled;
-		extern uint8_t lights_animation_state_machine;
 	#endif
 
 	#if defined(C2baccable) || defined(BHbaccable)

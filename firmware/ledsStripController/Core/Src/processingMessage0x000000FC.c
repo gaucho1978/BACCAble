@@ -58,7 +58,7 @@ void processingMessage0x000000FC(){
 	//engine Status is on byte 2 bit 6 and bit 5.
 	//gas pedal position is on byte 2 from bit 4 to 0 and byte 3 from bit 7 to 5.
 	//gas pedal position fail is on byte3 bit 4.
-	//.....
+	//reverse gear is on byte3, bit 3 and 2 (value 1=inserted). on C2
 	//alternator fail is on byte 3, bit1.
 	//stopStart status is on byte3 bit 0 and byte4 bit7.
 	//CC brake intervention request is on byte 4, bit5
