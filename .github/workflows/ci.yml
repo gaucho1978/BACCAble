@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: BH
+            release_flavor: BH_FLAVOR
+            flavor_define: BH_FLAVOR
+          - name: C1
+            release_flavor: C1_FLAVOR
+            flavor_define: C1_FLAVOR
+          - name: C2
+            release_flavor: C2_FLAVOR
+            flavor_define: C2_FLAVOR
+          - name: CANable
+            release_flavor: CAN_FLAVOR
+            flavor_define: CAN_FLAVOR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install ARM GCC
+        uses: carlosperate/arm-none-eabi-gcc-action@v1
+
+      - name: Show toolchain
+        run: arm-none-eabi-gcc --version
+
+      - name: Build firmware
+        working-directory: ./firmware/ledsStripController
+        run: |
+          short_sha="$(git rev-parse --short HEAD)"
+          CFLAGS="-DBUILD_VERSION=\\\"ci-${short_sha}\\\" -DRELEASE_FLAVOR=${{ matrix.release_flavor }} -D${{ matrix.flavor_define }}=1" make clean all
+
+      - name: Verify artifacts
+        working-directory: ./firmware/ledsStripController
+        run: |
+          test -n "$(find build -maxdepth 1 -name 'baccable-*.elf' -print -quit)"
+          test -n "$(find build -maxdepth 1 -name 'baccable-*.bin' -print -quit)"
+          test -n "$(find build -maxdepth 1 -name 'baccable-*.hex' -print -quit)"
+          arm-none-eabi-size build/baccable-*.elf
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: baccable-${{ matrix.name }}-${{ github.sha }}
+          path: |
+            firmware/ledsStripController/build/baccable-*.elf
+            firmware/ledsStripController/build/baccable-*.bin
+            firmware/ledsStripController/build/baccable-*.hex
+            firmware/ledsStripController/build/baccable-*.map
+          if-no-files-found: error
