@@ -10,9 +10,72 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Lint ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: BH
+            release_flavor: BH_FLAVOR
+            flavor_define: BH_FLAVOR
+          - name: C1
+            release_flavor: C1_FLAVOR
+            flavor_define: C1_FLAVOR
+          - name: C2
+            release_flavor: C2_FLAVOR
+            flavor_define: C2_FLAVOR
+          - name: CANable
+            release_flavor: CAN_FLAVOR
+            flavor_define: CAN_FLAVOR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for merge conflict markers
+        run: |
+          if git grep -nE '^(<<<<<<< .+|=======$|>>>>>>> .+)' -- '*.c' '*.h' '*.s' '*.ld' '*.yml' '*.yaml' '*.md'; then
+            echo "Found unresolved merge conflict markers"
+            exit 1
+          fi
+
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        working-directory: ./firmware/ledsStripController
+        run: |
+          cppcheck \
+            --error-exitcode=1 \
+            --std=c99 \
+            --inline-suppr \
+            --suppress=nullPointerOutOfMemory \
+            --suppress=nullPointer:Drivers/CMSIS/Include/core_cm0.h \
+            --suppress=missingIncludeSystem \
+            -DSTM32F072xB \
+            -D__GNUC__=10 \
+            -D__GNUC_MINOR__=3 \
+            -DRELEASE_FLAVOR=${{ matrix.release_flavor }} \
+            -D${{ matrix.flavor_define }}=1 \
+            -ICore/Inc \
+            -IDrivers/CMSIS/Device/ST/STM32F0xx/Include \
+            -IDrivers/CMSIS/Include \
+            -IDrivers/STM32F0xx_HAL_Driver/Inc \
+            -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
+            -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+            -IMiddlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc \
+            -IUSB_DEVICE/App \
+            -IUSB_DEVICE/Target \
+            Core/Src Core/Inc USB_DEVICE/App USB_DEVICE/Target
+
   build:
     name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
