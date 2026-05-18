@@ -187,7 +187,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=28;
+	uint8_t total_pages_in_setup_dashboard_menu=29;
 	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -217,6 +217,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
 			{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p',},
+			{'O',' ',' ','e','u','j','o','t',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',},
 
 		};
 
@@ -370,6 +371,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//QV_EXHAUST_FLAP_FUNCTION_ENABLED
 	uint8_t QV_exhaust_flap_function_enabled=0;
+	uint8_t function_eujot_enabled=0;
 	uint8_t ForceQVexhaustValveOpened=0; //state machine: 0=valve automatically selected by ECU, 1=connection request to send, 2=tester present to send, 3=temporary param overwrite, 4=return control to ECU to send
 	uint32_t lastSentQVexhaustValveMsgTime=0;
 	CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4] ={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=7},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=5}};

@@ -579,7 +579,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	|| //OPEN_WINDOWS
 												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	|| //HAS_VIRTUAL_PAD
 												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	|| //QV_EXHAUST_FLAP_FUNCTION_ENABLED
-												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	){ //PEDAL_MAP_POWER
+												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	|| //PEDAL_MAP_POWER
+												((uint16_t)function_eujot_enabled						!= readFromFlash(30))	){ //EUJOT
 													//save it on flash
 													saveOnflash();
 											}
@@ -713,6 +714,9 @@ void processingMessage0x000002FA(){
 											break;
 										case 27: //{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p'},
 											QV_exhaust_flap_function_enabled=!QV_exhaust_flap_function_enabled;
+											break;
+										case 28: //{'O',' ',' ','e','u','j','o','t',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '},
+											function_eujot_enabled=!function_eujot_enabled;
 											break;
 										default:
 											break;

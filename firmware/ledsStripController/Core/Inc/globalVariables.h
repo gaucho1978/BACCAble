@@ -306,6 +306,7 @@
 
 		//QV_EXHAUST_FLAP_FUNCTION_ENABLED
 		extern uint8_t QV_exhaust_flap_function_enabled;
+		extern uint8_t function_eujot_enabled;
 		extern uint8_t ForceQVexhaustValveOpened;
 		extern uint32_t lastSentQVexhaustValveMsgTime;
 		extern CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4];
