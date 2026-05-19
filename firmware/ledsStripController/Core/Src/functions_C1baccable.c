@@ -1283,6 +1283,12 @@
 	}
 
 	uint8_t saveOnflash(){ //store params permanently on flash
+		uint8_t paramsNumber = setup_flash_slots_count();
+		if(paramsNumber > SETUP_FLASH_PARAM_BUFFER_SIZE){
+			onboardLed_red_blink(7);
+			return 254;
+		}
+
 		//last page to store on flash is 0x0801 F800 (we can store 2 bytes each time)
 		// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
 		HAL_FLASH_Unlock(); //unlock flash
@@ -1301,8 +1307,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber = SETUP_FLASH_SLOTS;
-		uint16_t params[40] = {0};
+		uint16_t params[SETUP_FLASH_PARAM_BUFFER_SIZE] = {0};
 		params[1-1]  = immobilizerEnabled;
 		setup_fill_flash_params(params);         // fills all uint8_t params from the table
 		params[5-1]  = shift_threshold;          // uint16_t, not in table
@@ -1764,9 +1769,11 @@
 				break;
 			default:
 				// New entries added to setup_params[] are validated here automatically.
-				for (uint8_t i = 0; i < setup_params_count; i++)
-					if (setup_params[i].flash_index == paramId)
-						return (tmpParam > setup_params[i].max_value) ? 0 : tmpParam;
+				{
+					const SetupParam *param = setup_find_by_flash_index(paramId);
+					if(param)
+						return (tmpParam > param->max_value) ? 0 : tmpParam;
+				}
 				return 0;
 		}
 		return tmpParam;

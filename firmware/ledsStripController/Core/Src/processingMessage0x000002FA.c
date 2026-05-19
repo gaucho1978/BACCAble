@@ -646,7 +646,7 @@ void processingMessage0x000002FA(){
 											break;
 										default:
 											// Simple boolean entries are toggled via the table.
-											setup_toggle_if_bool(setup_dashboardPageIndex);
+											setup_toggle_if_auto_bool(setup_dashboardPageIndex);
 											break;
 									}
 
