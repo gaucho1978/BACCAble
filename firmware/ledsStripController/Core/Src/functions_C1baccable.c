@@ -19,37 +19,11 @@
 		immobilizerEnabled = (uint8_t)readFromFlash(1);  //parameter1 stored in ram, so that we can get it. By default Immo is enabled
 		if(immobilizerEnabled) executeDashboardBlinks=2; //shows the user that the immobilizer is active (or not)
 
-		function_smart_disable_start_stop_enabled=(uint8_t)readFromFlash(2);  //parameter2 stored in ram, so that we can get it. By default S&S is enabled
-		function_led_strip_controller_enabled=(uint8_t)readFromFlash(3); //By default led is disabled
-		function_shift_indicator_enabled=(uint8_t)readFromFlash(4); //By default it is disabled
-		shift_threshold= (uint16_t)readFromFlash(5);
-		function_ipc_my23_is_installed=	(uint8_t)readFromFlash(6);
-		function_route_msg_enabled=(uint8_t)readFromFlash(7);
-		function_dyno_mode_master_enabled=(uint8_t)readFromFlash(8);
-		function_acc_virtual_pad_enabled=(uint8_t)readFromFlash(9);
-		function_front_brake_forcer_master=(uint8_t)readFromFlash(10);
-		function_4wd_disabler_enabled=(uint8_t)readFromFlash(11);
-		function_remote_start_Enabled=(uint8_t)readFromFlash(12);
-		function_clear_faults_enabled=(uint8_t)readFromFlash(13);
-		function_esc_tc_customizator_enabled=(uint8_t)readFromFlash(14);
-		function_read_faults_enabled=(uint8_t)readFromFlash(15);
-		function_is_diesel_enabled=(uint8_t)readFromFlash(16);
-		total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
-
-		function_regeneration_alert_enabled=(uint8_t)readFromFlash(17);
+		setup_load_from_flash();
+		shift_threshold        = (uint16_t)readFromFlash(5);
 		launch_torque_threshold= (uint16_t)readFromFlash(18);
-		function_seatbelt_alarm_enabled= (uint16_t)readFromFlash(19);
-		function_pedal_booster_enabled= (uint16_t)readFromFlash(20);
-		function_disable_odometer_blink= (uint16_t)readFromFlash(21);
-		function_show_race_mask= (uint16_t)readFromFlash(22);
-		function_park_mirror= (uint16_t)readFromFlash(23);
-		function_acc_autostart= (uint16_t)readFromFlash(24);
-		function_close_windows_with_door_lock=(uint16_t)readFromFlash(25);
-		function_open_windows_with_door_lock=(uint16_t)readFromFlash(26);
-		HAS_function_enabled=(uint16_t)readFromFlash(27);
-		QV_exhaust_flap_function_enabled=(uint16_t)readFromFlash(28);
-		pedal_map_power=(int8_t)(uint8_t)readFromFlash(29);
-		function_eujot_enabled=(uint16_t)readFromFlash(30);
+		pedal_map_power        = (int8_t)(uint8_t)readFromFlash(29);
+		total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
 		instructSlaveBoardsTriggerEnabled=1;
@@ -803,14 +777,12 @@
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 
 		char tmpfloatString[5]; //temp array for shift and launch threshods
-		//update records if required
+		// Update checkbox symbol for all simple entries; complex entries handled below.
+		setup_update_checkbox(setup_dashboardPageIndex);
+
+		// Extra display updates for entries with dynamic content beyond the checkbox:
 		switch(setup_dashboardPageIndex){
-			case 0: //{'S','A','V','E','&','E','X','I','T',},
-				break;
-			case 1: //{'[',' ',']','S','t','a','r','t','&','S','t','o','p'},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_smart_disable_start_stop_enabled];
-				break;
-			case 2: //{'[',' ',']','-','-','-','-','-','-','-','-','-','-','-',},
+			case 2: //{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
 				floatToStr(tmpfloatString,(float)launch_torque_threshold,0,4);
 				if(strlen(tmpfloatString)==2){
 					dashboard_setup_menu_array[setup_dashboardPageIndex][13]=' ';
@@ -821,57 +793,13 @@
 					dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[1];
 					dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[2];
 				}
-
-
 				break;
-			case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_led_strip_controller_enabled];
-				break;
-			case 4: //{'[',' ',']','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_shift_indicator_enabled];
-				break;
-			case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',},
+			case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',' ',' ',' ',' '},
 				floatToStr(tmpfloatString,(float)shift_threshold,0,5);
 				dashboard_setup_menu_array[setup_dashboardPageIndex][10]=tmpfloatString[0];
 				dashboard_setup_menu_array[setup_dashboardPageIndex][11]=tmpfloatString[1];
 				dashboard_setup_menu_array[setup_dashboardPageIndex][12]=tmpfloatString[2];
 				dashboard_setup_menu_array[setup_dashboardPageIndex][13]=tmpfloatString[3];
-				break;
-			case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_ipc_my23_is_installed];
-				break;
-			case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_regeneration_alert_enabled];
-				break;
-			case 8: //{'O',' ',' ','S','e','a','t','b','e','l','t',' ','A','l','a','r','m',' '},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_seatbelt_alarm_enabled];
-				break;
-			case 9: //{'[',' ',']','R','o','u','t','e',' ','M','e','s','s','a','g','e','s', },
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_route_msg_enabled];
-				break;
-			case 10: //{'[',' ',']','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_esc_tc_customizator_enabled];
-				break;
-			case 11: //{'[',' ',']','D','y','n','o',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_dyno_mode_master_enabled];
-				break;
-			case 12: //{'[',' ',']','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_acc_virtual_pad_enabled];
-				break;
-			case 13: //{'[',' ',']','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_front_brake_forcer_master];
-				break;
-			case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_4wd_disabler_enabled];
-				break;
-			case 15: //{'[',' ',']','C','l','e','a','r',' ','F','a','u','l','t','s',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_clear_faults_enabled];
-				break;
-			case 16: //{'[',' ',']','R','e','a','d',' ',' ','F','a','u','l','t','s',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_read_faults_enabled];
-				break;
-			case 17: //{'[',' ',']','R','e','m','o','t','e',' ','S','t','a','r','t',},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_remote_start_Enabled];
 				break;
 			case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 				if(function_is_diesel_enabled){
@@ -894,11 +822,7 @@
 					dashboard_setup_menu_array[setup_dashboardPageIndex][10]='e';
 				}
 				break;
-			case 19: //odometer blink
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_disable_odometer_blink];
-				break;
-			case 20: //{'[',' ',']','P','e','d','a','l',' ','B','o','o','s','t','e','r'},
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_pedal_booster_enabled]; // double ! coerces to bool
+			case 20: //{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 				switch(function_pedal_booster_enabled){
 					case 0: //off
 						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='o';
@@ -983,11 +907,7 @@
 				dashboard_setup_menu_array[setup_dashboardPageIndex][14]=tmpfloatString[2];
 				dashboard_setup_menu_array[setup_dashboardPageIndex][15]=tmpfloatString[3];
 				break;
-			case 22:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_park_mirror];
-				break;
-			case 23:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_acc_autostart];
+			case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
 				switch(function_acc_autostart){
 					case 0: //off
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
@@ -998,52 +918,27 @@
 					case 2: //simulates + button press
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='+';
 						break;
-					default: //we will never end here
+					default:
 						break;
 				}
 				break;
-			case 24:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_close_windows_with_door_lock];
+			case 24: //{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' '},
 				switch(function_close_windows_with_door_lock){
-					case 0: //off
-						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
-						break;
-					case 1: //Close Windows 1
-						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1';
-						break;
-					case 2: //Close Windows 2
-						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='2';
-						break;
-					default: //we will never end here
-						break;
+					case 0: dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' '; break;
+					case 1: dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1'; break;
+					case 2: dashboard_setup_menu_array[setup_dashboardPageIndex][17]='2'; break;
+					default: break;
 				}
 				break;
-			case 25:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!function_open_windows_with_door_lock];
+			case 25: //{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' '},
 				switch(function_open_windows_with_door_lock){
-					case 0: //off
-						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
-						break;
-					case 1: //Close Windows 1
-						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1';
-						break;
-					case 2: //Close Windows 2
-						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='2';
-						break;
-					default: //we will never end here
-						break;
+					case 0: dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' '; break;
+					case 1: dashboard_setup_menu_array[setup_dashboardPageIndex][17]='1'; break;
+					case 2: dashboard_setup_menu_array[setup_dashboardPageIndex][17]='2'; break;
+					default: break;
 				}
 				break;
-			case 26:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[HAS_function_enabled];
-				break;
-			case 27:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[QV_exhaust_flap_function_enabled];
-				break;
-			case 28:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[function_eujot_enabled];
-				break;
-			default:
+			default: // all simple checkboxes already handled by setup_update_checkbox above
 				break;
 		}
 
@@ -1406,39 +1301,13 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=30;
-		uint16_t params[40] = {
-		  immobilizerEnabled,
-		  function_smart_disable_start_stop_enabled,
-		  function_led_strip_controller_enabled,
-		  function_shift_indicator_enabled,
-		  shift_threshold,
-		  function_ipc_my23_is_installed,
-		  function_route_msg_enabled,
-		  function_dyno_mode_master_enabled,
-		  function_acc_virtual_pad_enabled,
-		  function_front_brake_forcer_master,
-		  function_4wd_disabler_enabled,
-		  function_remote_start_Enabled,
-		  function_clear_faults_enabled,
-		  function_esc_tc_customizator_enabled,
-		  function_read_faults_enabled,
-		  function_is_diesel_enabled,
-		  function_regeneration_alert_enabled,
-		  launch_torque_threshold,
-		  function_seatbelt_alarm_enabled,
-		  function_pedal_booster_enabled,
-		  function_disable_odometer_blink,
-		  function_show_race_mask,
-		  function_park_mirror,
-		  function_acc_autostart,
-		  function_close_windows_with_door_lock,
-		  function_open_windows_with_door_lock,
-		  HAS_function_enabled,
-		  QV_exhaust_flap_function_enabled,
-		  (uint8_t)pedal_map_power,
-		  function_eujot_enabled,
-		};
+		uint8_t paramsNumber = SETUP_FLASH_SLOTS;
+		uint16_t params[40] = {0};
+		params[1-1]  = immobilizerEnabled;
+		setup_fill_flash_params(params);         // fills all uint8_t params from the table
+		params[5-1]  = shift_threshold;          // uint16_t, not in table
+		params[18-1] = launch_torque_threshold;  // uint16_t, not in table
+		params[29-1] = (uint8_t)pedal_map_power; // int8_t, not in table
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
 		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
@@ -1894,8 +1763,11 @@
 				}
 				break;
 			default:
+				// New entries added to setup_params[] are validated here automatically.
+				for (uint8_t i = 0; i < setup_params_count; i++)
+					if (setup_params[i].flash_index == paramId)
+						return (tmpParam > setup_params[i].max_value) ? 0 : tmpParam;
 				return 0;
-				break;
 		}
 		return tmpParam;
 	}

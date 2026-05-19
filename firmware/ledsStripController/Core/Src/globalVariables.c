@@ -187,8 +187,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=29;
-	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
+	uint8_t dashboard_setup_menu_array[][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
@@ -220,6 +219,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','e','u','j','o','t',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',},
 
 		};
+	uint8_t total_pages_in_setup_dashboard_menu = sizeof(dashboard_setup_menu_array)/sizeof(dashboard_setup_menu_array[0]);
 
 	uint8_t function_is_diesel_enabled=1; //stored in flash. defines if we use gasoline (0) or diesel (1) params
 

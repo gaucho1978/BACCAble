@@ -552,139 +552,73 @@ void processingMessage0x000002FA(){
 									switch(setup_dashboardPageIndex){
 										case 0: //{'S','A','V','E','&','E','X','I','T',},
 											//if some change occurred
-											if(	((uint16_t)function_smart_disable_start_stop_enabled	!= readFromFlash(2)) 	|| //S&S enable status
-												((uint16_t)function_led_strip_controller_enabled		!= readFromFlash(3)) 	|| //LED_STRIP_CONTROLLER_ENABLED
-												((uint16_t)function_shift_indicator_enabled				!= readFromFlash(4)) 	|| //SHIFT_INDICATOR_ENABLED
-												((uint16_t)shift_threshold								!= readFromFlash(5))	|| //SHIFT_THRESHOLD
-												((uint16_t)function_ipc_my23_is_installed				!= readFromFlash(6))	|| //IPC_MY23_IS_INSTALLED
-												((uint16_t)function_route_msg_enabled					!= readFromFlash(7))	|| //ROUTE_MSG
-												((uint16_t)function_dyno_mode_master_enabled			!= readFromFlash(8))	|| //DYNO_MODE_MASTER
-												((uint16_t)function_acc_virtual_pad_enabled				!= readFromFlash(9))	|| //ACC_VIRTUAL_PAD
-												((uint16_t)function_front_brake_forcer_master			!= readFromFlash(10))	|| //FRONT_BRAKE_FORCER_MASTER
-												((uint16_t)function_4wd_disabler_enabled				!= readFromFlash(11))	|| //_4WD_DISABLER
-												((uint16_t)function_remote_start_Enabled				!= readFromFlash(12))	|| //REMOTE_START_ENABLED
-												((uint16_t)function_clear_faults_enabled				!= readFromFlash(13))	|| //CLEAR_FAULTS_ENABLED
-												((uint16_t)function_esc_tc_customizator_enabled			!= readFromFlash(14))	|| //ESC_TC_CUSTOMIZATOR_MASTER
-												((uint16_t)function_read_faults_enabled					!= readFromFlash(15))	|| //READ_FAULTS_ENABLED
-												((uint16_t)function_is_diesel_enabled					!= readFromFlash(16))	|| //IS_DIESEL
-												((uint16_t)function_regeneration_alert_enabled			!= readFromFlash(17))	|| //REGENERATION_ALERT_ENABLED
-												((uint16_t)launch_torque_threshold						!= readFromFlash(18))	|| //LAUNCH_ASSIST_THRESHOLD
-												((uint16_t)function_seatbelt_alarm_enabled				!= readFromFlash(19))	|| //SEATBELT_ALARM_DISABLED
-												((uint16_t)function_pedal_booster_enabled				!= readFromFlash(20))	|| //PEDAL_BOOSTER_ENABLED
-												((uint16_t)function_disable_odometer_blink				!= readFromFlash(21))	|| //DISABLE_ODOMETER_BLINK
-												((uint16_t)function_show_race_mask						!= readFromFlash(22))	|| //SHOW_RACE_MASK
-												((uint16_t)function_park_mirror							!= readFromFlash(23))	|| //PARK_MIRROR
-												((uint16_t)function_acc_autostart						!= readFromFlash(24))	|| //ACC_AUTOSTART
-												((uint16_t)function_close_windows_with_door_lock		!= readFromFlash(25))	|| //CLOSE_WINDOWS
-												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	|| //OPEN_WINDOWS
-												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	|| //HAS_VIRTUAL_PAD
-												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	|| //QV_EXHAUST_FLAP_FUNCTION_ENABLED
-												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	|| //PEDAL_MAP_POWER
-												((uint16_t)function_eujot_enabled						!= readFromFlash(30))	){ //EUJOT
+											if(	setup_is_dirty()                                              ||
+												((uint16_t)shift_threshold         != readFromFlash(5))       || //SHIFT_THRESHOLD
+												((uint16_t)launch_torque_threshold != readFromFlash(18))      || //LAUNCH_ASSIST_THRESHOLD
+												((uint16_t)(uint8_t)pedal_map_power!= readFromFlash(29))      ){ //PEDAL_MAP_POWER
 													//save it on flash
 													saveOnflash();
 											}
 											dashboard_menu_indent_level=0;
 											break;
-										case 1: //{'[',' ',']','S','t','a','r','t','&','S','t','o','p'},
+										// Custom toggles and side-effect entries are handled explicitly.
+										// All other pages are simple booleans – the table handles them via default.
+										case 1: //{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 											function_smart_disable_start_stop_enabled=!function_smart_disable_start_stop_enabled;
 											requestToDisableStartAndStop=0;
 											break;
-										case 2: //{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N,'m',},
+										case 2: //{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
 											launch_torque_threshold=launch_torque_threshold+25;
 											if(launch_torque_threshold>600) launch_torque_threshold=25;
 											break;
-										case 3: //{'[',' ',']','L','e','d',' ','C','o','n','t','r','o','l','l','e','r',},
-											function_led_strip_controller_enabled = !function_led_strip_controller_enabled;
-											break;
-										case 4: //{'[',' ',']','S','h','i','f','t',' ','I','n','d','i','c','a','t','o','r'},
-											function_shift_indicator_enabled=!function_shift_indicator_enabled;
-											break;
-										case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',},
+										case 5: //{'S','h','i','f','t',' ','R','P','M',' ','3','0','0','0',' ',' ',' ',' '},
 											shift_threshold=shift_threshold+250;
 											if(shift_threshold>6000) shift_threshold=1500;
 											break;
-										case 6: //{'[',' ',']','M','y','2','3',' ','I','P','C', },
-											function_ipc_my23_is_installed=!function_ipc_my23_is_installed;
-											break;
-										case 7: //{'O',' ',' ','R','e','g','e','n','.',' ','A','l','e','r','t',' ',' ',' '},
-											function_regeneration_alert_enabled=!function_regeneration_alert_enabled;
-											//just for debug
-											//uint8_t tmpArr3[1]={BhBusChimeRequest}; //play sound
-											//addToUARTSendQueue(tmpArr3, 1);
-
-											break;
-										case 8: //{'O',' ',' ','S','e','a','t','b','e','l','t',' ','A','l','a','r','m',' '},
-											function_seatbelt_alarm_enabled=!function_seatbelt_alarm_enabled;
-											break;
-										case 9: //{'[',' ',']','R','o','u','t','e',' ','M','e','s','s','a','g','e','s', },
-											function_route_msg_enabled=!function_route_msg_enabled;
-											break;
-										case 10: //{'[',' ',']','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',},
-											function_esc_tc_customizator_enabled = !function_esc_tc_customizator_enabled;
-
-											//send messages to slave boards
-											uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
-											if(!function_esc_tc_customizator_enabled){
-												ESCandTCinversion=0; //ensure ESCTC inversion get disabled
-												tmpArr0[1]=C2_Bh_cmdFunction_ESC_TC_Disabled;
+										case 10: //{'O',' ',' ','E','S','C','/','T','C',' ','C','u','s','t','o','m','.',' '},
+											function_esc_tc_customizator_enabled=!function_esc_tc_customizator_enabled;
+											{
+												uint8_t tmpArr0[2]={C2_Bh_BusID,C2_Bh_cmdFunction_ESC_TC_Enabled};
+												if(!function_esc_tc_customizator_enabled){
+													ESCandTCinversion=0;
+													tmpArr0[1]=C2_Bh_cmdFunction_ESC_TC_Disabled;
+												}
+												addToUARTSendQueue(tmpArr0, 2);
 											}
-											addToUARTSendQueue(tmpArr0, 2);
-											break;
-										case 11: //{'[',' ',']','D','y','n','o',},
-											function_dyno_mode_master_enabled=!function_dyno_mode_master_enabled;
-											break;
-										case 12: //{'[',' ',']','A','C','C',' ','V','i','r','t','u','a','l',' ','P','a','d'},
-											function_acc_virtual_pad_enabled=!function_acc_virtual_pad_enabled;
-											break;
-										case 13: //{'[',' ',']','B','r','a','k','e','s',' ','O','v','e','r','r','i','d','e'},
-											function_front_brake_forcer_master=!function_front_brake_forcer_master;
-											break;
-										case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
-											function_4wd_disabler_enabled=!function_4wd_disabler_enabled;
-											break;
-										case 15: //{'[',' ',']','C','l','e','a','r',' ','F','a','u','l','t','s',},
-											function_clear_faults_enabled=!function_clear_faults_enabled;
-											break;
-										case 16: //{'[',' ',']','R','e','a','d',' ',' ','F','a','u','l','t','s',},
-											function_read_faults_enabled=!function_read_faults_enabled;
-											break;
-										case 17: //{'[',' ',']','R','e','m','o','t','e',' ','S','t','a','r','t',},
-											function_remote_start_Enabled=!function_remote_start_Enabled;
 											break;
 										case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 											function_is_diesel_enabled=!function_is_diesel_enabled;
 											total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
 											break;
-										case 19: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
+										case 19: //{'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
 											function_disable_odometer_blink=!function_disable_odometer_blink;
-											//Now let's inform the BH Baccable
-											uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
-											if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
-											addToUARTSendQueue(tmpArr2, 2);
+											{
+												uint8_t tmpArr2[2]={BhBusID,BHcmdOdometerBlinkDefault};
+												if(function_disable_odometer_blink) tmpArr2[1]=BHcmdOdometerBlinkDisable;
+												addToUARTSendQueue(tmpArr2, 2);
+											}
 											break;
-										case 20: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
+										case 20: //{'O',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 											function_pedal_booster_enabled++;
-											if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
-
-											if(function_pedal_booster_enabled==0) setSchizzaforteMap(2); //set bypass map, before to stop to send messages to schizzaForte
-
-											//Now let's inform the C2 and BH Baccable
-											uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
-											addToUARTSendQueue(tmpArr1, 3);
+											if(function_pedal_booster_enabled>6) function_pedal_booster_enabled=0;
+											if(function_pedal_booster_enabled==0) setSchizzaforteMap(2);
+											{
+												uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};
+												addToUARTSendQueue(tmpArr1, 3);
+											}
 											break;
-										case 21: // 'P','e','d','a','l',' ','P','o','w','e','r',':',' ','0',' ',' ',' '
+										case 21: //{'P','e','d','a','l',' ','P','o','w','e','r',':',' ','0',' ',' ',' ',' '},
 											pedal_map_power=pedal_map_power+2;
 											if(pedal_map_power>10) pedal_map_power=-10;
-											currentSchizzaforteMap='-';//forget previous setting
-
+											currentSchizzaforteMap='-';
 											break;
-										case 22: // {'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
+										case 22: //{'O',' ',' ','P','a','r','k',' ','M','i','r','r','o','r',' ',' ',' ',' '},
 											function_park_mirror=!function_park_mirror;
-											//Now let's inform the BH Baccable
-											uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
-											if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorStoreCurPos;
-											addToUARTSendQueue(tmpArr4, 2);
+											{
+												uint8_t tmpArr4[2]={BhBusID,BHcmdFunctParkMirrorDisabled};
+												if(function_park_mirror) tmpArr4[1]=BHcmdFunctParkMirrorStoreCurPos;
+												addToUARTSendQueue(tmpArr4, 2);
+											}
 											break;
 										case 23: //{'O',' ',' ','A','C','C','+',' ','A','u','t','o','s','t','a','r','t',' '},
 											function_acc_autostart++;
@@ -695,8 +629,6 @@ void processingMessage0x000002FA(){
 											if(function_close_windows_with_door_lock>2) function_close_windows_with_door_lock=0;
 											closeWindowsRequest=0;
 											doorLocksRequestsCounter=0;
-											//openWindowsRequest=0;
-											//doorUnlocksRequestsCounter=0;
 											break;
 										case 25: //{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' '},
 											function_open_windows_with_door_lock++;
@@ -706,19 +638,15 @@ void processingMessage0x000002FA(){
 											break;
 										case 26: //{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d'},
 											HAS_function_enabled=!HAS_function_enabled;
-											//notify to C2 and BH HAS function status
-											uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
-											if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
-											addToUARTSendQueue(tmpArr5, 2);
-
-											break;
-										case 27: //{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p'},
-											QV_exhaust_flap_function_enabled=!QV_exhaust_flap_function_enabled;
-											break;
-										case 28: //{'O',' ',' ','e','u','j','o','t',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '},
-											function_eujot_enabled=!function_eujot_enabled;
+											{
+												uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
+												if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
+												addToUARTSendQueue(tmpArr5, 2);
+											}
 											break;
 										default:
+											// Simple boolean entries are toggled via the table.
+											setup_toggle_if_bool(setup_dashboardPageIndex);
 											break;
 									}
 

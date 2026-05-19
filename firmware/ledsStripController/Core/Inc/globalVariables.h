@@ -154,7 +154,7 @@
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH];
+		extern uint8_t dashboard_setup_menu_array[][DASHBOARD_MESSAGE_MAX_LENGTH];
 
 		//extern uint8_t params_setup_dashboardPageIndex;
 		//extern uint8_t shownParamsArray[240];

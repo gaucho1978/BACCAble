@@ -9,6 +9,7 @@
 	#define INC_FUNCTIONS_C1BACCABLE_H_
 	#include "globalVariables.h"
 	#include "functions_Common.h"
+	#include "setup_menu.h"
 
 	void C1baccableInitCheck(void);
 	void setSchizzaforteMap(uint8_t map);
