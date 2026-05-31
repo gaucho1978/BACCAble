@@ -542,6 +542,15 @@ void processingMessage0x000002FA(){
 									break;
 								case 14: //reset statistics
 									resetStatisticsOnFlash();
+									break;
+								case 15: //Max Hold toggle
+									maxHold_enabled=!maxHold_enabled;
+									if(maxHold_enabled){
+										//force fresh start: next parameter update will initialise max hold from scratch
+										dashboardParamCouple[0]=NAN;
+										dashboardParamCouple[1]=NAN;
+									}
+									break;
 								default:
 									break;
 							}

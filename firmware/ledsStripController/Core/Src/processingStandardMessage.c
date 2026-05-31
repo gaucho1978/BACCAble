@@ -67,6 +67,8 @@ void processingStandardMessage(){
 					#ifdef TORQUE_CORRECTION_FACTOR
 						torque=torque * TORQUE_CORRECTION_FACTOR; //custom correction factor in user_define.h
 					#endif
+					nativeMaxHoldUpdate(2); //torque Nm
+					nativeMaxHoldUpdate(1); //power CV (torque just updated, uses current RPM)
 				}
 
 				if(launch_assist_enabled==1){
@@ -97,6 +99,7 @@ void processingStandardMessage(){
 
 					//get vehicle speed
 					currentSpeed_km_h= (float)((((uint16_t)rx_msg_data[0] << 11) & 0b0001111111111111) | ((uint16_t)rx_msg_data[1] <<3) | ((uint16_t)rx_msg_data[2] >>5))/16;
+					nativeMaxHoldUpdate(7); //speed km/h
 
 					if(currentSpeed_km_h==0){
 						carSteadyCounter++;//increase a counter
@@ -259,6 +262,7 @@ void processingStandardMessage(){
 		case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
 			#if defined(C1baccable)
 				currentGear=rx_msg_data[0] & ~0xF;
+				nativeMaxHoldUpdate(6); //current gear
 
 				if(function_led_strip_controller_enabled==1){
 					scaledColorSet=scaleColorSet(currentGear); //prima di tutto azzeriamo i primi 4 bit meno significativi, poi scala il dato con la funzione scaleColorSet, per prepararlo per l'invio alla classe vumeter
@@ -351,6 +355,8 @@ void processingStandardMessage(){
 				if(rx_msg_header.DLC>=6){
 					batteryStateOfCharge= (rx_msg_data[1] & 0b01111111); //set Most Significant Bit to zero
 					batteryCurrent= (rx_msg_data[4] << 4 | (rx_msg_data[5] >> 4));
+					nativeMaxHoldUpdate(3); //battery state of charge
+					nativeMaxHoldUpdate(4); //battery current
 				}
 			#endif
 			//battery state of charge is on byte 1 from bit 6 to 0 (Percentage)
@@ -440,6 +446,8 @@ void processingStandardMessage(){
 				if(rx_msg_header.DLC>=4){
 					oilPressure= ((rx_msg_data[0] & 0b00000001) << 7 | ((rx_msg_data[1] >> 1) & 0b01111111));
 					oilTemperature= ((rx_msg_data[2] & 0b00111111) << 2 | ((rx_msg_data[3] >> 6) & 0b00000011));
+					nativeMaxHoldUpdate(0); //oil pressure
+					nativeMaxHoldUpdate(5); //oil temperature
 				}
 			#endif
 			//engine oil level is in byte 0 from bit 7 to 3.
@@ -618,6 +626,7 @@ void processingStandardMessage(){
 				//this message is directed to IPC once per second. DPF status is on byte 4 bit 2. (1=dirty, 0=clean)
 				if(rx_msg_header.DLC>=6){
 					dieselEngineRegenerationMode = (rx_msg_data[5]>>2 ) & 0b00000111 ;//byte 5 bit 4-2
+					nativeMaxHoldUpdate(8); //DPF regeneration mode
 
 					if(function_regeneration_alert_enabled){  //if  function was enabled in setup menu
 						if(regenerationInProgress){ //if regeneration is in progress

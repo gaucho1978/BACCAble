@@ -35,6 +35,7 @@
 	} uds_param_single_element;
 
 	extern float dashboardParamCouple[2];
+	extern float dashboardParamMaxHold[2];
 	extern uint8_t shownParamsArray[240];
 	extern uint8_t params_setup_dashboardPageIndex;
 	extern uint8_t total_pages_in_params_setup_dashboard_menu;

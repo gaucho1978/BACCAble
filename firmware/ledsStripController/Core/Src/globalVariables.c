@@ -167,7 +167,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
-	uint8_t dashboard_main_menu_array_len=15;
+	uint8_t maxHold_enabled=0; // 0=Max Hold OFF, 1=Max Hold ON (RAM only, resets on power cycle)
+	uint8_t dashboard_main_menu_array_len=16;
 	uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
 			{'S','h','o','w',' ','P','a','r','a','m','e','t','e','r','s',' ',' ',' '},
@@ -184,6 +185,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'T','o','g','g','l','e',' ','Q','V',' ','V','a','l','v','e',' ',' ',' '},
 			{'S','a','v','e',' ','L','o','g',' ','t','o',' ','F','i','l','e',' ',' '},
 			{'R','e','s','e','t',' ','S','t','a','t','i','s','t','i','c','s',' ',' '},
+		{'M','a','x',' ','H','o','l','d',' ','O','F','F',' ',' ',' ',' ',' ',' '},
 
 	};
 	uint8_t setup_dashboardPageIndex=0;

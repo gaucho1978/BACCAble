@@ -18,7 +18,6 @@
 		#endif
 		immobilizerEnabled = (uint8_t)readFromFlash(1);  //parameter1 stored in ram, so that we can get it. By default Immo is enabled
 		if(immobilizerEnabled) executeDashboardBlinks=2; //shows the user that the immobilizer is active (or not)
-
 		function_smart_disable_start_stop_enabled=(uint8_t)readFromFlash(2);  //parameter2 stored in ram, so that we can get it. By default S&S is enabled
 		function_led_strip_controller_enabled=(uint8_t)readFromFlash(3); //By default led is disabled
 		function_shift_indicator_enabled=(uint8_t)readFromFlash(4); //By default it is disabled
@@ -525,7 +524,17 @@
 							//onboardLed_blue_on();
 							can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
 						}else{ //<0xff reqId means special value that we use to get particular values
-							dashboardParamCouple[currentParamElementSelection]=getNativeParam((uint8_t)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]);//aquire param in a variabile
+							float nativeVal=getNativeParam((uint8_t)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]);
+							if(maxHold_enabled){
+								if(isnan(dashboardParamCouple[currentParamElementSelection])){
+									dashboardParamMaxHold[currentParamElementSelection]=nativeVal; //first update after navigation: reset max hold
+								}else if(nativeVal > dashboardParamMaxHold[currentParamElementSelection]){
+									dashboardParamMaxHold[currentParamElementSelection]=nativeVal; //new maximum found
+								}
+								dashboardParamCouple[currentParamElementSelection]=dashboardParamMaxHold[currentParamElementSelection];
+							}else{
+								dashboardParamCouple[currentParamElementSelection]=nativeVal;
+							}
 							sendDashboardPageToSlaveBaccable();  //Send params to BH board
 						}
 					}
@@ -769,6 +778,10 @@
 					return;
 				}
 				//nothing to do
+				break;
+			case 15: //Max Hold: update ON/OFF text
+				dashboard_main_menu_array[15][10] = maxHold_enabled ? 'N' : 'F';
+				dashboard_main_menu_array[15][11] = maxHold_enabled ? ' ' : 'F';
 				break;
 			default:
 				//nothing to do
@@ -1927,6 +1940,25 @@
 	    return index;
 	}
 
+	// Event-driven max hold update for native CAN parameters.
+	// Called directly at the extraction point of each native CAN variable,
+	// so peaks are captured at CAN bus rate (e.g. every 10ms) rather than at the 500ms display cycle.
+	// Only updates dashboardParamMaxHold; display (dashboardParamCouple) is still refreshed at 500ms.
+	// Fast-returns if max hold is inactive or the params view is not shown.
+	void nativeMaxHoldUpdate(uint8_t paramId){
+		if(!maxHold_enabled || dashboard_menu_indent_level!=1 || main_dashboardPageIndex!=1 || !baccableDashboardMenuVisible) return;
+		for(uint8_t sel=0; sel<2; sel++){
+			if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[sel]==paramId){
+				if(!isnan(dashboardParamCouple[sel])){ //only after the 500ms cycle has set the initial value
+					float value=getNativeParam(paramId);
+					if(value > dashboardParamMaxHold[sel]){
+						dashboardParamMaxHold[sel]=value;
+					}
+				}
+				break;
+			}
+		}
+	}
 
 
 #endif

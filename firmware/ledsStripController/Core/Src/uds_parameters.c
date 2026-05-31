@@ -1,6 +1,7 @@
 #include "uds_parameters.h"
 
 	float dashboardParamCouple[2];
+	float dashboardParamMaxHold[2]; // stores max value for each displayed param (used by Max Hold feature)
 
 
 	uint8_t shownParamsArray[240];

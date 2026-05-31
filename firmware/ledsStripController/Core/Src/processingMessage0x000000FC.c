@@ -14,6 +14,9 @@ void processingMessage0x000000FC(){
 		if(rx_msg_header.DLC>=2){
 			currentRpmSpeed=(rx_msg_data[0] *256 + (rx_msg_data[1] & ~0x3) )/4; //extract rpm speed
 			//onboardLed_blue_on();
+			#if defined(C1baccable)
+				nativeMaxHoldUpdate(1); //power CV depends on RPM: update max hold at extraction
+			#endif
 		}
 	#endif
 	#if defined(C2baccable)

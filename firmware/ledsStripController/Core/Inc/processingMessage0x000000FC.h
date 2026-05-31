@@ -9,6 +9,9 @@
 	#define INC_PROCESSINGMESSAGE0X000000FC_H_
 
 	#include "globalVariables.h"
+	#if defined(C1baccable)
+		#include "functions_C1baccable.h"
+	#endif
 
 	void processingMessage0x000000FC();
 

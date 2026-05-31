@@ -150,6 +150,7 @@
 
 		extern uint8_t main_dashboardPageIndex;
 		extern uint8_t dashboard_menu_indent_level;
+		extern uint8_t maxHold_enabled;
 		extern uint8_t dashboard_main_menu_array_len;
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
