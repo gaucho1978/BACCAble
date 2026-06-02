@@ -453,7 +453,7 @@ uint32_t LANEbuttonFirstClickTime=0;
 uint8_t numberOfLaneButtonClicks=0; //number of times button was pressed(click)
 
 //PEDAL_BOOSTER_ENABLED
-uint8_t function_pedal_booster_enabled=0; //0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+uint8_t function_pedal_booster_enabled=0; //0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map, 7=Hybrid Align, 8=Kids Limiter
 
 //CLEAR_FAULTS_ENABLED
 uint8_t function_clear_faults_enabled=1; //default enabled. saved on flash

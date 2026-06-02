@@ -673,9 +673,10 @@ void processingMessage0x000002FA(){
 											break;
 										case 20: //{'Ø',' ',' ','P','e','d','a','l',' ','B','o','o','s','t','e','r',' ',' '},
 											function_pedal_booster_enabled++;
-											if (function_pedal_booster_enabled>6) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+											if (function_pedal_booster_enabled>8) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map, 7=Hybrid Align, 8=Kids Limiter
 
 											if(function_pedal_booster_enabled==0) setSchizzaforteMap(2); //set bypass map, before to stop to send messages to schizzaForte
+										if(function_pedal_booster_enabled==8) setSchizzaforteMap(2); //Kids Limiter: set bypass immediately at selection
 
 											//Now let's inform the C2 and BH Baccable
 											uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};

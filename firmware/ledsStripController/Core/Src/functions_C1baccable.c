@@ -413,12 +413,24 @@
 
 		if(function_pedal_booster_enabled){ //if enabled, communicate with schizzaForte each 250msec
 			if(currentRpmSpeed<400) currentSchizzaforteMap='-'; //if engine is stopped. Forget the pedal map setting, so that baccable will be forced to set it again on schizzaforte
+
+			if(function_pedal_booster_enabled==8){ // Kids Limiter: override accelerator to 0 when RPM>1500 or speed>90 km/h
+				if((currentRpmSpeed>1500 || currentSpeed_km_h>90.0f) && currentRpmSpeed>400){
+					// Conditions met: override throttle to 0, at most once every 400ms
+					if((currentTime-last_queued_serial_to_schizzaForte_msg_time)>400){
+						last_queued_serial_to_schizzaForte_msg_time=currentTime;
+						uint8_t kidsLimMsg[UART1_BUFFER_SIZE]={'#',0xff,0x00,0,0,0,0,0,0};
+						kidsLimMsg[8]=calculateCRC(kidsLimMsg,UART1_BUFFER_SIZE);
+						addToUART1SendQueue(kidsLimMsg, 9);
+					}
+				}
+			}else{
 			if(mapCommandNotApplied() && (currentRpmSpeed>400)){ //only if the map command was not correctly received and engine is on
 				if((currentTime - last_queued_serial_to_schizzaForte_msg_time)>(4 * TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS) ){
 					last_queued_serial_to_schizzaForte_msg_time=currentTime; //avoid to Return Here
 
-					if(function_pedal_booster_enabled==1){ // 1=auto //set mode according to DNAR current selection
-						//function_pedal_booster_enabled: 0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map
+						if(function_pedal_booster_enabled==1){ // 1=Auto: set map according to DNA selector
+							//function_pedal_booster_enabled: 0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map, 7=Hybrid Align, 8=Kids Limiter
 						switch(currentDNAmode){
 							case 0x00: //Natural
 								setSchizzaforteMap(4);
@@ -435,9 +447,15 @@
 							default:
 								setSchizzaforteMap(2); //bypass
 						}
+						}else if(function_pedal_booster_enabled==7){ // 7=Hybrid Align: N map in A/N/D, Race map in Race
+							if(currentDNAmode==0x30){
+								setSchizzaforteMap(6); //Race map when DNA is in Race
 					}else{
-
-						setSchizzaforteMap(function_pedal_booster_enabled);
+								setSchizzaforteMap(4); //Natural map when DNA is in A, N or D
+							}
+						}else{
+							setSchizzaforteMap(function_pedal_booster_enabled); //direct map for values 2-6
+						}
 					}
 				}
 			}
@@ -593,6 +611,15 @@
 			case 6: //6=Race Map
 				if(currentSchizzaforteMap=='R') return 0; //map applied
 				break;
+			case 7: //7=Hybrid Align: N map for A/N/D, Race map for Race
+				if(currentDNAmode==0x30){ //Race
+					if(currentSchizzaforteMap=='R') return 0; //map applied
+				}else{ //A, N, D → Natural map
+					if(currentSchizzaforteMap=='N') return 0; //map applied
+				}
+				break;
+			case 8: //8=Kids Limiter: throttle override, map shall be bypass
+				if(currentSchizzaforteMap=='B') return 0; //map applied
 			default:
 				//return 1; //not correctly applied
 		}
@@ -982,6 +1009,26 @@
 						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='M';
 						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='a';
 						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='p';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
+						break;
+					case 7: //Hybrid Align
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='H';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]='y';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='b';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='r';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]='i';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][17]='d';
+						break;
+					case 8: //Kids Limiter
+						dashboard_setup_menu_array[setup_dashboardPageIndex][10]='.';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][11]=' ';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][12]='K';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][13]='i';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][14]='d';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][15]='s';
+						dashboard_setup_menu_array[setup_dashboardPageIndex][16]=' ';
 						dashboard_setup_menu_array[setup_dashboardPageIndex][17]=' ';
 						break;
 					default: //we will never end here
@@ -1807,7 +1854,7 @@
 				}
 				break;
 			case 20: //PEDAL_BOOSTER_ENABLED
-				if(tmpParam>6){
+				if(tmpParam>8){
 					#if defined(PEDAL_BOOSTER_ENABLED)
 						return PEDAL_BOOSTER_ENABLED;
 					#else
