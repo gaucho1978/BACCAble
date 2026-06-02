@@ -676,7 +676,12 @@ void processingMessage0x000002FA(){
 											if (function_pedal_booster_enabled>8) function_pedal_booster_enabled=0; //rotative selection 0=disabled, 1=auto, 2=Bypass, 3=All Weather map, 4=Natural Map, 5=Dynamic Map, 6=Race Map, 7=Hybrid Align, 8=Kids Limiter
 
 											if(function_pedal_booster_enabled==0) setSchizzaforteMap(2); //set bypass map, before to stop to send messages to schizzaForte
-										if(function_pedal_booster_enabled==8) setSchizzaforteMap(2); //Kids Limiter: set bypass immediately at selection
+										if(function_pedal_booster_enabled==8){ //Kids Limiter: set A map with minimum pedal power at selection
+											int8_t saved_pedal_map_power=pedal_map_power;
+											pedal_map_power=-10; //force minimum power
+											setSchizzaforteMap(3); //A map
+											pedal_map_power=saved_pedal_map_power; //restore user setting
+										}
 
 											//Now let's inform the C2 and BH Baccable
 											uint8_t tmpArr1[3]={C2_Bh_BusID,C2_Bh_cmdSetPedalBoostStatus,function_pedal_booster_enabled};

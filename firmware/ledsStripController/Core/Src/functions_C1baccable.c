@@ -414,9 +414,20 @@
 		if(function_pedal_booster_enabled){ //if enabled, communicate with schizzaForte each 250msec
 			if(currentRpmSpeed<400) currentSchizzaforteMap='-'; //if engine is stopped. Forget the pedal map setting, so that baccable will be forced to set it again on schizzaforte
 
-			if(function_pedal_booster_enabled==8){ // Kids Limiter: override accelerator to 0 when RPM>1500 or speed>90 km/h
-				if((currentRpmSpeed>1500 || currentSpeed_km_h>90.0f) && currentRpmSpeed>400){
-					// Conditions met: override throttle to 0, at most once every 400ms
+			if(function_pedal_booster_enabled==8){ // Kids Limiter
+				// Independent check 1: ensure map A with minimum power is active (handles boot and any drift)
+				if(currentRpmSpeed>400 && currentSchizzaforteMap!='A'){
+					if((currentTime-last_queued_serial_to_schizzaForte_msg_time)>(4*TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS)){
+						last_queued_serial_to_schizzaForte_msg_time=currentTime;
+						int8_t saved_pedal_map_power=pedal_map_power;
+						pedal_map_power=-10;
+						setSchizzaforteMap(3); //A map with minimum power
+						pedal_map_power=saved_pedal_map_power;
+					}
+				}
+				// Independent check 2: override throttle to 0 when RPM or speed exceed thresholds
+				uint32_t kidsRpmLimit = function_is_diesel_enabled ? 3000 : 4000;
+				if((currentRpmSpeed>kidsRpmLimit || currentSpeed_km_h>100.0f) && currentRpmSpeed>400){
 					if((currentTime-last_queued_serial_to_schizzaForte_msg_time)>400){
 						last_queued_serial_to_schizzaForte_msg_time=currentTime;
 						uint8_t kidsLimMsg[UART1_BUFFER_SIZE]={'#',0xff,0x00,0,0,0,0,0,0};
