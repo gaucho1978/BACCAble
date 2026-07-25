@@ -353,10 +353,23 @@ void processingStandardMessage(){
 		case 0x0000041A:
 			#if defined(C1baccable)
 				if(rx_msg_header.DLC>=6){
-					batteryStateOfCharge= (rx_msg_data[1] & 0b01111111); //set Most Significant Bit to zero
-					batteryCurrent= (rx_msg_data[4] << 4 | (rx_msg_data[5] >> 4));
-					nativeMaxHoldUpdate(3); //battery state of charge
-					nativeMaxHoldUpdate(4); //battery current
+					batteryStateOfCharge= (rx_msg_data[1] & 0b01111111); //set Most Significant Bit to zero //no more used. we use uds to get this
+					batteryCurrent= (rx_msg_data[4] << 4 | (rx_msg_data[5] >> 4)); //just for test, we try another message 0x41E
+					nativeMaxHoldUpdate(3); //battery state of charge  //even if no more used
+					nativeMaxHoldUpdate(4); //battery current //just for test commented, to use another message 0x41E
+				}
+			#endif
+			//battery state of charge is on byte 1 from bit 6 to 0 (Percentage)
+			//battery current (A) is on byte 4 and in byte 5 from bit 7 to bit 4
+			break;
+		case 0x0000041E:
+			#if defined(C1baccable)
+				if(rx_msg_header.DLC>=8){
+					//alternative method to get bat current. not working
+					//batteryCurrent = ((rx_msg_data[1] & 0b00000001) << 15) |
+					//                  (rx_msg_data[2] << 7) |
+					//                  ((rx_msg_data[3] >> 1) & 0b01111111);
+					//nativeMaxHoldUpdate(4); //battery current
 				}
 			#endif
 			//battery state of charge is on byte 1 from bit 6 to 0 (Percentage)

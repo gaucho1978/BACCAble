@@ -188,7 +188,7 @@ void cdc_process(void){
 			#endif
 
 			addToUART1SendQueue(uart1_copy_buf, len);
-
+			if(len>UART1_BUFFER_SIZE) addToUART1SendQueue(&uart1_copy_buf[9], len-UART1_BUFFER_SIZE); //let's send some more bytes (not expected more than 18 chars in total)
 		#else
 			//normal act as canable
 			for (uint32_t i = 0; i < len; i++){

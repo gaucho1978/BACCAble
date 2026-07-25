@@ -152,6 +152,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 			// rxBufferUart1[0]
 			onboardLed_blue_on();
 			HAL_UART_Receive_IT(&huart1, &rxBufferUart1[0], 1); //receive one char
+
+			#if defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER) //if schizzaforte gateway is enabled
+				CDC_Transmit_FS(rxBufferUart1, (uint16_t)1);
+			#endif
 		}
 
 	#endif

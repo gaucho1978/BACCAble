@@ -436,32 +436,32 @@
 					}
 				}
 			}else{
-			if(mapCommandNotApplied() && (currentRpmSpeed>400)){ //only if the map command was not correctly received and engine is on
-				if((currentTime - last_queued_serial_to_schizzaForte_msg_time)>(4 * TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS) ){
-					last_queued_serial_to_schizzaForte_msg_time=currentTime; //avoid to Return Here
+				if(mapCommandNotApplied() && (currentRpmSpeed>400)){ //only if the map command was not correctly received and engine is on
+					if((currentTime - last_queued_serial_to_schizzaForte_msg_time)>(4 * TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS) ){
+						last_queued_serial_to_schizzaForte_msg_time=currentTime; //avoid to Return Here
 
 						if(function_pedal_booster_enabled==1){ // 1=Auto: set map according to DNA selector
 							//function_pedal_booster_enabled: 0=disabled, 1=Automatic Map, 2=Bypass, 3=All Weather Map, 4=Natural Map, 5=Dynamic Map, 6=Race Map, 7=Hybrid Align, 8=Kids Limiter
-						switch(currentDNAmode){
-							case 0x00: //Natural
-								setSchizzaforteMap(4);
-								break;
-							case 0x08: //Dynamic
-								setSchizzaforteMap(5);
-								break;
-							case 0x10: //All Weather
-								setSchizzaforteMap(3);
-								break;
-							case 0x30: //Race
-								setSchizzaforteMap(6);
-								break;
-							default:
-								setSchizzaforteMap(2); //bypass
-						}
+							switch(currentDNAmode){
+								case 0x00: //Natural
+									setSchizzaforteMap(4);
+									break;
+								case 0x08: //Dynamic
+									setSchizzaforteMap(5);
+									break;
+								case 0x10: //All Weather
+									setSchizzaforteMap(3);
+									break;
+								case 0x30: //Race
+									setSchizzaforteMap(6);
+									break;
+								default:
+									setSchizzaforteMap(2); //bypass
+							}
 						}else if(function_pedal_booster_enabled==7){ // 7=Hybrid Align: N map in A/N/D, Race map in Race
 							if(currentDNAmode==0x30){
 								setSchizzaforteMap(6); //Race map when DNA is in Race
-					}else{
+							}else{
 								setSchizzaforteMap(4); //Natural map when DNA is in A, N or D
 							}
 						}else{
@@ -1215,7 +1215,7 @@
 				return (float)batteryStateOfCharge  * single_uds_params_array[paramId].replyScale;
 				break;
 			case 4: //battery current (A)
-				return ((float)batteryCurrent  * single_uds_params_array[paramId].replyScale) + single_uds_params_array[paramId].replyScaleOffset;
+				return ((float)batteryCurrent * single_uds_params_array[paramId].replyScale) + single_uds_params_array[paramId].replyScaleOffset;
 				break;
 			case 5: //engine oil temperature
 				return ((float)oilTemperature * single_uds_params_array[paramId].replyScale) + single_uds_params_array[paramId].replyScaleOffset;

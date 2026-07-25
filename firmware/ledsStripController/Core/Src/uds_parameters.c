@@ -26,8 +26,8 @@
 					{.name="OIL $1.1fbar O.$3.0f" "\xB0" "C",	.udsParamId={0,		5		}}, //param couple: OIL pressure and Oil Temp.
 					{.name="OIL $3.0f" "\xB0" "C W.$3.0f" "\xB0" "C",	.udsParamId={5,		42		}}, //param couple: OIL temp. and Water Temp.
 					{.name="OIL $1.1fL Qual.$3.0f%",			.udsParamId={28,	31		}}, //param couple: OIL level and Oil Quality
-					{.name="BAT $3.0f% $2.1fA",					.udsParamId={3,		4		}}, //param couple: BAT State Of Charge and current
-					{.name="BAT $2.2fV $2.1fA",					.udsParamId={35,	4		}}, //param couple: BAT voltage and current
+					{.name="BAT $3.0f% $3.1fA",					.udsParamId={21,	4		}}, //param couple: BAT State Of Charge and current
+					{.name="BAT $2.2fV $3.1fA",					.udsParamId={35,	4		}}, //param couple: BAT voltage and current
 					{.name="PWR: $3.2fCV   ",					.udsParamId={1,		1		}}, //Power
 					{.name="TORQUE: $3.2fNm",					.udsParamId={2,		2		}}, //Torque
 					{.name="IC AirOut: $3.1f" "\xB0" "C",		.udsParamId={22,	22		}}, //Intercooler output air temperature
@@ -81,8 +81,8 @@
 						{.name="OIL $1.1fbar O.$3.0f" "\xB0" "C",	.udsParamId={0,		5		}}, //param couple: OIL pressure and Oil Temp.
 						{.name="OIL $3.0f" "\xB0" "C W.$3.0f" "\xB0" "C",	.udsParamId={5,		68		}}, //param couple: OIL temp. and Water Temp.
 						{.name="OIL $2.1fmm Qu.$3.0f%",				.udsParamId={64,	63		}}, //param couple: OIL level and Oil Quality
-						{.name="BAT $3.0f% $2.1fA",					.udsParamId={3,		4		}}, //param couple: BAT State Of Charge and current
-						{.name="BAT $2.2fV $2.1fA",					.udsParamId={62,	4		}}, //param couple: BAT voltage and current
+						{.name="BAT $3.0f% $3.1fA",					.udsParamId={21,	4		}}, //param couple: BAT State Of Charge and current
+						{.name="BAT $2.2fV $3.1fA",					.udsParamId={62,	4		}}, //param couple: BAT voltage and current
 						{.name="DPF $2.2f% $2.2f" "\xB0" "C",		.udsParamId={55,	56		}}, //param couple: DPF clogging percentage and temperature
 						{.name="REGEN $2.1f% $3.0f" "\xB0" "C",		.udsParamId={57,	56		}}, //param couple: DPF regeneration progress percentage and temperature
 						{.name="PWR: $3.2fCV   ",					.udsParamId={1,		1		}}, //Power
@@ -96,7 +96,7 @@
 						{.name="MEAN REGEN:$5.0fkm",				.udsParamId={60,	60		}}, //DPF mean regeneration distance in km
 						{.name="MEAN REGEN:$3.0fmin",				.udsParamId={61,	61		}}, //DPF mean regeneration duration in minutes
 						{.name="BAT $2.2fV     ",					.udsParamId={62,	62		}}, //Battery Voltage
-						{.name="BAT $3.0f%     ",					.udsParamId={3,		3		}}, //Battery State Of Charge percentage
+						{.name="BAT $3.0f%     ",					.udsParamId={21,	21		}}, //Battery State Of Charge percentage
 						{.name="BAT $3.1fA     ",					.udsParamId={4,		4		}}, //Battery current
 						{.name="OIL QUALY: $3.0f%",					.udsParamId={63,	63		}}, //Oil Quality
 						{.name="OIL: $3.0f" "\xB0" "C   ",			.udsParamId={5,		5		}}, //Oil temperature
@@ -173,7 +173,7 @@
 		{																																																																						}, //18
 		{																																																																						}, //19
 		{																																																																						}, //20
-		{																																																																						}, //21
+		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x032219BD),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							}, //21		Alternative battery percentage (gasoline and diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221935),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}						}, //22		intercooler air out (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03223A58),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=-40,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}						}, //23		intercooler air in (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x0322195A),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=-1,     .replyScale=0.001,          .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'B','A','R'}						}, //24		boost absolute pressure (gasoline)
@@ -239,7 +239,7 @@
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221900),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						}, //84		Diesel temperature (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222002),	.replyId=0x18DAF110,	.replyLen=3,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','m',}						}, //85		Odometer Last (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					}, //86		Air Conditioner pressure (diesel)
-		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0000394789,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'L','/','h',}					}, //87		Fuel consume (diesel)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0004,			.replyScaleOffset=0,	.replyDecimalDigits=3,	.replyMeasurementUnit={'L','/','h',}					}, //87		Fuel consume (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322193F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						}, //88		Debimeter temperature (diesel)
 	
 	};
