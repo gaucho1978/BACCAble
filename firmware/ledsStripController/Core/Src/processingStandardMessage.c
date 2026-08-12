@@ -611,7 +611,14 @@ void processingStandardMessage(){
 					//BH movement of mirror is requested
 					if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
 						if(!storeOperativeMirrorPosition && !parkMirrorsSteady){ //if Operative position was stored and mirror is not steady
+							// if restore mirror position arrived less than 1,8seconds ago,avoid sending packets
+							//   in order to have a pause between the 2 commands
+							if(currentTime-restoreOperativeMirrorsPositionRequestTime<TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){
+								//don't do anything
+							}else{
 							can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+								lastParkMirrorMsgTime=currentTime;
+							}
 						}
 					}
 				}
@@ -698,6 +705,13 @@ void processingStandardMessage(){
 				}
 			#endif
 			//the park assistant button press event is on byte 1 bit 5 (1=pressed)
+			break;
+		case 0x000005CA:
+			#if defined(BHbaccable)
+			//clima left temperature setpoint is on byte 4 and byte 5 from bit 7 to  6 (from value 0 to 1023)
+			//clima right temperature setpoint is on byte 2 and byte 3 from bit 7 to  6 (from value 0 to 1023)
+			//clima blower setpoint is on byte 5 from bit 5 to 2. (value from 0 to 8)
+			#endif
 			break;
 		case 0x0000073A:
 			//contains current date from byte 0 to 7.

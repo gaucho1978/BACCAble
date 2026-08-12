@@ -385,6 +385,35 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t ChineseExhaustValveRequest=0; //0=no request, 'O'=open request, 'C'=Close request
 	uint8_t chineseValveIsOpened=0; //0=closed, 1=opened
 
+	//pumpForce test25/07/2026 - BEGIN
+	// Definizioni variabili per la sequenza UDS di forzatura pompa carburante (ECM 0x10)
+	// pumpForceTxHeader ha ExtId fisso 0x18DA10F1; DLC viene aggiornato prima di ogni trasmissione.
+	// pumpForceTxData è un buffer generico riusato per ciascun messaggio della sequenza.
+	uint8_t  function_pump_force_enabled = 1;   // =1 abilitato per test //pumpForce test25/07/2026
+	uint8_t  pumpForceStateMachine = 0xFF;       // 0xFF=inattivo, 0-2=handshake in corso, 3=invio periodico
+	uint8_t  ecmSeed[4];                          // seed ECM (4 byte), valido tra ricezione 67 01 e invio 27 02
+	uint32_t lastPumpForceMsgTime = 0;            // msec dall'ultimo msg inviato: timeout handshake e cadenza 200ms
+	CAN_TxHeaderTypeDef pumpForceTxHeader = {.IDE=CAN_ID_EXT, .RTR=CAN_RTR_DATA, .ExtId=0x18DA10F1, .DLC=3};
+	uint8_t  pumpForceTxData[8];                  // dati CAN; contenuto impostato subito prima di ogni can_tx
+	//pumpForce test25/07/2026 - END
+
+	//readFaults 12/08/2026 - BEGIN
+	// Definizioni variabili per la sequenza UDS di lettura DTC dal Body ECU (ECU 0x40)
+	// Il buffer faultsRxBuffer accumula il payload ISO-TP completo (primo frame + consecutivi).
+	// faultsBodyTxHeader ha ExtId fisso 0x18DA40F1; DLC aggiornato prima di ogni can_tx.
+	uint8_t  faultsStateMachine = 0xFF;              // 0xFF=inattivo
+	uint8_t  faultsDTCcount = 0;                     // numero DTC ricevuti e validi
+	uint8_t  faultsDTCsubmenuIndex = 0;              // indice corrente scorrimento lista DTC
+	uint8_t  faultsDTCbytes[FAULTS_DTC_MAX][3];      // record DTC: [high, mid, low] per record
+	uint8_t  faultsRxBuffer[90];                     // buffer riassemblaggio ISO-TP payload
+	uint16_t faultsRxExpected = 0;                   // byte totali attesi (da first frame)
+	uint16_t faultsRxReceived = 0;                   // byte payload ricevuti finora
+	uint8_t  faultsRxNextSN = 0;                     // numero sequenza atteso prossimo CF
+	uint32_t faultsTimer = 0;                        // timestamp per timeout e display TIMEOUT
+	CAN_TxHeaderTypeDef faultsBodyTxHeader = {.IDE=CAN_ID_EXT, .RTR=CAN_RTR_DATA, .ExtId=0x18DA40F1, .DLC=3};
+	uint8_t  faultsBodyTxData[8];                    // buffer dati CAN per tutte le tx verso Body ECU
+	//readFaults 12/08/2026 - END
+
 
 #endif
 
@@ -529,9 +558,12 @@ CAN_TxHeaderTypeDef parkMirrorMsgHeader={.IDE=CAN_ID_STD, .RTR = CAN_RTR_DATA, .
 uint32_t lastParkMirrorMsgTime=0;
 uint32_t restoreOperativeMirrorsPositionRequestTime=0;
 uint8_t restoreOperativeMirrorsPosition=0;
+uint32_t leftParkMirrorPositionRequiredRequestTime=0;
 uint8_t leftParkMirrorPositionRequired=0;
+uint32_t rightParkMirrorPositionRequiredRequestTime=0;
 uint8_t rightParkMirrorPositionRequired=0;
 uint8_t parkMirrorOperativePositionNotStored=1;
+uint32_t exitReverseTime=0; //@netzmark parkingMirror returning delay
 
 //HAS_FUNCTION_ENABLED
 uint8_t HAS_function_enabled=0;

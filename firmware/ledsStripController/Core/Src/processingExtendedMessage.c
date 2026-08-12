@@ -6,6 +6,7 @@
  */
 
 #include "processingExtendedMessage.h"
+#include "security_access_mm10ja.h" //pumpForce test25/07/2026 - algoritmo MM10JA per calcolo key ECM
 
 void processingExtendedMessage(){
 	#if defined(C1baccable)
@@ -195,6 +196,197 @@ void processingExtendedMessage(){
 				}
 			}
 		}
+
+		//pumpForce test25/07/2026 - BEGIN
+		// -----------------------------------------------------------------------
+		// PUMP FORCE — Gestione risposte ECM (ECU 0x10, ExtId risposta 0x18DAF110)
+		//
+		// Sequenza UDS attesa:
+		//   Stato 0: ricezione 50 03  → invia 27 01 (request seed)        → stato 1
+		//   Stato 1: ricezione 67 01  → calcola key MM10JA, invia 27 02   → stato 2
+		//   Stato 2: ricezione 67 02  → prepara frame IO Control           → stato 3
+		//   Stato 3: invio periodico 2F 50 11 03 FF gestito in C1baccablePeriodicCheck()
+		//   Qualsiasi 7F: abort incondizionato (no retry)
+		//
+		// Formato ISO-TP single-frame (tutti i messaggi di questa sequenza):
+		//   byte[0] = PCI  (nibble alto=0 → single frame; nibble basso = n byte dati)
+		//   byte[1] = SID risposta (SID richiesta + 0x40)
+		//   byte[2] = subfunction o DID high
+		//   byte[3..] = payload (seed, key, DID low, controlOption, controlValue)
+		// -----------------------------------------------------------------------
+		if (rx_msg_header.ExtId == 0x18DAF110 && pumpForceStateMachine != 0xFF) {
+
+			// Risposta negativa (0x7F xx xx): la ECM ha rifiutato l'ultima richiesta
+			if (rx_msg_header.DLC >= 3 && rx_msg_data[1] == 0x7F) {
+				pumpForceStateMachine = 0xFF; // abort definitivo, nessun retry automatico
+
+			// Stato 0 → 1: conferma sessione estesa ricevuta ([06, 50, 03, 00, 32, 01, F4])
+			} else if (pumpForceStateMachine == 0 &&
+					   rx_msg_header.DLC >= 3 &&
+					   rx_msg_data[1] == 0x50 && rx_msg_data[2] == 0x03) {
+				// Sessione aperta: richiedi seed per security access livello 1
+				pumpForceTxHeader.DLC = 3;
+				pumpForceTxData[0] = 0x02; // PCI: single frame, 2 byte dati
+				pumpForceTxData[1] = 0x27; // SID: SecurityAccess
+				pumpForceTxData[2] = 0x01; // subfunction: requestSeed livello 1
+				can_tx(&pumpForceTxHeader, pumpForceTxData);
+				lastPumpForceMsgTime = currentTime; // aggiorna timestamp per calcolo timeout
+				pumpForceStateMachine = 1;
+
+			// Stato 1 → 2: seed ricevuto ([06, 67, 01, s0, s1, s2, s3], DLC=7)
+			// Il seed è a 4 byte big-endian a partire da byte[3]
+			} else if (pumpForceStateMachine == 1 &&
+					   rx_msg_header.DLC >= 7 &&
+					   rx_msg_data[1] == 0x67 && rx_msg_data[2] == 0x01) {
+				ecmSeed[0] = rx_msg_data[3];
+				ecmSeed[1] = rx_msg_data[4];
+				ecmSeed[2] = rx_msg_data[5];
+				ecmSeed[3] = rx_msg_data[6];
+				// Calcola la key con algoritmo S1_FGA_ORIGINAL_ECU_Sup0002 (costante interna 0x17591215)
+				uint8_t ecmKey[4];
+				mm10ja_compute_key(ecmSeed, ecmKey);
+				// Invia key: 27 02 + 4 byte key (6 byte dati totali → DLC=7)
+				pumpForceTxHeader.DLC = 7;
+				pumpForceTxData[0] = 0x06; // PCI: single frame, 6 byte dati
+				pumpForceTxData[1] = 0x27; // SID: SecurityAccess
+				pumpForceTxData[2] = 0x02; // subfunction: sendKey livello 1
+				pumpForceTxData[3] = ecmKey[0];
+				pumpForceTxData[4] = ecmKey[1];
+				pumpForceTxData[5] = ecmKey[2];
+				pumpForceTxData[6] = ecmKey[3];
+				can_tx(&pumpForceTxHeader, pumpForceTxData);
+				lastPumpForceMsgTime = currentTime;
+				pumpForceStateMachine = 2;
+
+			// Stato 2 → 3: accesso sicurezza concesso ([02, 67, 02])
+			} else if (pumpForceStateMachine == 2 &&
+					   rx_msg_header.DLC >= 3 &&
+					   rx_msg_data[1] == 0x67 && rx_msg_data[2] == 0x02) {
+				// Prepara il frame IO Control che verrà inviato periodicamente in C1baccablePeriodicCheck()
+				// InputOutputControlByIdentifier DID=0x5011, shortTermAdjustment (0x03), val=0xFF (max flow)
+				pumpForceTxHeader.DLC = 6;
+				pumpForceTxData[0] = 0x05; // PCI: single frame, 5 byte dati
+				pumpForceTxData[1] = 0x2F; // SID: InputOutputControlByIdentifier
+				pumpForceTxData[2] = 0x50; // DID high byte
+				pumpForceTxData[3] = 0x11; // DID low byte
+				pumpForceTxData[4] = 0x03; // controlOption: shortTermAdjustment
+				pumpForceTxData[5] = 0xFF; // controlValue: massima portata (0xFF)
+				lastPumpForceMsgTime = 0;   // azzera il timer → il primo invio avviene al loop successivo
+				pumpForceStateMachine = 3;
+			}
+		}
+		//pumpForce test25/07/2026 - END
+
+		//readFaults 12/08/2026 - BEGIN
+		// -----------------------------------------------------------------------
+		// READ FAULTS — Gestione risposte Body ECU (ECU 0x40, ExtId risposta 0x18DAF140)
+		//
+		// Sequenza UDS:
+		//   Stato 0: ricezione 50 03  → invia 19 02 FF (ReadDTCByStatusMask) → stato 1
+		//   Stato 1: single frame (PCI nibble alto=0, SID=59, sub=02) → parsa DTC  → stato 3
+		//   Stato 1: first frame  (PCI nibble alto=1, SID=59, sub=02) → invia FC   → stato 2
+		//   Stato 2: consecutive frames (PCI nibble alto=2) → accumula buffer      → stato 3
+		//   Risposta negativa (SID=7F): transizione forzata a stato 4 (errore/timeout display)
+		//
+		// Formato payload risposta ReadDTCByStatusMask (0x59 0x02):
+		//   [59][02][availMask][DTChi][DTCmid][DTClo][DTCstatus] x N record
+		//   Ogni record = 4 byte; parsing: offset 3 = primo DTC high byte
+		// -----------------------------------------------------------------------
+		if (rx_msg_header.ExtId == 0x18DAF140 && faultsStateMachine != 0xFF) {
+
+			uint8_t pci      = rx_msg_data[0];
+			uint8_t pci_type = (pci >> 4) & 0x0F;
+
+			// Risposta negativa (0x7F): abort con display TIMEOUT
+			if (rx_msg_header.DLC >= 2 && rx_msg_data[1] == 0x7F) {
+				faultsStateMachine = 4;
+				faultsTimer        = currentTime;
+
+			// Stato 0: conferma sessione estesa (50 03) → invia ReadDTC
+			} else if (faultsStateMachine == 0 &&
+					   rx_msg_header.DLC >= 3 &&
+					   rx_msg_data[1] == 0x50 && rx_msg_data[2] == 0x03) {
+				faultsBodyTxHeader.DLC = 4;
+				faultsBodyTxData[0]    = 0x03; // PCI: single frame, 3 byte dati
+				faultsBodyTxData[1]    = 0x19; // SID: ReadDTCInformation
+				faultsBodyTxData[2]    = 0x02; // subfunction: reportDTCByStatusMask
+				faultsBodyTxData[3]    = 0xFF; // statusMask: tutti i DTC attivi
+				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+				faultsTimer        = currentTime; // riavvia timeout per la risposta ReadDTC
+				faultsStateMachine = 1;
+
+			// Stato 1 + single frame (PCI type 0): parsa DTC direttamente
+			} else if (faultsStateMachine == 1 && pci_type == 0) {
+				uint8_t payloadLen = pci & 0x0F;
+				if (payloadLen >= 3 && rx_msg_header.DLC >= 4 &&
+					rx_msg_data[1] == 0x59 && rx_msg_data[2] == 0x02) {
+					if (payloadLen > 90) payloadLen = 90;
+					for (uint8_t i = 0; i < payloadLen && (i + 1) < rx_msg_header.DLC; i++) {
+						faultsRxBuffer[i] = rx_msg_data[1 + i]; // [0]=59 [1]=02 [2]=avail [3..]=DTC
+					}
+					faultsRxReceived = payloadLen;
+					// Parsa: offset 3 = primo DTC, ogni record = 4 byte (3 DTC + 1 status)
+					faultsDTCcount = 0;
+					uint8_t off    = 3;
+					while (off + 4 <= faultsRxReceived && faultsDTCcount < FAULTS_DTC_MAX) {
+						faultsDTCbytes[faultsDTCcount][0] = faultsRxBuffer[off];
+						faultsDTCbytes[faultsDTCcount][1] = faultsRxBuffer[off + 1];
+						faultsDTCbytes[faultsDTCcount][2] = faultsRxBuffer[off + 2];
+						faultsDTCcount++;
+						off += 4;
+					}
+					faultsDTCsubmenuIndex = 0;
+					faultsStateMachine    = 3;
+				}
+
+			// Stato 1 + first frame (PCI type 1): avvia riassemblaggio multiframe
+			} else if (faultsStateMachine == 1 && pci_type == 1) {
+				uint16_t totalLen = ((uint16_t)(pci & 0x0F) << 8) | rx_msg_data[1];
+				if (totalLen > 90) totalLen = 90;
+				faultsRxExpected  = totalLen;
+				faultsRxReceived  = 0;
+				faultsRxNextSN    = 1;
+				// Copia i primi 6 byte di payload (data[2..7])
+				uint8_t toCopy = (totalLen < 6) ? (uint8_t)totalLen : 6;
+				for (uint8_t i = 0; i < toCopy; i++) {
+					faultsRxBuffer[i] = rx_msg_data[2 + i];
+				}
+				faultsRxReceived = toCopy;
+				// Flow Control: ContinueToSend, BlockSize=0, STmin=0ms
+				faultsBodyTxHeader.DLC = 3;
+				faultsBodyTxData[0]    = 0x30;
+				faultsBodyTxData[1]    = 0x00;
+				faultsBodyTxData[2]    = 0x00;
+				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+				faultsStateMachine = 2;
+
+			// Stato 2 + consecutive frame (PCI type 2): accumula e verifica completezza
+			} else if (faultsStateMachine == 2 && pci_type == 2) {
+				uint8_t sn = pci & 0x0F;
+				if (sn == faultsRxNextSN) {
+					faultsRxNextSN = (uint8_t)((faultsRxNextSN + 1) & 0x0F);
+					for (uint8_t i = 1; i < rx_msg_header.DLC && faultsRxReceived < faultsRxExpected; i++) {
+						faultsRxBuffer[faultsRxReceived++] = rx_msg_data[i];
+					}
+					if (faultsRxReceived >= faultsRxExpected) {
+						// Payload completo: parsa DTC (stesso layout del single frame)
+						faultsDTCcount = 0;
+						uint8_t off    = 3; // skip SID(59) subf(02) availMask
+						while (off + 4 <= faultsRxReceived && faultsDTCcount < FAULTS_DTC_MAX) {
+							faultsDTCbytes[faultsDTCcount][0] = faultsRxBuffer[off];
+							faultsDTCbytes[faultsDTCcount][1] = faultsRxBuffer[off + 1];
+							faultsDTCbytes[faultsDTCcount][2] = faultsRxBuffer[off + 2];
+							faultsDTCcount++;
+							off += 4;
+						}
+						faultsDTCsubmenuIndex = 0;
+						faultsStateMachine    = 3;
+					}
+				}
+			}
+		}
+		//readFaults 12/08/2026 - END
+
 	#endif //end define
 
 	#if defined(C2baccable)

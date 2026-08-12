@@ -168,6 +168,11 @@ void processingMessage0x000002FA(){
 										if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
 										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
+									if(main_dashboardPageIndex==2 && faultsStateMachine==3 && faultsDTCcount>0){ //readFaults 12/08/2026
+										faultsDTCsubmenuIndex++;
+										if(faultsDTCsubmenuIndex>=faultsDTCcount) faultsDTCsubmenuIndex=0;
+										sendMainDashboardPageToSlaveBaccable();
+									}
 									break;
 								default:
 									break; //unexpected
@@ -242,6 +247,11 @@ void processingMessage0x000002FA(){
 											if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
 											//onboardLed_blue_on();
 											sendParamsSetupDashboardPageToSlaveBaccable(); //send
+										}
+										if(main_dashboardPageIndex==2 && faultsStateMachine==3 && faultsDTCcount>0){ //readFaults 12/08/2026
+											faultsDTCsubmenuIndex++;
+											if(faultsDTCsubmenuIndex>=faultsDTCcount) faultsDTCsubmenuIndex=0;
+											sendMainDashboardPageToSlaveBaccable();
 										}
 										break;
 									default:
@@ -322,6 +332,11 @@ void processingMessage0x000002FA(){
 										//onboardLed_blue_on();
 										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
+									if(main_dashboardPageIndex==2 && faultsStateMachine==3 && faultsDTCcount>0){ //readFaults 12/08/2026
+										if(faultsDTCsubmenuIndex==0) faultsDTCsubmenuIndex=faultsDTCcount-1;
+										else faultsDTCsubmenuIndex--;
+										sendMainDashboardPageToSlaveBaccable();
+									}
 									break;
 								default:
 									break; //unexpected
@@ -401,6 +416,11 @@ void processingMessage0x000002FA(){
 											//onboardLed_blue_on();
 											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
+										if(main_dashboardPageIndex==2 && faultsStateMachine==3 && faultsDTCcount>0){ //readFaults 12/08/2026
+											if(faultsDTCsubmenuIndex==0) faultsDTCsubmenuIndex=faultsDTCcount-1;
+											else faultsDTCsubmenuIndex--;
+											sendMainDashboardPageToSlaveBaccable();
+										}
 										break;
 									default:
 										break; //unexpected
@@ -419,8 +439,22 @@ void processingMessage0x000002FA(){
 									dashboardParamCouple[1]=NAN;//zeroize params
 									sendDashboardPageToSlaveBaccable();
 									break;
-								case 2: //read faults
-									//To Be Done
+								case 2: //read faults //readFaults 12/08/2026
+									// Reset DTC precedenti e avvia sequenza UDS verso Body ECU (0x40)
+									faultsStateMachine     = 0;
+									faultsDTCcount         = 0;
+									faultsDTCsubmenuIndex  = 0;
+									faultsRxReceived       = 0;
+									faultsRxExpected       = 0;
+									faultsRxNextSN         = 1;
+									faultsTimer            = currentTime;
+									faultsBodyTxHeader.DLC = 3;
+									faultsBodyTxData[0] = 0x02; // PCI: SF 2 byte
+									faultsBodyTxData[1] = 0x10; // SID: DiagnosticSessionControl
+									faultsBodyTxData[2] = 0x03; // sub: extendedDiagnosticSession
+									can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+									dashboard_menu_indent_level++;
+									sendMainDashboardPageToSlaveBaccable(); // mostra WAIT
 									break;
 								case 3: //clear faults
 									clearFaultsRequest=255;
@@ -734,6 +768,11 @@ void processingMessage0x000002FA(){
 									}
 
 									sendSetupDashboardPageToSlaveBaccable();
+									break;
+								case 2: //read faults - ritorna al menu principale //readFaults 12/08/2026
+									faultsStateMachine = 0xFF; // interrompe eventuale sequenza UDS in corso
+									dashboard_menu_indent_level = 0;
+									sendMainDashboardPageToSlaveBaccable();
 									break;
 								case 10: //PARAMS SETUP MENU
 									switch(params_setup_dashboardPageIndex){

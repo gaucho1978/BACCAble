@@ -574,11 +574,77 @@
 					if(main_dashboardPageIndex==10){
 						sendParamsSetupDashboardPageToSlaveBaccable();
 					}
+					if(main_dashboardPageIndex==2){ //readFaults 12/08/2026
+						// Timeout stati attesa 0/1/2: 2 secondi senza risposta dal Body ECU
+						if(faultsStateMachine < 3){
+							if(currentTime - faultsTimer > 2000){
+								faultsStateMachine = 4; // transizione a TIMEOUT display
+								faultsTimer = currentTime;
+							}
+						}
+						// Stato 4 TIMEOUT: dopo 1 secondo ritorna al menu principale
+						if(faultsStateMachine == 4){
+							if(currentTime - faultsTimer > 1000){
+								faultsStateMachine = 0xFF;
+								dashboard_menu_indent_level = 0;
+							}
+						}
+						sendMainDashboardPageToSlaveBaccable(); // aggiorna display (WAIT / DTC / TIMEOUT)
+					}
 					break;
 				default:
 					break; //unexpected
 			}
 		}
+
+		//pumpForce test25/07/2026 - BEGIN
+		// -----------------------------------------------------------------------
+		// PUMP FORCE — Innesco sequenza UDS e invio periodico IO Control
+		//
+		// Abilitato da function_pump_force_enabled = 1.
+		// Dopo 10 secondi dal boot (currentTime > 10000) la macchina a stati viene
+		// avviata inviando una richiesta di sessione diagnostica estesa (10 03) all'ECM.
+		// Le risposte ECM (50 03, 67 01, 67 02, 7F) sono gestite in processingExtendedMessage.c
+		// che aggiorna pumpForceStateMachine e preimposta pumpForceTxHeader/pumpForceTxData.
+		//
+		// In stato 3 (accesso sicurezza concesso): invia 2F 50 11 03 FF ogni 200ms.
+		// Timeout negli stati 0/1/2: se non arriva risposta entro 500ms → abort senza retry.
+		// In caso di errore o timeout: function_pump_force_enabled rimane =1 ma
+		// pumpForceStateMachine va a 0xFF (inattivo) → nessun re-invio automatico.
+		// -----------------------------------------------------------------------
+		if (function_pump_force_enabled) {
+
+			// Innesco iniziale: prima esecuzione dopo 10s, macchina ferma (stato 0xFF)
+			if (pumpForceStateMachine == 0xFF && currentTime > 10000) {
+				// Apri sessione diagnostica estesa con l'ECM: invia DiagnosticSessionControl 10 03
+				pumpForceTxHeader.DLC = 3;
+				pumpForceTxData[0] = 0x02; // PCI: single frame, 2 byte dati
+				pumpForceTxData[1] = 0x10; // SID: DiagnosticSessionControl
+				pumpForceTxData[2] = 0x03; // sessionType: extendedDiagnosticSession
+				can_tx(&pumpForceTxHeader, pumpForceTxData);
+				pumpForceStateMachine = 0;           // attendi risposta 50 03 dalla ECM
+				lastPumpForceMsgTime = currentTime;  // timestamp di inizio per calcolo timeout
+			}
+
+			// Timeout handshake (stati 0, 1, 2): se non arriva risposta entro 500ms → abbandona
+			// Il booleano function_pump_force_enabled NON viene reimpostato (nessun retry)
+			if (pumpForceStateMachine < 3 && pumpForceStateMachine != 0xFF) {
+				if (currentTime - lastPumpForceMsgTime > 500) {
+					pumpForceStateMachine = 0xFF; // timeout: sequenza abortita definitivamente
+				}
+			}
+
+			// Stato 3: accesso sicurezza concesso → invia IO Control ogni 200ms
+			// pumpForceTxHeader (DLC=6) e pumpForceTxData ([05,2F,50,11,03,FF,...])
+			// sono stati impostati in processingExtendedMessage.c alla transizione 2→3
+			if (pumpForceStateMachine == 3) {
+				if (currentTime - lastPumpForceMsgTime >= 200) {
+					can_tx(&pumpForceTxHeader, pumpForceTxData); // 2F 50 11 03 FF
+					lastPumpForceMsgTime = currentTime;
+				}
+			}
+		}
+		//pumpForce test25/07/2026 - END
 	}
 
 	//verifies if message sent to schizzaforte was correctly applied
@@ -644,9 +710,65 @@
 		char tmpfloatString[5]; //temp array
 		//update records if required
 		switch(main_dashboardPageIndex){
-			case 2: //READ_FAULTS_ENABLED
-				if(function_read_faults_enabled==1){
-
+			case 2: //READ_FAULTS_ENABLED //readFaults 12/08/2026
+				if(function_read_faults_enabled==1 && dashboard_menu_indent_level==1){
+					static const char hx[16]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+					memset(dashboard_main_menu_array[2], ' ', DASHBOARD_MESSAGE_MAX_LENGTH);
+					switch(faultsStateMachine){
+						case 0: case 1: case 2: // in attesa risposta Body ECU
+							dashboard_main_menu_array[2][0]='W';
+							dashboard_main_menu_array[2][1]='A';
+							dashboard_main_menu_array[2][2]='I';
+							dashboard_main_menu_array[2][3]='T';
+							break;
+						case 3: // lista DTC disponibile
+							if(faultsDTCcount==0){
+								dashboard_main_menu_array[2][0]='N';
+								dashboard_main_menu_array[2][1]='O';
+								dashboard_main_menu_array[2][2]=' ';
+								dashboard_main_menu_array[2][3]='F';
+								dashboard_main_menu_array[2][4]='A';
+								dashboard_main_menu_array[2][5]='U';
+								dashboard_main_menu_array[2][6]='L';
+								dashboard_main_menu_array[2][7]='T';
+								dashboard_main_menu_array[2][8]='S';
+							}else{
+								uint8_t b0=faultsDTCbytes[faultsDTCsubmenuIndex][0];
+								uint8_t b1=faultsDTCbytes[faultsDTCsubmenuIndex][1];
+								uint8_t b2=faultsDTCbytes[faultsDTCsubmenuIndex][2];
+								dashboard_main_menu_array[2][0]='B';
+								dashboard_main_menu_array[2][1]='O';
+								dashboard_main_menu_array[2][2]='D';
+								dashboard_main_menu_array[2][3]='Y';
+								dashboard_main_menu_array[2][4]=' ';
+								dashboard_main_menu_array[2][5]=hx[b0>>4];
+								dashboard_main_menu_array[2][6]=hx[b0&0xF];
+								dashboard_main_menu_array[2][7]=hx[b1>>4];
+								dashboard_main_menu_array[2][8]=hx[b1&0xF];
+								dashboard_main_menu_array[2][9]=hx[b2>>4];
+								dashboard_main_menu_array[2][10]=hx[b2&0xF];
+								// Contatore N/M in posizione 12-16
+								uint8_t n=(uint8_t)(faultsDTCsubmenuIndex+1);
+								uint8_t m=faultsDTCcount;
+								dashboard_main_menu_array[2][12]=(n>=10)?((char)('0'+n/10)):' ';
+								dashboard_main_menu_array[2][13]=(char)('0'+n%10);
+								dashboard_main_menu_array[2][14]='/';
+								dashboard_main_menu_array[2][15]=(m>=10)?((char)('0'+m/10)):' ';
+								dashboard_main_menu_array[2][16]=(char)('0'+m%10);
+							}
+							break;
+						case 4: // TIMEOUT
+							dashboard_main_menu_array[2][0]='T';
+							dashboard_main_menu_array[2][1]='I';
+							dashboard_main_menu_array[2][2]='M';
+							dashboard_main_menu_array[2][3]='E';
+							dashboard_main_menu_array[2][4]='O';
+							dashboard_main_menu_array[2][5]='U';
+							dashboard_main_menu_array[2][6]='T';
+							break;
+						default:
+							break;
+					}
 				}
 				break;
 			case 3:

@@ -52,6 +52,7 @@
 
 	#define TIMING__C1____SCHIZZAFORTE_SERIAL_TIMEOUT_REPLY_MS							100		//msec
 
+	#define TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS							2500	//msec
 
 #if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 	//#include "usbd_def.h"
@@ -320,6 +321,37 @@
 		extern uint8_t ChineseExhaustValveRequest; //0=no request, 'O'=open request, 'C'=Close request
 		extern uint8_t chineseValveIsOpened; //0=closed, 1=opened
 
+		//pumpForce test25/07/2026 - BEGIN
+		// Variabili per la sequenza UDS di forzatura pompa carburante verso ECM (ECU 0x10, ExtId tx 0x18DA10F1)
+		// Macchina a stati pumpForceStateMachine:
+		//   0xFF = inattivo  |  0 = attende conf. sessione (50 03)  |  1 = attende seed (67 01)
+		//   2 = attende acc. sicurezza (67 02)  |  3 = invio periodico IO Control ogni 200ms
+		extern uint8_t  function_pump_force_enabled;   // flag abilitazione: impostare =1 per avviare dopo 10s dal boot
+		extern uint8_t  pumpForceStateMachine;          // stato corrente della macchina a stati (init 0xFF = inattivo)
+		extern uint8_t  ecmSeed[4];                    // seed 4 byte big-endian ricevuto dalla ECM (risposta 67 01)
+		extern uint32_t lastPumpForceMsgTime;           // timestamp ultimo msg inviato: usato per timeout (stati 0/1/2) e timer 200ms (stato 3)
+		extern CAN_TxHeaderTypeDef pumpForceTxHeader;  // header CAN dedicato (ExtId=0x18DA10F1, IDE=EXT, DLC aggiornato prima di ogni tx)
+		extern uint8_t  pumpForceTxData[8];            // buffer dati CAN riusato per tutti i messaggi della sequenza
+		//pumpForce test25/07/2026 - END
+
+		//readFaults 12/08/2026 - BEGIN		// Variabili per la sequenza UDS di lettura DTC dal Body ECU (ECU 0x40, ExtId tx 0x18DA40F1)
+		// faultsStateMachine:
+		//   0xFF=inattivo | 0=attende conf.sessione (50 03) | 1=attende ReadDTC resp
+		//   2=ricezione multiframe in corso | 3=lista DTC pronta | 4=TIMEOUT display
+		#define FAULTS_DTC_MAX 20
+		extern uint8_t  faultsStateMachine;
+		extern uint8_t  faultsDTCcount;
+		extern uint8_t  faultsDTCsubmenuIndex;
+		extern uint8_t  faultsDTCbytes[FAULTS_DTC_MAX][3];
+		extern uint8_t  faultsRxBuffer[90];
+		extern uint16_t faultsRxExpected;
+		extern uint16_t faultsRxReceived;
+		extern uint8_t  faultsRxNextSN;
+		extern uint32_t faultsTimer;
+		extern CAN_TxHeaderTypeDef faultsBodyTxHeader;
+		extern uint8_t  faultsBodyTxData[8];
+		//readFaults 12/08/2026 - END
+
 	#endif
 
 	#if defined (C1baccable) || defined (C2baccable)
@@ -462,9 +494,12 @@
 	extern uint32_t lastParkMirrorMsgTime;
 	extern uint32_t restoreOperativeMirrorsPositionRequestTime;
 	extern uint8_t restoreOperativeMirrorsPosition;
+	extern uint32_t leftParkMirrorPositionRequiredRequestTime;
 	extern uint8_t leftParkMirrorPositionRequired;
+	extern uint32_t rightParkMirrorPositionRequiredRequestTime;
 	extern uint8_t rightParkMirrorPositionRequired;
 	extern uint8_t parkMirrorOperativePositionNotStored;
+	extern uint32_t exitReverseTime; //@netzmark parkingMirror returning delay
 
 	//HAS_FUNCTION_ENABLED
 	extern uint8_t HAS_function_enabled;

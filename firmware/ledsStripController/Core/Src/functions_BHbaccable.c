@@ -72,28 +72,62 @@
 		if(function_park_mirror){ //if function parkmirror is enabled
 
 			if(currentGear==0x0E){ //if reverse gear is selected
-				if(!restoreOperativeMirrorsPosition){ //if we are not returning to operative position
+exitReverseTime = 0; //Reset hysteresis timer while in Reverse
+
 					switch(turnIndicator){
 						case 0x02: //left arrow inserted
-							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired) storeOperativeMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
+							//if left and right mirror were not requested to move
+							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired){
+								//if we are returning to operative position
+								if(restoreOperativeMirrorsPosition){
+									//forget it
+									restoreOperativeMirrorsPosition=0;
+								}else{
+									//store current mirror position, because mirror was not previously lowered
+									storeOperativeMirrorPosition=1;
+								}
+							}
+							if(!leftParkMirrorPositionRequired){
 							leftParkMirrorPositionRequired=1; //Enable sending command to move mirror
+								leftParkMirrorPositionRequiredRequestTime=currentTime;
+							}
 							break;
 						case 0x01: //right arrow inserted
-							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired) storeOperativeMirrorPosition=1;//store current mirror position, if mirror was not previously lowered
+							//if left and right mirror were not requested to move
+							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired){
+								//if we are returning to operative position
+								if(restoreOperativeMirrorsPosition){
+									//forget it
+									restoreOperativeMirrorsPosition=0;
+								}else{
+									//store current mirror position, because mirror was not previously lowered
+									storeOperativeMirrorPosition=1;
+								}
+							}
+							if(!rightParkMirrorPositionRequired){
 							rightParkMirrorPositionRequired=1; //Enable sending command to move mirror
+								rightParkMirrorPositionRequiredRequestTime=currentTime;
+							}
 							break;
 						default:
 					}
+
+			}else{ //if Drive (D) or any other gear is selected
+				if((leftParkMirrorPositionRequired || rightParkMirrorPositionRequired) && exitReverseTime == 0){ //if mirrors are potentially not in operative position,
+					exitReverseTime = currentTime; //Capture the moment we switched to D
 				}
-			}else{
+
+				//Trigger return only after 10 seconds of constant driving forward
+				if(exitReverseTime != 0 && (currentTime - exitReverseTime > 10000)){ //HERE IT IS WHAT WE WANTED TO ADD - 10 seconds hysteresis delay
 				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){ //if mirrors are potentially not in operative position,
 					restoreOperativeMirrorsPosition=1; //request to restore mirrors to their original position
 					restoreOperativeMirrorsPositionRequestTime=currentTime;
 				}
 				leftParkMirrorPositionRequired=0; //stop sending message to set Park position for mirrors
 				rightParkMirrorPositionRequired=0;//stop sending message to set Park position for mirrors
+                                        exitReverseTime = 0; //Reset timer after execution
+			        }
 			}
-
 
 			//Prepare msg to send: set Operative position of the mirrors
 			parkMirrorMsgData[0]= leftMirrorHorizontalOperativePos;
@@ -114,13 +148,34 @@
 
 			if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired || restoreOperativeMirrorsPosition){ //if required
 				if(!storeOperativeMirrorPosition){ //if operative position was stored
-					if(currentTime-lastParkMirrorMsgTime>900){ //each 1000msec send a packet
+					if(currentTime-lastParkMirrorMsgTime>900){ //each 900msec send a packet
+						// if restore mirror position arrived less than xxx seconds ago,avoid sending packets
+						//   in order to have a pause between the 2 commands
+						if(restoreOperativeMirrorsPosition){
+							if(currentTime-restoreOperativeMirrorsPositionRequestTime<TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){
+								//don't do anything
+							}else{
+								can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+								lastParkMirrorMsgTime=currentTime;
+							}
+						}
+
+						//if left or right mirror movement is required
+						if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){
+							//if left mirror movement was  requested more than 2-3 seconds ago (ensures a pause between commands)
+							if(currentTime-leftParkMirrorPositionRequiredRequestTime>=TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){
+								//if right mirror movement was  requested more than 2-3 seconds ago (ensures a pause between commands)
+								if(currentTime-rightParkMirrorPositionRequiredRequestTime>=TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){
+									//send a message
 						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
 						lastParkMirrorMsgTime=currentTime;
 					}
 				}
+						}
+					}
+				}
 				if(restoreOperativeMirrorsPosition){
-					if(currentTime-restoreOperativeMirrorsPositionRequestTime>15000){ //after 15 seconds
+					if(currentTime-restoreOperativeMirrorsPositionRequestTime>15000+TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){ //after 15 seconds
 						restoreOperativeMirrorsPosition=0;
 					}
 				}
