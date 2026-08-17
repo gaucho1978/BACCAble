@@ -115,10 +115,15 @@ exitReverseTime = 0; //Reset hysteresis timer while in Reverse
 			}else{ //if Drive (D) or any other gear is selected
 				if((leftParkMirrorPositionRequired || rightParkMirrorPositionRequired) && exitReverseTime == 0){ //if mirrors are potentially not in operative position,
 					exitReverseTime = currentTime; //Capture the moment we switched to D
+
+					//if P gear is selected or engine shutted off, instantly return to operative position
+					if((currentGear==0x0D)||(currentRpmSpeed>400)) exitReverseTime=currentTime+10001;
 				}
 
-				//Trigger return only after 10 seconds of constant driving forward
-				if(exitReverseTime != 0 && (currentTime - exitReverseTime > 10000)){ //HERE IT IS WHAT WE WANTED TO ADD - 10 seconds hysteresis delay
+
+
+				//Trigger return only after 10 seconds of constant driving forward (or instantly in case of P)
+				if(exitReverseTime != 0 && (currentTime - exitReverseTime > 10000)){
 				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){ //if mirrors are potentially not in operative position,
 					restoreOperativeMirrorsPosition=1; //request to restore mirrors to their original position
 					restoreOperativeMirrorsPositionRequestTime=currentTime;
@@ -166,11 +171,13 @@ exitReverseTime = 0; //Reset hysteresis timer while in Reverse
 							if(currentTime-leftParkMirrorPositionRequiredRequestTime>=TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){
 								//if right mirror movement was  requested more than 2-3 seconds ago (ensures a pause between commands)
 								if(currentTime-rightParkMirrorPositionRequiredRequestTime>=TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS){
-									//send a message
-						can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
-						lastParkMirrorMsgTime=currentTime;
-					}
-				}
+									if(currentRpmSpeed>400 ){ //only if engine on, continue moving mirror
+										//send a message
+										can_tx(&parkMirrorMsgHeader, parkMirrorMsgData); //send msg
+										lastParkMirrorMsgTime=currentTime;
+									}
+								}
+							}
 						}
 					}
 				}

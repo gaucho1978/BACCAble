@@ -330,6 +330,17 @@ void processingStandardMessage(){
 		case 0x00000384:
 			processingMessage0x00000384();
 			break;
+
+		case 0x000003E6:
+			#if defined(BHbaccable)
+				currentRpmSpeed =
+				      ((uint32_t)(rx_msg_data[3] & 0b00000111) << 11)        /* bit [13:11] = 3 bit meno significativi di rx_msg_data[3] */
+				    | ((uint32_t)rx_msg_data[4] << 3)                         /* bit [10:3]  = tutti gli 8 bit di rx_msg_data[4] */
+				    | ((uint32_t)((rx_msg_data[5] >> 5) & 0b00000111));       /* bit [2:0]   = 3 bit più significativi di rx_msg_data[5] */
+
+			#endif
+			break;
+
 		case 0x000003E8:
 			#if defined(BHbaccable)
 				//gearEngaged is on byte 3 bit 3 to 0
