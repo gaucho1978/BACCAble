@@ -622,7 +622,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)function_open_windows_with_door_lock			!= readFromFlash(26))	|| //OPEN_WINDOWS
 												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	|| //HAS_VIRTUAL_PAD
 												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	|| //QV_EXHAUST_FLAP_FUNCTION_ENABLED
-												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	){ //PEDAL_MAP_POWER
+												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	|| //PEDAL_MAP_POWER
+												((uint16_t)parkSensorsMuteFunctionEnabled				!= readFromFlash(30))	){ //FRONT_PARK_MUTE
 													//save it on flash
 													saveOnflash();
 											}
@@ -763,6 +764,12 @@ void processingMessage0x000002FA(){
 										case 27: //{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p'},
 											QV_exhaust_flap_function_enabled=!QV_exhaust_flap_function_enabled;
 											break;
+										case 28: //{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e'}
+											parkSensorsMuteFunctionEnabled=!parkSensorsMuteFunctionEnabled;
+											uint8_t tmpArrPkMute[2]={C2BusID,C2cmdFunctParkSensorsMuteDisabled};
+											if(parkSensorsMuteFunctionEnabled) tmpArrPkMute[1]=C2cmdFunctParkSensorsMuteEnabled;
+											addToUARTSendQueue(tmpArrPkMute, 2);
+											break;
 										default:
 											break;
 									}
@@ -839,7 +846,7 @@ void processingMessage0x000002FA(){
 					if(currentGear==0){ //gear is neutral
 						if((rx_msg_data[0]==0x08) && ((wheelPressedButtonID==0x10) || (wheelPressedButtonID==0x08))){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
 							lastPressedSpeedUpWheelButtonDuration++;
-							if(lastPressedSpeedUpWheelButtonDuration>1267){ //around 30 seconds
+							if(lastPressedSpeedUpWheelButtonDuration>620){ //around 20 seconds
 								//avoid to return here
 								wheelPressedButtonID=0xF8; //invent a new status to differentiate it from 0x08 used in baccable menu few lines of code up here
 								lastPressedSpeedUpWheelButtonDuration=0; //unuseful here since it is done when button is released. just to be superstitious :-D.

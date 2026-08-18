@@ -47,14 +47,14 @@ void processingMessage0x000001EF(){
 
 				switch(closeWindowsRequest){
 					case 1: //we have to close the windows
-						if(currentTime-doorCloseTime>3500){ //if at least 3,5 seconds from door closure is passed
+						if(currentTime-doorCloseTime>4000){ //if at least 3,5 seconds from door closure is passed
 							//send message to close the windows
 							rx_msg_data[1]= RF_fob_number | 0x01; //set proper key fob and set request to close all windows (0x01)
 							rx_msg_data[2]= RF_requestor; //set requestor
 							rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
 							can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //send msg
 
-							if(currentTime-doorCloseTime>8000){ //after 4,5 seconds of windows movement, they should be closed
+							if(currentTime-doorCloseTime>9000){ //after 5 seconds of windows movement, they should be closed
 								closeWindowsRequest=0;
 
 								if(doorLocksRequestsCounter>=2){ //if windows Ajar is requested,
@@ -68,7 +68,7 @@ void processingMessage0x000001EF(){
 						break;
 					case 2: //we have to set the windows Ajar
 						//send message to open the windows
-						if(currentTime-doorCloseTime>8500){
+						if(currentTime-doorCloseTime>11000){
 							rx_msg_data[1]= RF_fob_number; //set proper key fob
 							rx_msg_data[2]= 0xB0 | RF_requestor; //set request to open all windows (0xB0) and requestor
 							rx_msg_data[7] = calculateCRC(rx_msg_data,rx_msg_header.DLC); //update checksum
@@ -76,7 +76,7 @@ void processingMessage0x000001EF(){
 						}
 
 
-						if(currentTime-doorCloseTime>8900){ //if at least 300msec from windows closed is passed, windows shoud be opened for at least 3 centimeters
+						if(currentTime-doorCloseTime>11450){ //if at least 450msec from windows closed is passed, windows shoud be opened for at least 3 centimeters
 							closeWindowsRequest=0; //task completed
 							doorLocksRequestsCounter=0;
 						}

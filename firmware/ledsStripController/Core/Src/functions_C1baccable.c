@@ -48,6 +48,7 @@
 		HAS_function_enabled=(uint16_t)readFromFlash(27);
 		QV_exhaust_flap_function_enabled=(uint16_t)readFromFlash(28);
 		pedal_map_power=(int8_t)(uint8_t)readFromFlash(29);
+		parkSensorsMuteFunctionEnabled=(uint8_t)readFromFlash(30);
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
 		instructSlaveBoardsTriggerEnabled=1;
@@ -260,6 +261,11 @@
 				uint8_t tmpArr5[2]={C2_Bh_BusID,C2_Bh_cmdFunctHAS_Disabled};
 				if(HAS_function_enabled) tmpArr5[1]=C2_Bh_cmdFunctHAS_Enabled;
 				addToUARTSendQueue(tmpArr5, 2);
+
+				//notify to C2 the park sensors mute function status
+				uint8_t tmpArr6[2]={C2BusID,C2cmdFunctParkSensorsMuteDisabled};
+				if(parkSensorsMuteFunctionEnabled) tmpArr6[1]=C2cmdFunctParkSensorsMuteEnabled;
+				addToUARTSendQueue(tmpArr6, 2);
 			}
 		}
 
@@ -1232,6 +1238,9 @@
 			case 27:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[QV_exhaust_flap_function_enabled];
 				break;
+			case 28: //{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e'}
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[parkSensorsMuteFunctionEnabled];
+				break;
 			default:
 				break;
 		}
@@ -1595,7 +1604,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=29;
+		uint8_t paramsNumber=30;
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1626,6 +1635,7 @@
 		  HAS_function_enabled,
 		  QV_exhaust_flap_function_enabled,
 		  (uint8_t)pedal_map_power,
+		  parkSensorsMuteFunctionEnabled,  //slot 30: FRONT_PARK_MUTE
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -2074,6 +2084,11 @@
 					#else
 						return 0; // another default value
 					#endif
+				}
+				break;
+			case 30: //FRONT_PARK_MUTE (1=enabled 0=disabled)
+				if(tmpParam>1){
+					return 0; // flash non inizializzata: default disabilitato
 				}
 				break;
 			default:

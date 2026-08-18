@@ -241,6 +241,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C2cmdGetStatus:
 									//nothing to do, since we just need to set weCanSendAMessageReply
 									break;
+								case C2cmdFunctParkSensorsMuteDisabled: //park sensors mute disabled
+									parkSensorsMuteFunctionEnabled = 0;
+									break;
+								case C2cmdFunctParkSensorsMuteEnabled: //park sensors mute enabled
+									parkSensorsMuteFunctionEnabled = 1;
+									break;
 								default:
 									break;
 							}

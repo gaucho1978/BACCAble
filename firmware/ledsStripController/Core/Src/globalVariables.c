@@ -189,7 +189,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=28;
+	uint8_t total_pages_in_setup_dashboard_menu=29;
 	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -219,6 +219,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
 			{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p',},
+			{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e',},
 
 		};
 
@@ -421,6 +422,7 @@ const char *FW_VERSION=_FW_VERSION;
 	//function animation lights
 	uint8_t function_lights_animation_enabled=0;
 	uint8_t lights_animation_state_machine=22;
+	uint8_t parkSensorsMuteFunctionEnabled=0;
 #endif
 
 #if defined(C2baccable)
@@ -440,6 +442,27 @@ const char *FW_VERSION=_FW_VERSION;
 
 	CAN_TxHeaderTypeDef rearBrakeMsgHeader[4]={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=5},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=8},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=3}};
 	uint8_t rearBrakeMsgData[4][8]= {{0x04, 0x2F, 0x5A, 0xBD, 0x00,},{0x07, 0x2F, 0x5A, 0xBD, 0x03, 0x27, 0x10, 0x03},{0x02, 0x3E, 0x80,},{0x02, 0x10, 0x40,}}; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(disable front brakes) (periodic)
+
+	uint8_t reverseGearActive  =0; //0=not inserted, 1=rear gear engaged, 2=not used
+	uint8_t rearRightWheelSpin =0; //0=steady, 1=forward, 2=backward
+	uint8_t parkSensorsFunctionStatus=0; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
+	uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
+
+	/*
+	// @netzmark PDC code - begin
+	#if defined(C2baccable)
+		volatile uint8_t pdc_state_disabled	 = 0; // 0 = PDC enabled, 1 = PDC disabled (LED off)
+		volatile uint8_t pdc_is_beeping   	 = 0; // 1 = sensors in alarms
+		volatile uint8_t pdc_auto_disabled 	 = 0; // 1 = PDC was disabled with our procedure
+		volatile uint8_t  requestToTogglePDC = 0;
+		volatile uint8_t  reverseGearActive  =0; //used on CAN C2
+		uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+		CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
+		volatile int pdc_send_counter=0;
+		volatile uint32_t last_pdc_shot_time = 0;
+	#endif
+	// @netzmark PDC code - end
+	*/
 
 #endif
 
@@ -575,3 +598,6 @@ uint8_t usbInited;
 uint32_t lastUartErrorCallback;
 
 uint8_t usbConnectedToSlave=0; //tells if usb port is connected to BH or C2
+
+
+

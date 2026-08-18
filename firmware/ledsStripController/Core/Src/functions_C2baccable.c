@@ -63,9 +63,51 @@
 					default:
 						break;
 				}
-
 			}
 		}
+/*
+		// @netzmark PDC DISABLE code - begin
+		#define pdcAutoDisableEnabled 1
+		 //=========================================================================
+		 //TOGGLE PDC SHOT followed with Release button simulation (to get faster reaction)
+		 // this made intentionally NOT in case 0x000005B0 of processingStandardMessages.c because:
+		 // the system frame 0x5B0 containing the button status is repeated very slowly (1-2sec interval),
+		 // PDC system reacts on Release D1:0x00 after Push D1:0x20
+		 // so the speed of react would be random and depend on the moment we sent the disable between the system frames
+		 // that's why we follow push with our independent release code
+		 //=========================================================================
+
+		if (pdcAutoDisableEnabled){
+		    if (requestToTogglePDC == 1) {
+		        if (pdc_send_counter == 0) {
+		            pdc_send_counter = 1;
+		            last_pdc_shot_time = currentTime;
+		            pdcMsgData[1] = 0x20;  // push button
+		            can_tx(&pdcMsgHeader, pdcMsgData); // sent
+		        }
+
+		        // Prepare to send pdc button release code
+		        if (pdc_send_counter == 1 && (currentTime - last_pdc_shot_time > 50)) { //changing the time we can allow for short beep before PDC disabling
+		            pdc_send_counter = 0;
+		            pdcMsgData[1] = 0x00;  // release button
+		            can_tx(&pdcMsgHeader, pdcMsgData); // sent
+		            requestToTogglePDC = 0; // set after push and release done
+		        }
+		    }
+		}
+
+//		=========================================================================
+//		Simplified version with no release simulation
+//		=========================================================================
+//		if (pdcAutoDisableEnabled){
+//			if (requestToTogglePDC == 1) {
+//				requestToTogglePDC = 0;
+//				pdcMsgData[1] = 0x20;  // push button// push button sent
+//				can_tx(&pdcMsgHeader, pdcMsgData);
+//			}
+//		}
+		// @netzmark PDC DISABLE code - end
+*/
 	}
 
 

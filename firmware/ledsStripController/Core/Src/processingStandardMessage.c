@@ -153,7 +153,11 @@ void processingStandardMessage(){
 
 			#endif
 			break;
-
+		case 0x00000116:
+			#if defined(C2baccable)
+				rearRightWheelSpin = rx_msg_data[4] & 0b00000011; //byte4 bit 0-1 is rear right wheel spin. meaning: 0=steady, 1=forward, 2=backward
+			#endif
+			break;
 		case 0x00000192:
 			#if defined(C1baccable)
 					//if release button was pressed twice, toggle QV exhaust valve
@@ -208,7 +212,55 @@ void processingStandardMessage(){
 			//clutch upstop is on byte0 bit 6
 			//actual pedal position is on byte0 from bit 4 to 0 and byte 1 from bit7 to 5
 			//analog cluch is on byte 1 from bit 4 to 0 and byte 2 from bit 7 to 5.
-
+			break;
+		case 0x000001F5:
+			#if defined(C2baccable)
+				/*
+				//PDC disable/enable logic
+				if(rx_msg_header.DLC >= 5){
+					uint8_t currentPressure = rx_msg_data[4];
+					// =========================================================================
+					// --- Automated PDC disabler marker reseted ---
+					// when Reverse gear is selected the car automatically enables disabled PDC system
+					// =========================================================================
+					if (reverseGearActive == 1 && pdc_auto_disabled == 1) {
+						pdc_auto_disabled = 0;
+					}
+					// =========================================================================
+					// --- DISABLE PDC ---
+					// disable front PDC if the brake is pressed firmly enough and PDC system has detected something
+-					// we don't do it when the Reverse gear is selected
+					// =========================================================================
+					else if(currentPressure > 0x10) {
+						if(reverseGearActive == 0 && pdc_is_beeping == 1 && pdc_auto_disabled == 0) {
+							if (pdc_state_disabled == 0) {
+								requestToTogglePDC = 1;
+								pdc_auto_disabled = 1;
+								//onboardLed_blue_on();
+							}
+						}
+					}
+					// =========================================================================
+					// --- ENABLE PDC ---
+					// re-enable front PDC if the brake is released and the car is able to make any move
+					// =========================================================================
+					else if(currentPressure < 0x10) { //I have left this threshold here to have ability to react on other level than for disable
+						// we know it is not reverse Gear because of "if" of the function)
+						// --- ENABLE PDC (if it was disabled automatically and the PDC system is really OFF)
+						if(pdc_auto_disabled == 1 && pdc_state_disabled == 1) {
+							requestToTogglePDC = 1;
+							pdc_auto_disabled = 0;
+							//onboardLed_blue_off();
+						}
+						// --- AUTOMATED PDC MARKER RESET (if the car enabled PDC automatically due to speed exceeding)
+						else if (pdc_auto_disabled == 1 && pdc_state_disabled == 0) {
+							pdc_auto_disabled = 0;
+							//onboardLed_blue_off();
+						}
+					}
+				}
+				*/
+			#endif
 			break;
 		case 0x0000001F7:
 			#if defined(C1baccable)
@@ -340,12 +392,50 @@ void processingStandardMessage(){
 
 			#endif
 			break;
+		case 0x000003E7: //PDC Alarms status (front sensors beeping
+			#if defined(C2baccable)
+				if(parkSensorsMuteFunctionEnabled){
+					if(rearRightWheelSpin==0){ //if wheel is not spinning
+						if(reverseGearActive==0){ //if rear gear is not engaged
+							if(rx_msg_header.DLC >= 5){ //if enough bytes in received message
+								if((rx_msg_data[4] & 0b00110000)>0){ //if front speaker is beeping
+									rx_msg_data[4]= rx_msg_data[4] & 0b11001111;
+									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+								}
+							}
+						}
+					}
+				}
+					//frontParkSensorsAlert== ((uint16_t)(rx_msg_data[1] & 0b00011111) << 4) | ((rx_msg_data[2] >> 4) & 0b00001111); 
+					//at the end bits 0-2 indicates front right obstacle (0 no obstascle, 1=far obstacle, 2=near obstacle)
+					//at the end bits 3-5 indicates front left  obstacle (0 no obstascle, 1=far obstacle, 2=near obstacle)
+					//at the end bits 6-8 indicates front central obstacle (0 no obstascle, 1=far obstacle, 2...,3...,4...,5... 6=near obstacle)
 
+					// Check Byte 2 and Byte 3 for sound status (0x0A and 0xAA means total "silence" on PDC sensors)
+					//if(rx_msg_data[4] > 0x01 && rx_msg_data[5] > 0x00){ //typically 0x0100 means no alarms, and changes if some alarms at the front side
+					//if(rx_msg_data[0] > 0x00){ //typically 0x00 means no alarms, and 0x40 means some alarms (or Reverse gear but we don't serve it while R)
+					//	pdc_is_beeping = 1;
+					//	//onboardLed_red_on();
+					//} else {
+					//	pdc_is_beeping = 0;
+					//	//onboardLed_red_off();
+					//}
+			#endif
+			break;
 		case 0x000003E8:
 			#if defined(BHbaccable)
 				//gearEngaged is on byte 3 bit 3 to 0
 				//actualGearGSI is on byte 3 bit 7 to 4
 				currentGear= rx_msg_data[3] & 0x0F;
+			/*
+			Reverse 0x0E
+			Parking 0x0D
+			Neutral 0x00
+			1gear   0x01
+			2gear   0x02
+			...
+			 */
+
 			#endif
 			break;
 
@@ -497,6 +587,20 @@ void processingStandardMessage(){
 			//only if  lights are ON, and therefore the dashboard is  set to max brightness: setting byte 5 to 0x00, the brightness increases for around 100msec (this works for any value between 0x and 7x )
 			//only if lights are OFF, and therefore the dashboard is set to min brightness: setting byte 5 to 0xF0, the brightness reduces for around 100msec (this works for any value between Dx and Fx)
 			//this is the test message to increase brightness: 0x88 0x20 0xC3 0x24 0x00 0x14 0x30 0x00
+			break;
+		case 0x0000054A: // Panel PDC Button/LED Status
+			// @netzmark PDC DISABLE code (pdcAutoDisable)- begin
+			#if defined(C2baccable)
+				if(rx_msg_header.DLC >= 4){
+					parkSensorsFunctionStatus=rx_msg_data[1] && 0b00000011; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
+					parkSensorsLedStatus=(rx_msg_data[3]>>6) && 0b00000011; //0=off, 1=continuous, 2=blink
+					// if(parkSensorsLightsStatus==1) {
+					// 	pdc_state_disabled = 1; // LED ON - PDC disabled
+					// } else {
+					// 	pdc_state_disabled = 0; // LED OFF - PDC enabled
+					// }
+				}
+			#endif
 			break;
 		case 0x000005A0:
 			#if defined(BHbaccable)

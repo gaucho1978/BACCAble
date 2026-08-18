@@ -40,6 +40,8 @@
 	#define C2cmdShowRaceMask					0x28 //second byte of the message to C2 bus, identifies the status race mask requested
 	#define C2cmdToggleHas						0x29 //second byte of the message to C2 bus, identifies the request to press HAS button for some consecutive messages
 	//#define C2cmdLaneLongPress				0x2A //second byte of the message to C2 bus, identifies the notification of long press of LANE button received on BH bus
+	#define C2cmdFunctParkSensorsMuteDisabled	0x2B //second byte of the message to C2 bus: park sensors mute function disabled
+	#define C2cmdFunctParkSensorsMuteEnabled	0x2C //second byte of the message to C2 bus: park sensors mute function enabled
 
 	#define BHcmdOdometerBlinkDisable			0x20 //second byte of the message to BH bus, identifies the request to disable odometer blink
 	#define BHcmdOdometerBlinkDefault			0x21 //second byte of the message to BH bus, identifies the request to restore normal odometer blink status
