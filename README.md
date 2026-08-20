@@ -85,9 +85,9 @@ I developed a custom Board for Baccable, including 3 canable in a small factor f
 ## manuals
 These are Available manuals:
 
-| <a href="manuals/Baccable_manual_EN.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual EN"></a> | <a href="manuals/Baccable_manual_IT.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual IT"></a> |
-| :---: | :---: |
-| [English Manual](manuals/Baccable_manual_EN.pdf) | [Italian Manual](manuals/Baccable_manual_IT.pdf) |
+| <a href="manuals/Baccable_manual_EN.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual EN"></a> | <a href="manuals/Baccable_manual_IT.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual IT"></a> | <a href="manuals/Baccable_manual_FR.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual FR"></a> | <a href="manuals/Baccable_manual_ES.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual ES"></a> |
+| :---: | :---: | :---: | :---: |
+| [English Manual](manuals/Baccable_manual_EN.pdf) | [Italian Manual](manuals/Baccable_manual_IT.pdf) | [French Manual](manuals/Baccable_manual_FR.pdf) | [Spanish Manual](manuals/Baccable_manual_ES.pdf) |
 
 ## Folders content
 - Subfolder firmware contains the firmware
