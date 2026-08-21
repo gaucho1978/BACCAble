@@ -76,7 +76,7 @@ void processingMessage0x000001EF(){
 						}
 
 
-						if(currentTime-doorCloseTime>11450){ //if at least 450msec from windows closed is passed, windows shoud be opened for at least 3 centimeters
+						if(currentTime-doorCloseTime>11550){ //if at least 450msec from windows closed is passed, windows shoud be opened for at least 3 centimeters
 							closeWindowsRequest=0; //task completed
 							doorLocksRequestsCounter=0;
 						}
