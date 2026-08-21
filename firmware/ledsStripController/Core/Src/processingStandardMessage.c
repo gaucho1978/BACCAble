@@ -156,6 +156,7 @@ void processingStandardMessage(){
 		case 0x00000116:
 			#if defined(C2baccable)
 				rearRightWheelSpin = rx_msg_data[4] & 0b00000011; //byte4 bit 0-1 is rear right wheel spin. meaning: 0=steady, 1=forward, 2=backward
+				if (rearRightWheelSpin==0) onboardLed_red_on();
 			#endif
 			break;
 		case 0x00000192:
@@ -393,6 +394,7 @@ void processingStandardMessage(){
 			#endif
 			break;
 		case 0x000003E7: //PDC Alarms status (front sensors beeping
+			/*
 			#if defined(C2baccable)
 				if(parkSensorsMuteFunctionEnabled){
 					if(rearRightWheelSpin==0){ //if wheel is not spinning
@@ -421,6 +423,7 @@ void processingStandardMessage(){
 					//	//onboardLed_red_off();
 					//}
 			#endif
+			*/
 			break;
 		case 0x000003E8:
 			#if defined(BHbaccable)
@@ -704,6 +707,24 @@ void processingStandardMessage(){
 					}
 				}
 			#endif
+
+			//Front Park Sensors Status
+			#if defined(C2baccable)
+				if(parkSensorsMuteFunctionEnabled){
+					if(rearRightWheelSpin==0){ //if wheel is not spinning
+						if(reverseGearActive==0){ //if rear gear is not engaged
+							if(rx_msg_header.DLC >= 5){ //if enough bytes in received message
+								if((rx_msg_data[6] & 0b00000001)==0){ //if front sensors are enabled, just disable them (field name: PAMFrontActiveInDrive. 0=On, 1=Off)
+									onboardLed_blue_on();
+									rx_msg_data[6]= rx_msg_data[6] | 0b00000001;
+									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
+								}
+							}
+						}
+					}
+				}
+			#endif
+
 			break;
 		case 0x000005A8:
 			//when in race, byte 4 bit 3-6 has value 6

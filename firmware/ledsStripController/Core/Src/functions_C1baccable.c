@@ -620,7 +620,8 @@
 		// -----------------------------------------------------------------------
 		if (function_pump_force_enabled) {
 
-			// Innesco iniziale: prima esecuzione dopo 10s, macchina ferma (stato 0xFF)
+			// Innesco iniziale: prima esecuzione dopo 10s, macchina ferma (stato 0xFF) per test
+			/*
 			if (pumpForceStateMachine == 0xFF && currentTime > 10000) {
 				// Apri sessione diagnostica estesa con l'ECM: invia DiagnosticSessionControl 10 03
 				pumpForceTxHeader.DLC = 3;
@@ -631,6 +632,7 @@
 				pumpForceStateMachine = 0;           // attendi risposta 50 03 dalla ECM
 				lastPumpForceMsgTime = currentTime;  // timestamp di inizio per calcolo timeout
 			}
+			*/
 
 			// Timeout handshake (stati 0, 1, 2): se non arriva risposta entro 500ms → abbandona
 			// Il booleano function_pump_force_enabled NON viene reimpostato (nessun retry)

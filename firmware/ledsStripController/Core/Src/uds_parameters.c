@@ -38,7 +38,7 @@
 					{.name="ODOM.LAST:$6.0fkm",					.udsParamId={27,	27		}}, //distance since last time odometer was zeroized
 					{.name="OIL: $1.3fL    ",					.udsParamId={28,	28		}}, //Oil Quantity
 					{.name="OIL: $1.3fbar  ",					.udsParamId={29,	29		}}, //Oil Pressure
-					{.name="OIL: $3.0f" "\xB0" "C   ",			.udsParamId={30,	30		}}, //Oil Temperature
+					{.name="OIL: $3.0f" "\xB0" "C   ",			.udsParamId={30,	30		}}, //multiair Oil Temperature
 					{.name="OIL QUALY: $3.0f%",					.udsParamId={31,	31		}}, //Oil Quality
 					{.name="OIL UnAir: $2.2f" "\xB0" "C",		.udsParamId={32,	32		}}, //Multiair Module Oil Temperature
 					{.name="GEARBOX: $2.2f" "\xB0" "C",			.udsParamId={33,	33		}}, //Gearbox Temperature
