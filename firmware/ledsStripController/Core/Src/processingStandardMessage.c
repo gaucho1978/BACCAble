@@ -155,8 +155,12 @@ void processingStandardMessage(){
 			break;
 		case 0x00000116:
 			#if defined(C2baccable)
-				rearRightWheelSpin = rx_msg_data[4] & 0b00000011; //byte4 bit 0-1 is rear right wheel spin. meaning: 0=steady, 1=forward, 2=backward
-				if (rearRightWheelSpin==0) onboardLed_red_on();
+				if(rx_msg_data[4]==0){ //wheels spin status is on byte4, 2 bits for each wheel (left and right front, then left and right rear) (0=steady, 1=forward, 2=backward, 3=undefined, tipically it means spinning)
+					carSteadyCounter++;//increase a counter
+					if(carSteadyCounter>200) carSteadyCounter=200; //car is steady since 200msec
+				}else{
+					carSteadyCounter=0; //reset counter
+				}
 			#endif
 			break;
 		case 0x00000192:
@@ -397,7 +401,7 @@ void processingStandardMessage(){
 			/*
 			#if defined(C2baccable)
 				if(parkSensorsMuteFunctionEnabled){
-					if(rearRightWheelSpin==0){ //if wheel is not spinning
+					if(carSteadyCounter>0){ //if wheel is not spinning
 						if(reverseGearActive==0){ //if rear gear is not engaged
 							if(rx_msg_header.DLC >= 5){ //if enough bytes in received message
 								if((rx_msg_data[4] & 0b00110000)>0){ //if front speaker is beeping
@@ -711,11 +715,11 @@ void processingStandardMessage(){
 			//Front Park Sensors Status
 			#if defined(C2baccable)
 				if(parkSensorsMuteFunctionEnabled){
-					if(rearRightWheelSpin==0){ //if wheel is not spinning
+					if(carSteadyCounter>0){ //if wheel is not spinning
 						if(reverseGearActive==0){ //if rear gear is not engaged
 							if(rx_msg_header.DLC >= 5){ //if enough bytes in received message
 								if((rx_msg_data[6] & 0b00000001)==0){ //if front sensors are enabled, just disable them (field name: PAMFrontActiveInDrive. 0=On, 1=Off)
-									onboardLed_blue_on();
+									onboardLed_red_on();
 									rx_msg_data[6]= rx_msg_data[6] | 0b00000001;
 									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
 								}

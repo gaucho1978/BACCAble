@@ -289,7 +289,6 @@
 		extern uint8_t function_acc_autostart;
 		extern uint32_t lastSentAutostartMsg;
 		extern uint8_t AutostartMsgCounter;
-		extern uint8_t carSteadyCounter; //tells how many seconds car is steady (200 max value = 2000msec)
 		extern uint8_t brakeIntervention_ACC_ESC_ASR;
 
 		//CLOSE_WINDOWS
@@ -359,6 +358,10 @@
 		extern uint8_t function_lights_animation_enabled;
 		extern uint8_t lights_animation_state_machine;
 		extern uint8_t parkSensorsMuteFunctionEnabled;
+
+		//
+		extern uint8_t carSteadyCounter; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 200msec)
+
 	#endif
 
 	#if defined(C2baccable)
@@ -380,7 +383,6 @@
 		extern uint8_t rearBrakeMsgData[4][8]; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(disable front brakes) (periodic)
 
 		extern uint8_t reverseGearActive;
-		extern uint8_t rearRightWheelSpin;
 		extern uint8_t parkSensorsFunctionStatus;
 		extern uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
 			/*

@@ -354,7 +354,6 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t function_acc_autostart=0;
 	uint32_t lastSentAutostartMsg=0;
 	uint8_t AutostartMsgCounter=0;
-	uint8_t carSteadyCounter=0; //tells how many seconds car is steady (200 max value = 2000msec)
 	uint8_t brakeIntervention_ACC_ESC_ASR=0; //tells if brake is pressed
 
 	//CLOSE_WINDOWS
@@ -423,6 +422,9 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t function_lights_animation_enabled=0;
 	uint8_t lights_animation_state_machine=22;
 	uint8_t parkSensorsMuteFunctionEnabled=0;
+
+	//
+	uint8_t carSteadyCounter=0; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 200msec)
 #endif
 
 #if defined(C2baccable)
@@ -444,7 +446,6 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t rearBrakeMsgData[4][8]= {{0x04, 0x2F, 0x5A, 0xBD, 0x00,},{0x07, 0x2F, 0x5A, 0xBD, 0x03, 0x27, 0x10, 0x03},{0x02, 0x3E, 0x80,},{0x02, 0x10, 0x40,}}; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(disable front brakes) (periodic)
 
 	uint8_t reverseGearActive  =0; //0=not inserted, 1=rear gear engaged, 2=not used
-	uint8_t rearRightWheelSpin =0; //0=steady, 1=forward, 2=backward
 	uint8_t parkSensorsFunctionStatus=0; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
 	uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
 
