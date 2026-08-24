@@ -541,6 +541,8 @@ uint8_t msg_buf[SLCAN_MTU]; //msg converted in ascii to send over usb
 uint8_t _4wd_disabled=0; //if =4 disables 4wd
 uint8_t front_brake_forced=0; //if=5 disables Front brakes
 uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dyno is active
+uint32_t last_4wd_disabled_overlay_time = 0; // 4wd constraint relax change 24/08/2026
+uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/08/2026
 
 uint8_t launch_assist_enabled=0; //if=1 assist is enabled and uses torque as trigget to release front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position

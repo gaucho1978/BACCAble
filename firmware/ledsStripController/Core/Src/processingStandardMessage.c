@@ -398,16 +398,23 @@ void processingStandardMessage(){
 			#endif
 			break;
 		case 0x000003E7: //PDC Alarms status (front sensors beeping
-			/*
+			// Test3
 			#if defined(C2baccable)
 				if(parkSensorsMuteFunctionEnabled){
 					if(carSteadyCounter>0){ //if wheel is not spinning
 						if(reverseGearActive==0){ //if rear gear is not engaged
-							if(rx_msg_header.DLC >= 5){ //if enough bytes in received message
-								if((rx_msg_data[4] & 0b00110000)>0){ //if front speaker is beeping
-									rx_msg_data[4]= rx_msg_data[4] & 0b11001111;
+							if(rx_msg_header.DLC >= 6){ //if enough bytes in received message
+								rx_msg_data[4]=1; //mute the speakers
+								rx_msg_data[5]=0; //chime repetition rate
+								//test31
+								rx_msg_data[0]=0; //disable visualization on display and disable central and left rear alert (arcs visualization)
+								rx_msg_data[1]=0; //disable rear right alert, central front alert, part of left front alert (arcs visualization)
+								rx_msg_data[2]=rx_msg_data[2] & 0b00001111; //disable front left and right alert (arcs visualization)
+								//if((rx_msg_data[4] & 0b00110000)>0){ //if front speaker is beeping
+								//	rx_msg_data[4]= rx_msg_data[4] & 0b11001111;
+									onboardLed_red_on();
 									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-								}
+								//}
 							}
 						}
 					}
@@ -427,7 +434,7 @@ void processingStandardMessage(){
 					//	//onboardLed_red_off();
 					//}
 			#endif
-			*/
+
 			break;
 		case 0x000003E8:
 			#if defined(BHbaccable)
@@ -714,19 +721,22 @@ void processingStandardMessage(){
 
 			//Front Park Sensors Status
 			#if defined(C2baccable)
+				/* Test2
 				if(parkSensorsMuteFunctionEnabled){
 					if(carSteadyCounter>0){ //if wheel is not spinning
 						if(reverseGearActive==0){ //if rear gear is not engaged
-							if(rx_msg_header.DLC >= 5){ //if enough bytes in received message
+							if(rx_msg_header.DLC >= 7){ //if enough bytes in received message
 								if((rx_msg_data[6] & 0b00000001)==0){ //if front sensors are enabled, just disable them (field name: PAMFrontActiveInDrive. 0=On, 1=Off)
 									onboardLed_red_on();
 									rx_msg_data[6]= rx_msg_data[6] | 0b00000001;
+									rx_msg_data[0]=(rx_msg_data[0] & 0b11111000) | 0b00000010 ;
 									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
 								}
 							}
 						}
 					}
 				}
+				*/
 			#endif
 
 			break;

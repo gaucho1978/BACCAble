@@ -537,7 +537,7 @@ void processingMessage0x000002FA(){
 											dashboard_main_menu_array[main_dashboardPageIndex][4]='D'; //disabled
 											dashboard_main_menu_array[main_dashboardPageIndex][5]='i';
 											dashboard_main_menu_array[main_dashboardPageIndex][6]='s';
-											commandsMenuEnabled=0;//disable menu commands
+											//commandsMenuEnabled=0;//disable menu commands // 4wd constraint relax change 24/08/2026
 										}else{
 											printStopTheCar=2;//print message "stop the car"
 										}
@@ -685,6 +685,8 @@ void processingMessage0x000002FA(){
 											break;
 										case 14: //{'[',' ',']','4','W','D',' ','D','i','s','a','b','l','e','r',},
 											function_4wd_disabler_enabled=!function_4wd_disabler_enabled;
+											if(!function_4wd_disabler_enabled) show_4wd_disabled_overlay=0; // 4wd constraint relax change 24/08/2026
+
 											break;
 										case 15: //{'[',' ',']','C','l','e','a','r',' ','F','a','u','l','t','s',},
 											function_clear_faults_enabled=!function_clear_faults_enabled;

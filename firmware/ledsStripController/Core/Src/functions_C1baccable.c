@@ -716,7 +716,25 @@
 		uint8_t tmpStrLen=0;
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 		char tmpfloatString[5]; //temp array
+
+		// 4WD disabled overlay management // 4wd constraint relax change 24/08/2026
+		if(function_4wd_disabler_enabled && _4wd_disabled > 0) { // 4wd constraint relax change 24/08/2026
+			if(currentTime - last_4wd_disabled_overlay_time >= 5000) { // 4wd constraint relax change 24/08/2026
+				last_4wd_disabled_overlay_time = currentTime; // 4wd constraint relax change 24/08/2026
+				show_4wd_disabled_overlay = 1; // 4wd constraint relax change 24/08/2026
+			} // 4wd constraint relax change 24/08/2026
+			if(show_4wd_disabled_overlay) { // 4wd constraint relax change 24/08/2026
+				if(currentTime - last_4wd_disabled_overlay_time > 1000) { // 4wd constraint relax change 24/08/2026
+					show_4wd_disabled_overlay = 0; // 1 sec elapsed. hide overlay // 4wd constraint relax change 24/08/2026
+				} // 4wd constraint relax change 24/08/2026
+				memset(dashboard_main_menu_array[main_dashboardPageIndex], ' ', DASHBOARD_MESSAGE_MAX_LENGTH); // 4wd constraint relax change 24/08/2026
+				uint8_t msg[] = ">>4WD DISABLED<<"; // 4wd constraint relax change 24/08/2026
+				memcpy(dashboard_main_menu_array[main_dashboardPageIndex], msg, 16); // 4wd constraint relax change 24/08/2026
+			} // 4wd constraint relax change 24/08/2026
+		} // 4wd constraint relax change 24/08/2026
+
 		//update records if required
+		if(!show_4wd_disabled_overlay) { // 4wd constraint relax change 24/08/2026
 		switch(main_dashboardPageIndex){
 			case 2: //READ_FAULTS_ENABLED //readFaults 12/08/2026
 				if(function_read_faults_enabled==1 && dashboard_menu_indent_level==1){
@@ -955,21 +973,19 @@
 				//nothing to do
 				break;
 		}
+		} // 4wd constraint relax change 24/08/2026
 
 		//add string to record
-		switch(main_dashboardPageIndex){
-			case 0:
+		if(main_dashboardPageIndex==0 && !show_4wd_disabled_overlay) { // 4wd constraint relax change 24/08/2026
 				tmpStrLen=strlen(FW_VERSION);
 				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
 				if (tmpStrLen < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with spaces
 					memset(&uartTxMsg[1+tmpStrLen], ' ', UART_BUFFER_SIZE-(1+tmpStrLen)); //set to zero remaining chars
 				}
-				break;
-			default:
+		} else { // 4wd constraint relax change 24/08/2026
 				memcpy(&uartTxMsg[1], dashboard_main_menu_array[main_dashboardPageIndex],UART_BUFFER_SIZE-1);
-				break;
-		}
+		} // 4wd constraint relax change 24/08/2026
 
 
 
@@ -1318,6 +1334,23 @@
 	void sendDashboardPageToSlaveBaccable(){
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
 
+		// 4WD disabled overlay management // 4wd constraint relax change 24/08/2026
+		if(function_4wd_disabler_enabled && _4wd_disabled > 0) { // 4wd constraint relax change 24/08/2026
+			if(currentTime - last_4wd_disabled_overlay_time >= 5000) { // 4wd constraint relax change 24/08/2026
+				last_4wd_disabled_overlay_time = currentTime; // 4wd constraint relax change 24/08/2026
+				show_4wd_disabled_overlay = 1; // 4wd constraint relax change 24/08/2026
+			} // 4wd constraint relax change 24/08/2026
+			if(show_4wd_disabled_overlay) { // 4wd constraint relax change 24/08/2026
+				if(currentTime - last_4wd_disabled_overlay_time > 1000) { // 4wd constraint relax change 24/08/2026
+					show_4wd_disabled_overlay = 0; // 1 sec elapsed. hide overlay // 4wd constraint relax change 24/08/2026
+				} // 4wd constraint relax change 24/08/2026
+				memset(&uartTxMsg[1], ' ', DASHBOARD_MESSAGE_MAX_LENGTH); // 4wd constraint relax change 24/08/2026
+				uint8_t msg[] = ">>4WD DISABLED<<"; // 4wd constraint relax change 24/08/2026
+				memcpy(&uartTxMsg[1], msg, 16); // 4wd constraint relax change 24/08/2026
+				addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE); // 4wd constraint relax change 24/08/2026
+				return; // 4wd constraint relax change 24/08/2026
+			} // 4wd constraint relax change 24/08/2026
+		} // 4wd constraint relax change 24/08/2026
 
 		char stringToPrint[25];
 		buildLineWithFormat( uds_params_array[function_is_diesel_enabled][dashboardPageIndex].name ,  dashboardParamCouple, uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId, stringToPrint); //build string to print

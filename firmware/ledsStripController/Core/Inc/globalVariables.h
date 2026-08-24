@@ -472,6 +472,8 @@
 	extern uint8_t _4wd_disabled; //if =4 disables 4wd
 	extern uint8_t front_brake_forced; //if=5 disables Front brakes
 	extern uint8_t DynoModeEnabledOnMaster; //status of dyno in master board. tells if dyno is active
+	extern uint32_t last_4wd_disabled_overlay_time; // 4wd constraint relax change 24/08/2026
+	extern uint8_t  show_4wd_disabled_overlay;       // 4wd constraint relax change 24/08/2026
 
 	extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
 
