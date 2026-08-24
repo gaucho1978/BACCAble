@@ -54,13 +54,15 @@
 
 	#define TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS							2500	//msec
 
-#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
+#if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER) || defined(C1baccable) //sniffer function 24/08/2026 - C1 added: sniffer needs the usb cdc symbols
 	//#include "usbd_def.h"
 	#include "usb_device.h"
+	#include "usbd_desc.h" //sniffer function 24/08/2026 - usbdDescSelectCdcMode() and usbdDescCdcModeSelected
 
 	#ifdef ENABLE_USB_MASS_STORAGE
 		#include "usbd_storage_if.h"
 		#include "ff.h"
+		#include "usbd_cdc_if.h" //sniffer function 24/08/2026 - sniffer transmits over cdc even on mass storage builds
 	#else
 		#include "string.h"
 		#include "usbd_cdc_if.h"
@@ -474,6 +476,37 @@
 	extern uint8_t DynoModeEnabledOnMaster; //status of dyno in master board. tells if dyno is active
 	extern uint32_t last_4wd_disabled_overlay_time; // 4wd constraint relax change 24/08/2026
 	extern uint8_t  show_4wd_disabled_overlay;       // 4wd constraint relax change 24/08/2026
+
+	//sniffer function 24/08/2026 - BEGIN
+	//raw can frames are streamed to usb cdc with a fixed 16 byte layout:
+	//  byte 0     : 0xA0 | DLC          (0xA = start nibble, DLC 0..8; 0xAF = frames lost marker)
+	//  byte 1..3  : timestamp, 24 bit little endian (currentTime, ms)
+	//  byte 4..7  : can id, 32 bit little endian
+	//  byte 8..15 : payload, zero padded above DLC
+	//gated to C1/C2/BH only: ACT_AS_CANABLE has no menu to trigger the function and does not need the ram
+	#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+		#define SNIFFER_FRAME_SIZE					16		//bytes per frame
+		#define SNIFFER_FRAME_COUNT					16		//frames kept in ram
+		#define SNIFFER_BUFFER_SIZE					(SNIFFER_FRAME_SIZE*SNIFFER_FRAME_COUNT) //256 bytes, power of two: index wrap done with a mask
+		#define SNIFFER_BUFFER_MASK					(SNIFFER_BUFFER_SIZE-1)
+		#define SNIFFER_USB_CHUNK					64		//usb cdc linear tx buffer size (TX_BUF_SIZE), holds exactly 4 frames
+		#define SNIFFER_FLUSH_TIMEOUT_MS			20		//flush a partial buffer after this idle time, to keep latency low on a quiet bus
+		#define SNIFFER_START_NIBBLE				0xA0	//high nibble marking the first byte of a frame
+		#define SNIFFER_OVERFLOW_MARKER				0xAF	//invalid DLC 15: frame carrying the number of lost frames
+		#define SNIFFER_CAN_FRAMES_PER_LOOP			3		//bxCAN RX FIFO0 depth on stm32F072: never more than this pending
+
+		extern uint8_t  snifferFunctionEnabled;		//0=off, 1=on. never saved on flash, always off at power on
+		extern uint8_t  snifferUsbInited;			//1 once the usb has been (re)started as cdc for the sniffer
+		extern uint8_t  snifferUsbStartRequested;	//set when the function is turned on, served by the main loop (usb bring up blocks for some ms)
+		extern uint8_t  snifferRingBuffer[SNIFFER_BUFFER_SIZE];
+		extern uint16_t snifferRingHead;			//write index
+		extern uint16_t snifferRingTail;			//read index
+		extern uint16_t snifferRingCount;			//bytes currently stored
+		extern uint16_t snifferDroppedFrames;		//frames lost since last overflow marker
+		extern uint32_t snifferLastFlushTime;
+		extern USBD_HandleTypeDef hUsbDeviceFS;	//declared in usb_device.c, needed to check TxState before a non blocking send
+	#endif
+	//sniffer function 24/08/2026 - END
 
 	extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
 

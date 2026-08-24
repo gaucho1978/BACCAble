@@ -29,6 +29,8 @@
 #ifdef ENABLE_USB_MASS_STORAGE
 	#include "usbd_msc.h"
 	#include "usbd_storage_if.h"
+	#include "usbd_cdc.h" //sniffer function 24/08/2026 - sniffer switches these builds to cdc at runtime
+	#include "usbd_cdc_if.h" //sniffer function 24/08/2026
 #else
 	#include "usbd_cdc.h"
 	#include "usbd_cdc_if.h"
@@ -55,6 +57,25 @@ void MX_USB_DEVICE_Init(void){
 	}
 
 	//*/
+
+	//sniffer function 24/08/2026 - BEGIN
+	//on the mass storage builds (C2 and BH) the sniffer gives up the pen drive and comes back as cdc.
+	//the mass storage path below is left untouched and is still the one taken when the sniffer is off.
+	#ifdef ENABLE_USB_MASS_STORAGE
+		if(usbdDescCdcModeSelected){
+			if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC) != USBD_OK){
+				Error_Handler(6500);
+			}
+			if (USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS) != USBD_OK){
+				Error_Handler(7000);
+			}
+			if (USBD_Start(&hUsbDeviceFS) != USBD_OK){
+				Error_Handler(7500);
+			}
+			return;
+		}
+	#endif
+	//sniffer function 24/08/2026 - END
 
 	///*commented for test in V.3.0.0a and V.3.0.0b
 	#ifdef ENABLE_USB_MASS_STORAGE

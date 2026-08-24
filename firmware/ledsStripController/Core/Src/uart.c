@@ -380,6 +380,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 								case C2_Bh_cmdFunction_Save_Log_to_File:
 									saveToFilesystem();
 									break;
+								case C2_Bh_cmdSnifferDisabled: //sniffer function 24/08/2026
+									snifferStop();
+									break;
+								case C2_Bh_cmdSnifferEnabled: //sniffer function 24/08/2026 - only ram is touched here, the usb bring up is served by the main loop
+									snifferStart();
+									break;
 								default:
 							}
 

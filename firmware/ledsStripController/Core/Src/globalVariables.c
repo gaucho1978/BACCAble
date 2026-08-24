@@ -189,7 +189,7 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=29;
+	uint8_t total_pages_in_setup_dashboard_menu=30; //sniffer function 24/08/2026 - was 29, SNIFFER entry added
 	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
@@ -220,6 +220,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
 			{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p',},
 			{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e',},
+			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026 - last free slot of the array
 
 		};
 
@@ -543,6 +544,20 @@ uint8_t front_brake_forced=0; //if=5 disables Front brakes
 uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dyno is active
 uint32_t last_4wd_disabled_overlay_time = 0; // 4wd constraint relax change 24/08/2026
 uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/08/2026
+
+//sniffer function 24/08/2026 - BEGIN
+#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+	uint8_t  snifferFunctionEnabled=0;	//always off at power on: the function is not stored on flash
+	uint8_t  snifferUsbInited=0;
+	uint8_t  snifferUsbStartRequested=0;
+	uint8_t  snifferRingBuffer[SNIFFER_BUFFER_SIZE];
+	uint16_t snifferRingHead=0;
+	uint16_t snifferRingTail=0;
+	uint16_t snifferRingCount=0;
+	uint16_t snifferDroppedFrames=0;
+	uint32_t snifferLastFlushTime=0;
+#endif
+//sniffer function 24/08/2026 - END
 
 uint8_t launch_assist_enabled=0; //if=1 assist is enabled and uses torque as trigget to release front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position

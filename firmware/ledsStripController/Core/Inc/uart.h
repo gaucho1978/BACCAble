@@ -55,6 +55,8 @@
 	#define	C2_Bh_cmdFunction_ESC_TC_Disabled	0x3C //second byte of the message to C2 and BH bus, identifies the request to disable ESC/TC function.
 	#define	C2_Bh_cmdFunction_ESC_TC_Enabled	0x3D //second byte of the message to C2 and BH bus, identifies the request to disable ESC/TC function.
 	#define	C2_Bh_cmdFunction_Save_Log_to_File	0x3E //second byte of the message to C2 and BH bus, identifies the request to save log to file.
+	#define	C2_Bh_cmdSnifferDisabled			0x3F //second byte of the message to C2 and BH bus: sniffer function disabled //sniffer function 24/08/2026
+	#define	C2_Bh_cmdSnifferEnabled				0x40 //second byte of the message to C2 and BH bus: sniffer function enabled //sniffer function 24/08/2026
 
 	#define C1BHcmdShowRaceScreen				0x40 //second byte of the message to C1 and BH bus, identifies the request to show Race Screen on dashboard
 	#define C1BHcmdStopShowRaceScreen			0x41 //second byte of the message to C1 and BH bus, identifies the request to STOP to show Race Screen on dashboard

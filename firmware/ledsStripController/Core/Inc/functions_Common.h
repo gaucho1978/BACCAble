@@ -21,4 +21,14 @@
 	void saveToFilesystem(void);
 
 	void storage_init(void);
+
+	//sniffer function 24/08/2026 - BEGIN
+	#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+		void snifferStart(void);
+		void snifferStop(void);
+		void snifferUsbStartIfRequested(void);
+		void snifferPushFrame(CAN_RxHeaderTypeDef *snifferRxHeader, uint8_t *snifferRxData);
+		void snifferFlush(void);
+	#endif
+	//sniffer function 24/08/2026 - END
 #endif /* INC_FUNCTIONS_COMMON_H_ */

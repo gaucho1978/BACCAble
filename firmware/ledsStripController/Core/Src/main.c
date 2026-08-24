@@ -48,9 +48,13 @@ int main(void){
 		can_process();
 		processUART();
 
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			snifferUsbStartIfRequested(); //sniffer function 24/08/2026 - usb re-enumeration is done here, never from an interrupt
+		#endif
+
 
 		#if (defined(BHbaccable) || defined(C2baccable))
-			if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave){  //if we are using it as usb pen drive, stop serial line to avoid interferences
+			if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave && snifferFunctionEnabled==0){  //if we are using it as usb pen drive, stop serial line to avoid interferences //sniffer function 24/08/2026 - the pen drive is off while sniffing, the serial line must stay alive
 				pauseUart(&huart2); //stop serial line between chips
 			}
 		#endif
@@ -161,7 +165,10 @@ int main(void){
 		#endif
 
 		// If CAN message receive is pending, process the message
-		if( is_can_msg_pending(CAN_RX_FIFO0)){
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			uint8_t snifferCanFramesRead=0; //sniffer function 24/08/2026 - counts the frames drained in this iteration
+		#endif
+		while( is_can_msg_pending(CAN_RX_FIFO0)){ //sniffer function 24/08/2026 - was an if: with the sniffer on we empty the whole rx fifo
 			// If message received from bus, parse the frame
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
 
@@ -171,6 +178,10 @@ int main(void){
 					if(msg_len){
 						CDC_Transmit_FS(msg_buf, msg_len); //transmit data via usb
 					}
+				#endif
+
+				#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+					if(snifferFunctionEnabled) snifferPushFrame(&rx_msg_header, rx_msg_data); //sniffer function 24/08/2026 - raw copy to usb, normal decoding below is untouched
 				#endif
 
 				#if defined(C1baccable)
@@ -189,7 +200,18 @@ int main(void){
 					}
 				}
 			}
+			#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+				snifferCanFramesRead++; //sniffer function 24/08/2026
+				if(snifferFunctionEnabled==0) break; //sniffer function 24/08/2026 - unchanged behaviour when the function is off: one frame per iteration
+				if(snifferCanFramesRead>=SNIFFER_CAN_FRAMES_PER_LOOP) break; //sniffer function 24/08/2026 - bounded by the rx fifo depth, keeps the loop short
+			#else
+				break; //unchanged behaviour on ACT_AS_CANABLE: one frame per main loop iteration
+			#endif
 		}
+
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			if(snifferFunctionEnabled) snifferFlush(); //sniffer function 24/08/2026 - non blocking, sends at most 64 bytes per iteration
+		#endif
 
 		//for debug, measure the loop duration
 		if (currentTime-currentTimeMainLoopDebug>2){

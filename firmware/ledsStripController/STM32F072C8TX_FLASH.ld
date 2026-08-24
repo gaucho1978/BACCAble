@@ -45,8 +45,8 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
   RAM    (xrw) : ORIGIN = 0x20000000, LENGTH = 16K
-  FLASH  (rx)  : ORIGIN = 0x8000000,  LENGTH = 64K
-  EEPROM (rwx) : ORIGIN = 0x8010000,  LENGTH = 64K
+  FLASH  (rx)  : ORIGIN = 0x8000000,  LENGTH = 72K /* sniffer function 24/08/2026 - was 64K: code no longer fits C1 once the usb cdc stack becomes reachable */
+  EEPROM (rwx) : ORIGIN = 0x8012000,  LENGTH = 56K /* sniffer function 24/08/2026 - was 64K/0x8010000: only 3 of 32 pages were used here, LAST_PAGE_ADDRESS and siblings are unaffected since they are computed from the fixed FLASH_BANK1_END (0x0801FFFF), not from this origin */
 }
 
 /* Sections */

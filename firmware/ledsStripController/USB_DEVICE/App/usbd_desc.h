@@ -107,7 +107,7 @@
 extern USBD_DescriptorsTypeDef FS_Desc;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-
+extern uint8_t usbdDescCdcModeSelected; //sniffer function 24/08/2026 - 1 when descriptors answer as cdc
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -120,7 +120,7 @@ extern USBD_DescriptorsTypeDef FS_Desc;
   */
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-
+void usbdDescSelectCdcMode(void); //sniffer function 24/08/2026
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

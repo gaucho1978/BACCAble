@@ -772,6 +772,19 @@ void processingMessage0x000002FA(){
 											if(parkSensorsMuteFunctionEnabled) tmpArrPkMute[1]=C2cmdFunctParkSensorsMuteEnabled;
 											addToUARTSendQueue(tmpArrPkMute, 2);
 											break;
+										case 29: //{'O',' ',' ','S','N','I','F','F','E','R'} //sniffer function 24/08/2026
+											if(snifferFunctionEnabled){
+												snifferStop();
+												commandsMenuEnabled=1; //menu navigation allowed again
+											}else{
+												snifferStart(); //usb bring up is deferred to the main loop
+												commandsMenuEnabled=0; //lock the menu on this entry: RES is still processed and switches the function off
+											}
+											//notify to C2 and BH the sniffer function status
+											uint8_t tmpArrSniffer[2]={C2_Bh_BusID,C2_Bh_cmdSnifferDisabled};
+											if(snifferFunctionEnabled) tmpArrSniffer[1]=C2_Bh_cmdSnifferEnabled;
+											addToUARTSendQueue(tmpArrSniffer, 2);
+											break;
 										default:
 											break;
 									}

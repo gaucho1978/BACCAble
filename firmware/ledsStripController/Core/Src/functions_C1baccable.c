@@ -718,6 +718,10 @@
 		char tmpfloatString[5]; //temp array
 
 		// 4WD disabled overlay management // 4wd constraint relax change 24/08/2026
+		// writes go straight into uartTxMsg (the transient send buffer), never into
+		// dashboard_main_menu_array: that array is persistent menu label storage, and many
+		// switch cases below only patch a few characters or none at all, so overwriting a
+		// whole row there would permanently corrupt that page's label after the overlay clears
 		if(function_4wd_disabler_enabled && _4wd_disabled > 0) { // 4wd constraint relax change 24/08/2026
 			if(currentTime - last_4wd_disabled_overlay_time >= 5000) { // 4wd constraint relax change 24/08/2026
 				last_4wd_disabled_overlay_time = currentTime; // 4wd constraint relax change 24/08/2026
@@ -727,14 +731,15 @@
 				if(currentTime - last_4wd_disabled_overlay_time > 1000) { // 4wd constraint relax change 24/08/2026
 					show_4wd_disabled_overlay = 0; // 1 sec elapsed. hide overlay // 4wd constraint relax change 24/08/2026
 				} // 4wd constraint relax change 24/08/2026
-				memset(dashboard_main_menu_array[main_dashboardPageIndex], ' ', DASHBOARD_MESSAGE_MAX_LENGTH); // 4wd constraint relax change 24/08/2026
+				memset(&uartTxMsg[1], ' ', DASHBOARD_MESSAGE_MAX_LENGTH); // 4wd constraint relax change 24/08/2026
 				uint8_t msg[] = ">>4WD DISABLED<<"; // 4wd constraint relax change 24/08/2026
-				memcpy(dashboard_main_menu_array[main_dashboardPageIndex], msg, 16); // 4wd constraint relax change 24/08/2026
+				memcpy(&uartTxMsg[1], msg, 16); // 4wd constraint relax change 24/08/2026
+				addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE); // 4wd constraint relax change 24/08/2026
+				return; // 4wd constraint relax change 24/08/2026
 			} // 4wd constraint relax change 24/08/2026
 		} // 4wd constraint relax change 24/08/2026
 
 		//update records if required
-		if(!show_4wd_disabled_overlay) { // 4wd constraint relax change 24/08/2026
 		switch(main_dashboardPageIndex){
 			case 2: //READ_FAULTS_ENABLED //readFaults 12/08/2026
 				if(function_read_faults_enabled==1 && dashboard_menu_indent_level==1){
@@ -973,19 +978,21 @@
 				//nothing to do
 				break;
 		}
-		} // 4wd constraint relax change 24/08/2026
 
 		//add string to record
-		if(main_dashboardPageIndex==0 && !show_4wd_disabled_overlay) { // 4wd constraint relax change 24/08/2026
+		switch(main_dashboardPageIndex){
+			case 0:
 				tmpStrLen=strlen(FW_VERSION);
 				if(tmpStrLen>DASHBOARD_MESSAGE_MAX_LENGTH) tmpStrLen=DASHBOARD_MESSAGE_MAX_LENGTH;
 				memcpy(&uartTxMsg[1],FW_VERSION,tmpStrLen);
 				if (tmpStrLen < DASHBOARD_MESSAGE_MAX_LENGTH) { //if required pad with spaces
 					memset(&uartTxMsg[1+tmpStrLen], ' ', UART_BUFFER_SIZE-(1+tmpStrLen)); //set to zero remaining chars
 				}
-		} else { // 4wd constraint relax change 24/08/2026
+				break;
+			default:
 				memcpy(&uartTxMsg[1], dashboard_main_menu_array[main_dashboardPageIndex],UART_BUFFER_SIZE-1);
-		} // 4wd constraint relax change 24/08/2026
+				break;
+		}
 
 
 
@@ -1258,6 +1265,9 @@
 				break;
 			case 28: //{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e'}
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[parkSensorsMuteFunctionEnabled];
+				break;
+			case 29: //{'O',' ',' ','S','N','I','F','F','E','R'} //sniffer function 24/08/2026
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[snifferFunctionEnabled];
 				break;
 			default:
 				break;

@@ -78,6 +78,14 @@
 #define USBD_INTERFACE_STRING_FS     "CDC Interface"
 #endif
 
+//sniffer function 24/08/2026 - BEGIN
+//The sniffer streams over cdc also on the mass storage builds (C2 and BH), so class and product id
+//cannot stay a compile time choice: usbdDescSelectCdcMode() patches them before the host re-enumerates us.
+#define USBD_PID_FS_CDC_SNIFFER		22336
+#define USBD_PRODUCT_STRING_FS_CDC_SNIFFER		"BACCAble Sniffer"
+uint8_t usbdDescCdcModeSelected=0;
+//sniffer function 24/08/2026 - END
+
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
 /* USER CODE END PRIVATE_DEFINES */
@@ -260,16 +268,30 @@ uint8_t * USBD_FS_LangIDStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
   */
 uint8_t * USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
-  if(speed == 0)
+  UNUSED(speed);
+  //sniffer function 24/08/2026 - BEGIN
+  if(usbdDescCdcModeSelected)
   {
-    USBD_GetString((uint8_t *)USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
+    USBD_GetString((uint8_t *)USBD_PRODUCT_STRING_FS_CDC_SNIFFER, USBD_StrDesc, length);
+    return USBD_StrDesc;
   }
-  else
-  {
+  //sniffer function 24/08/2026 - END
     USBD_GetString((uint8_t *)USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
-  }
   return USBD_StrDesc;
+  }
+
+//sniffer function 24/08/2026 - BEGIN
+//Switches the device descriptor to cdc. Must be called before MX_USB_DEVICE_Init(), which re-enumerates us.
+//USBD_FS_DeviceDesc already lives in ram, so the few bytes that differ are patched in place.
+void usbdDescSelectCdcMode(void)
+  {
+  usbdDescCdcModeSelected=1;
+  USBD_FS_DeviceDesc[4]=0x02;								/*bDeviceClass: communications*/
+  USBD_FS_DeviceDesc[5]=0x02;								/*bDeviceSubClass: abstract control model*/
+  USBD_FS_DeviceDesc[10]=LOBYTE(USBD_PID_FS_CDC_SNIFFER);	/*idProduct*/
+  USBD_FS_DeviceDesc[11]=HIBYTE(USBD_PID_FS_CDC_SNIFFER);	/*idProduct*/
 }
+//sniffer function 24/08/2026 - END
 
 /**
   * @brief  Return the manufacturer string descriptor

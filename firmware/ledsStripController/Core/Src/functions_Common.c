@@ -310,9 +310,129 @@ void storage_init(void){
 
 		res = f_unmount("");
 
-
-
-
-
 	#endif
 }
+
+//sniffer function 24/08/2026 - BEGIN
+#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+//Writes one 16 byte frame into the ring buffer. Called from the can rx path, must stay short.
+//SNIFFER_BUFFER_SIZE is a multiple of SNIFFER_FRAME_SIZE and snifferRingHead only ever advances
+//by whole frames, so it stays frame aligned: a single frame never wraps past the end of the
+//array, and the wrap mask only needs to be applied once, after the whole frame has been written.
+void snifferPushFrame(CAN_RxHeaderTypeDef *snifferRxHeader, uint8_t *snifferRxData){
+	uint16_t snifferBase;
+	uint32_t snifferTimeStamp;
+	uint32_t snifferCanId;
+	uint8_t  snifferDlc;
+	uint8_t  snifferByteIndex;
+
+	//as soon as there is room for the marker plus one more frame, report the frames lost during the overflow
+	if(snifferDroppedFrames>0 && snifferRingCount<=(SNIFFER_BUFFER_SIZE-(2*SNIFFER_FRAME_SIZE))){
+		snifferBase=snifferRingHead;
+		snifferTimeStamp=currentTime;
+		snifferRingBuffer[snifferBase+0]=SNIFFER_OVERFLOW_MARKER;
+		snifferRingBuffer[snifferBase+1]=(uint8_t)(snifferTimeStamp);
+		snifferRingBuffer[snifferBase+2]=(uint8_t)(snifferTimeStamp>>8);
+		snifferRingBuffer[snifferBase+3]=(uint8_t)(snifferTimeStamp>>16);
+		snifferRingBuffer[snifferBase+4]=(uint8_t)(snifferDroppedFrames);
+		snifferRingBuffer[snifferBase+5]=(uint8_t)(snifferDroppedFrames>>8);
+		snifferRingBuffer[snifferBase+6]=0;
+		snifferRingBuffer[snifferBase+7]=0;
+		for(snifferByteIndex=8; snifferByteIndex<SNIFFER_FRAME_SIZE; snifferByteIndex++){
+			snifferRingBuffer[snifferBase+snifferByteIndex]=0;
+		}
+		snifferRingHead=(snifferBase+SNIFFER_FRAME_SIZE)&SNIFFER_BUFFER_MASK;
+		snifferRingCount+=SNIFFER_FRAME_SIZE;
+		snifferDroppedFrames=0;
+	}
+
+	//no room left for a whole frame: count it as lost and give up, the marker will report it later
+	if(snifferRingCount>(SNIFFER_BUFFER_SIZE-SNIFFER_FRAME_SIZE)){
+		if(snifferDroppedFrames<0xFFFF) snifferDroppedFrames++;
+		return;
+	}
+
+	snifferDlc=snifferRxHeader->DLC;
+	if(snifferDlc>8) snifferDlc=8;
+	if(snifferRxHeader->IDE==CAN_ID_EXT){
+		snifferCanId=snifferRxHeader->ExtId;
+	}else{
+		snifferCanId=snifferRxHeader->StdId;
+	}
+	snifferTimeStamp=currentTime;
+	snifferBase=snifferRingHead;
+
+	snifferRingBuffer[snifferBase+0]=SNIFFER_START_NIBBLE|snifferDlc;
+	snifferRingBuffer[snifferBase+1]=(uint8_t)(snifferTimeStamp);
+	snifferRingBuffer[snifferBase+2]=(uint8_t)(snifferTimeStamp>>8);
+	snifferRingBuffer[snifferBase+3]=(uint8_t)(snifferTimeStamp>>16);
+	snifferRingBuffer[snifferBase+4]=(uint8_t)(snifferCanId);
+	snifferRingBuffer[snifferBase+5]=(uint8_t)(snifferCanId>>8);
+	snifferRingBuffer[snifferBase+6]=(uint8_t)(snifferCanId>>16);
+	snifferRingBuffer[snifferBase+7]=(uint8_t)(snifferCanId>>24);
+	for(snifferByteIndex=0; snifferByteIndex<8; snifferByteIndex++){
+		snifferRingBuffer[snifferBase+8+snifferByteIndex]=(snifferByteIndex<snifferDlc)?snifferRxData[snifferByteIndex]:0; //zero padding above DLC
+	}
+	snifferRingHead=(snifferBase+SNIFFER_FRAME_SIZE)&SNIFFER_BUFFER_MASK;
+	snifferRingCount+=SNIFFER_FRAME_SIZE;
+}
+
+//Moves buffered bytes to usb. Never waits on the usb: if the endpoint is busy we retry on the next loop.
+void snifferFlush(void){
+	uint16_t snifferSendLength;
+	uint16_t snifferContiguousBytes;
+
+	if(snifferUsbInited==0) return;
+	if(snifferRingCount==0) return;
+	if(hUsbDeviceFS.pClassData==NULL) return; //usb not enumerated yet
+	if(((USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData)->TxState) return; //endpoint busy: do not enter the busy wait inside CDC_Transmit_FS
+
+	snifferSendLength=snifferRingCount;
+	//a partial buffer is sent only after a while, so that on a busy bus we always send full 64 byte packets
+	if(snifferSendLength<SNIFFER_USB_CHUNK && (currentTime-snifferLastFlushTime)<SNIFFER_FLUSH_TIMEOUT_MS) return;
+	if(snifferSendLength>SNIFFER_USB_CHUNK) snifferSendLength=SNIFFER_USB_CHUNK;
+	//never read across the end of the ring: the remaining part goes out on the next flush
+	snifferContiguousBytes=SNIFFER_BUFFER_SIZE-snifferRingTail;
+	if(snifferSendLength>snifferContiguousBytes) snifferSendLength=snifferContiguousBytes;
+
+	if(CDC_Transmit_FS(&snifferRingBuffer[snifferRingTail], snifferSendLength)==USBD_OK){
+		snifferRingTail=(snifferRingTail+snifferSendLength)&SNIFFER_BUFFER_MASK;
+		snifferRingCount-=snifferSendLength;
+		snifferLastFlushTime=currentTime;
+	}
+}
+
+//Starts the function. Only ram is touched here, so this is safe to call from the uart interrupt as well:
+//the usb bring up blocks for a few milliseconds and is deferred to snifferUsbStartIfRequested().
+void snifferStart(void){
+	snifferRingHead=0;
+	snifferRingTail=0;
+	snifferRingCount=0;
+	snifferDroppedFrames=0;
+	snifferLastFlushTime=currentTime;
+	snifferUsbStartRequested=1;
+	snifferFunctionEnabled=1;
+}
+
+void snifferStop(void){
+	snifferFunctionEnabled=0;
+	//usb is left up as cdc on purpose: going back to mass storage would need another re-enumeration
+}
+
+//Brings the usb up as cdc. Called from the main loop only: MX_USB_DEVICE_Init() waits on HAL_Delay().
+void snifferUsbStartIfRequested(void){
+	if(snifferUsbStartRequested==0) return;
+	snifferUsbStartRequested=0;
+	if(snifferUsbInited) return; //already running as cdc, nothing to do until the next power cycle
+
+	#ifdef ENABLE_USB_MASS_STORAGE
+		//C2 and BH are running as usb pen drive: it is given up for good, since we are connected to the can buses now
+		USBD_Stop(&hUsbDeviceFS);
+		USBD_DeInit(&hUsbDeviceFS);
+	#endif
+	usbdDescSelectCdcMode(); //descriptors must answer as cdc before the host re-enumerates us
+	MX_USB_DEVICE_Init();
+	snifferUsbInited=1;
+}
+#endif
+//sniffer function 24/08/2026 - END
