@@ -496,7 +496,7 @@
 		#define SNIFFER_CAN_FRAMES_PER_LOOP			3		//bxCAN RX FIFO0 depth on stm32F072: never more than this pending
 
 		extern uint8_t  snifferFunctionEnabled;		//0=off, 1=on. never saved on flash, always off at power on
-		extern uint8_t  snifferUsbInited;			//1 once the usb has been (re)started as cdc for the sniffer
+		extern uint8_t  snifferUsbInited;			//1 once the usb has been (re)started as cdc for the sniffer. one shot, no retry: stays 1 even if the host never configures us
 		extern uint8_t  snifferUsbStartRequested;	//set when the function is turned on, served by the main loop (usb bring up blocks for some ms)
 		extern uint8_t  snifferRingBuffer[SNIFFER_BUFFER_SIZE];
 		extern uint16_t snifferRingHead;			//write index
@@ -505,6 +505,12 @@
 		extern uint16_t snifferDroppedFrames;		//frames lost since last overflow marker
 		extern uint32_t snifferLastFlushTime;
 		extern USBD_HandleTypeDef hUsbDeviceFS;	//declared in usb_device.c, needed to check TxState before a non blocking send
+
+		#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected
+			extern uint8_t  debugSnifferAutoStarted;	//0 until the 10 second auto-start has fired once
+			extern uint32_t debugSnifferLastInjectTime;
+			extern uint8_t  debugSnifferByteCounter;	//last byte of the injected message, increments every 100msec
+		#endif
 	#endif
 	//sniffer function 24/08/2026 - END
 

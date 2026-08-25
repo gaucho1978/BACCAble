@@ -556,6 +556,12 @@ uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/
 	uint16_t snifferRingCount=0;
 	uint16_t snifferDroppedFrames=0;
 	uint32_t snifferLastFlushTime=0;
+
+	#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected
+		uint8_t  debugSnifferAutoStarted=0;
+		uint32_t debugSnifferLastInjectTime=0;
+		uint8_t  debugSnifferByteCounter=0;
+	#endif
 #endif
 //sniffer function 24/08/2026 - END
 

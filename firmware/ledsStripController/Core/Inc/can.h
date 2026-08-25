@@ -1,6 +1,7 @@
 #ifndef _CAN_H
 #define _CAN_H
 
+	#include "compile_time_defines.h" //sniffer function 24/08/2026 - can_enable() needs to see DEBUG_SNIFFER
 
 	#include "stm32f0xx_hal.h"
 

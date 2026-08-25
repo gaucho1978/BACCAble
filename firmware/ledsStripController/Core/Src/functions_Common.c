@@ -417,19 +417,54 @@ void snifferStart(void){
 void snifferStop(void){
 	snifferFunctionEnabled=0;
 	//usb is left up as cdc on purpose: going back to mass storage would need another re-enumeration
+
+	//usbConnectedToSlave is never cleared anywhere else once set (pre-existing behaviour, not introduced by the
+	//sniffer), so on C1 it would otherwise keep blocking low consume (lowConsume.c) for the rest of the power
+	//cycle even after the recording is over. Clearing it here is safe: the sniffer enable command is always
+	//broadcast to both C2 and BH together (C2_Bh_BusID), so this point is only ever reached after both of them
+	//have already left mass storage mode for good - there is no longer any genuine pen drive session left to
+	//protect on either of them. On C2/BH this write is inert: nothing reads usbConnectedToSlave there any more.
+	usbConnectedToSlave=0;
 }
 
 //Brings the usb up as cdc. Called from the main loop only: MX_USB_DEVICE_Init() waits on HAL_Delay().
 void snifferUsbStartIfRequested(void){
 	if(snifferUsbStartRequested==0) return;
 	snifferUsbStartRequested=0;
-	if(snifferUsbInited) return; //already running as cdc, nothing to do until the next power cycle
+	if(snifferUsbInited) return; //already running as cdc, nothing to do until the next power cycle. this is a one shot bring up: no retry if the host never configures us.
 
-	#ifdef ENABLE_USB_MASS_STORAGE
-		//C2 and BH are running as usb pen drive: it is given up for good, since we are connected to the can buses now
-		USBD_Stop(&hUsbDeviceFS);
+	//Any usb stack already running must be torn down before we come back as cdc. This is driven by the actual
+	//state of the stack, not by the build flavor: besides the pen drive on C2/BH, C1 too can already have the usb
+	//up at boot (main.c does that whenever ACT_AS_CANABLE, DEBUG_MODE, ENABLE_USB_MASS_STORAGE or
+	//ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER is defined). Without this teardown MX_USB_DEVICE_Init() would
+	//re-initialize on top of a live stack, and HAL_PCD_Init() would skip HAL_PCD_MspInit() because the pcd state
+	//is not HAL_PCD_STATE_RESET, leaving the peripheral half re-initialized and the host with no clean re-attach.
+	//pClass is NULL only when MX_USB_DEVICE_Init() was never called at all, and then there is nothing to tear down.
+	if(hUsbDeviceFS.pClass!=NULL){
+		//The teardown below (USBD_DeInit / USBD_LL_Stop+DeInit) resets and powers down the usb core, but never
+		//clears BCDR_DPPU: the D+ pull-up stays asserted the whole time. From the host's point of view the device
+		//never actually detaches, it just goes quiet and comes back later announcing a completely different class
+		//(pen drive -> cdc) without ever having been unplugged. Most usb stacks, Android included, do not reliably
+		//re-enumerate a class change that was never preceded by a real disconnect. So the pull-up is explicitly
+		//released here and held low long enough for the host to notice the removal, before anything else runs.
+		if(hUsbDeviceFS.pData!=NULL){
+			HAL_PCD_DevDisconnect((PCD_HandleTypeDef*)hUsbDeviceFS.pData);
+			HAL_Delay(250);
+		}
+
+		//pClassData is allocated by the class Init(), which only runs when the host sends SET_CONFIGURATION: with no
+		//cable attached (or a cable that never enumerated us) it is still NULL. USBD_DeInit() would then call
+		//pClass->DeInit() -> MSC_BOT_DeInit(), which dereferences pClassData without any NULL check and writes to it,
+		//hitting address 0x00000008 (flash alias, not writable) and hard faulting. So the class teardown is done only
+		//when the class was actually initialized, while the low level driver is torn down either way.
+		//note: USBD_DeInit() already performs USBD_LL_Stop()+USBD_LL_DeInit() internally, so it is not called twice here.
+		if(hUsbDeviceFS.pClassData!=NULL){
 		USBD_DeInit(&hUsbDeviceFS);
-	#endif
+		}else{
+			USBD_LL_Stop(&hUsbDeviceFS);
+			USBD_LL_DeInit(&hUsbDeviceFS);
+		}
+	}
 	usbdDescSelectCdcMode(); //descriptors must answer as cdc before the host re-enumerates us
 	MX_USB_DEVICE_Init();
 	snifferUsbInited=1;
