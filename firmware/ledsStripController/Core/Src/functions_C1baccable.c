@@ -723,7 +723,7 @@
 		// switch cases below only patch a few characters or none at all, so overwriting a
 		// whole row there would permanently corrupt that page's label after the overlay clears
 		if(function_4wd_disabler_enabled && _4wd_disabled > 0) { // 4wd constraint relax change 24/08/2026
-			if(currentTime - last_4wd_disabled_overlay_time >= 5000) { // 4wd constraint relax change 24/08/2026
+			if(currentTime - last_4wd_disabled_overlay_time >= 6000) { // 4wd constraint relax change 24/08/2026
 				last_4wd_disabled_overlay_time = currentTime; // 4wd constraint relax change 24/08/2026
 				show_4wd_disabled_overlay = 1; // 4wd constraint relax change 24/08/2026
 			} // 4wd constraint relax change 24/08/2026
