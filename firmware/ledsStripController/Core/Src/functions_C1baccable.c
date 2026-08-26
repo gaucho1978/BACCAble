@@ -49,6 +49,13 @@
 		QV_exhaust_flap_function_enabled=(uint16_t)readFromFlash(28);
 		pedal_map_power=(int8_t)(uint8_t)readFromFlash(29);
 		parkSensorsMuteFunctionEnabled=(uint8_t)readFromFlash(30);
+		snifferFunctionEnabled=(uint8_t)readFromFlash(31); //sniffer function 24/08/2026
+		//started here, at boot, so that snifferInUse blocks low consume straight away: lowConsume_process() runs
+		//at the top of C1baccablePeriodicCheck() and its inactivity timeout (3500ms) expires 2ms BEFORE the
+		//instructSlaveBoardsTriggerEnabled block below (3502ms), so anything that only sets snifferInUse down
+		//there would lose that race and C1 would sleep (and pause the inter chip uart) first.
+		//The detection window itself is realigned to the slaves later, see that same block. //sniffer function 24/08/2026
+		if(snifferFunctionEnabled) snifferStart();
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
 		instructSlaveBoardsTriggerEnabled=1;
@@ -266,6 +273,19 @@
 				uint8_t tmpArr6[2]={C2BusID,C2cmdFunctParkSensorsMuteDisabled};
 				if(parkSensorsMuteFunctionEnabled) tmpArr6[1]=C2cmdFunctParkSensorsMuteEnabled;
 				addToUARTSendQueue(tmpArr6, 2);
+
+				//notify to C2 and BH the sniffer function status //sniffer function 24/08/2026
+				uint8_t tmpArr7[2]={C2_Bh_BusID,C2_Bh_cmdSnifferDisabled};
+				if(snifferFunctionEnabled){
+					tmpArr7[1]=C2_Bh_cmdSnifferEnabled;
+					//restart our own host detection window from this instant, so it runs alongside the one the
+					//slaves are starting right now on receiving this very message, instead of being measured from
+					//our own earlier boot: otherwise C1 would give up (and allow sleep, pausing the inter chip
+					//uart) while a slave is still legitimately waiting for its host. snifferInUse is already 1
+					//since boot - see C1baccableInitCheck() - so this does not affect the sleep guard at all.
+					snifferActivationTime=currentTime; //sniffer function 24/08/2026
+				}
+				addToUARTSendQueue(tmpArr7, 2);
 			}
 		}
 
@@ -1649,7 +1669,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=30;
+		uint8_t paramsNumber=31;
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1681,6 +1701,7 @@
 		  QV_exhaust_flap_function_enabled,
 		  (uint8_t)pedal_map_power,
 		  parkSensorsMuteFunctionEnabled,  //slot 30: FRONT_PARK_MUTE
+		  snifferFunctionEnabled,  //slot 31: SNIFFER //sniffer function 24/08/2026
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -2132,6 +2153,11 @@
 				}
 				break;
 			case 30: //FRONT_PARK_MUTE (1=enabled 0=disabled)
+				if(tmpParam>1){
+					return 0; // flash non inizializzata: default disabilitato
+				}
+				break;
+			case 31: //SNIFFER (1=enabled 0=disabled) //sniffer function 24/08/2026
 				if(tmpParam>1){
 					return 0; // flash non inizializzata: default disabilitato
 				}

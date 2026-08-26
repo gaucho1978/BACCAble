@@ -195,9 +195,28 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									uint8_t tmpArr2[2]={C2BusID,C2cmdtoggleEscTc};
 									addToUARTSendQueueDuringInterrupt(tmpArr2, 2);
 									break;
-								case C1usbConnected: //usb connected to slave. avoid sleep
+								//sniffer function 24/08/2026 - BEGIN
+								//tracked per slave: the sniffer enable command is broadcast to C2 and BH together,
+								//so the one with no cable attached always times out, and with a single shared
+								//command its "disconnected" would clear the state the other slave had just
+								//legitimately reported (and C1 would sleep with a session still in use).
+								case C1usbConnectedFromC2: //usb connected to C2. avoid sleep
+									usbConnectedToC2=1;
 									usbConnectedToSlave=1;
 									break;
+								case C1usbDisconnectedFromC2: //C2 usb no longer configured
+									usbConnectedToC2=0;
+									usbConnectedToSlave=usbConnectedToBH;
+									break;
+								case C1usbConnectedFromBH: //usb connected to BH. avoid sleep
+									usbConnectedToBH=1;
+									usbConnectedToSlave=1;
+									break;
+								case C1usbDisconnectedFromBH: //BH usb no longer configured
+									usbConnectedToBH=0;
+									usbConnectedToSlave=usbConnectedToC2;
+									break;
+								//sniffer function 24/08/2026 - END
 								default:
 									break;
 							}

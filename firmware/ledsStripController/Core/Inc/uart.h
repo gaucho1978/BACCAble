@@ -27,9 +27,16 @@
 	#define C1cmdLaneDoubleTap					0x20  //second byte of the message to C1 bus, notifies Lane button double tap
 	#define C1cmdNormalFrontBrake				0x21 //second byte of the message to C1 bus, identifies the request to set front Brake to normal
 	#define C1cmdForceFrontBrake				0x22 //second byte of the message to C1 bus, identifies the request to force Front Brake ON
-	#define C1usbConnected						0x23 //second byte of the message to C1 bus, identifies the connection to usb connector of the slave board
+	//sniffer function 24/08/2026 - one command per sender, so C1 can track the two slaves independently: the
+	//sniffer enable command is broadcast to C2 and BH together, so the slave with no cable attached always times
+	//out, and with a single shared command its "disconnected" would clear the state the other slave had just
+	//legitimately reported (and C1 would sleep with a session still in use).
+	#define C1usbConnectedFromC2				0x23 //second byte of the message to C1 bus, identifies the connection to usb connector of C2
+	#define C1usbDisconnectedFromC2				0x24 //second byte of the message to C1 bus, identifies that the usb connector of C2 is no longer configured
 	#define C1cmdDynoActive						0x25 //second byte of the message to C2 bus, identifies the status dyno Active
 	#define C1cmdDynoNotActive					0x26 //second byte of the message to C2 bus, identifies the status dyno Not Active
+	#define C1usbConnectedFromBH				0x27 //second byte of the message to C1 bus, identifies the connection to usb connector of BH //sniffer function 24/08/2026
+	#define C1usbDisconnectedFromBH				0x28 //second byte of the message to C1 bus, identifies that the usb connector of BH is no longer configured //sniffer function 24/08/2026
 
 	#define C2cmdtoggleDyno						0x20 //second byte of the message to C2 bus, identifies the request to toggle dyno
 	#define C2cmdNormalFrontBrake				0x21 //second byte of the message to C2 bus, identifies the request to set front Brake to normal

@@ -180,7 +180,12 @@ int8_t STORAGE_Init_FS(uint8_t lun){
 	#if (defined(BHbaccable) || defined(C2baccable))
 		onboardLed_blue_on();
 		usbConnectedToSlave=1; //we use this to avoid to unmount the disk
-		uint8_t tmpArr2[2]={C1BusID,C1usbConnected};
+		//own command per sender, so C1 tracks the two slaves independently, see uart.c //sniffer function 24/08/2026
+		#if defined(C2baccable)
+			uint8_t tmpArr2[2]={C1BusID,C1usbConnectedFromC2};
+		#else
+			uint8_t tmpArr2[2]={C1BusID,C1usbConnectedFromBH};
+		#endif
 		addToUARTSendQueue(tmpArr2, 2);
 		weCanSendAMessageReply=TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS; //enable sending the message thru serial line to C1, for a offset from now
 	#endif

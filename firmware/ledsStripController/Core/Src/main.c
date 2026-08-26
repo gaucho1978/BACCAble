@@ -56,6 +56,8 @@ int main(void){
 					//notify to C2 and BH the sniffer function status
 					uint8_t tmpArrSniffer[2]={C2_Bh_BusID,C2_Bh_cmdSnifferEnabled};
 					addToUARTSendQueue(tmpArrSniffer, 2);
+					snifferFunctionEnabled=1;
+					saveOnflash();
 				}
 
 			#endif
@@ -63,6 +65,8 @@ int main(void){
 
 		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
 			snifferUsbStartIfRequested(); //sniffer function 24/08/2026 - usb re-enumeration is done here, never from an interrupt
+			snifferUsbShutdownIfRequested(); //sniffer function 24/08/2026 - usb power down is done here too, for the same reason
+			snifferCheckActivationTimeout(); //sniffer function 24/08/2026 - reverts to a plain baccable if the host never configures us within SNIFFER_ACTIVATION_TIMEOUT_MS
 
 			#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected: can bus is silent+loopback (see can.c), so this injected message follows the very same rx/interception path as real traffic, just below in this loop
 				if(currentTime-debugSnifferLastInjectTime>=100){
@@ -88,7 +92,7 @@ int main(void){
 			//no real interference to avoid with the current storage implementation. keeping huart2 paused here was
 			//also a deadlock for the sniffer: pauseUart() disables the RX interrupt, so C2_Bh_cmdSnifferEnabled sent
 			//by C1 while usbConnectedToSlave was already set could never be received to un-pause it.
-			//if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave && snifferFunctionEnabled==0){  //if we are using it as usb pen drive, stop serial line to avoid interferences
+			//if(currentTime>TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS+300 && usbConnectedToSlave && snifferInUse==0){  //if we are using it as usb pen drive, stop serial line to avoid interferences
 			//	pauseUart(&huart2); //stop serial line between chips
 			//}
 			//sniffer function 24/08/2026 - END
@@ -216,7 +220,7 @@ int main(void){
 				#endif
 
 				#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
-					if(snifferFunctionEnabled) snifferPushFrame(&rx_msg_header, rx_msg_data); //sniffer function 24/08/2026 - raw copy to usb, normal decoding below is untouched
+					if(snifferInUse) snifferPushFrame(&rx_msg_header, rx_msg_data); //sniffer function 24/08/2026 - raw copy to usb, normal decoding below is untouched
 				#endif
 
 				#if defined(C1baccable)
@@ -237,7 +241,7 @@ int main(void){
 			}
 			#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
 				snifferCanFramesRead++; //sniffer function 24/08/2026
-				if(snifferFunctionEnabled==0) break; //sniffer function 24/08/2026 - unchanged behaviour when the function is off: one frame per iteration
+				if(snifferInUse==0) break; //sniffer function 24/08/2026 - unchanged behaviour when the function is off: one frame per iteration
 				if(snifferCanFramesRead>=SNIFFER_CAN_FRAMES_PER_LOOP) break; //sniffer function 24/08/2026 - bounded by the rx fifo depth, keeps the loop short
 			#else
 				break; //unchanged behaviour on ACT_AS_CANABLE: one frame per main loop iteration
@@ -245,7 +249,7 @@ int main(void){
 		}
 
 		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
-			if(snifferFunctionEnabled) snifferFlush(); //sniffer function 24/08/2026 - non blocking, sends at most 64 bytes per iteration
+			if(snifferInUse) snifferFlush(); //sniffer function 24/08/2026 - non blocking, sends at most 64 bytes per iteration
 		#endif
 
 		//for debug, measure the loop duration

@@ -27,6 +27,8 @@
 		void snifferStart(void);
 		void snifferStop(void);
 		void snifferUsbStartIfRequested(void);
+		void snifferUsbShutdownIfRequested(void);
+		void snifferCheckActivationTimeout(void);
 		void snifferPushFrame(CAN_RxHeaderTypeDef *snifferRxHeader, uint8_t *snifferRxData);
 		void snifferFlush(void);
 	#endif

@@ -547,9 +547,13 @@ uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/
 
 //sniffer function 24/08/2026 - BEGIN
 #if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
-	uint8_t  snifferFunctionEnabled=0;	//always off at power on: the function is not stored on flash
+	uint8_t  snifferInUse=0;	//always off at power on: only the preference below is stored on flash
+	uint8_t  snifferFunctionEnabled=0;
+	uint32_t snifferActivationTime=0;
+	uint8_t  snifferActivationConfirmed=0;
 	uint8_t  snifferUsbInited=0;
 	uint8_t  snifferUsbStartRequested=0;
+	uint8_t  snifferUsbShutdownRequested=0;
 	uint8_t  snifferRingBuffer[SNIFFER_BUFFER_SIZE];
 	uint16_t snifferRingHead=0;
 	uint16_t snifferRingTail=0;
@@ -622,6 +626,8 @@ uint8_t usbInited;
 uint32_t lastUartErrorCallback;
 
 uint8_t usbConnectedToSlave=0; //tells if usb port is connected to BH or C2
+uint8_t usbConnectedToC2=0; //sniffer function 24/08/2026 - on C1: tracked per slave, see globalVariables.h
+uint8_t usbConnectedToBH=0; //sniffer function 24/08/2026
 
 
 

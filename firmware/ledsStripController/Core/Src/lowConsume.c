@@ -65,7 +65,7 @@
 		}else{ //altrimenti se non siamo in basso consumo
 			//se l'ultimo messaggio ricevuto é piú vecchio di 2,5 secondi, riduci i consumi
 			if(currentTime-lastReceivedCanMsgTime>TIMING__C1____CAN_INACTIVITY_TIMEOUT_BEFORE_SLEEP_MS){
-				if(usbConnectedToSlave==0 && snifferFunctionEnabled==0){ //sniffer function 24/08/2026 - never sleep while a recording is running
+				if(usbConnectedToSlave==0 && snifferInUse==0){ //sniffer function 24/08/2026 - never sleep while a recording is running
 					lowConsumeIsActive=1;
 
 					pauseUart(&huart2); //stop serial line between chips

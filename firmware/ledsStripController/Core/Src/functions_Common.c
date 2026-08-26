@@ -411,20 +411,103 @@ void snifferStart(void){
 	snifferDroppedFrames=0;
 	snifferLastFlushTime=currentTime;
 	snifferUsbStartRequested=1;
-	snifferFunctionEnabled=1;
+	snifferInUse=1;
+	snifferActivationConfirmed=0;
+	snifferActivationTime=currentTime; //starts the host detection window (SNIFFER_ACTIVATION_TIMEOUT_MS), checked by snifferCheckActivationTimeout()
 }
 
-void snifferStop(void){
-	snifferFunctionEnabled=0;
-	//usb is left up as cdc on purpose: going back to mass storage would need another re-enumeration
+//Fully powers usb down: releases the D+ pull-up, tears down the class and the low level driver, and (on
+//C2/BH) tells C1 this board's usb is no longer configured. This blocks for up to ~260ms (HAL_Delay plus the
+//teardown itself), so it must only ever be called from the main loop, never from an interrupt - both call
+//sites below (snifferUsbShutdownIfRequested and snifferCheckActivationTimeout) already run from there.
+static void snifferUsbShutdown(void){
+	if(snifferUsbInited==0) return; //already down, or never was up
+	if(hUsbDeviceFS.pData!=NULL){
+		HAL_PCD_DevDisconnect((PCD_HandleTypeDef*)hUsbDeviceFS.pData); //release the D+ pull-up: nothing is left attached from the host's point of view
+		HAL_Delay(250);
+	}
+	if(hUsbDeviceFS.pClassData!=NULL){
+		USBD_DeInit(&hUsbDeviceFS);
+	}else{
+		USBD_LL_Stop(&hUsbDeviceFS);
+		USBD_LL_DeInit(&hUsbDeviceFS);
+	}
+	snifferUsbInited=0; //usb is fully off: a later activation must bring it back up from scratch
 
-	//usbConnectedToSlave is never cleared anywhere else once set (pre-existing behaviour, not introduced by the
-	//sniffer), so on C1 it would otherwise keep blocking low consume (lowConsume.c) for the rest of the power
-	//cycle even after the recording is over. Clearing it here is safe: the sniffer enable command is always
-	//broadcast to both C2 and BH together (C2_Bh_BusID), so this point is only ever reached after both of them
-	//have already left mass storage mode for good - there is no longer any genuine pen drive session left to
-	//protect on either of them. On C2/BH this write is inert: nothing reads usbConnectedToSlave there any more.
-	usbConnectedToSlave=0;
+	#if defined(C2baccable) || defined(BHbaccable)
+		//usbConnectedToSlave is this board's OWN "my usb is connected" flag, set by usbd_storage_if.c: with the
+		//usb now off there is no pen drive/sniffer session left on this board to protect from sleep. C1's own
+		//instance of the same named variable means something entirely different (a slave told me its usb is
+		//connected) and must never be guessed from here - only the C1usbConnectedFrom/DisconnectedFrom commands, received over
+		//uart, are allowed to change it, hence the notification right below. //sniffer function 24/08/2026
+		usbConnectedToSlave=0;
+		//own command per sender, so C1 tracks the two slaves independently, see uart.c //sniffer function 24/08/2026
+		#if defined(C2baccable)
+			uint8_t tmpArrUsbDisc[2]={C1BusID,C1usbDisconnectedFromC2};
+		#else
+			uint8_t tmpArrUsbDisc[2]={C1BusID,C1usbDisconnectedFromBH};
+		#endif
+		addToUARTSendQueue(tmpArrUsbDisc, 2);
+	#endif
+}
+
+//Safe to call from the uart interrupt: only ram is touched here, the actual usb shutdown (which blocks) is
+//deferred to snifferUsbShutdownIfRequested(), called from the main loop only - mirroring how snifferStart()
+//defers its own usb bring up to snifferUsbStartIfRequested().
+void snifferStop(void){
+	snifferInUse=0;
+	snifferActivationConfirmed=0;
+	snifferUsbShutdownRequested=1;
+}
+
+//Brings usb down if snifferStop() requested it. Called from the main loop only: snifferUsbShutdown() waits on
+//HAL_Delay().
+void snifferUsbShutdownIfRequested(void){
+	if(snifferUsbShutdownRequested==0) return;
+	snifferUsbShutdownRequested=0;
+	snifferUsbShutdown();
+}
+
+//Called every main loop iteration while the function is on. snifferActivationTime is a rolling "last time we
+//saw the host" timestamp, refreshed every time dev_state reads CONFIGURED: if it falls behind by more than
+//SNIFFER_ACTIVATION_TIMEOUT_MS, usb is fully powered down and we go back to being a plain baccable. This
+//covers both the initial activation (host never showed up at all) and a later disconnect (host was there and
+//went away): this mcu has no vbus sensing, so a genuine unplug and a routine host side usb suspend are
+//indistinguishable to the peripheral - both are just "no bus activity" - and a sustained absence is the best
+//available signal for either. The saved preference on flash is left untouched: the next power up, wake up, or
+//menu toggle will attempt activation again the same way.
+void snifferCheckActivationTimeout(void){
+	if(snifferInUse==0) return;
+	if(hUsbDeviceFS.dev_state==USBD_STATE_CONFIGURED){
+		if(snifferActivationConfirmed==0){
+		snifferActivationConfirmed=1;
+			#if defined(C2baccable) || defined(BHbaccable)
+				//Tell C1 this board's usb session is genuinely alive, once, the first time it is confirmed.
+				//Without this, C1 only knows about this board's usb from STORAGE_Init_FS() (usbd_storage_if.c),
+				//a callback of the pen drive class: once the sniffer switches this board away from mass storage
+				//to cdc, that class is gone for good and its notification can never fire again for this board.
+				//Left unnotified, C1's own usbConnectedToSlave (see lowConsume.c) would depend only on C1's own
+				//local sniffer session, which can legitimately time out on its own (nobody plugged into C1's
+				//port) while this board's session is still genuinely in use - and C1 would put everyone to
+				//sleep despite this board still being actively read by a host. //sniffer function 24/08/2026
+				usbConnectedToSlave=1;
+				//own command per sender, so C1 tracks the two slaves independently, see uart.c //sniffer function 24/08/2026
+				#if defined(C2baccable)
+					uint8_t tmpArrUsbConn[2]={C1BusID,C1usbConnectedFromC2};
+				#else
+					uint8_t tmpArrUsbConn[2]={C1BusID,C1usbConnectedFromBH};
+				#endif
+				addToUARTSendQueue(tmpArrUsbConn, 2);
+			#endif
+		}
+		snifferActivationTime=currentTime;
+		return;
+	}
+	if(currentTime-snifferActivationTime<SNIFFER_ACTIVATION_TIMEOUT_MS) return; //still within the grace window
+
+	snifferInUse=0;
+	snifferActivationConfirmed=0;
+	snifferUsbShutdown(); //already running from the main loop here, safe to call directly
 }
 
 //Brings the usb up as cdc. Called from the main loop only: MX_USB_DEVICE_Init() waits on HAL_Delay().

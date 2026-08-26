@@ -623,7 +623,24 @@ void processingMessage0x000002FA(){
 												((uint16_t)HAS_function_enabled							!= readFromFlash(27))	|| //HAS_VIRTUAL_PAD
 												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	|| //QV_EXHAUST_FLAP_FUNCTION_ENABLED
 												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	|| //PEDAL_MAP_POWER
-												((uint16_t)parkSensorsMuteFunctionEnabled				!= readFromFlash(30))	){ //FRONT_PARK_MUTE
+												((uint16_t)parkSensorsMuteFunctionEnabled				!= readFromFlash(30))	|| //FRONT_PARK_MUTE
+												((uint16_t)snifferFunctionEnabled						!= readFromFlash(31))	){ //SNIFFER //sniffer function 24/08/2026
+													//sniffer function 24/08/2026 - BEGIN
+													//the only setting here with a real hardware side effect (usb re-enumeration), so unlike every
+													//other setting above it is deliberately applied here, at save&exit, rather than immediately on
+													//toggle: this way the usb bring up (and its host detection window) only ever starts
+													//once the user has actually committed to leaving this menu with the new value.
+													if(snifferFunctionEnabled!=(uint8_t)readFromFlash(31)){
+														if(snifferFunctionEnabled){
+															snifferStart();
+														}else{
+															snifferStop();
+														}
+														uint8_t tmpArrSniffer[2]={C2_Bh_BusID,C2_Bh_cmdSnifferDisabled};
+														if(snifferFunctionEnabled) tmpArrSniffer[1]=C2_Bh_cmdSnifferEnabled;
+														addToUARTSendQueue(tmpArrSniffer, 2);
+													}
+													//sniffer function 24/08/2026 - END
 													//save it on flash
 													saveOnflash();
 											}
@@ -773,17 +790,9 @@ void processingMessage0x000002FA(){
 											addToUARTSendQueue(tmpArrPkMute, 2);
 											break;
 										case 29: //{'O',' ',' ','S','N','I','F','F','E','R'} //sniffer function 24/08/2026
-											if(snifferFunctionEnabled){
-												snifferStop();
-												commandsMenuEnabled=1; //menu navigation allowed again
-											}else{
-												snifferStart(); //usb bring up is deferred to the main loop
-												commandsMenuEnabled=0; //lock the menu on this entry: RES is still processed and switches the function off
-											}
-											//notify to C2 and BH the sniffer function status
-											uint8_t tmpArrSniffer[2]={C2_Bh_BusID,C2_Bh_cmdSnifferDisabled};
-											if(snifferFunctionEnabled) tmpArrSniffer[1]=C2_Bh_cmdSnifferEnabled;
-											addToUARTSendQueue(tmpArrSniffer, 2);
+											//just a plain preference toggle now, like every other setting on this menu: the actual usb
+											//bring up (or shutdown) is deferred to SAVE&EXIT, see case 0 below
+											snifferFunctionEnabled=!snifferFunctionEnabled;
 											break;
 										default:
 											break;

@@ -494,10 +494,21 @@
 		#define SNIFFER_START_NIBBLE				0xA0	//high nibble marking the first byte of a frame
 		#define SNIFFER_OVERFLOW_MARKER				0xAF	//invalid DLC 15: frame carrying the number of lost frames
 		#define SNIFFER_CAN_FRAMES_PER_LOOP			3		//bxCAN RX FIFO0 depth on stm32F072: never more than this pending
+		//Also doubles as the disconnect timeout once the host has been seen: snifferActivationTime is refreshed on
+		//every loop while the host keeps us CONFIGURED, so this is really "give up after this long without a host".
+		//Sized on the slowest link in the chain: a slave (C2/BH) is only told to start when C1 sends the enable
+		//message, then its own confirmation back to C1 has to wait for C1's next status poll (up to ~1260ms, see
+		//uart.c), and only then is C1's sleep guard latched. 10s leaves a comfortable margin for android usb
+		//enumeration on top of that polling latency. //sniffer function 24/08/2026
+		#define SNIFFER_ACTIVATION_TIMEOUT_MS		10000	//if the host has not configured us within this time from activation, usb is fully powered down and we go back to being a plain baccable
 
-		extern uint8_t  snifferFunctionEnabled;		//0=off, 1=on. never saved on flash, always off at power on
+		extern uint8_t  snifferInUse;				//0=off, 1=on while the function is starting up or actively running. never saved on flash by itself
+		extern uint8_t  snifferFunctionEnabled;		//0=off, 1=on. saved on flash (slot 31), toggled from the setup menu, applied on SAVE&EXIT and at boot/wake
+		extern uint32_t snifferActivationTime;		//rolling "last time a host was seen": set when the attempt starts, then refreshed on every loop while the host keeps us CONFIGURED. drives the SNIFFER_ACTIVATION_TIMEOUT_MS give up window
+		extern uint8_t  snifferActivationConfirmed;	//1 once the host has configured us during the current activation attempt: the timeout is only checked before this latches
 		extern uint8_t  snifferUsbInited;			//1 once the usb has been (re)started as cdc for the sniffer. one shot, no retry: stays 1 even if the host never configures us
 		extern uint8_t  snifferUsbStartRequested;	//set when the function is turned on, served by the main loop (usb bring up blocks for some ms)
+		extern uint8_t  snifferUsbShutdownRequested;	//set when the function is turned off, served by the main loop (usb shutdown blocks for some ms)
 		extern uint8_t  snifferRingBuffer[SNIFFER_BUFFER_SIZE];
 		extern uint16_t snifferRingHead;			//write index
 		extern uint16_t snifferRingTail;			//read index
@@ -573,6 +584,10 @@
 	extern uint32_t lastUartErrorCallback;
 
 	extern uint8_t usbConnectedToSlave;
+	//sniffer function 24/08/2026 - on C1 only: tracked per slave, because usbConnectedToSlave above cannot tell
+	//WHICH slave reported. usbConnectedToSlave is kept as the OR of these two, so lowConsume.c needs no change.
+	extern uint8_t usbConnectedToC2;
+	extern uint8_t usbConnectedToBH;
 
 
 
