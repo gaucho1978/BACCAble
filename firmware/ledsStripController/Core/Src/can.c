@@ -54,7 +54,7 @@ void can_enable(void)
     {
     	can_handle.Init.Prescaler = prescaler;
     	can_handle.Init.Mode = CAN_MODE_NORMAL; //just for test, we can set it to CAN_MODE_LOOPBACK in order to receive whatever we send
-    	#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle: loop own messages back to rx, do not drive CAN_TX, no ack needed from another node
+    	#ifdef DEBUG_CAN_RX_SIMULATION //sniffer function 24/08/2026 - bench test with no vehicle: loop own messages back to rx, do not drive CAN_TX, no ack needed from another node
     		can_handle.Init.Mode = CAN_MODE_SILENT_LOOPBACK;
     	#endif
 

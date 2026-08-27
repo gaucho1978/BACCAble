@@ -624,7 +624,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)QV_exhaust_flap_function_enabled				!= readFromFlash(28))	|| //QV_EXHAUST_FLAP_FUNCTION_ENABLED
 												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	|| //PEDAL_MAP_POWER
 												((uint16_t)parkSensorsMuteFunctionEnabled				!= readFromFlash(30))	|| //FRONT_PARK_MUTE
-												((uint16_t)snifferFunctionEnabled						!= readFromFlash(31))	){ //SNIFFER //sniffer function 24/08/2026
+												((uint16_t)snifferFunctionEnabled						!= readFromFlash(31))	|| //SNIFFER //sniffer function 24/08/2026
+												((uint16_t)elm327FunctionEnabled						!= readFromFlash(32))	){ //ELM327 //elm327 function 26/08/2026
 													//sniffer function 24/08/2026 - BEGIN
 													//the only setting here with a real hardware side effect (usb re-enumeration), so unlike every
 													//other setting above it is deliberately applied here, at save&exit, rather than immediately on
@@ -641,6 +642,19 @@ void processingMessage0x000002FA(){
 														addToUARTSendQueue(tmpArrSniffer, 2);
 													}
 													//sniffer function 24/08/2026 - END
+
+													//elm327 function 26/08/2026 - BEGIN
+													//same reasoning as the sniffer above: applied here, at save&exit, not on toggle.
+													//Starting it only brings the usb port up and opens the detection window - the
+													//baccable keeps working normally until a host actually shows up.
+													if(elm327FunctionEnabled!=(uint8_t)readFromFlash(32)){
+														if(elm327FunctionEnabled){
+															elm327Start();
+														}else{
+															elm327Stop();
+														}
+													}
+													//elm327 function 26/08/2026 - END
 													//save it on flash
 													saveOnflash();
 											}
@@ -793,6 +807,13 @@ void processingMessage0x000002FA(){
 											//just a plain preference toggle now, like every other setting on this menu: the actual usb
 											//bring up (or shutdown) is deferred to SAVE&EXIT, see case 0 below
 											snifferFunctionEnabled=!snifferFunctionEnabled;
+											//elm327 function 26/08/2026 - the two share the single usb cdc port: enabling one visibly
+											//clears the other, rather than leaving a tick that would silently do nothing
+											if(snifferFunctionEnabled) elm327FunctionEnabled=0;
+											break;
+										case 30: //{'O',' ',' ','E','L','M','3','2','7'} //elm327 function 26/08/2026
+											elm327FunctionEnabled=!elm327FunctionEnabled;
+											if(elm327FunctionEnabled) snifferFunctionEnabled=0;
 											break;
 										default:
 											break;

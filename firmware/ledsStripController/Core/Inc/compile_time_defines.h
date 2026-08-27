@@ -9,7 +9,7 @@
 
 	//this is used to store FW version, also shown on usb when used as slcan
 	#ifndef BUILD_VERSION //optional compile time define with -D, default: undefined
-		#define BUILD_VERSION "V.3.6.4"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
+		#define BUILD_VERSION "V.3.7.0"  //versioning rule: first digit major change, second digit minor change (like new feature), third digit bug fix or cosmetics
 	#endif
 	#define _FW_VERSION "BACCABLE " BUILD_VERSION
 
@@ -63,6 +63,32 @@
 	#ifdef ACT_AS_CANABLE
 		#pragma message("Building CANable") //adds a message in the compilation log
 	#endif
+
+	//elm327 function 26/08/2026 - BEGIN
+	//The ELM327 interpreter and the diagnostic bridge towards the other two chips are always compiled into the
+	//normal firmware and stay completely off (they touch neither usb, nor the can bus, nor the inter chip serial
+	//line) until the ELM327 entry of the setup menu turns them on - exactly the same lifecycle as the sniffer.
+	//There are deliberately no dedicated ELM327 build flavors and no per-bitrate build configurations here: the
+	//can bus is the one the baccable already has open at the right speed for its own network, and the runtime
+	//guards inside elm327.c/elmlink.c leave it alone.
+	//elm327 function 27/08/2026 - ELM327_RUNTIME_SELECTABLE, ELMLINK_MASTER, ELMLINK_SLAVE and
+	//ELMLINK_RUNTIME_SELECTABLE used to live here: each of them was just another name for a chip we already
+	//identify, so elm327.c/elmlink.c now test C1baccable / C2baccable / BHbaccable directly (C1 is the gateway,
+	//C2 and BH are the two slaves, and all three take the mode from the menu, never at power on).
+	#if defined(C1baccable)
+		#define ACT_AS_ELM327				//compiles elm327.c
+		#define ELM327_TRACE_DISABLE		//the ATLOG dialog recorder is a development aid and costs 2kB of ram we do not have
+		#define ELM327_BITRATE_STR	"500"	//only used in the ATDP answer: the C1 network runs at 500 kbit/s (see main.c)
+	#endif
+
+	//which of the two networks this slave serves: the only elmlink setting that really carries a value, so
+	//unlike the ones listed above it cannot be replaced by the chip name alone. //elm327 function 27/08/2026
+	#if defined(C2baccable)
+		#define ELMLINK_SLAVE_ID	ELMLINK_TO_C2
+	#elif defined(BHbaccable)
+		#define ELMLINK_SLAVE_ID	ELMLINK_TO_BH
+	#endif
+	//elm327 function 26/08/2026 - END
 
 	#ifndef DISABLE_UCAN_BOARD_LED_INVERSION //optional compile time define with -D, default: undefined
 		#define UCAN_BOARD_LED_INVERSION //ucan fysect board (and  new BACCAble board) requires UCAN_BOARD_LED_INVERSION, since the led onboard are physically connected differently (status is inverted)
@@ -210,6 +236,10 @@
 
 		#ifdef HAS_VIRTUAL_PAD
 			#pragma message("Enabling function HAS_VIRTUAL_PAD")
+		#endif
+
+		#if (defined(DEBUG_START_SNIFFER) && defined(DEBUG_START_ELM327))
+			#error "Invalid combination of defines. Use DEBUG_START_SNIFFER or DEBUG_START_ELM327"
 		#endif
 	#endif
 

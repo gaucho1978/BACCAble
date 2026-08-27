@@ -108,6 +108,7 @@ extern USBD_DescriptorsTypeDef FS_Desc;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
 extern uint8_t usbdDescCdcModeSelected; //sniffer function 24/08/2026 - 1 when descriptors answer as cdc
+extern uint8_t usbdDescElm327ModeSelected; //elm327 function 26/08/2026 - 1 when descriptors answer as the elm327 emulator
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -121,6 +122,7 @@ extern uint8_t usbdDescCdcModeSelected; //sniffer function 24/08/2026 - 1 when d
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 void usbdDescSelectCdcMode(void); //sniffer function 24/08/2026
+void usbdDescSelectElm327Mode(void); //elm327 function 26/08/2026
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

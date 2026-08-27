@@ -56,6 +56,12 @@
 		//there would lose that race and C1 would sleep (and pause the inter chip uart) first.
 		//The detection window itself is realigned to the slaves later, see that same block. //sniffer function 24/08/2026
 		if(snifferFunctionEnabled) snifferStart();
+		//elm327 function 26/08/2026 - same lifecycle, but starting it only brings the usb port up and starts the
+		//detection window: the baccable keeps working normally until a host actually enumerates us (see
+		//elm327CheckActivationTimeout()). The two modes share the single usb cdc port, so they are mutually
+		//exclusive: the setup menu already clears one when the other is enabled, this is just the safety net.
+		elm327FunctionEnabled=(uint8_t)readFromFlash(32);
+		if(elm327FunctionEnabled && snifferFunctionEnabled==0) elm327Start();
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
 		instructSlaveBoardsTriggerEnabled=1;
@@ -153,6 +159,62 @@
 
 	}
 
+
+	//elm327 function 26/08/2026 - BEGIN
+	//Only ram is touched here, so this is safe from anywhere: bringing usb up blocks for a few milliseconds and
+	//is deferred to elm327UsbStartIfRequested(), exactly like snifferStart() does.
+	void elm327Start(void){
+		elm327InUse=1;
+		elm327ActivationConfirmed=0;
+		elm327ActivationTime=currentTime;	//starts the host detection window (SNIFFER_ACTIVATION_TIMEOUT_MS)
+		elm327UsbStartRequested=1;
+	}
+
+	//Leaves the mode for good: interpreter off, bridge disarmed on all three chips, usb port down.
+	//elm327_set_enabled(0) does all of that (see elm327.c), including usb_device_detach().
+	void elm327Stop(void){
+		uint8_t wasConfirmed=elm327ActivationConfirmed;
+		elm327InUse=0;
+		elm327ActivationConfirmed=0;
+		elm327UsbStartRequested=0;
+		if(wasConfirmed){
+			elm327_set_enabled(0);
+		}else{
+			usb_device_detach(); //never confirmed: the port was only up waiting for a host, nothing else to undo
+		}
+		//while the mode was running we were not watching the can bus at all, so the last received message would
+		//look minutes old and low consume would reset the other two chips the moment we resume. Start the
+		//inactivity count from now instead.
+		lastReceivedCanMsgTime=currentTime;
+		//the slaves spent that time serving the bridge: resend them every function status, as after a wake up
+		allProcessorsWakeupTime=currentTime;
+		instructSlaveBoardsTriggerEnabled=1;
+	}
+
+	//Brings the usb port up. Called from the main loop only: usb_device_attach() waits on HAL_Delay().
+	void elm327UsbStartIfRequested(void){
+		if(elm327UsbStartRequested==0) return;
+		elm327UsbStartRequested=0;
+		usb_device_attach(); //idempotent, and it selects the elm327 descriptors on its own
+	}
+
+	//Called every main loop iteration while the function is on. Mirrors snifferCheckActivationTimeout(), but
+	//the interpreter is switched on only once a host has really enumerated us: until then the baccable must
+	//keep working normally, because turning ELM327 on freezes the dashboard and takes over the serial line.
+	void elm327CheckActivationTimeout(void){
+		if(elm327InUse==0) return;
+		if(hUsbDeviceFS.dev_state==USBD_STATE_CONFIGURED){
+			if(elm327ActivationConfirmed==0){
+				elm327ActivationConfirmed=1;
+				elm327_set_enabled(1); //only NOW the baccable steps aside and the bridge is armed
+			}
+			elm327ActivationTime=currentTime;
+			return;
+		}
+		if(currentTime-elm327ActivationTime<SNIFFER_ACTIVATION_TIMEOUT_MS) return; //still within the grace window
+		elm327Stop(); //host never showed up, or went away: back to being a plain baccable
+	}
+	//elm327 function 26/08/2026 - END
 
 	void C1baccablePeriodicCheck(){
 		#ifndef DISABLE_LOW_CONSUME
@@ -1289,6 +1351,9 @@
 			case 29: //{'O',' ',' ','S','N','I','F','F','E','R'} //sniffer function 24/08/2026
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[snifferFunctionEnabled];
 				break;
+			case 30: //{'O',' ',' ','E','L','M','3','2','7'} //elm327 function 26/08/2026
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[elm327FunctionEnabled];
+				break;
 			default:
 				break;
 		}
@@ -1669,7 +1734,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=31;
+		uint8_t paramsNumber=32; //elm327 function 26/08/2026 - was 31
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1702,6 +1767,7 @@
 		  (uint8_t)pedal_map_power,
 		  parkSensorsMuteFunctionEnabled,  //slot 30: FRONT_PARK_MUTE
 		  snifferFunctionEnabled,  //slot 31: SNIFFER //sniffer function 24/08/2026
+		  elm327FunctionEnabled,  //slot 32: ELM327 //elm327 function 26/08/2026
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -2158,6 +2224,11 @@
 				}
 				break;
 			case 31: //SNIFFER (1=enabled 0=disabled) //sniffer function 24/08/2026
+				if(tmpParam>1){
+					return 0; // flash non inizializzata: default disabilitato
+				}
+				break;
+			case 32: //ELM327 (1=enabled 0=disabled) //elm327 function 26/08/2026
 				if(tmpParam>1){
 					return 0; // flash non inizializzata: default disabilitato
 				}

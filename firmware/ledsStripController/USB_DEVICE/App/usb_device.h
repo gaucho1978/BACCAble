@@ -79,6 +79,14 @@
 /** USB Device initialization function. */
 void MX_USB_DEVICE_Init(void);
 
+//elm327 function 26/08/2026 - usb port brought up/down on request, from the "ELM327" entry of the dashboard
+//setup menu: while the mode is off the connector stays silent. See usb_device.c.
+#include "compile_time_defines.h"
+#if defined(C1baccable)
+	void usb_device_attach(void);
+	void usb_device_detach(void);
+#endif
+
 /*
  * -- Insert functions declaration here --
  */

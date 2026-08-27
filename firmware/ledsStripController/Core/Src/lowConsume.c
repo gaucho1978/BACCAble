@@ -65,7 +65,10 @@
 		}else{ //altrimenti se non siamo in basso consumo
 			//se l'ultimo messaggio ricevuto é piú vecchio di 2,5 secondi, riduci i consumi
 			if(currentTime-lastReceivedCanMsgTime>TIMING__C1____CAN_INACTIVITY_TIMEOUT_BEFORE_SLEEP_MS){
-				if(usbConnectedToSlave==0 && snifferInUse==0){ //sniffer function 24/08/2026 - never sleep while a recording is running
+				//sniffer function 24/08/2026 / elm327 function 26/08/2026 - never sleep while a recording or a
+				//diagnostic session is running, on this chip or on a slave. elm327InUse covers the waiting phase
+				//too: giving up on it is elm327CheckActivationTimeout()'s job, not low consume's.
+				if(usbConnectedToSlave==0 && snifferInUse==0 && elm327InUse==0){
 					lowConsumeIsActive=1;
 
 					pauseUart(&huart2); //stop serial line between chips

@@ -161,6 +161,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	#endif
 
     if (huart->Instance == USART2) { //message from other baccable chips
+		//elm327 function 26/08/2026 - blocks of the diagnostic bridge use their own destinations (0x0E/0x0F/0x10),
+		//outside the range checked below, so they coexist with the normal traffic between the chips. Returns 1
+		//when it took the block; while the bridge is disarmed it always returns 0 and nothing changes here.
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			if(elmlink_on_uart_frame((const uint8_t*)rxBuffer)){
+				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE);
+				return;
+			}
+		#endif
 		// evaluate received message
     	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_C2_BusID)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
@@ -491,6 +500,51 @@ void restartUart(UART_HandleTypeDef *huart){
 	}
 }
 
+
+//elm327 function 26/08/2026 - BEGIN
+#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+	//Sends one bridge block by writing the data register directly, with reception off while transmitting.
+	//HAL_UART_Transmit() is deliberately NOT used: it takes the same lock and the same State field as
+	//HAL_UART_Receive_IT(), so if the rx interrupt completed a block mid transmission the re-arm would fail
+	//with HAL_BUSY and the port would stay deaf for good. It also waits out any transmission already started
+	//by the normal queue (HAL_UART_Transmit_IT), otherwise the two messages would interleave.
+	//Every wait has a guard counter: this must never be able to block the main loop forever.
+	void uart_link_send(const uint8_t *frame, uint8_t len){
+		{
+			uint32_t guard = 200000;
+			while(((huart2.State == HAL_UART_STATE_BUSY_TX) ||
+			       (huart2.State == HAL_UART_STATE_BUSY_TX_RX)) && --guard){}
+		}
+		{
+			uint32_t guard = 200000;
+			while(!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) && --guard){}
+		}
+
+		__HAL_UART_DISABLE_IT(&huart2, UART_IT_RXNE);
+		CLEAR_BIT(huart2.Instance->CR1, USART_CR1_RE);		//reception off while we drive the single wire line
+
+		for(uint8_t i = 0; i < len; i++){
+			uint32_t guard = 200000;
+			while(!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TXE) && --guard){}
+			if(!guard) break;
+			huart2.Instance->TDR = frame[i];
+		}
+		{
+			uint32_t guard = 200000;
+			while(!__HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) && --guard){}	//end of the last byte
+		}
+
+		//reception back on, resynchronised from the start of the next block
+		syncObtained = 0;
+		__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+		__HAL_UART_FLUSH_DRREGISTER(&huart2);
+		SET_BIT(huart2.Instance->CR1, USART_CR1_RE);
+		huart2.ErrorCode = HAL_UART_ERROR_NONE;
+		huart2.State     = HAL_UART_STATE_READY;	//this HAL has a single state for TX and RX
+		HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);
+	}
+#endif
+//elm327 function 26/08/2026 - END
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
 

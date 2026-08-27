@@ -189,8 +189,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=30; //sniffer function 24/08/2026 - was 29, SNIFFER entry added
-	uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH]={
+	uint8_t total_pages_in_setup_dashboard_menu=31; //elm327 function 26/08/2026 - was 30, ELM327 entry added
+	uint8_t dashboard_setup_menu_array[31][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
@@ -220,7 +220,8 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
 			{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p',},
 			{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e',},
-			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026 - last free slot of the array
+			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026
+			{'O',' ',' ','E','L','M','3','2','7',' ',' ',' ',' ',' ',' ',' ',' ',' ',}, //elm327 function 26/08/2026 - last free slot of the array
 
 		};
 
@@ -561,13 +562,30 @@ uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/
 	uint16_t snifferDroppedFrames=0;
 	uint32_t snifferLastFlushTime=0;
 
-	#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected
+	#ifdef DEBUG_CAN_RX_SIMULATION
+		uint32_t debugSimulatedMsgLastInjectTime=0;
+		uint8_t debugSimulatedMsgByteCounter=0;
+	#endif
+
+	#ifdef DEBUG_START_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected
 		uint8_t  debugSnifferAutoStarted=0;
-		uint32_t debugSnifferLastInjectTime=0;
-		uint8_t  debugSnifferByteCounter=0;
+	#endif
+
+	#ifdef DEBUG_START_ELM327 // bench test with no vehicle connected
+		uint8_t  debugElm327AutoStarted=0;	//0 until the 10 second auto-start has fired once
 	#endif
 #endif
 //sniffer function 24/08/2026 - END
+
+//elm327 function 26/08/2026 - BEGIN
+#if defined(C1baccable)
+	uint8_t  elm327FunctionEnabled=0;	//always off at power on: only the preference is stored on flash
+	uint8_t  elm327InUse=0;
+	uint32_t elm327ActivationTime=0;
+	uint8_t  elm327ActivationConfirmed=0;
+	uint8_t  elm327UsbStartRequested=0;
+#endif
+//elm327 function 26/08/2026 - END
 
 uint8_t launch_assist_enabled=0; //if=1 assist is enabled and uses torque as trigget to release front brakes
 uint8_t commandsMenuEnabled=1; //if 0 disables the up-down buttons to change menu position

@@ -46,20 +46,51 @@ int main(void){
 		currentTimeMainLoopDebug=currentTime;
 		onboardLed_process();
 		can_process();
+
+		//elm327 function 26/08/2026 - while a host is really talking to the interpreter the inter chip serial
+		//line belongs entirely to the diagnostic bridge: a message from the normal queue would collide with it
+		//and put the link out of sync. Only skipped once a host is actually there, never while merely waiting.
+		#if defined(C1baccable)
+			if(!elm327_is_enabled())
+		#endif
 		processUART();
 
+		#if defined(C1baccable) //elm327 function 26/08/2026
+			elm327UsbStartIfRequested();		//usb bring up is done here, never from an interrupt
+			elm327CheckActivationTimeout();		//switches the interpreter on once a host shows up, gives up if none does
+			elm327_process();					//interprets one command per loop; does nothing while the mode is off
+		#endif
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable) //elm327 function 26/08/2026 - does nothing until C1 arms the bridge
+			elmlink_process();
+		#endif
+
 		#if defined(C1baccable)
-			#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected: can bus is silent+loopback (see can.c), so this injected message follows the very same rx/interception path as real traffic, just below in this loop
+			#ifdef DEBUG_START_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected: can bus is silent+loopback (see can.c), so this injected message follows the very same rx/interception path as real traffic, just below in this loop
 				if(debugSnifferAutoStarted==0 && currentTime>=20000){
 					debugSnifferAutoStarted=1;
+					if(snifferFunctionEnabled==0){
+						snifferFunctionEnabled=1;
+						elm327FunctionEnabled=0;
 					snifferStart(); //same entry point used by the SNIFFER menu toggle
 					//notify to C2 and BH the sniffer function status
 					uint8_t tmpArrSniffer[2]={C2_Bh_BusID,C2_Bh_cmdSnifferEnabled};
 					addToUARTSendQueue(tmpArrSniffer, 2);
-					snifferFunctionEnabled=1;
 					saveOnflash();
 				}
+				}
 
+			#endif
+
+			#ifdef DEBUG_START_ELM327
+				if(debugElm327AutoStarted==0 && currentTime>=20000){
+					debugElm327AutoStarted=1;
+					if(elm327FunctionEnabled==0){
+						elm327FunctionEnabled=1;
+						snifferFunctionEnabled=0;
+						elm327Start();
+						saveOnflash();
+					}
+				}
 			#endif
 		#endif
 
@@ -68,17 +99,17 @@ int main(void){
 			snifferUsbShutdownIfRequested(); //sniffer function 24/08/2026 - usb power down is done here too, for the same reason
 			snifferCheckActivationTimeout(); //sniffer function 24/08/2026 - reverts to a plain baccable if the host never configures us within SNIFFER_ACTIVATION_TIMEOUT_MS
 
-			#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected: can bus is silent+loopback (see can.c), so this injected message follows the very same rx/interception path as real traffic, just below in this loop
-				if(currentTime-debugSnifferLastInjectTime>=100){
-					debugSnifferLastInjectTime=currentTime;
-					CAN_TxHeaderTypeDef debugSnifferTxHeader;
-					debugSnifferTxHeader.IDE=CAN_ID_STD;
-					debugSnifferTxHeader.RTR=CAN_RTR_DATA;
-					debugSnifferTxHeader.StdId=0x1EF;
-					debugSnifferTxHeader.DLC=8;
-					uint8_t debugSnifferTxData[8]={0,0,0,0,0,0,0,debugSnifferByteCounter};
-					debugSnifferByteCounter++;
-					can_tx(&debugSnifferTxHeader, debugSnifferTxData); //queued here, transmitted by can_process() on the next loop, looped back into the rx fifo
+			#ifdef DEBUG_CAN_RX_SIMULATION //sniffer function 24/08/2026 - bench test with no vehicle connected: can bus is silent+loopback (see can.c), so this injected message follows the very same rx/interception path as real traffic, just below in this loop
+				if(currentTime-debugSimulatedMsgLastInjectTime>=100){
+					debugSimulatedMsgLastInjectTime=currentTime;
+					CAN_TxHeaderTypeDef debugSimulatedMsgTxHeader;
+					debugSimulatedMsgTxHeader.IDE=CAN_ID_STD;
+					debugSimulatedMsgTxHeader.RTR=CAN_RTR_DATA;
+					debugSimulatedMsgTxHeader.StdId=0x1EF;
+					debugSimulatedMsgTxHeader.DLC=8;
+					uint8_t debugSimulatedMsgTxData[8]={0,0,0,0,0,0,0,debugSimulatedMsgByteCounter};
+					debugSimulatedMsgByteCounter++;
+					can_tx(&debugSimulatedMsgTxHeader, debugSimulatedMsgTxData); //queued here, transmitted by can_process() on the next loop, looped back into the rx fifo
 				}
 			#endif
 		#endif
@@ -96,6 +127,12 @@ int main(void){
 			//	pauseUart(&huart2); //stop serial line between chips
 			//}
 			//sniffer function 24/08/2026 - END
+		#endif
+
+		//elm327 function 26/08/2026 - feeds the interpreter with the bytes arrived from usb. Only while a host is
+		//really there: with the mode off (or merely waiting) there is nothing on that port to read.
+		#if defined(C1baccable)
+			if(elm327_is_enabled()) cdc_process();
 		#endif
 
 		#if defined(ACT_AS_CANABLE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
@@ -131,8 +168,13 @@ int main(void){
 		#endif
 
 		#if defined(C1baccable)
+			//elm327 function 26/08/2026 - with a host actually talking to the interpreter the baccable steps
+			//aside completely: no UDS requests of its own on the bus, no traffic towards the other two chips
+			//(the serial line serves the bridge), no dashboard refresh. elm327Stop() puts everything back.
+			if(!elm327_is_enabled()){
 			processUART1();
 			C1baccablePeriodicCheck();
+			} //elm327 function 26/08/2026
 
 			//wake up each 14 seconds for 3,5sec+ tmpCounter , just for testing
 /*
@@ -207,6 +249,14 @@ int main(void){
 		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
 			uint8_t snifferCanFramesRead=0; //sniffer function 24/08/2026 - counts the frames drained in this iteration
 		#endif
+		//elm327 function 27/08/2026 - with the interpreter running the frames are read inside elm327_process()
+		//while it waits for the answer to a command: draining the fifo here would throw those answers away
+		//before it ever sees them. The bridge slave does the same inside elmlink_process(). On C1
+		//elm327_is_enabled() and elmlink_is_enabled() are always the same value (set together inside
+		//elm327_set_enabled()), so the one flag covers the master and both slaves.
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			if(elmlink_is_enabled()) goto skipCanRxProcessing;
+		#endif
 		while( is_can_msg_pending(CAN_RX_FIFO0)){ //sniffer function 24/08/2026 - was an if: with the sniffer on we empty the whole rx fifo
 			// If message received from bus, parse the frame
 			if (can_rx(&rx_msg_header, rx_msg_data) == HAL_OK){
@@ -247,6 +297,10 @@ int main(void){
 				break; //unchanged behaviour on ACT_AS_CANABLE: one frame per main loop iteration
 			#endif
 		}
+
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			skipCanRxProcessing: ; //elm327 function 26/08/2026 - the interpreter/bridge reads the fifo itself
+		#endif
 
 		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
 			if(snifferInUse) snifferFlush(); //sniffer function 24/08/2026 - non blocking, sends at most 64 bytes per iteration

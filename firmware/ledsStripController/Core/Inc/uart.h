@@ -86,6 +86,12 @@
 	void addToUARTSendQueue(const uint8_t *data, size_t length);
 	void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length);
 
+	//elm327 function 26/08/2026 - the diagnostic bridge bypasses the queue: see uart.c for why
+	#include "elmlink.h"
+	#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+		void uart_link_send(const uint8_t *frame, uint8_t len);
+	#endif
+
 	#if(defined(C1baccable) || defined (ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER))
 		void addToUART1SendQueue(const uint8_t *data, size_t length);
 		void addToUART1SendQueueDuringInterrupt(const uint8_t *data, size_t length);

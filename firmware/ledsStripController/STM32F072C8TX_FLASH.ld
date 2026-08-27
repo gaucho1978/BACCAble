@@ -45,8 +45,8 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
   RAM    (xrw) : ORIGIN = 0x20000000, LENGTH = 16K
-  FLASH  (rx)  : ORIGIN = 0x8000000,  LENGTH = 72K /* sniffer function 24/08/2026 - was 64K: code no longer fits C1 once the usb cdc stack becomes reachable */
-  EEPROM (rwx) : ORIGIN = 0x8012000,  LENGTH = 56K /* sniffer function 24/08/2026 - was 64K/0x8010000: only 3 of 32 pages were used here, LAST_PAGE_ADDRESS and siblings are unaffected since they are computed from the fixed FLASH_BANK1_END (0x0801FFFF), not from this origin */
+  FLASH  (rx)  : ORIGIN = 0x8000000,  LENGTH = 60K /* elm327 function 27/08/2026 - C1 (which needs the bigger region for elm327+sniffer+gateway) now links against STM32F072C8TX_FLASH_C1.ld instead, so this generic script only ever has to fit CANable (~25K), C2 (~34K) and BH (~35K): shrunk from 96K to free up room below for log storage */
+  EEPROM (rwx) : ORIGIN = 0x800F000,  LENGTH = 68K /* elm327 function 27/08/2026 - grown from 32K to 68K as FLASH shrank, same total bank size. The stored data lives in the LAST 3 pages (0x0801E800/F000/F800), addressed from the fixed FLASH_BANK1_END and so unaffected by this origin; the rest is free for log storage */
 }
 
 /* Sections */

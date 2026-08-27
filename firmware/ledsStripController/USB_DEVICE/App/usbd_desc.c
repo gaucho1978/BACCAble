@@ -86,6 +86,13 @@
 uint8_t usbdDescCdcModeSelected=0;
 //sniffer function 24/08/2026 - END
 
+//elm327 function 26/08/2026 - BEGIN
+//Same mechanism as the sniffer above, different name: the tools identify the interface by the AT@1 answer,
+//not by this string, so vid/pid stay the ones of the cdc build and only the shown name changes.
+#define USBD_PRODUCT_STRING_FS_CDC_ELM327		"ELM327-Emulator"
+uint8_t usbdDescElm327ModeSelected=0;
+//elm327 function 26/08/2026 - END
+
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
 /* USER CODE END PRIVATE_DEFINES */
@@ -269,6 +276,13 @@ uint8_t * USBD_FS_LangIDStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 uint8_t * USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
   UNUSED(speed);
+  //elm327 function 26/08/2026 - checked first: the two modes are mutually exclusive, but this one is the
+  //more specific of the two (it also sets usbdDescCdcModeSelected, to reuse the cdc pma layout on C2/BH)
+  if(usbdDescElm327ModeSelected)
+  {
+    USBD_GetString((uint8_t *)USBD_PRODUCT_STRING_FS_CDC_ELM327, USBD_StrDesc, length);
+    return USBD_StrDesc;
+  }
   //sniffer function 24/08/2026 - BEGIN
   if(usbdDescCdcModeSelected)
   {
@@ -292,6 +306,17 @@ void usbdDescSelectCdcMode(void)
   USBD_FS_DeviceDesc[11]=HIBYTE(USBD_PID_FS_CDC_SNIFFER);	/*idProduct*/
 }
 //sniffer function 24/08/2026 - END
+
+//elm327 function 26/08/2026 - BEGIN
+//Same as above but announcing the elm327 emulator. It reuses usbdDescSelectCdcMode() for the class/pid patch
+//(the tools recognise the interface from the AT@1 answer, not from vid/pid) and only adds the product name,
+//so the cdc endpoint layout selected in usbd_conf.c stays valid.
+void usbdDescSelectElm327Mode(void)
+{
+  usbdDescSelectCdcMode();
+  usbdDescElm327ModeSelected=1;
+}
+//elm327 function 26/08/2026 - END
 
 /**
   * @brief  Return the manufacturer string descriptor

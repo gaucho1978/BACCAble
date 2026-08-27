@@ -108,3 +108,60 @@ void MX_USB_DEVICE_Init(void){
 
 	//*/
 }
+
+//elm327 function 26/08/2026 - BEGIN
+#if defined(C1baccable)
+	// USB PORT BROUGHT UP AND TAKEN DOWN ON REQUEST (ELM327 mode chosen from the dashboard menu).
+	//
+	// While the mode is off the connector must stay silent: plugging the baccable into a computer must not
+	// make any diagnostic interface appear.
+	//
+	// Note why everything is redone here instead of using USBD_Start/USBD_Stop: USBD_Stop calls
+	// USB_StopDevice(), which leaves the CNTR register at (FRES | PDWN), i.e. the usb block in reset and
+	// powered down, and USBD_Start only ORs the interrupt bits back in without clearing PDWN. After one
+	// off/on cycle the port would never come back. A peripheral reset and a full init are required.
+	//
+	// Error_Handler() is never called here: it is a while(1) and would freeze the car. If anything fails the
+	// port simply does not come up and the baccable keeps working.
+	static uint8_t usbAttached = 0;
+
+	void usb_device_attach(void){
+		if(usbAttached) return;
+
+		usbdDescSelectElm327Mode(); //descriptors must answer as the elm327 emulator before the host enumerates us
+
+		__HAL_RCC_USB_FORCE_RESET();
+		HAL_Delay(2);
+		__HAL_RCC_USB_RELEASE_RESET();
+		HAL_Delay(10);
+
+		if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK) return;
+		if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_CDC) != USBD_OK) return;
+		if (USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS) != USBD_OK) return;
+		if (USBD_Start(&hUsbDeviceFS) != USBD_OK) return;
+
+		usbAttached = 1;
+	}
+
+	void usb_device_detach(void){
+		if(!usbAttached) return;
+		usbAttached = 0;
+
+		//release the D+ pull-up first and hold it low long enough for the host to register the removal:
+		//the teardown below resets and powers the core down but never clears BCDR_DPPU on its own, so
+		//without this the host would just see the device go quiet rather than actually detach.
+		if(hUsbDeviceFS.pData!=NULL){
+			HAL_PCD_DevDisconnect((PCD_HandleTypeDef*)hUsbDeviceFS.pData);
+			HAL_Delay(250);
+		}
+		//pClassData is only allocated once the host has sent SET_CONFIGURATION: with no host it is still NULL,
+		//and USBD_DeInit() would call pClass->DeInit() on it without any NULL check.
+		if(hUsbDeviceFS.pClassData!=NULL){
+			USBD_DeInit(&hUsbDeviceFS);
+		}else{
+			USBD_LL_Stop(&hUsbDeviceFS);
+			USBD_LL_DeInit(&hUsbDeviceFS);
+		}
+	}
+#endif
+//elm327 function 26/08/2026 - END

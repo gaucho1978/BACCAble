@@ -179,6 +179,15 @@ void cdc_process(void){
 		buf = UserRxBufferFS.buf[UserRxBufferFS.tail];
 		len = UserRxBufferFS.msglen[UserRxBufferFS.tail];
 
+		//elm327 function 27/08/2026 - we are running with interrupts disabled here, so the bytes are only
+		//queued into the interpreter's ring buffer: elm327_process() interprets them from the main loop.
+		//elm327_rx_byte() itself returns immediately while the mode is off. Excluded when this same cdc
+		//port is already spoken for by the SchizzaForte gateway, otherwise the same bytes would be handed
+		//to both interpreters at once.
+		#if defined(ACT_AS_ELM327) && !defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
+			for (uint32_t i = 0; i < len; i++) elm327_rx_byte(buf[i]);
+		#endif
+
 		#if defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
 			static uint8_t uart1_copy_buf[RX_BUF_SIZE];   // ✔️ buffer stabile
 			memcpy(uart1_copy_buf, buf, len);

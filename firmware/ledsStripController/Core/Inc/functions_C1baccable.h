@@ -11,6 +11,12 @@
 	#include "functions_Common.h"
 
 	void C1baccableInitCheck(void);
+
+	//elm327 function 26/08/2026 - lifecycle of the ELM327 mode, mirroring the sniffer one (see functions_C1baccable.c)
+	void elm327Start(void);
+	void elm327Stop(void);
+	void elm327UsbStartIfRequested(void);
+	void elm327CheckActivationTimeout(void);
 	void setSchizzaforteMap(uint8_t map);
 	void C1baccablePeriodicCheck(void);
 	uint8_t mapCommandNotApplied(void);

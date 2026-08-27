@@ -45,7 +45,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
   RAM    (xrw) : ORIGIN = 0x20000000, LENGTH = 16K
-  FLASH  (rx)  : ORIGIN = 0x8000000,  LENGTH = 70K
+  FLASH  (rx)  : ORIGIN = 0x8000000,  LENGTH = 96K /* elm327 function 26/08/2026 - was 70K: the elm327 interpreter and the diagnostic bridge do not fit. The stored settings live in the LAST 3 flash pages (0x0801E800/F000/F800), addressed from the fixed FLASH_BANK1_END, so growing the code region up to 0x8018000 does not reach them. Kept in step with STM32F072C8TX_FLASH.ld */
 }
 
 /* Sections */

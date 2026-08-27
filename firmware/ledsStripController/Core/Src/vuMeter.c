@@ -310,8 +310,11 @@ void setEuropeanFlag(){
 // leds), and we use the color_preset parameter (gear position) to change colors of the leds
 void vuMeterUpdate(float volume, uint8_t colorPreset ){
 	if (vuMeterInitState<50) return; //initialization still not completed
-	if (volume>24) volume=24.0;
-	currentVolume= (currentVolume * 9.0 / 10.0)+(volume / 10.0); //integrated in time on 10 samples (one message each ? boh!)
+	//the f suffixes matter: without them these constants are double, which promotes the whole expression to
+	//double precision and pulls the soft double library into the build (over 5kB of flash) for a calculation
+	//that gives the same result in single precision. //elm327 function 26/08/2026
+	if (volume>24) volume=24.0f;
+	currentVolume= (currentVolume * 9.0f / 10.0f)+(volume / 10.0f); //integrated in time on 10 samples (one message each ? boh!)
 
 	if(colorPreset!=currentColorPreset){
 		switch(colorPreset){

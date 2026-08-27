@@ -83,6 +83,7 @@
 		#include "vuMeter.h" //this is used to control led strip through usb pin
 		#include "lowConsume.h"
 		#include "uds_parameters.h"
+		#include "elm327.h" //elm327 function 26/08/2026
 		//extern uint32_t lastReceivedCanMsgTime;
 	#endif
 
@@ -158,7 +159,7 @@
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[30][DASHBOARD_MESSAGE_MAX_LENGTH];
+		extern uint8_t dashboard_setup_menu_array[31][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30]
 
 		//extern uint8_t params_setup_dashboardPageIndex;
 		//extern uint8_t shownParamsArray[240];
@@ -517,12 +518,36 @@
 		extern uint32_t snifferLastFlushTime;
 		extern USBD_HandleTypeDef hUsbDeviceFS;	//declared in usb_device.c, needed to check TxState before a non blocking send
 
-		#ifdef DEBUG_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected
+		#ifdef DEBUG_CAN_RX_SIMULATION
+			extern uint32_t debugSimulatedMsgLastInjectTime;
+			extern uint8_t debugSimulatedMsgByteCounter;
+		#endif
+		#ifdef DEBUG_START_SNIFFER //sniffer function 24/08/2026 - bench test with no vehicle connected
 			extern uint8_t  debugSnifferAutoStarted;	//0 until the 10 second auto-start has fired once
-			extern uint32_t debugSnifferLastInjectTime;
-			extern uint8_t  debugSnifferByteCounter;	//last byte of the injected message, increments every 100msec
+		#endif
+
+		#ifdef DEBUG_START_ELM327 // bench test with no vehicle connected
+			extern uint8_t  debugElm327AutoStarted;	//0 until the 10 second auto-start has fired once
 		#endif
 	#endif
+
+	//elm327 function 26/08/2026 - BEGIN
+	//Same three state lifecycle as the sniffer above, with one crucial difference: the sniffer works alongside
+	//the baccable, ELM327 replaces it (C1 stops decoding can and hands the inter chip serial line over to the
+	//diagnostic bridge, so the dashboard stops responding). So the suspension is tied to ActivationConfirmed,
+	//NOT to InUse: while we are only waiting for a host the baccable keeps working exactly as always, and if
+	//no host ever shows up we simply switch the usb back off and nobody notices.
+	//   elm327FunctionEnabled : preference, saved on flash (slot 32), toggled from the setup menu
+	//   elm327InUse           : usb is up and we are waiting for (or talking to) a host
+	//   elm327ActivationConfirmed : a host really enumerated us -> the interpreter is actually running
+	#if defined(C1baccable)
+		extern uint8_t  elm327FunctionEnabled;
+		extern uint8_t  elm327InUse;
+		extern uint32_t elm327ActivationTime;		//rolling "last time a host was seen", same meaning as snifferActivationTime
+		extern uint8_t  elm327ActivationConfirmed;
+		extern uint8_t  elm327UsbStartRequested;	//served by the main loop: bringing usb up blocks for some ms
+	#endif
+	//elm327 function 26/08/2026 - END
 	//sniffer function 24/08/2026 - END
 
 	extern uint8_t launch_assist_enabled; //if=1 assist is enabled and uses torque as trigget to release front brakes
