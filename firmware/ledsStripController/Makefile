@@ -25,7 +25,15 @@ TARGET = baccable-$(GIT_VERSION)
 BUILD_DIR = build
 
 # LD_SCRIPT: location of the linker script
+# elm327 function 27/08/2026 - C1 is the only flavor that needs the whole flash (sniffer, elm327 interpreter
+# and diagnostic bridge), so it links against its own script. The generic one, used by CANable, C2 and BH,
+# was shrunk to 60K to leave the rest of the bank free for log storage, and C1 no longer fits in it.
+# The IDE picks the script per build configuration (see .cproject); here the flavor arrives inside CFLAGS.
+ifneq (,$(findstring C1_FLAVOR,$(CFLAGS))$(findstring C1baccable,$(CFLAGS)))
+LD_SCRIPT = STM32F072C8TX_FLASH_C1.ld
+else
 LD_SCRIPT = STM32F072C8TX_FLASH.ld
+endif
 
 # USER_DEFS user defined macros
 USER_DEFS = -D HSI48_VALUE=48000000 -D HSE_VALUE=16000000
