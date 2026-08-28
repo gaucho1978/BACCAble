@@ -157,7 +157,7 @@ void processingStandardMessage(){
 			#if defined(C2baccable)
 				if(rx_msg_data[4]==0){ //wheels spin status is on byte4, 2 bits for each wheel (left and right front, then left and right rear) (0=steady, 1=forward, 2=backward, 3=undefined, tipically it means spinning)
 					carSteadyCounter++;//increase a counter
-					if(carSteadyCounter>200) carSteadyCounter=200; //car is steady since 200msec
+					if(carSteadyCounter>200) carSteadyCounter=200; //car is steady since 2000msec (0x116 arrives every 10msec)
 				}else{
 					carSteadyCounter=0; //reset counter
 				}
@@ -400,6 +400,12 @@ void processingStandardMessage(){
 		case 0x000003E7: //PDC Alarms status (front sensors beeping
 			// Test3
 			#if defined(C2baccable)
+				//park sensors mute 28/08/2026 - superseded by the simulated press of the park sensors button, see
+				//pdcMuteProcess() in functions_C2baccable.c: the car now switches its own function off instead of
+				//us rewriting the alarm it is sending. Left here, disabled, because the two are not equivalent -
+				//this one silenced the chime only and left the obstacle arcs on the display, the button takes the
+				//whole front function down, display included. Re-enable this block to go back to the old way.
+				/*
 				if(parkSensorsMuteFunctionEnabled){
 					if(carSteadyCounter>0){ //if wheel is not spinning
 						if(reverseGearActive==0){ //if rear gear is not engaged
@@ -419,6 +425,7 @@ void processingStandardMessage(){
 						}
 					}
 				}
+				*/ //park sensors mute 28/08/2026 - end of the superseded 3E7 substitution
 					//frontParkSensorsAlert== ((uint16_t)(rx_msg_data[1] & 0b00011111) << 4) | ((rx_msg_data[2] >> 4) & 0b00001111); 
 					//at the end bits 0-2 indicates front right obstacle (0 no obstascle, 1=far obstacle, 2=near obstacle)
 					//at the end bits 3-5 indicates front left  obstacle (0 no obstascle, 1=far obstacle, 2=near obstacle)
@@ -606,13 +613,16 @@ void processingStandardMessage(){
 			// @netzmark PDC DISABLE code (pdcAutoDisable)- begin
 			#if defined(C2baccable)
 				if(rx_msg_header.DLC >= 4){
-					parkSensorsFunctionStatus=rx_msg_data[1] && 0b00000011; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
-					parkSensorsLedStatus=(rx_msg_data[3]>>6) && 0b00000011; //0=off, 1=continuous, 2=blink
-					// if(parkSensorsLightsStatus==1) {
-					// 	pdc_state_disabled = 1; // LED ON - PDC disabled
-					// } else {
-					// 	pdc_state_disabled = 0; // LED OFF - PDC enabled
-					// }
+					//bitmask fix 28/08/2026 - both were &&, the logical AND: the 2 bit fields collapsed to 0 or 1,
+					//so parkSensorsFunctionStatus could never report 3 (ON disabled), the value that tells whether
+					//the driver (or we) switched the park sensors off.
+					parkSensorsFunctionStatus=rx_msg_data[1] & 0b00000011; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
+					parkSensorsLedStatus=(rx_msg_data[3]>>6) & 0b00000011; //0=off, 1=continuous, 2=blink
+					//park sensors mute 28/08/2026 - from here on parkSensorsFunctionStatus carries a value read from
+					//the car. Until this very first frame arrives it only carries its own initial 0, which happens to
+					//be the code for "off": acting on it before this point would mean believing the park sensors are
+					//already off at every power up, and pressing (or not pressing) the button by mistake.
+					pdcStateKnown=1;
 				}
 			#endif
 			break;

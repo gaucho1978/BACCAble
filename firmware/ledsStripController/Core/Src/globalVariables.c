@@ -426,7 +426,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t parkSensorsMuteFunctionEnabled=0;
 
 	//
-	uint8_t carSteadyCounter=0; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 200msec)
+	uint8_t carSteadyCounter=0; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 2000msec too (0x116 arrives every 10msec))
 #endif
 
 #if defined(C2baccable)
@@ -450,6 +450,16 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t reverseGearActive  =0; //0=not inserted, 1=rear gear engaged, 2=not used
 	uint8_t parkSensorsFunctionStatus=0; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
 	uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
+
+	//park sensors mute 28/08/2026 - see globalVariables.h for how these work together
+	uint8_t  pdcStateKnown=0;		//note it starts at 0 on purpose: 0 is also a valid parkSensorsFunctionStatus
+	uint8_t  pdcMutedByUs=0;
+	uint8_t  pdcPressPhase=0;
+	uint8_t  pdcPressAttempts=0;
+	uint32_t pdcPressTime=0;
+	uint32_t pdcLastPressTime=0;
+	uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
 
 	/*
 	// @netzmark PDC code - begin

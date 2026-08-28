@@ -7,6 +7,8 @@
 #include "functions_C2baccable.h"
 
 #if defined(C2baccable)
+	static void pdcMuteProcess(void); //park sensors mute 28/08/2026 - defined below C2PeriodicCheck(), which calls it
+
 	void C2PeriodicCheck(){
 		if(DynoStateMachine!=0xff){ //if state machine in progress
 			if(currentTime-DynoStateMachineLastUpdateTime> 4000){ //if older than 4 sec
@@ -108,7 +110,73 @@
 //		}
 		// @netzmark PDC DISABLE code - end
 */
+		pdcMuteProcess(); //park sensors mute 28/08/2026
 	}
+
+	//park sensors mute 28/08/2026 - BEGIN
+	//Silences the front obstacle chime while standing still by pressing the park sensors button for the driver
+	//(message 0x5B0), instead of rewriting the alarm message 0x3E7 the car is sending.
+	//
+	//The button is a toggle, so the whole point of what follows is that NOTHING here keeps its own idea of
+	//whether the sensors are on or off. parkSensorsFunctionStatus, decoded from 0x54A, is the truth; a press is
+	//sent only when it disagrees with what we want. A press that goes lost leaves the two still disagreeing and
+	//is simply sent again, and a press we did not make (the driver's own, or the car switching the sensors back
+	//on by itself above a certain speed) is seen for what it is at the next evaluation. There is no counter that
+	//can drift, which is what would otherwise make the function work backwards after a few stops and starts.
+	static void pdcMuteProcess(void){
+		//nothing to do, and nothing left behind to undo
+		if(parkSensorsMuteFunctionEnabled==0 && pdcMutedByUs==0 && pdcPressPhase==0) return;
+
+		//A press in progress: release the button once it has been held long enough. Nothing else is decided
+		//while we are here, so a second press can never be started on top of the first one.
+		if(pdcPressPhase==1){
+			if(currentTime-pdcPressTime>=TIMING__C2____PDC_BUTTON_PRESS_MS){
+				pdcMsgData[1]=0x00; //button released
+				can_tx(&pdcMsgHeader, pdcMsgData);
+				pdcPressPhase=0;
+				pdcLastPressTime=currentTime;
+			}
+			return;
+		}
+
+		if(pdcStateKnown==0) return; //0x54A never arrived: we do not know what the sensors are doing
+		//Leaves the car time to answer on 0x54A before anything is judged again, and keeps a car creeping in a
+		//queue from toggling the sensors over and over. It never delays the first press.
+		if(currentTime-pdcLastPressTime<TIMING__C2____PDC_MIN_INTERVAL_BETWEEN_PRESSES_MS) return;
+
+		//carSteadyCounter>1 is about 20msec of standing still (0x116 arrives every 10msec): the mute has to be
+		//quick, and it is the comparison below - not this threshold - that keeps the logic straight.
+		uint8_t wantSensorsOff = parkSensorsMuteFunctionEnabled && (carSteadyCounter>1) && (reverseGearActive==0);
+		uint8_t sensorsAreOff  = (parkSensorsFunctionStatus==0); //0=off, the state the button leaves them in
+
+		if(wantSensorsOff==sensorsAreOff){ //already as wanted
+			pdcPressAttempts=0;
+			//the sensors are on again and it is not because we asked: the driver pressed the button, or the car
+			//switched them back on by itself. Either way it is no longer our doing.
+			if(sensorsAreOff==0) pdcMutedByUs=0;
+			return;
+		}
+
+		//The park sensors are not reacting: stop insisting, but ONLY when what we are asking for is to switch them
+		//off. Giving up on switching them back on would leave them off while the car is moving, which is the one
+		//outcome this function must never produce - so that direction is retried for as long as it takes.
+		if(wantSensorsOff && pdcPressAttempts>=PDC_MAX_PRESS_ATTEMPTS) return;
+
+		//We only ever switch them off on our own initiative, and we only ever switch them back on if it was us
+		//who switched them off: a choice made by the driver is never undone here.
+		if(wantSensorsOff==0 && pdcMutedByUs==0) return;
+
+		pdcMsgData[1]=0x20; //button pressed (byte 1, bit 5)
+		can_tx(&pdcMsgHeader, pdcMsgData);
+		pdcPressPhase=1;
+		pdcPressTime=currentTime;
+		pdcPressAttempts++;
+		//Deliberately only ever SET here, never cleared: it is cleared above, once 0x54A confirms the sensors are
+		//really on again. Clearing it at this point would throw away the very flag that allows a failed switch on
+		//to be tried again, and the sensors would be left off.
+		if(wantSensorsOff) pdcMutedByUs=1;
+	}
+	//park sensors mute 28/08/2026 - END
 
 
 	void dynoToggle(){

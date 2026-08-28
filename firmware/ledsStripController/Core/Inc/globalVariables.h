@@ -54,6 +54,15 @@
 
 	#define TIMING__BH____PAUSE_BETWEEN_PARK_MIRROR_COMMANDS							2500	//msec
 
+	//park sensors mute 28/08/2026 - simulated press of the park sensors button (message 0x5B0)
+	#define TIMING__C2____PDC_BUTTON_PRESS_MS											50		//msec the button has to stay pressed to be taken
+	//One press per second at most. This is NOT what keeps the logic from inverting (the comparison against the
+	//real state does that): it covers the window between the press and the moment 0x54A reports the new state,
+	//and it keeps a car creeping in a queue - wheels flickering between steady and spinning - from toggling the
+	//park sensors continuously. The first press is never delayed by it.
+	#define TIMING__C2____PDC_MIN_INTERVAL_BETWEEN_PRESSES_MS							1000	//msec
+	#define PDC_MAX_PRESS_ATTEMPTS														3		//stop pressing if the park sensors never react
+
 #if defined(ACT_AS_CANABLE) ||  defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER) || defined(C1baccable) //sniffer function 24/08/2026 - C1 added: sniffer needs the usb cdc symbols
 	//#include "usbd_def.h"
 	#include "usb_device.h"
@@ -363,7 +372,7 @@
 		extern uint8_t parkSensorsMuteFunctionEnabled;
 
 		//
-		extern uint8_t carSteadyCounter; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 200msec)
+		extern uint8_t carSteadyCounter; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 2000msec too (0x116 arrives every 10msec))
 
 	#endif
 
@@ -388,6 +397,24 @@
 		extern uint8_t reverseGearActive;
 		extern uint8_t parkSensorsFunctionStatus;
 		extern uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
+
+		//park sensors mute 28/08/2026 - BEGIN
+		//The front obstacle chime is silenced by simulating a press of the park sensors button (message 0x5B0)
+		//instead of rewriting the alarm message 0x3E7: the car really switches its own function off, so the
+		//panel led keeps telling the driver the truth about what the sensors are doing.
+		//That button is a TOGGLE, so nothing here ever assumes what the state is: parkSensorsFunctionStatus,
+		//decoded from 0x54A, IS the state, and every press is decided by comparing it with the wanted one. A
+		//lost press simply leaves the two different and is retried; there is no internal count to get out of
+		//step, which is what would make the function invert itself after a few stops and starts.
+		extern uint8_t  pdcStateKnown;		//0 until the first 0x54A arrives: parkSensorsFunctionStatus means nothing before that
+		extern uint8_t  pdcMutedByUs;		//1 while the park sensors are off because WE switched them off
+		extern uint8_t  pdcPressPhase;		//0=nothing in progress, 1=button pressed, waiting to release it
+		extern uint8_t  pdcPressAttempts;	//consecutive presses the park sensors did not react to
+		extern uint32_t pdcPressTime;		//when the press in progress started
+		extern uint32_t pdcLastPressTime;	//when the last press ended
+		extern uint8_t pdcMsgData[8];
+		extern CAN_TxHeaderTypeDef pdcMsgHeader;
+		//park sensors mute 28/08/2026 - END
 			/*
 			// @netzmark PDC code - begin
 			#if defined(C2baccable)
