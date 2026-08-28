@@ -41,53 +41,13 @@ L'autore del progetto non si assume alcuna responsabilità per eventuali danni, 
 Si raccomanda di non impiegare questo progetto in applicazioni reali su veicoli.
 
 ## Scope
-This project is able to use the famous CANABLE (the cheapest can bus device on the market).
-Now it is also available a dedicated PCB board for the baccable, including, in a single board, 3 canable, more efficient power consumption and additional I/O for future espansion (You can find more details in the dedicated subparagraph).
-Current available functions are:
-- sniff on the can bus (useful for debug and exploit purposes)
-- decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
-- control a WS281x leds strip by means of the decoded can bus data, then lighting the leds strip according to accelerator pedal position and gear selection.
-- automatically disable start&stop car functionality
-- act as Immobilizer, by injecting can bus messages when required. It requires proxy alignment if you want Panic alarm too. 
-- show SHIFT warning indicator on dashboard when configurable motor rpm speed is overcomed. It works only if vehicle race mode is enabled.
-- add a menu to dashboard in order to show additional parameters like dpf occlusion percentage, oil pressure and performance statistics 
-- route native messages encapsulating them in uds parameter response, in order to make them available to diagnostic requests performed with OBD (you can get parameters commonly not available in OBD apps).  
-- enable and disable ESC and TC with left stalk button press (now it also shows race screen, avoiding the need of RDNA selector). It requires proxy alignment.
-- Dyno mode disables ESC,TC,ABS. All main controls are disabled and it works on stock giulia too.
-- ACC_VIRTUAL_PAD allows to enable Adaptive Cruise Control without the need to thange the wheel buttons pad: baccable will detect Cruise Control buttons press and it will send Adaptive Cruise Control messages to ECU.  It requires proxy alignment and some car prerequisites.
-- LOW consumption, used to reduce current consumption if using the new Baccable pcb board.
-- enable front brake from dashboard menu, in order to perform burnout start and launch assist based on torque force
-- disable 4wd, for giulias and stelvios with 4wd.
-- Disable seatbelt alarm
-- Disable odometer blink
-- Show Race Mask, shows race masks when using ESC/TC function - SOME BUG REMAINING: if screen flickers, disable this function on your Baccable
-- Park Mirror, when Rear Drive and direction indicator are inserted, moves rear view mirror to mirrors position recorded when function was enabled. It Works only on vehicles with encoders inside mirrors. Just try it to check compatibility with your car.
-- ACC Autostart, when veichle with ACC engaged stops behind the car in front of us, maintain active ACC (When ACC Autorestart function is disabled, ACC disengages after 5 seconds). There are 2 options: R (res button press is simulated to autorestart the veichle) and + (ACC speed up button press is simulated to autorestart the veichle).
-- Close windows, allows to close windows when you close the vehicle (different modes are expected to obtain, depending on single double or triple closure of the veichle, the closure of windows or to le them stay little bit opened.
-- Open windows, allows to open windows when you open the vehicle (different modes are expected to obtain, depending on single or double closure of the veichle, windows opening.
-- HAS Virtual Pad, allows to simulate the button HAS (Highway Assist System) without purchasing the proper wheel keypad. It requires proxy alignment and some car prerequisites.
-- QV Exhaust Valve, allows to force QV Exhaust Valve open, when you double tap on the Release button located on the gear shift lever.
+This project is able to communicate over can bus on Giulia and Stelvio veichles to implement many functions.
+It is available with custom COMPACT board, or, just for partial testing, can be made with canable or ucan boards with some limits. The custom board includes, in a single board, 3 ST chips, one for each can bus, efficient power consumption and optimized electromagnetic interference management against the veichle. It includes additional expansions ports for valves remote control, or any other remote control (in example automatic driveway  gate), dedicated connector for external pedal booster (schizzaForte is the Baccable pedal booster, installed on the accelerator, allows automatic map set according to the selected drive style.
+All functions and manuals are available on www.tr3ma.com/baccable 
+Baccable can be supplied already programmed, ready to plug in diagnostic port.
 
-Youtube overview video (1):
-
-[![BACCABLE 2025 overview - English version](https://img.youtube.com/vi/0mxV7nnITM4/0.jpg)](https://www.youtube.com/watch?v=0mxV7nnITM4)
-
-Youtube overview video (2):
-
-[![BACCABLE 2025 SUMMER camp](https://img.youtube.com/vi/hagr2j90Plg/0.jpg)](https://www.youtube.com/watch?v=hagr2j90Plg)
-
-
-## General Description
+## Developers info
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added all the functions described in the manuals.
-
-I developed a custom Board for Baccable, including 3 canable in a small factor form. You can find more details in the dedicated subparagraph.
-
-## manuals
-These are Available manuals:
-
-| <a href="manuals/Baccable_manual_EN.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual EN"></a> | <a href="manuals/Baccable_manual_IT.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual IT"></a> | <a href="manuals/Baccable_manual_FR.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual FR"></a> | <a href="manuals/Baccable_manual_ES.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual ES"></a> |
-| :---: | :---: | :---: | :---: |
-| [English Manual](manuals/Baccable_manual_EN.pdf) | [Italian Manual](manuals/Baccable_manual_IT.pdf) | [French Manual](manuals/Baccable_manual_FR.pdf) | [Spanish Manual](manuals/Baccable_manual_ES.pdf) |
 
 ## Folders content
 - Subfolder firmware contains the firmware
@@ -97,15 +57,6 @@ These are Available manuals:
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 - Subfolder hardware/newBaccableDedicatedPcb contains the new pcb for Baccable
 - Subfolder Manuals contains the manuals
-
-## Immobilizer functionality Notes
-Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: 
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/dHC6A2Jsalo/0.jpg)](https://www.youtube.com/watch?v=dHC6A2Jsalo)
-
-Note1: The Immobilizer functionality will not detect the thief if you power the BACCAble with a voltage available only when the panel is switched on. 
-
-Note2: Usb voltage is switched on as soon as the thief wakes up the rfhub. 
 
 ## DASHBOARD MENU functionality Notes
 Note1: If you are not using new baccable board, you will need to connect canable boards between them as shown in the following reference image:
@@ -117,7 +68,7 @@ This function, is enabled by default. If using the new Baccable PCB Board (it in
 
 ## Firmware notes
 
-Note1: The parameters array is customizable ,It resides in global_variabes.c. (search for uds_params_array array)
+Note1: The parameters array is customizable
 
 This is the structure of each element:
  
@@ -136,8 +87,6 @@ This is the structure of each element:
 - replyScaleOffset:				Once the parameter has been multiplied by replyScale, the result will be summed to replyScaleOffset
 - replyMeasurementUnit[7]:		It is a string appended at the end of the parameter string to define measurement unit. Too long strings will have measurement unit cutted and not shown on the dashboard.
 - replyDecimalDigits:			The parameter, after previous calculations, will be converted to string, and rounded to the specified number of decimal digits. 
-
-Note2: if you change number of elements in the array, you shall update total number of elements in the variable total_pages_in_dashboard_menu.
 
 ## BACCABLE Compile Instructions
 
