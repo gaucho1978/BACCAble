@@ -44,7 +44,7 @@ Si raccomanda di non impiegare questo progetto in applicazioni reali su veicoli.
 
 ## Scope
 Baccable is able to communicate over can bus on Giulia and Stelvio veichles to implement many functions.
-It is available with custom COMPACT board, or, just for partial testing, can be made with canable or ucan boards with some limits. The custom board includes, in a single board, 3 ST chips, one for each can bus, efficient power consumption and optimized electromagnetic interference management against the veichle. It includes additional expansions ports for valves remote control, or any other remote control (in example automatic driveway  gate), dedicated connector for external pedal booster (schizzaForte is the Baccable pedal booster, installed on the accelerator, allows automatic map set according to the selected drive style.
+It is available with custom COMPACT board, or, just for partial testing, can be made with canable or ucan boards with some limits. The custom board integrates, on a single board, 3 ST chips, one for each CAN bus, along with efficient power consumption and optimized electromagnetic interference management for the vehicle. It includes additional expansions ports for valves remote control, or any other remote control (in example automatic driveway  gate), dedicated connector for external pedal booster (schizzaForte is the Baccable pedal booster, installed on the accelerator, allows automatic map set according to the selected drive style).
 All functions and manuals are available on https://www.tr3ma.com/baccable 
 Baccable can be supplied already programmed, ready to plug in diagnostic port.
 If you want a ready made Baccable, required info are on https://www.tr3ma.com/baccable
