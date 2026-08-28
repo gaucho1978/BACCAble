@@ -161,20 +161,40 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	#endif
 
     if (huart->Instance == USART2) { //message from other baccable chips
-		//elm327 function 26/08/2026 - blocks of the diagnostic bridge use their own destinations (0x0E/0x0F/0x10),
-		//outside the range checked below, so they coexist with the normal traffic between the chips. Returns 1
-		//when it took the block; while the bridge is disarmed it always returns 0 and nothing changes here.
-		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
-			if(elmlink_on_uart_frame((const uint8_t*)rxBuffer)){
-				HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE);
-				return;
-			}
-		#endif
 		// evaluate received message
-    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=C1_C2_BusID)){ //if the received char indicates the beginning of a message
+		//elm327 function 28/08/2026 - the diagnostic bridge uses its own destinations (0x0E/0x0F/0x10), which
+		//continue the numbering past C1_C2_BusID (0x0D): the upper bound of the valid-start-byte check is raised
+		//to ELMLINK_TO_MASTER so the sync state machine assembles the whole 19-byte bridge frame before we touch
+		//it. The bridge block is handed to elmlink_on_uart_frame() only once the frame is complete (inside the
+		//syncObtained branch below): that is what makes the single-wire framing reliable.
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			#define UART_LAST_MSG_ID ELMLINK_TO_MASTER
+		#else
+			#define UART_LAST_MSG_ID C1_C2_BusID
+		#endif
+    	if((rxBuffer[0]>=C1BusID) && (rxBuffer[0]<=UART_LAST_MSG_ID)){ //if the received char indicates the beginning of a message
 			if(syncObtained){ //if we were sync, we can process the message, since the first char is correct and the sync indicates that te remaining part too is complete
 				#if defined(ACT_AS_CANABLE)
 					onboardLed_blue_on();
+				#endif
+
+				//elm327 function 28/08/2026 - a complete, synchronised bridge frame is now in rxBuffer. Return 2 means
+				//the checksum is wrong, i.e. the framing slipped by a byte on the single-wire line: drop the sync and
+				//re-acquire one byte at a time, otherwise the link stays desynced forever and every remote bus dies
+				//after the first busy session. Return 1 means the block was ours and is consumed here.
+				#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+				{
+					uint8_t br = elmlink_on_uart_frame((const uint8_t *)rxBuffer);
+					if(br == 2){
+						syncObtained = 0;
+						HAL_UART_Receive_IT(&huart2, &rxBuffer[0], 1);
+						return;
+					}
+					if(br){
+						HAL_UART_Receive_IT(&huart2, &rxBuffer[0], UART_BUFFER_SIZE);
+						return;
+					}
+				}
 				#endif
 
 				switch(rxBuffer[0]){
