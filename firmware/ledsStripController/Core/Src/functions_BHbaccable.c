@@ -117,7 +117,12 @@ exitReverseTime = 0; //Reset hysteresis timer while in Reverse
 					exitReverseTime = currentTime; //Capture the moment we switched to D
 
 					//if P gear is selected or engine shutted off, instantly return to operative position
-					if((currentGear==0x0D)||(currentRpmSpeed>400)) exitReverseTime=currentTime+10001;
+					//park mirror fix 28/08/2026 - was currentRpmSpeed>400, which is engine RUNNING (see the same
+					//test used as "only if engine on" further down): leaving reverse while driving therefore always
+					//took this instant return path, and the 10 second delay right below was never reachable.
+					//currentTime+10001 is how the instant return is obtained: both operands are uint32_t, so the
+					//currentTime-exitReverseTime below underflows to a huge value and fires on this same loop.
+					if((currentGear==0x0D)||(currentRpmSpeed<=400)) exitReverseTime=currentTime+10001;
 				}
 
 
