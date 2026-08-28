@@ -43,10 +43,13 @@ L'autore del progetto non si assume alcuna responsabilità per eventuali danni, 
 Si raccomanda di non impiegare questo progetto in applicazioni reali su veicoli.
 
 ## Scope
-This project is able to communicate over can bus on Giulia and Stelvio veichles to implement many functions.
+Baccable is able to communicate over can bus on Giulia and Stelvio veichles to implement many functions.
 It is available with custom COMPACT board, or, just for partial testing, can be made with canable or ucan boards with some limits. The custom board includes, in a single board, 3 ST chips, one for each can bus, efficient power consumption and optimized electromagnetic interference management against the veichle. It includes additional expansions ports for valves remote control, or any other remote control (in example automatic driveway  gate), dedicated connector for external pedal booster (schizzaForte is the Baccable pedal booster, installed on the accelerator, allows automatic map set according to the selected drive style.
-All functions and manuals are available on www.tr3ma.com/baccable 
+All functions and manuals are available on https://www.tr3ma.com/baccable 
 Baccable can be supplied already programmed, ready to plug in diagnostic port.
+If you want a ready made Baccable, required info are on https://www.tr3ma.com/baccable
+
+Following info are only for those using canable or ucan boards
 
 ## Developers info
 I started the development from the famous SLCAN firmware (https://github.com/normaldotcom/canable-fw), by porting it inside stm32Cube environment (I updated usb interface), then I added all the functions described in the manuals.
@@ -61,12 +64,10 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - Subfolder Manuals contains the manuals
 
 ## DASHBOARD MENU functionality Notes
-Note1: If you are not using new baccable board, you will need to connect canable boards between them as shown in the following reference image:
+
+For communication between ucan or canable, you will need to connect canable boards as shown in the following reference image:
 
 ![DashboardFunctionInterconnections](hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
-
-## Low Consume functionality Notes
-This function, is enabled by default. If using the new Baccable PCB Board (it includes 3 baccable), it will allow the master baccable, to reset the other 2 chips and to put can transiceivers in low consumption, by means of 2 dedicated GPIO. Low consume is activated after one minute without messages on the bus, and it will wake up as soon as messages start to flow again on the bus.
 
 ## Firmware notes
 
@@ -109,110 +110,30 @@ Default options are enough for anyone, but if any customization is required, it 
 
 See Manual, paragraph 1.11
 
-## The hardware using NEW BACCABLE BOARD
-The following video describes the new pcb board. 
-
-[![NewPcbBoard](https://img.youtube.com/vi/9D86vWsAVG8/0.jpg)](https://www.youtube.com/watch?v=9D86vWsAVG8)
-
-In the Box section you will find the box usable with this board.
-The board can be used directly connected to obd port (recent veichles requires SGW bypass to use obd devices) , or connected to the cabling by means of a cable with obd female connector on one side, and free wires on the other side, like the following one:
-
-![Interconnections](hardware/newBaccableDedicatedPcb/cable.jpg)
-
-available documentation about the new board hardware is the following:
-
-| <a href="hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="PCBA_3D_VIEWS"></a> | <a href="hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="SCHEMATIC"></a> |
-| :---: | :---: |
-| [PCBA_3D_VIEWS](hardware/newBaccableDedicatedPcb/BACCABLE_PCBA_3D_VIEWS.pdf) | [SCHEMATIC](hardware/newBaccableDedicatedPcb/BACCABLE_SCHEMATIC.pdf) |
-
-
-This is the connector pinout:
-
-![pinout](hardware/newBaccableDedicatedPcb/pinout.png)
-
-
 
 ## The hardware using CANABLE
-click on the following image to see the full hardware and interconnections video FOR CANABLE:
 
-[![Hardware interconnections](https://img.youtube.com/vi/-PcnPGzh-L0/0.jpg)](https://www.youtube.com/watch?v=-PcnPGzh-L0)
-
-Used hardware:
-
-Canable: This is the first I purchased (https://a.aliexpress.com/_Ev1yBz1 )
-Generally speaking I found these compatible devices (It is important that the chip is a stm32F072):
+I found these compatible devices (It is important that the chip is a stm32F072):
 
     - Original MKS Canable
     - Canable DykbRadio Nano
     - Fysect ucan
 	- candlelight small board ( [https://github.com/linux-automation/candleLightFD](https://github.com/linux-automation/candleLight/) )
 		
+## Compatible leds strip
 
-Leds Strip ws2811 ip65:  https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
+Leds Strip ws2811 ip65:  
 
-Amazon alternatives:
-Canable: https://amzn.to/3zzeNMq
-Leds strip: https://amzn.to/3W3TifJ
+https://www.ebay.it/itm/325563557492?mkcid=16&mkevt=1&mkrid=711-127632-2357-0&ssspo=wTLp3UyoQGK&sssrc=4429486&ssuid=zXyeQJ2cSnu&var=514593107226&widget_ver=artemis&media=COPY
 
-Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
-
-## The interconnections (CANABLE connections to the CAR)
-Since I found how to disable Start&Stop by only sending can message, the new required connections are just: CAN bus from canable to car (termination board on canable) and power supply from usb hub 5V usb to the usb port of the canable.
-If you enable the function to control a led strip, the usb data shall be connected to led strip, as defined in the old schematic here reported for reference.
-If you use the function to show params on dashboard, you have to add the wire between the 2 boards (watch the diagram in the DASHBOARD MENU functionality  section of this page.
-
-Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the  functionality to add parameters on the dashboard). 
-This is the old original wiring diagram:
-
-![Interconnections](hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
-
-Note: if you use immobilizer function, it is suggested to remove the voltage regulator that I used to convert the 12V to 5V and directly plug the CANABLE to the  5V usb voltage, taken from the connector of the USB interface in the central area, close to cigarette lighter socket. As alterinative for immobilizer,  use the DCDC connected to a 12V of the car always available, to ensure proper working of the immobilizer. Current consumption is low but I recommend to avoid a device always draining current from your battery.
-
-
-This is the obd pinout on Giulia/Stelvio:
-
-![Interconnections](hardware/system_interconnection/IMG_3511.jpeg)
-
-
-
-## The Box
-I developed different cases.
-
-I recently added a case for the new PCB board:
-
-![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview.jpg)
-
-![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview2.jpg)
-
-![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview3.jpg)
-
-![Box](hardware/box/baccable_lastest_case_for_new_PCB/preview4.jpg)
-
-
-Single case for original canable or DykbRadio Nano canable:
-
-![Box](hardware/box/canableDykbRadioNanoOnly/box.png)
-
-![Cap](hardware/box/canableDykbRadioNanoOnly/cap.png)
-
-Single case for Fysect Ucan:
-(uses same case of dual ucan with a dedicated cap)
-
-![Box with Cap](hardware/box/single_fysect_ucan/preview.png)
-
-Dual case for Fysect Ucan (to accomodate 2 ucan, each one connected to a different can bus):
-
-![dual box](hardware/box/dual_fysect_ucan/preview.png)
-
-Old box to accomodate DCDC, termination board and original canable or DykbRadio Nano canable.
-
-![Box](hardware/box/canableWithDcDcAndTB/box.png)
-
-![Cap](hardware/box/canableWithDcDcAndTB/cap.png)
-
+https://amzn.to/3W3TifJ
 
 ## Usage when configured to act as Canable (Sniffer)
-when configured as canable the firmware acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
+The new function SNIFFER inside Main Setup Menu no more requires to flash dedicated firmware for flashing. See manual.
+This section is left for reference.
+Old method to flash requires to flash the baccable with another firmware named CANABLE or ACT_AS_CANABLE that you can find in the compiled files.
+
+When flashed with CANABLE firmware, it acts as the classic SLCAN firmware. it means that you can use it with a pc equipped with savvycan tool, in order to sniff packets in the canbus. 
 With such configuration the device is seen by the pc as a virtual serial port implementing the following serial commands:
 
 - O - Open channel
