@@ -154,14 +154,8 @@ void processingStandardMessage(){
 			#endif
 			break;
 		case 0x00000116:
-			#if defined(C2baccable)
-				if(rx_msg_data[4]==0){ //wheels spin status is on byte4, 2 bits for each wheel (left and right front, then left and right rear) (0=steady, 1=forward, 2=backward, 3=undefined, tipically it means spinning)
-					carSteadyCounter++;//increase a counter
-					if(carSteadyCounter>200) carSteadyCounter=200; //car is steady since 2000msec (0x116 arrives every 10msec)
-				}else{
-					carSteadyCounter=0; //reset counter
-				}
-			#endif
+			//byte 0..3 = wheel rotation pulse counters (0=leftFront, 1=rightFront, 2=leftRear, 3=rightRear)
+			//byte 4 = rotation status, 2 bits per wheel (0=steady, 1=forward, 2=backward, 3=undefined/spinning)
 			break;
 		case 0x00000192:
 			#if defined(C1baccable)
@@ -205,7 +199,7 @@ void processingStandardMessage(){
 						}
 					}
 				// P button, located on the gear shift lever, is on byte 0, bit 0 and 1 (3=failure, 2=pressed, 1=not pressed,0=init)
-				// gear shift requested position is on byte 0 da bit 7 a bit 4.
+				// gear shift requested position is on byte 0 from bit 7 to bit 4.
 				// release button, located on the gear shift lever, is on byte 0, bit 3 and 2 (0=not pressed, 1=pressed)
 			#endif
 			break;
@@ -220,51 +214,35 @@ void processingStandardMessage(){
 			break;
 		case 0x000001F5:
 			#if defined(C2baccable)
-				/*
-				//PDC disable/enable logic
-				if(rx_msg_header.DLC >= 5){
+				//PDC disable/enable logic - byte 4 is the brake pressure
+				if(parkSensorsMuteFunctionEnabled && rx_msg_header.DLC >= 5){
 					uint8_t currentPressure = rx_msg_data[4];
-					// =========================================================================
-					// --- Automated PDC disabler marker reseted ---
-					// when Reverse gear is selected the car automatically enables disabled PDC system
-					// =========================================================================
+
+					//reverse gear: the car enables the PDC by itself, so the marker is no longer ours to hold
 					if (reverseGearActive == 1 && pdc_auto_disabled == 1) {
 						pdc_auto_disabled = 0;
 					}
-					// =========================================================================
-					// --- DISABLE PDC ---
-					// disable front PDC if the brake is pressed firmly enough and PDC system has detected something
--					// we don't do it when the Reverse gear is selected
-					// =========================================================================
+					//DISABLE: brake pressed firmly enough and the sensors are beeping. Not while in reverse.
 					else if(currentPressure > 0x10) {
 						if(reverseGearActive == 0 && pdc_is_beeping == 1 && pdc_auto_disabled == 0) {
-							if (pdc_state_disabled == 0) {
+							if (parkSensorsFunctionStatus != 0) { //park sensors currently on
 								requestToTogglePDC = 1;
 								pdc_auto_disabled = 1;
-								//onboardLed_blue_on();
 							}
 						}
 					}
-					// =========================================================================
-					// --- ENABLE PDC ---
-					// re-enable front PDC if the brake is released and the car is able to make any move
-					// =========================================================================
-					else if(currentPressure < 0x10) { //I have left this threshold here to have ability to react on other level than for disable
-						// we know it is not reverse Gear because of "if" of the function)
-						// --- ENABLE PDC (if it was disabled automatically and the PDC system is really OFF)
-						if(pdc_auto_disabled == 1 && pdc_state_disabled == 1) {
+					//ENABLE: brake released and the car is able to move again (not reverse, see the "if" above)
+					else if(currentPressure < 0x10) { //separate threshold, so it can be tuned apart from the disable one
+						if(pdc_auto_disabled == 1 && parkSensorsFunctionStatus == 0) { //we switched them off and they really are
 							requestToTogglePDC = 1;
 							pdc_auto_disabled = 0;
-							//onboardLed_blue_off();
 						}
-						// --- AUTOMATED PDC MARKER RESET (if the car enabled PDC automatically due to speed exceeding)
-						else if (pdc_auto_disabled == 1 && pdc_state_disabled == 0) {
+						//the car put them back on by itself (speed exceeded): just drop the marker
+						else if (pdc_auto_disabled == 1 && parkSensorsFunctionStatus != 0) {
 							pdc_auto_disabled = 0;
-							//onboardLed_blue_off();
 						}
 					}
 				}
-				*/
 			#endif
 			break;
 		case 0x0000001F7:
@@ -306,7 +284,7 @@ void processingStandardMessage(){
 		case 0x000002ED: //message to dashboard containing shift indicator
 			processingMessage0x000002ED();
 			break;
-		case 0x000002EE: // presente solo su BH can bus a 125kbps
+		case 0x000002EE: // only present on BH can bus at 125kbps
 			//this message contains the following radio buttons on the steering wheel:
 			//radio right button is on byte 3 bit6 (1=button pressed)
 			//radio left button on the steering wheel is on byte 3 bit4 (1=button pressed)
@@ -316,13 +294,13 @@ void processingStandardMessage(){
 			//volume change is on byte5 bit 7 and bit6 (1=volume was increased rotation, 2=volume decreased rotation, 3=volume mute button press) (then reading the entire byte we will see respectively, 0x40, 0x80,  0xC0)
 			//sample: uint8_t tmpCmd=rx_msg_data[5] >>6; //1=volume was increased rotation, 2=volume decreased rotation
 			break;
-		case 0x000002EF: //se e' il messaggio che contiene la marcia (id 2ef) e se é lungo 8 byte
+		case 0x000002EF: //if it is the message carrying the engaged gear (id 2ef) and if it is 8 bytes long
 			#if defined(C1baccable)
 				currentGear=rx_msg_data[0] & ~0xF;
 				nativeMaxHoldUpdate(6); //current gear
 
 				if(function_led_strip_controller_enabled==1){
-					scaledColorSet=scaleColorSet(currentGear); //prima di tutto azzeriamo i primi 4 bit meno significativi, poi scala il dato con la funzione scaleColorSet, per prepararlo per l'invio alla classe vumeter
+					scaledColorSet=scaleColorSet(currentGear); //first of all we clear the 4 least significant bits, then scaleColorSet() scales the value, to prepare it for the vumeter class
 					vuMeterUpdate(scaledVolume,scaledColorSet);
 				}
 
@@ -353,18 +331,18 @@ void processingStandardMessage(){
 			#if defined(BHbaccable)
 				/*
 				 msg from body to IPC and others:
-					0x354 : 0x10 0x00 0x00 0x00 (fendinebbia frontali)
-					0x354 : 0x04 0x00 0x00 0x00 (abbaglianti)
-					0x354 : 0x02 0x00 0x00 0x00 (luci di posizione sinistra)
-					0x354 : 0x00 0x80 0x00 0x00 (freccia sinistra)
-					0x354 : 0x00 0x40 0x00 0x00 (anabbaglianti)
-					0x354 : 0x00 0x04 0x00 0x00 (fendinebbia posteriori)
-					0x354 : 0x00 0x00 0x80 0x00 (luci di posizione destra)
-					0x354 : 0x00 0x00 0x20 0x00 (freccia destra)
+					0x354 : 0x10 0x00 0x00 0x00 (front fog lights)
+					0x354 : 0x04 0x00 0x00 0x00 (high beam)
+					0x354 : 0x02 0x00 0x00 0x00 (left position lights)
+					0x354 : 0x00 0x80 0x00 0x00 (left turn indicator)
+					0x354 : 0x00 0x40 0x00 0x00 (low beam)
+					0x354 : 0x00 0x04 0x00 0x00 (rear fog lights)
+					0x354 : 0x00 0x00 0x80 0x00 (right position lights)
+					0x354 : 0x00 0x00 0x20 0x00 (right turn indicator)
 					0x354 : 0x00 0x00 0x08 0x00 (automatic high beam)
 					0x354 : 0x00 0x00 0x04 0x00 (stop)
-					0x354 : 0x00 0x00 0x02 0x00 (attivazione frecce sinistra)
-					0x354 : 0x00 0x00 0x01 0x00 (attivazione frecce destra)
+					0x354 : 0x00 0x00 0x02 0x00 (left turn indicators activation)
+					0x354 : 0x00 0x00 0x01 0x00 (right turn indicators activation)
 					0x354 : 0x00 0x00 0x00 0x40 (automatic low beam)
 				 */
 
@@ -391,55 +369,20 @@ void processingStandardMessage(){
 		case 0x000003E6:
 			#if defined(BHbaccable)
 				currentRpmSpeed =
-				      ((uint32_t)(rx_msg_data[3] & 0b00000111) << 11)        /* bit [13:11] = 3 bit meno significativi di rx_msg_data[3] */
-				    | ((uint32_t)rx_msg_data[4] << 3)                         /* bit [10:3]  = tutti gli 8 bit di rx_msg_data[4] */
-				    | ((uint32_t)((rx_msg_data[5] >> 5) & 0b00000111));       /* bit [2:0]   = 3 bit più significativi di rx_msg_data[5] */
+			      ((uint32_t)(rx_msg_data[3] & 0b00000111) << 11)        /* bit [13:11] = 3 least significant bits of rx_msg_data[3] */
+			    | ((uint32_t)rx_msg_data[4] << 3)                         /* bit [10:3]  = all 8 bits of rx_msg_data[4] */
+			    | ((uint32_t)((rx_msg_data[5] >> 5) & 0b00000111));       /* bit [2:0]   = 3 most significant bits of rx_msg_data[5] */
 
 			#endif
 			break;
-		case 0x000003E7: //PDC Alarms status (front sensors beeping
-			// Test3
+		case 0x000003E7: //PDC Alarms status (front sensors beeping)
 			#if defined(C2baccable)
-				//park sensors mute 28/08/2026 - superseded by the simulated press of the park sensors button, see
-				//pdcMuteProcess() in functions_C2baccable.c: the car now switches its own function off instead of
-				//us rewriting the alarm it is sending. Left here, disabled, because the two are not equivalent -
-				//this one silenced the chime only and left the obstacle arcs on the display, the button takes the
-				//whole front function down, display included. Re-enable this block to go back to the old way.
-				/*
-				if(parkSensorsMuteFunctionEnabled){
-					if(carSteadyCounter>0){ //if wheel is not spinning
-						if(reverseGearActive==0){ //if rear gear is not engaged
-							if(rx_msg_header.DLC >= 6){ //if enough bytes in received message
-								rx_msg_data[4]=1; //mute the speakers
-								rx_msg_data[5]=0; //chime repetition rate
-								//test31
-								//rx_msg_data[0]=0; //disable visualization on display and disable central and left rear alert (arcs visualization)
-								//rx_msg_data[1]=0; //disable rear right alert, central front alert, part of left front alert (arcs visualization)
-								//rx_msg_data[2]=rx_msg_data[2] & 0b00001111; //disable front left and right alert (arcs visualization)
-								//if((rx_msg_data[4] & 0b00110000)>0){ //if front speaker is beeping
-								//	rx_msg_data[4]= rx_msg_data[4] & 0b11001111;
-								//	onboardLed_red_on();
-									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-								//}
+				//byte 0: 0x00 = no alarms, 0x40 = some alarm at the front (or reverse gear, not served while in R)
+				if(rx_msg_header.DLC >= 6){
+					pdc_is_beeping = (rx_msg_data[0] > 0x00) ? 1 : 0;
 							}
-						}
-					}
-				}
-				*/ //park sensors mute 28/08/2026 - end of the superseded 3E7 substitution
-					//frontParkSensorsAlert== ((uint16_t)(rx_msg_data[1] & 0b00011111) << 4) | ((rx_msg_data[2] >> 4) & 0b00001111); 
-					//at the end bits 0-2 indicates front right obstacle (0 no obstascle, 1=far obstacle, 2=near obstacle)
-					//at the end bits 3-5 indicates front left  obstacle (0 no obstascle, 1=far obstacle, 2=near obstacle)
-					//at the end bits 6-8 indicates front central obstacle (0 no obstascle, 1=far obstacle, 2...,3...,4...,5... 6=near obstacle)
-
-					// Check Byte 2 and Byte 3 for sound status (0x0A and 0xAA means total "silence" on PDC sensors)
-					//if(rx_msg_data[4] > 0x01 && rx_msg_data[5] > 0x00){ //typically 0x0100 means no alarms, and changes if some alarms at the front side
-					//if(rx_msg_data[0] > 0x00){ //typically 0x00 means no alarms, and 0x40 means some alarms (or Reverse gear but we don't serve it while R)
-					//	pdc_is_beeping = 1;
-					//	//onboardLed_red_on();
-					//} else {
-					//	pdc_is_beeping = 0;
-					//	//onboardLed_red_off();
-					//}
+				//byte 1 bits 4-0 + byte 2 bits 7-4 = obstacle distances: bits 0-2 front right, 3-5 front left,
+				//6-8 front central (0=none, 1=far, 2=near; the central one goes up to 6)
 			#endif
 
 			break;
@@ -460,13 +403,13 @@ void processingStandardMessage(){
 			#endif
 			break;
 
-		case 0x00000412: //se e' il messaggio che contiene la pressione dell'acceleratore (id 412), se é lungo 5 byte, se il valore é >51 (sfrutto le info ottenute sniffando)
+		case 0x00000412: //if it is the message carrying the accelerator pedal position (id 412), if it is 5 bytes long and the value is >51 (using the info obtained by sniffing)
 			#if defined(C1baccable)
 				if(function_led_strip_controller_enabled==1){
 					if( (rx_msg_header.DLC==5) && (rx_msg_data[3]>=51) ){
 						timeSinceLastReceivedAcceleratorMessage=currentTime;
 						ledsStripIsOn=1;
-						scaledVolume=scaleVolume(rx_msg_data[3]); //prendi il dato e scalalo, per prepararlo per l'invio alla classe vumeter
+						scaledVolume=scaleVolume(rx_msg_data[3]); //take the value and scale it, to prepare it for the vumeter class
 						vuMeterUpdate(scaledVolume,scaledColorSet);
 					}
 				}
@@ -610,19 +553,10 @@ void processingStandardMessage(){
 			//this is the test message to increase brightness: 0x88 0x20 0xC3 0x24 0x00 0x14 0x30 0x00
 			break;
 		case 0x0000054A: // Panel PDC Button/LED Status
-			// @netzmark PDC DISABLE code (pdcAutoDisable)- begin
 			#if defined(C2baccable)
 				if(rx_msg_header.DLC >= 4){
-					//bitmask fix 28/08/2026 - both were &&, the logical AND: the 2 bit fields collapsed to 0 or 1,
-					//so parkSensorsFunctionStatus could never report 3 (ON disabled), the value that tells whether
-					//the driver (or we) switched the park sensors off.
 					parkSensorsFunctionStatus=rx_msg_data[1] & 0b00000011; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
 					parkSensorsLedStatus=(rx_msg_data[3]>>6) & 0b00000011; //0=off, 1=continuous, 2=blink
-					//park sensors mute 28/08/2026 - from here on parkSensorsFunctionStatus carries a value read from
-					//the car. Until this very first frame arrives it only carries its own initial 0, which happens to
-					//be the code for "off": acting on it before this point would mean believing the park sensors are
-					//already off at every power up, and pressing (or not pressing) the button by mistake.
-					pdcStateKnown=1;
 				}
 			#endif
 			break;
@@ -729,26 +663,7 @@ void processingStandardMessage(){
 				}
 			#endif
 
-			//Front Park Sensors Status
-			#if defined(C2baccable)
-				/* Test2
-				if(parkSensorsMuteFunctionEnabled){
-					if(carSteadyCounter>0){ //if wheel is not spinning
-						if(reverseGearActive==0){ //if rear gear is not engaged
-							if(rx_msg_header.DLC >= 7){ //if enough bytes in received message
-								if((rx_msg_data[6] & 0b00000001)==0){ //if front sensors are enabled, just disable them (field name: PAMFrontActiveInDrive. 0=On, 1=Off)
-									onboardLed_red_on();
-									rx_msg_data[6]= rx_msg_data[6] | 0b00000001;
-									rx_msg_data[0]=(rx_msg_data[0] & 0b11111000) | 0b00000010 ;
-									can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, rx_msg_data); //transmit the modified packet
-								}
-							}
-						}
-					}
-				}
-				*/
-			#endif
-
+			//byte 6 bit 0 = PAMFrontActiveInDrive (0=On, 1=Off): front park sensors status
 			break;
 		case 0x000005A8:
 			//when in race, byte 4 bit 3-6 has value 6
@@ -905,17 +820,17 @@ void processingStandardMessage(){
 				Message 0x73E is a message on C2 bus from Body to adaptive front light module
 				It flows on C1 bus too, directed elsewhere
 				Period: 250msec
-					-0x73E : 0x10 0x00 0x00 0x00 (fendinebbia frontali solo su C2)
-					-0x73E : 0x04 0x00 0x00 0x00 (abbaglianti)
-					-0x73E : 0x02 0x00 0x00 0x00 (luce di parcheggio sinistra solo su C1)
-					-0x73E : 0x00 0x80 0x00 0x00 (freccia sinistra solo su C1)
-					-0x73E : 0x00 0x40 0x00 0x00 (anabbaglianti solo su C2)
-					-0x73E : 0x00 0x00 0x80 0x00 (luce di parcheggio destra solo su C1)
-					-0x73E : 0x00 0x00 0x20 0x00 (freccia destra solo su C1)
-					-0x73E : 0x00 0x00 0x08 0x00 (automatic high beam, solo su C2)
-					-0x73E : 0x00 0x00 0x04 0x00 (stop solo su C1)
-					-0x73E : 0x00 0x00 0x02 0x00 (attivazione frecce sinistra, solo su C2)
-					-0x73E : 0x00 0x00 0x01 0x00 (attivazione frecce destra, solo su C2)
+					-0x73E : 0x10 0x00 0x00 0x00 (front fog lights, on C2 only)
+					-0x73E : 0x04 0x00 0x00 0x00 (high beam)
+					-0x73E : 0x02 0x00 0x00 0x00 (left parking light, on C1 only)
+					-0x73E : 0x00 0x80 0x00 0x00 (left turn indicator, on C1 only)
+					-0x73E : 0x00 0x40 0x00 0x00 (low beam, on C2 only)
+					-0x73E : 0x00 0x00 0x80 0x00 (right parking light, on C1 only)
+					-0x73E : 0x00 0x00 0x20 0x00 (right turn indicator, on C1 only)
+					-0x73E : 0x00 0x00 0x08 0x00 (automatic high beam, on C2 only)
+					-0x73E : 0x00 0x00 0x04 0x00 (stop, on C1 only)
+					-0x73E : 0x00 0x00 0x02 0x00 (left turn indicators activation, on C2 only)
+					-0x73E : 0x00 0x00 0x01 0x00 (right turn indicators activation, on C2 only)
 
 			 */
 

@@ -1,13 +1,13 @@
 /*
  * elm327.c
  *
- *  Emulazione ELM327 (ISO 15765-4) sulla porta USB CDC della BACCAble.
- *  La velocita' del bus e' scelta in fase di compilazione (ELM327_BITRATE_KBPS).
- *  Vedi elm327.h per le note di porting dalla versione ESP32-C3.
+ *  ELM327 emulation (ISO 15765-4) on the USB CDC port of the BACCAble.
+ *  The bus speed is chosen at compile time (ELM327_BITRATE_KBPS).
+ *  See elm327.h for the porting notes from the ESP32-C3 version.
  *
- *  Flusso:
- *    cdc_process()   -> elm327_rx_byte()  (solo accodamento, gira con irq disabilitati)
- *    main loop       -> elm327_process()  (interpreta ed esegue un comando per volta)
+ *  Flow:
+ *    cdc_process()   -> elm327_rx_byte()  (queueing only, runs with irq disabled)
+ *    main loop       -> elm327_process()  (interprets and executes one command at a time)
  */
 
 #include "elm327.h"
@@ -19,18 +19,18 @@
 #include "usbd_cdc_if.h"
 #include "onboardLed.h"
 #if defined(C1baccable)
-	#include "usb_device.h"		//la porta USB si accende solo quando serve
+	#include "usb_device.h"		//the USB port is switched on only when needed
 #endif
 #if defined(C1baccable)
-	#include "elmlink.h"	//ponte verso i chip dei bus C2 e BH
+	#include "elmlink.h"	//bridge towards the chips of the C2 and BH buses
 #endif
 
-// ------------------------------------------------------------------ stato ELM327
+// ------------------------------------------------------------------ ELM327 state
 #ifdef ELM327_STRICT_ELM_DEFAULTS
-	#define ELM_DEF_ECHO	1	//eco attivo, come l'ELM327 originale dopo il reset
-	#define ELM_DEF_LF		0	//line feed spenti, come l'ELM327 originale dopo il reset
+	#define ELM_DEF_ECHO	1	//echo on, like the original ELM327 after the reset
+	#define ELM_DEF_LF		0	//line feeds off, like the original ELM327 after the reset
 	#ifndef ELM327_EXTRA_CR_BEFORE_PROMPT
-		#define ELM327_EXTRA_CR_BEFORE_PROMPT	//riga vuota prima del prompt
+		#define ELM327_EXTRA_CR_BEFORE_PROMPT	//empty line before the prompt
 	#endif
 #else
 	#define ELM_DEF_ECHO	0
@@ -41,52 +41,52 @@ static uint8_t  echoOn			= ELM_DEF_ECHO;
 static uint8_t  headersOn		= 0;
 static uint8_t  linefeedOn		= ELM_DEF_LF;
 static uint8_t  spacesOn		= 1;
-static uint8_t  cafOn			= 1;			//ATCAF0/1: 0 = modalita' raw, i frame passano cosi' come sono (AlfaOBD)
-static uint8_t  cfcOn			= 1;			//se 0 non inviamo il Flow Control all'ecu
-static uint8_t  adaptTiming		= 1;			//solo memorizzato (ATAT0/1/2)
-static uint32_t canFilterValue	= 0;			//filtro software impostato con ATCRA / ATCF
-static uint32_t canFilterMask	= 0;			//0 = accetta tutto (ATCM)
-static uint32_t canSendHeader	= 0x7DF;		//header di trasmissione (ATSH)
-static uint8_t  extendedHeader	= 0;			//1 = id a 29 bit
-static uint8_t  canPriority		= 0x18;			//ATCP, usato per completare gli id a 29 bit
+static uint8_t  cafOn			= 1;			//ATCAF0/1: 0 = raw mode, the frames go through exactly as they are (AlfaOBD)
+static uint8_t  cfcOn			= 1;			//if 0 we do not send the Flow Control to the ecu
+static uint8_t  adaptTiming		= 1;			//only stored (ATAT0/1/2)
+static uint32_t canFilterValue	= 0;			//software filter set with ATCRA / ATCF
+static uint32_t canFilterMask	= 0;			//0 = accept everything (ATCM)
+static uint32_t canSendHeader	= 0x7DF;		//transmission header (ATSH)
+static uint8_t  extendedHeader	= 0;			//1 = 29 bit id
+static uint8_t  canPriority		= 0x18;			//ATCP, used to complete the 29 bit ids
 static uint16_t cmdTimeout		= ELM327_DEFAULT_TIMEOUT_MS;
-static uint16_t rspTimeout		= ELM327_DEFAULT_TIMEOUT_MS;	//timeout del tentativo in corso
+static uint16_t rspTimeout		= ELM327_DEFAULT_TIMEOUT_MS;	//timeout of the attempt in progress
 
-//parametri programmabili usati da MultiECUScan per scegliere la velocita' del bus:
-//  PP 2C = opzioni del protocollo B (USER1)   PP 2D = divisore di baud rate del protocollo B
-//  PP 2E = opzioni del protocollo C (USER2)   PP 2F = divisore di baud rate del protocollo C
-//il bitrate vale 500 kbit/s diviso il divisore (01 = 500k, 02 = 250k, 04 = 125k, 0A = 50k).
+//programmable parameters used by MultiECUScan to choose the bus speed:
+//  PP 2C = options of protocol B (USER1)   PP 2D = baud rate divisor of protocol B
+//  PP 2E = options of protocol C (USER2)   PP 2F = baud rate divisor of protocol C
+//the bitrate is 500 kbit/s divided by the divisor (01 = 500k, 02 = 250k, 04 = 125k, 0A = 50k).
 static uint8_t  pp2C			= 0x00;
 static uint8_t  pp2D			= 0x01;
 static uint8_t  pp2E			= 0x00;
 static uint8_t  pp2F			= 0x01;
-static uint8_t  variableDlc		= 0;			//ATV1 = DLC pari ai byte utili, ATV0 = riempimento a 8
-static uint8_t  busOpen			= 0;			//il bus CAN si apre solo quando serve davvero
-static uint8_t  busDivisor		= 0;			//divisore richiesto (0 = quello della build)
+static uint8_t  variableDlc		= 0;			//ATV1 = DLC equal to the useful bytes, ATV0 = padding to 8
+static uint8_t  busOpen			= 0;			//the CAN bus is opened only when it is really needed
+static uint8_t  busDivisor		= 0;			//divisor requested (0 = the one of the build)
 
 #if defined(C1baccable)
-	// Modalita' accesa dal menu del quadro. Da spenta l'interprete e' inerte: nessun byte
-	// letto dall'USB, nessun frame sul bus, nessun messaggio sulla linea fra i chip.
+	// Mode switched on from the cluster menu. While off the interpreter is inert: no byte
+	// read from the USB, no frame on the bus, no message on the line between the chips.
 	static uint8_t  elmModeOn   = 0;
-	static uint32_t elmLastCmd  = 0;	//quando e' arrivato l'ultimo comando dal PC
+	static uint32_t elmLastCmd  = 0;	//when the last command from the PC arrived
 #endif
 
 #if defined(C1baccable)
-// --- gateway verso gli altri due chip (vedi elmlink.h) ---
-// Il bus attivo per la richiesta in corso e la memoria di quale centralina sta su quale
-// rete: la prima volta si prova, poi la risposta arriva sempre dal bus giusto.
+// --- gateway towards the other two chips (see elmlink.h) ---
+// The bus active for the request in progress and the memory of which ecu is on which
+// network: the first time it is tried, then the answer always comes from the right bus.
 static uint8_t  activeBus = ELMLINK_BUS_LOCAL;
 
-// La linea seriale e' un filo solo: chi trasmette non sente. La regola che elimina le
-// collisioni e' che IL MASTER NON TRASMETTE MAI finche' lo slave non ha detto "ho finito"
-// (blocco END) o non e' scaduto un margine piu' lungo del timeout dello slave. Prima i due
-// timeout erano identici: lo slave mandava END nell'istante esatto in cui il master
-// trasmetteva il comando successivo, un byte andava perso e il framing restava sfasato
-// per sempre (tutti i bus remoti morti dopo la prima sessione di scrittura).
-static uint8_t  remoteEnded = 1;		//1 = lo slave ha chiuso, la linea e' libera
+// The serial line is a single wire: whoever transmits does not hear. The rule that eliminates
+// the collisions is that THE MASTER NEVER TRANSMITS until the slave has said "I am done"
+// (END block) or a margin longer than the slave timeout has expired. Before, the two
+// timeouts were identical: the slave sent END at the exact instant the master
+// was transmitting the next command, a byte was lost and the framing stayed out of phase
+// forever (all the remote buses dead after the first writing session).
+static uint8_t  remoteEnded = 1;		//1 = the slave has closed, the line is free
 
-//l'ultima configurazione mandata allo slave: si rimanda solo se cambia (meno traffico,
-//meno finestre di collisione, comandi piu' rapidi)
+//the last configuration sent to the slave: it is sent again only if it changes (less traffic,
+//fewer collision windows, faster commands)
 static uint8_t  cfgSentBus = 0xFF;
 static uint32_t cfgSentFilter, cfgSentMask; static uint16_t cfgSentTimeout; static uint8_t cfgSentFc;
 
@@ -94,14 +94,14 @@ typedef struct { uint16_t addr; uint8_t bus; } elm_route_t;
 static elm_route_t routeCache[ELM327_ROUTE_CACHE_LEN];
 static uint8_t     routeCount = 0;
 
-//frame ricevuti dal bus remoto, in attesa di essere letti come se fossero locali
+//frames received from the remote bus, waiting to be read as if they were local
 typedef struct { uint32_t id; uint8_t ext; uint8_t dlc; uint8_t data[8]; } elm_remote_frame_t;
 static elm_remote_frame_t remoteFifo[ELM327_REMOTE_FIFO_LEN];
 static uint8_t remoteHead = 0, remoteTail = 0;
 
 static void elm_remote_push(uint32_t id, uint8_t ext, const uint8_t *d, uint8_t dlc){
 	uint8_t next = (uint8_t)((remoteHead + 1) % ELM327_REMOTE_FIFO_LEN);
-	if(next == remoteTail) return;	//coda piena: si scarta
+	if(next == remoteTail) return;	//queue full: it is discarded
 	remoteFifo[remoteHead].id  = id;
 	remoteFifo[remoteHead].ext = ext;
 	remoteFifo[remoteHead].dlc = (dlc > 8) ? 8 : dlc;
@@ -111,7 +111,7 @@ static void elm_remote_push(uint32_t id, uint8_t ext, const uint8_t *d, uint8_t 
 
 static void elm_remote_clear(void){ remoteHead = remoteTail = 0; }
 
-//indirizzo della centralina interrogata: ultimo byte utile dell'header di trasmissione
+//address of the ecu being queried: last useful byte of the transmission header
 static uint16_t elm_target_addr(void){
 	if(extendedHeader) return (uint16_t)((canSendHeader >> 8) & 0xFF);
 	return (uint16_t)(canSendHeader & 0x7FF);
@@ -135,9 +135,9 @@ static void elm_route_store(uint16_t addr, uint8_t bus){
 	}
 }
 
-// Ordine in cui provare i bus. Se la centralina e' gia' nota si va diretti; altrimenti si
-// parte dal bus locale, a meno che il programma non abbia chiesto una velocita' diversa da
-// 500k: in quel caso la rete e' quella carrozzeria (BH), che gira a 125 kbit/s.
+// Order in which to try the buses. If the ecu is already known we go straight to it; otherwise
+// we start from the local bus, unless the program has asked for a speed different from
+// 500k: in that case the network is the body one (BH), which runs at 125 kbit/s.
 static uint8_t elm_bus_order(uint8_t *order){
 	uint8_t known;
 	if(elm_route_lookup(elm_target_addr(), &known)){
@@ -153,20 +153,20 @@ static uint8_t elm_bus_order(uint8_t *order){
 }
 #endif //C1baccable
 
-//protocollo dichiarato: l'ELM327 vero risponde ad ATDP/ATDPN con quello selezionato con ATSP.
-//Rispondere sempre "AB" (protocollo utente) manda in confusione i tool tipo AlfaOBD.
+//declared protocol: the real ELM327 answers ATDP/ATDPN with the one selected with ATSP.
+//Always answering "AB" (user protocol) confuses tools like AlfaOBD.
 static uint8_t  protoNum		= 6;			//6 = ISO 15765-4 (CAN 11/500)
-static uint8_t  protoAuto		= 1;			//1 = ricerca automatica ("A" davanti al numero)
-static uint32_t lastRxByteTime	= 0;			//per scartare un comando rimasto a meta'
+static uint8_t  protoAuto		= 1;			//1 = automatic search ("A" in front of the number)
+static uint32_t lastRxByteTime	= 0;			//to discard a command left half way
 
-//flow control configurabile (ATFCSH / ATFCSD / ATFCSM), usato da AlfaOBD
-static uint32_t fcHeader		= 0;			//0 = usa l'header di trasmissione corrente
+//configurable flow control (ATFCSH / ATFCSD / ATFCSM), used by AlfaOBD
+static uint32_t fcHeader		= 0;			//0 = use the current transmission header
 static uint8_t  fcHeaderExt		= 0;
 static uint8_t  fcData[8]		= {0x30, 0x00, 0x00, 0, 0, 0, 0, 0};
 static uint8_t  fcDataLen		= 3;
-static uint8_t  fcMode			= 0;			//0 = automatico, 1/2 = usa header e dati impostati
+static uint8_t  fcMode			= 0;			//0 = automatic, 1/2 = use the header and data set above
 
-// ------------------------------------------------------------------ buffer ingresso usb
+// ------------------------------------------------------------------ usb input buffer
 static volatile uint8_t  rxRing[ELM327_RX_RING_LEN];
 static volatile uint16_t rxHead = 0;
 static volatile uint16_t rxTail = 0;
@@ -174,18 +174,18 @@ static volatile uint16_t rxTail = 0;
 static char    cmdBuf[ELM327_CMD_BUF_LEN];
 static uint8_t cmdLen = 0;
 
-// ------------------------------------------------------------------ buffer uscita usb
-// CDC_Transmit_FS() scarta i pacchetti piu' lunghi di TX_BUF_SIZE, quindi l'output
-// viene accumulato in un blocco piccolo e spedito appena si riempie.
+// ------------------------------------------------------------------ usb output buffer
+// CDC_Transmit_FS() drops packets longer than TX_BUF_SIZE, so the output
+// is accumulated in a small chunk and sent as soon as it fills up.
 static uint8_t txChunk[ELM327_TX_CHUNK_LEN];
 static uint8_t txChunkLen = 0;
 
-// ------------------------------------------------------------------ registratore (ATLOG)
+// ------------------------------------------------------------------ recorder (ATLOG)
 #ifndef ELM327_TRACE_DISABLE
 static char     traceBuf[ELM327_TRACE_LEN];
 static uint16_t traceHead    = 0;
 static uint8_t  traceWrapped = 0;
-static uint8_t  traceDumping = 0;	//mentre stampiamo il registro non registriamo l'uscita
+static uint8_t  traceDumping = 0;	//while we print the log we do not record the output
 
 static void trace_char(char c){
 	if(traceDumping) return;
@@ -202,9 +202,9 @@ static void trace_str(const char *s){
 
 static void elm_flush(void){
 	if(!txChunkLen) return;
-	// CDC_Transmit_FS aspetta al massimo 10ms e poi restituisce USBD_BUSY scartando i dati:
-	// succede quando l'host ha appena aperto la porta e non sta ancora leggendo (e' il motivo
-	// per cui i primi comandi dopo la connessione potevano andare persi). Qui ritentiamo.
+	// CDC_Transmit_FS waits at most 10ms and then returns USBD_BUSY discarding the data:
+	// it happens when the host has just opened the port and is not reading yet (it is the reason
+	// why the first commands after the connection could be lost). Here we retry.
 	for(uint8_t attempt = 0; attempt < 5; attempt++){
 		if(CDC_Transmit_FS(txChunk, txChunkLen) == USBD_OK) break;
 	}
@@ -227,7 +227,7 @@ static void elm_puthex(uint8_t v){
 	elm_putc(h[v & 0x0F]);
 }
 
-//fine riga secondo l'impostazione ATL0/ATL1
+//end of line according to the ATL0/ATL1 setting
 static void elm_eol(void){
 	elm_putc('\r');
 	if(linefeedOn) elm_putc('\n');
@@ -265,16 +265,16 @@ static uint32_t elm_parse_hex(const char *s){
 	return v;
 }
 
-// ------------------------------------------------------------------ helper CAN
-// can_tx() di BACCAble accoda soltanto: qui accodiamo e poi "pompiamo" la coda
-// finche' il frame non e' realmente uscito (o scade il timeout).
-static void elm_bus_open(void);	//dichiarazione anticipata: il bus si apre alla prima richiesta
+// ------------------------------------------------------------------ CAN helper
+// can_tx() of BACCAble only queues: here we queue and then "pump" the queue
+// until the frame has really gone out (or the timeout expires).
+static void elm_bus_open(void);	//forward declaration: the bus is opened at the first request
 
 static uint8_t elm_can_send_frame_id(const uint8_t *bytes, uint8_t len, uint32_t id, uint8_t ext){
 	CAN_TxHeaderTypeDef h;
 	uint8_t data[8];
 
-	elm_bus_open();	//prima trasmissione: entriamo sul bus adesso, non all'accensione
+	elm_bus_open();	//first transmission: we join the bus now, not at power on
 
 	if(len > 8) len = 8;
 	memset(data, 0, sizeof(data));
@@ -295,20 +295,20 @@ static uint8_t elm_can_send_frame_id(const uint8_t *bytes, uint8_t len, uint32_t
 
 	if(can_tx(&h, data) != HAL_OK) return 0;
 
-	//svuota la coda di trasmissione (can_process invia un frame per chiamata)
+	//empties the transmission queue (can_process sends one frame per call)
 	uint32_t t0 = currentTime;
 	while(currentTime - t0 < 20){
 		can_process();
 		if(HAL_CAN_GetTxMailboxesFreeLevel(can_gethandle()) == 3) return 1;
 	}
-	return 1; //passati i 20ms lo consideriamo comunque partito: il timeout risposta fara' il resto
+	return 1; //after the 20ms we consider it gone anyway: the response timeout will do the rest
 }
 
-//invia un frame sul bus attivo: quello locale oppure, tramite l'altro chip, C2 o BH
+//sends a frame on the active bus: the local one or, through the other chip, C2 or BH
 static uint8_t elm_bus_send(const uint8_t *bytes, uint8_t len, uint32_t id, uint8_t ext){
 	#if defined(C1baccable)
 		if(activeBus != ELMLINK_BUS_LOCAL){
-			//non si aspetta qui: le risposte arrivano nel ciclo di attesa, una per una
+			//we do not wait here: the answers arrive in the waiting loop, one by one
 			remoteEnded = 0;
 			return elmlink_send_request(activeBus, id, ext, bytes, len);
 		}
@@ -316,23 +316,23 @@ static uint8_t elm_bus_send(const uint8_t *bytes, uint8_t len, uint32_t id, uint
 	return elm_can_send_frame_id(bytes, len, id, ext);
 }
 
-// Fa girare il trasporto durante le attese: sul bus locale svuota la coda di trasmissione,
-// su bus remoto raccoglie i frame che lo slave manda indietro. In entrambi i casi la
-// risposta viene poi stampata al PC frame per frame, appena disponibile: e' il motivo per
-// cui le scritture lunghe non vanno piu' in timeout sul programma.
+// Keeps the transport running during the waits: on the local bus it empties the transmission
+// queue, on a remote bus it collects the frames the slave sends back. In both cases the
+// answer is then printed to the PC frame by frame, as soon as it is available: it is the reason
+// why the long writes no longer time out on the program.
 static void elm_bus_pump(void){
 	#if defined(C1baccable)
 		if(activeBus != ELMLINK_BUS_LOCAL){
-			if(elmlink_poll(elm_remote_push)) remoteEnded = 1;	//lo slave ha chiuso
+			if(elmlink_poll(elm_remote_push)) remoteEnded = 1;	//the slave has closed
 			return;
 		}
 	#endif
 	can_process();
 }
 
-// Timeout di attesa effettivo: sul bus remoto si aggiunge il margine del trasporto
-// seriale, cosi' il master aspetta SEMPRE piu' a lungo dello slave e l'END arriva
-// quando la linea e' libera (normalmente l'attesa finisce molto prima, proprio all'END).
+// Effective waiting timeout: on a remote bus the margin of the serial transport is added,
+// so the master ALWAYS waits longer than the slave and the END arrives
+// when the line is free (normally the wait ends much earlier, right at the END).
 static uint16_t elm_wait_budget(void){
 	#if defined(C1baccable)
 		if(activeBus != ELMLINK_BUS_LOCAL) return (uint16_t)(rspTimeout + ELMLINK_DEFAULT_TIMEOUT_MS);
@@ -340,7 +340,7 @@ static uint16_t elm_wait_budget(void){
 	return rspTimeout;
 }
 
-//1 = lo slave ha detto END: non arrivera' piu' niente, inutile aspettare
+//1 = the slave has said END: nothing else will arrive, no point in waiting
 static uint8_t elm_remote_finished(void){
 	#if defined(C1baccable)
 		return (activeBus != ELMLINK_BUS_LOCAL && remoteEnded) ? 1 : 0;
@@ -349,35 +349,35 @@ static uint8_t elm_remote_finished(void){
 }
 
 #if defined(C1baccable)
-// Prima di restituire il controllo (e quindi prima che MES mandi il comando successivo)
-// si aspetta l'END dello slave: e' il "via libera" che rende la linea half-duplex sicura.
+// Before giving control back (and therefore before MES sends the next command)
+// the END of the slave is waited for: it is the "all clear" that makes the half-duplex line safe.
 static void elm_remote_drain(void){
 	if(activeBus == ELMLINK_BUS_LOCAL || remoteEnded) return;
-	// Lo slave puo' legittimamente restare armato fino al timeout che gli abbiamo
-	// comunicato nella CFG (rspTimeout: con ATSTFE sono ~1016 ms): il drain deve coprire
-	// TUTTO quel tempo, non un margine fisso. Un margine piu' corto significava tornare a
-	// trasmettere con lo slave ancora armato: la collisione che uccideva la linea.
+	// The slave can legitimately stay armed until the timeout we told it
+	// in the CFG (rspTimeout: with ATSTFE that is ~1016 ms): the drain must cover
+	// ALL that time, not a fixed margin. A shorter margin meant going back to
+	// transmitting with the slave still armed: the collision that killed the line.
 	uint32_t t0 = currentTime;
 	while(currentTime - t0 < (uint32_t)rspTimeout + ELMLINK_DEFAULT_TIMEOUT_MS){
 		if(elmlink_poll(elm_remote_push)){ remoteEnded = 1; break; }
 	}
-	remoteEnded = 1;	//se l'END si e' perso, il margine e' comunque passato: linea libera
+	remoteEnded = 1;	//if the END was lost, the margin has passed anyway: line free
 }
 #else
 	#define elm_remote_drain()	do{}while(0)
 #endif
 
-//invia un frame da 8 byte con l'header di trasmissione corrente (ATSH)
+//sends an 8 byte frame with the current transmission header (ATSH)
 static uint8_t elm_can_send_frame(const uint8_t *data8){
 	return elm_bus_send(data8, 8, canSendHeader, extendedHeader);
 }
 
-// Il bus resta chiuso finche' un programma non chiede davvero qualcosa: alimentare la
-// scheda non deve mai disturbare le linee CAN dell'auto (un nodo alla velocita' sbagliata
-// le riempie di error frame). E' anche il comportamento dell'ELM327 originale.
-// Con la modalita' selezionabile dal quadro il bus del C1 NON e' nostro: lo tiene aperto la
-// BACCAble per il suo lavoro normale (500 kbit/s, la velocita' giusta per questa rete), e
-// chiuderlo qui vorrebbe dire spegnere il cruscotto ad ogni ATZ. Teniamo solo il conto.
+// The bus stays closed until a program really asks for something: powering the
+// board must never disturb the CAN lines of the car (a node at the wrong speed
+// fills them with error frames). It is also the behaviour of the original ELM327.
+// With the mode selectable from the cluster the C1 bus is NOT ours: the BACCAble keeps it
+// open for its normal work (500 kbit/s, the right speed for this network), and
+// closing it here would mean switching the dashboard off at every ATZ. We only keep count.
 static void elm_bus_open(void){
 	if(busOpen) return;
 	#if !defined(C1baccable)
@@ -394,25 +394,25 @@ static void elm_bus_close(void){
 	busOpen = 0;
 }
 
-// Cambia la velocita' del bus seguendo il divisore dei parametri programmabili:
-// bitrate = 500 kbit/s / divisore, cioe' prescaler = 12 * divisore (48MHz / (presc * 8)).
-// Se il bus e' gia' aperto viene chiuso e riaperto, altrimenti si prepara e basta.
+// Changes the bus speed following the divisor of the programmable parameters:
+// bitrate = 500 kbit/s / divisor, that is prescaler = 12 * divisor (48MHz / (presc * 8)).
+// If the bus is already open it is closed and reopened, otherwise it is just prepared.
 static void elm_apply_bitrate_divisor(uint8_t divisor){
 	if(divisor == 0) divisor = 1;
-	busDivisor = divisor;	//serve comunque a capire quale bus vuole il programma
+	busDivisor = divisor;	//it is needed anyway to understand which bus the program wants
 
 	#if defined(C1baccable)
-		// CON IL GATEWAY IL BUS LOCALE NON SI TOCCA.
-		// Ogni chip sta su una rete con la sua velocita' fissa (C1 e C2 a 500 kbit/s, BH a
-		// 125): qui il divisore chiesto dal programma dice QUALE rete vuole, non a che
-		// velocita' riconfigurare la nostra. Riconfigurando il bus locale a 125 kbit/s
-		// mentre la rete C1 gira a 500, il nostro nodo comincia a sparare error frame sulla
-		// rete dell'auto e va in bus-off: da quel momento non risponde piu' niente, nemmeno
-		// le centraline sui bus C. Era il motivo per cui dopo la prima centralina di
-		// carrozzeria falliva tutto il resto della sessione.
+		// WITH THE GATEWAY THE LOCAL BUS IS NOT TOUCHED.
+		// Each chip is on a network with its own fixed speed (C1 and C2 at 500 kbit/s, BH at
+		// 125): here the divisor asked for by the program says WHICH network it wants, not at what
+		// speed to reconfigure ours. Reconfiguring the local bus at 125 kbit/s
+		// while the C1 network runs at 500, our node starts firing error frames on the
+		// network of the car and goes bus-off: from that moment nothing answers any more, not even
+		// the ecus on the C buses. It was the reason why after the first body
+		// ecu all the rest of the session failed.
 		return;
 	#else
-		//senza gateway un solo chip serve qualsiasi velocita': qui il cambio si fa davvero
+		//without the gateway a single chip serves any speed: here the change is really done
 		uint8_t wasOpen = busOpen;
 		elm_bus_close();
 		can_set_prescaler((uint32_t)12 * divisor);
@@ -420,16 +420,16 @@ static void elm_apply_bitrate_divisor(uint8_t divisor){
 	#endif
 }
 
-//true se l'id ricevuto passa il filtro impostato con ATCRA
+//true if the received id passes the filter set with ATCRA
 static uint8_t elm_filter_pass(const CAN_RxHeaderTypeDef *h){
 	if(canFilterMask == 0) return 1;
 	uint32_t id = (h->IDE == CAN_ID_EXT) ? h->ExtId : h->StdId;
 	return ((id & canFilterMask) == (canFilterValue & canFilterMask)) ? 1 : 0;
 }
 
-//riceve un frame rispettando il filtro. 1 = frame disponibile.
-//Se la richiesta e' partita verso un bus remoto, i frame arrivano dalla coda riempita
-//dalle risposte dell'altro chip, e tutto il resto del codice non se ne accorge.
+//receives a frame respecting the filter. 1 = frame available.
+//If the request went out towards a remote bus, the frames come from the queue filled
+//by the answers of the other chip, and all the rest of the code does not notice.
 static uint8_t elm_can_get_frame(CAN_RxHeaderTypeDef *h, uint8_t *d){
 	#if defined(C1baccable)
 		if(activeBus != ELMLINK_BUS_LOCAL){
@@ -457,13 +457,13 @@ static uint8_t elm_can_get_frame(CAN_RxHeaderTypeDef *h, uint8_t *d){
 	return 0;
 }
 
-//stampa l'header della risposta. Con ATS1 i byte sono separati da spazio (e c'e' uno
-//spazio anche prima dei dati), con ATS0 non c'e' nessun separatore, come l'ELM327 vero.
+//prints the header of the answer. With ATS1 the bytes are separated by a space (and there is a
+//space before the data too), with ATS0 there is no separator, like the real ELM327.
 static void elm_print_header(const CAN_RxHeaderTypeDef *h){
 	if(!headersOn) return;
 
 	#if defined(ELM327_HEADER_ALWAYS_SPACED)
-		const uint8_t sep = 1;	//comportamento della prima versione (spazi anche con ATS0)
+		const uint8_t sep = 1;	//behaviour of the first version (spaces even with ATS0)
 	#else
 		const uint8_t sep = spacesOn;
 	#endif
@@ -487,11 +487,11 @@ static void elm_print_header(const CAN_RxHeaderTypeDef *h){
 	}
 }
 
-//invia il Flow Control all'ecu: di default ContinueToSend / BlockSize 0 / STmin 0,
-//oppure header e dati impostati con ATFCSH / ATFCSD (ATFCSM diverso da 0).
+//sends the Flow Control to the ecu: by default ContinueToSend / BlockSize 0 / STmin 0,
+//or the header and data set with ATFCSH / ATFCSD (ATFCSM different from 0).
 static void elm_send_flow_control(void){
 	#if defined(C1baccable)
-		//su bus remoto ci pensa lo slave, appena vede passare il primo frame
+		//on a remote bus the slave takes care of it, as soon as it sees the first frame go by
 		if(activeBus != ELMLINK_BUS_LOCAL) return;
 	#endif
 	uint8_t fc[8];
@@ -533,30 +533,30 @@ static void elm_reset_defaults(void){
 	protoNum		= 6;
 	protoAuto		= 1;
 	variableDlc		= 0;
-	elm_bus_close();	//ATZ = reset: si esce dal bus, si rientra alla prima richiesta
+	elm_bus_close();	//ATZ = reset: we leave the bus, we join it again at the first request
 	#if defined(C1baccable)
-		cfgSentBus = 0xFF;		//dopo un reset la configurazione va rimandata
-		//la mappa centralina->bus NON si azzera: e' il cablaggio dell'auto, non cambia con
-		//un reset. MultiECUScan manda un ATZ prima di ogni centralina, azzerarla voleva
-		//dire risondare tutti i bus ad ogni collegamento.
+		cfgSentBus = 0xFF;		//after a reset the configuration has to be sent again
+		//the ecu->bus map is NOT cleared: it is the wiring of the car, it does not change with
+		//a reset. MultiECUScan sends an ATZ before every ecu, clearing it would have
+		//meant probing all the buses again at every connection.
 		activeBus  = ELMLINK_BUS_LOCAL;
 		rspTimeout = cmdTimeout;
 		elm_remote_clear();
 	#endif
-	//i parametri programmabili non si azzerano: sul chip originale stanno in memoria non
-	//volatile e sopravvivono ad ATZ (MultiECUScan li imposta proprio prima di un ATZ).
+	//the programmable parameters are not cleared: on the original chip they live in non
+	//volatile memory and survive an ATZ (MultiECUScan sets them right before an ATZ).
 	cmdLen			= 0;
 }
 
-// Chiamata quando l'host apre o chiude la porta seriale (CDC_SET_CONTROL_LINE_STATE):
-// butta via i byte rimasti dalla sessione precedente, che altrimenti si mescolerebbero
-// ai primi comandi del nuovo collegamento.
+// Called when the host opens or closes the serial port (CDC_SET_CONTROL_LINE_STATE):
+// it throws away the bytes left over from the previous session, which would otherwise mix
+// with the first commands of the new connection.
 void elm327_port_reset(void){
 	#if defined(C1baccable)
-		if(!elmModeOn) return;		//modalita' spenta: non c'e' niente da azzerare
+		if(!elmModeOn) return;		//mode off: there is nothing to clear
 	#endif
 	trace_str("\r\n== porta aperta/chiusa ==");
-	elm_bus_close();	//nessun programma collegato: usciamo dal bus e non disturbiamo l'auto
+	elm_bus_close();	//no program connected: we leave the bus and do not disturb the car
 	rxHead     = rxTail;
 	cmdLen     = 0;
 	txChunkLen = 0;
@@ -570,10 +570,10 @@ void elm327_init(void){
 }
 
 #if defined(C1baccable)
-// ------------------------------------------------- accensione dal menu del quadro
-// Da spento non viene chiamato niente di tutto questo: e' come se l'ELM327 non ci fosse.
-// Da acceso la BACCAble sospende il suo lavoro normale (main.c) e il chip si comporta
-// esattamente come il firmware ELM327 dedicato, gateway verso C2 e BH compreso.
+// ------------------------------------------------- switching on from the cluster menu
+// While off none of this is called at all: it is as if the ELM327 were not there.
+// While on the BACCAble suspends its normal work (main.c) and the chip behaves
+// exactly like the dedicated ELM327 firmware, gateway towards C2 and BH included.
 void elm327_set_enabled(uint8_t on){
 	on = on ? 1 : 0;
 	if(on == elmModeOn) return;
@@ -581,19 +581,19 @@ void elm327_set_enabled(uint8_t on){
 	elmModeOn  = on;
 	elmLastCmd = currentTime;
 
-	elm327_init();			//stato dell'interprete pulito ad ogni accensione
-	rxHead = rxTail = 0;	//e via i byte rimasti sulla porta
+	elm327_init();			//clean interpreter state at every switch on
+	rxHead = rxTail = 0;	//and away with the bytes left on the port
 
-	// LA PORTA USB SI ACCENDE SOLO ADESSO.
-	// Finche' la modalita' e' spenta il connettore resta muto e il computer non vede
-	// nessun dispositivo: la BACCAble non deve farsi riconoscere come interfaccia ELM327
-	// se non gliel'ha chiesto nessuno dal quadro. Ogni accensione rifa' l'inizializzazione
-	// da capo (vedi usb_device.c: dopo uno spegnimento il blocco USB resta in power-down).
+	// THE USB PORT IS SWITCHED ON ONLY NOW.
+	// While the mode is off the connector stays silent and the computer sees
+	// no device: the BACCAble must not let itself be recognised as an ELM327 interface
+	// if nobody asked for it from the cluster. Every switch on redoes the initialisation
+	// from scratch (see usb_device.c: after a switch off the USB block stays in power-down).
 	if(on)	usb_device_attach();
 	else	usb_device_detach();
 
 	#if defined(C1baccable)
-		//accende (o spegne) il ponte qui e sugli altri due chip
+		//switches the bridge on (or off) here and on the other two chips
 		elmlink_set_enabled(on);
 		if(on){
 			elmlink_send_arm(1);
@@ -607,13 +607,13 @@ void elm327_set_enabled(uint8_t on){
 uint8_t elm327_is_enabled(void){ return elmModeOn; }
 #endif //C1baccable
 
-// ------------------------------------------------------------------ ingresso da usb
+// ------------------------------------------------------------------ input from usb
 void elm327_rx_byte(uint8_t c){
 	#if defined(C1baccable)
-		if(!elmModeOn) return;		//modalita' spenta: la porta USB non ci interessa
+		if(!elmModeOn) return;		//mode off: the USB port does not interest us
 	#endif
 	uint16_t next = (uint16_t)((rxHead + 1) % ELM327_RX_RING_LEN);
-	if(next == rxTail) return; //buffer pieno: scarta (il tool ritenta)
+	if(next == rxTail) return; //buffer full: discard (the tool retries)
 	rxRing[rxHead] = c;
 	rxHead = next;
 }
@@ -625,10 +625,10 @@ static int16_t elm_ring_get(void){
 	return (int16_t)c;
 }
 
-// ------------------------------------------------------------------ comandi AT
+// ------------------------------------------------------------------ AT commands
 static void elm_handle_at(const char *at){
 
-	if(!strcmp(at, "Z")){					//reset completo
+	if(!strcmp(at, "Z")){					//full reset
 		elm_reset_defaults();
 		HAL_Delay(50);
 		elm_puts(ELM327_ID_STRING); elm_eol();
@@ -637,7 +637,7 @@ static void elm_handle_at(const char *at){
 	if(!strcmp(at, "WS")){ HAL_Delay(50); elm_line(ELM327_ID_STRING);	return; }
 	if(!strcmp(at, "I"))  { elm_line(ELM327_ID_STRING);					return; }
 	if(!strcmp(at, "@1")) { elm_line(ELM327_DESCR_STRING);				return; }
-	if(!strcmp(at, "@2")) { elm_line("?");								return; }	//identificatore non programmato, come un chip originale
+	if(!strcmp(at, "@2")) { elm_line("?");								return; }	//identifier not programmed, like an original chip
 	if(!strcmp(at, "D"))  { elm_reset_defaults(); elm_line("OK"); return; }
 
 	if(!strcmp(at, "E0")) { echoOn = 0;		elm_line("OK"); return; }
@@ -649,16 +649,16 @@ static void elm_handle_at(const char *at){
 	if(!strcmp(at, "S0")) { spacesOn = 0;	elm_line("OK"); return; }
 	if(!strcmp(at, "S1")) { spacesOn = 1;	elm_line("OK"); return; }
 
-	if(!strcmp(at, "V0")) { variableDlc = 0; elm_line("OK"); return; }	//frame riempiti fino a 8 byte
-	if(!strcmp(at, "V1")) { variableDlc = 1; elm_line("OK"); return; }	//DLC pari ai soli byte utili
+	if(!strcmp(at, "V0")) { variableDlc = 0; elm_line("OK"); return; }	//frames padded up to 8 bytes
+	if(!strcmp(at, "V1")) { variableDlc = 1; elm_line("OK"); return; }	//DLC equal to the useful bytes only
 
-	//comandi accettati senza effetto reale su questo hardware
+	//commands accepted with no real effect on this hardware
 	if(!strcmp(at, "AR") || !strcmp(at, "AL") || !strcmp(at, "NL") ||
 	   !strcmp(at, "BI") || !strcmp(at, "PC") || !strcmp(at, "MA")){
 		elm_line("OK"); return;
 	}
 
-	//ATDP / ATDPN: riportano il protocollo selezionato con ATSP (non un valore fisso)
+	//ATDP / ATDPN: they report the protocol selected with ATSP (not a fixed value)
 	if(!strcmp(at, "DP")){
 		switch(protoNum){
 			case 6:  elm_line("ISO 15765-4 (CAN 11/500)"); break;
@@ -666,7 +666,7 @@ static void elm_handle_at(const char *at){
 			case 8:  elm_line("ISO 15765-4 (CAN 11/250)"); break;
 			case 9:  elm_line("ISO 15765-4 (CAN 29/250)"); break;
 			case 0xA:elm_line("SAE J1939 (CAN 29/250)");   break;
-			case 0xB: case 0xC: {	//protocolli utente: velocita' = 500 / divisore
+			case 0xB: case 0xC: {	//user protocols: speed = 500 / divisor
 				uint8_t  div = (protoNum == 0xB) ? pp2D : pp2F;
 				uint16_t kb  = (uint16_t)(500 / (div ? div : 1));
 				elm_puts((protoNum == 0xB) ? "USER1 (CAN " : "USER2 (CAN ");
@@ -686,14 +686,14 @@ static void elm_handle_at(const char *at){
 		elm_eol();
 		return;
 	}
-	if(!strcmp(at, "RV"))  { elm_line("12.3V");						return; } //nessun partitore sul 12V: valore fisso
+	if(!strcmp(at, "RV"))  { elm_line("12.3V");						return; } //no divider on the 12V: fixed value
 
 	if(!strcmp(at, "CAF0")){ cafOn = 0; elm_line("OK"); return; }
 	if(!strcmp(at, "CAF1")){ cafOn = 1; elm_line("OK"); return; }
 	if(!strcmp(at, "CFC0")){ cfcOn = 0; elm_line("OK"); return; }
 	if(!strcmp(at, "CFC1")){ cfcOn = 1; elm_line("OK"); return; }
 
-	//ATAT0/1/2 (adaptive timing): il comando completo e' "ATAT<n>", qui arriva "AT<n>"
+	//ATAT0/1/2 (adaptive timing): the full command is "ATAT<n>", here "AT<n>" arrives
 	if(strlen(at) == 3 && at[0] == 'A' && at[1] == 'T'){
 		uint8_t v = (uint8_t)(at[2] - '0');
 		if(v <= 2){ adaptTiming = v; elm_line("OK"); }
@@ -701,34 +701,34 @@ static void elm_handle_at(const char *at){
 		return;
 	}
 
-	if(!strncmp(at, "ST", 2)){					//timeout risposta, passo 4ms
+	if(!strncmp(at, "ST", 2)){					//response timeout, 4ms step
 		uint32_t v = elm_parse_hex(at + 2);
 		cmdTimeout = (v == 0) ? ELM327_DEFAULT_TIMEOUT_MS : (uint16_t)(v * 4);
 		elm_line("OK"); return;
 	}
-	if(!strncmp(at, "CP", 2)){					//priorita' per gli id a 29 bit
+	if(!strncmp(at, "CP", 2)){					//priority for the 29 bit ids
 		canPriority = (uint8_t)elm_parse_hex(at + 2);
 		elm_line("OK"); return;
 	}
-	if(!strncmp(at, "CRA", 3)){					//filtro di ricezione software
+	if(!strncmp(at, "CRA", 3)){					//software reception filter
 		const char *a = at + 3;
 		uint8_t n = (uint8_t)strlen(a);
 		if(n == 0){
 			canFilterValue = 0;
-			canFilterMask  = 0;					//accetta tutto
+			canFilterMask  = 0;					//accept everything
 		}else{
 			uint32_t val = 0, msk = 0;
 			for(uint8_t i = 0; i < n; i++){
 				uint8_t d = elm_hexval(a[i]);
 				val <<= 4; msk <<= 4;
-				if(d != 0xFF){ val |= d; msk |= 0x0F; }	//le 'X' restano wildcard
+				if(d != 0xFF){ val |= d; msk |= 0x0F; }	//the 'X' stay wildcards
 			}
 			canFilterValue = val;
 			canFilterMask  = msk;
 		}
 		elm_line("OK"); return;
 	}
-	if(!strncmp(at, "SH", 2)){					//header di trasmissione
+	if(!strncmp(at, "SH", 2)){					//transmission header
 		const char *a = at + 2;
 		uint8_t n = (uint8_t)strlen(a);
 		uint32_t addr = elm_parse_hex(a);
@@ -742,7 +742,7 @@ static void elm_handle_at(const char *at){
 		elm_line("OK"); return;
 	}
 
-	//ATFCSH xxx / xxxxxxxx : header usato per i frame di Flow Control (usato da AlfaOBD)
+	//ATFCSH xxx / xxxxxxxx : header used for the Flow Control frames (used by AlfaOBD)
 	if(!strncmp(at, "FCSH", 4)){
 		const char *a = at + 4;
 		uint8_t n = (uint8_t)strlen(a);
@@ -759,7 +759,7 @@ static void elm_handle_at(const char *at){
 		}
 		elm_line("OK"); return;
 	}
-	//ATFCSD hh hh hh... : dati del frame di Flow Control (max 5 byte, di solito 30 00 00)
+	//ATFCSD hh hh hh... : data of the Flow Control frame (max 5 bytes, usually 30 00 00)
 	if(!strncmp(at, "FCSD", 4)){
 		const char *a = at + 4;
 		uint8_t n = (uint8_t)strlen(a);
@@ -770,14 +770,14 @@ static void elm_handle_at(const char *at){
 		fcDataLen = k;
 		elm_line("OK"); return;
 	}
-	//ATFCSM n : 0 = automatico, 1/2 = usa header e dati impostati sopra
+	//ATFCSM n : 0 = automatic, 1/2 = use the header and data set above
 	if(!strncmp(at, "FCSM", 4)){
 		uint8_t v = (uint8_t)(at[4] - '0');
 		fcMode = (v <= 2) ? v : 0;
 		elm_line("OK"); return;
 	}
 
-	//ATCF xxx / xxxxxxxx : valore del filtro di ricezione (usato insieme ad ATCM)
+	//ATCF xxx / xxxxxxxx : value of the reception filter (used together with ATCM)
 	if(!strncmp(at, "CF", 2)){
 		const char *a = at + 2;
 		if(strlen(a) == 0){ canFilterValue = 0; canFilterMask = 0; }
@@ -787,18 +787,18 @@ static void elm_handle_at(const char *at){
 		}
 		elm_line("OK"); return;
 	}
-	//ATCM xxx / xxxxxxxx : maschera del filtro di ricezione
+	//ATCM xxx / xxxxxxxx : mask of the reception filter
 	if(!strncmp(at, "CM", 2)){
 		const char *a = at + 2;
 		canFilterMask = (strlen(a) == 0) ? 0 : elm_parse_hex(a);
 		elm_line("OK"); return;
 	}
 
-	//ATSPx / ATSPAx / ATTPx: il bus resta quello compilato, ma memorizziamo il protocollo
-	//dichiarato in modo che ATDP e ATDPN rispondano in modo coerente.
-	//ATPPxxSVyy / ATPPxxON / ATPPxxOFF: parametri programmabili.
-	//Ci interessano 2D e 2F, i divisori di baud rate dei protocolli utente B e C: e' con
-	//questi che MultiECUScan chiede una velocita' del bus diversa, prima di fare ATSPB.
+	//ATSPx / ATSPAx / ATTPx: the bus stays the compiled one, but we store the declared
+	//protocol so that ATDP and ATDPN answer consistently.
+	//ATPPxxSVyy / ATPPxxON / ATPPxxOFF: programmable parameters.
+	//We care about 2D and 2F, the baud rate divisors of the user protocols B and C: it is with
+	//these that MultiECUScan asks for a different bus speed, before doing ATSPB.
 	if(!strncmp(at, "PP", 2)){
 		const char *a = at + 2;
 		if(elm_hexval(a[0]) != 0xFF && elm_hexval(a[1]) != 0xFF){
@@ -814,7 +814,7 @@ static void elm_handle_at(const char *at){
 					default: break;
 				}
 			}
-			//ON / OFF: l'attivazione la consideriamo implicita, rispondiamo OK
+			//ON / OFF: we consider the activation implicit, we answer OK
 		}
 		elm_line("OK"); return;
 	}
@@ -824,12 +824,12 @@ static void elm_handle_at(const char *at){
 		if(*a == 'A'){ protoAuto = 1; a++; }
 		else           protoAuto = 0;
 		uint8_t v = elm_hexval(*a);
-		if(v == 0xFF){ elm_line("OK"); return; }	//nessuna cifra: lasciamo com'e'
-		if(v == 0){ protoAuto = 1; }				//0 = ricerca automatica
+		if(v == 0xFF){ elm_line("OK"); return; }	//no digit: we leave it as it is
+		if(v == 0){ protoAuto = 1; }				//0 = automatic search
 		else       { protoNum = v; }
 
-		//i protocolli utente B e C usano il divisore dei parametri programmabili, gli altri
-		//le velocita' standard: e' qui che la velocita' del bus cambia davvero.
+		//the user protocols B and C use the divisor of the programmable parameters, the others
+		//the standard speeds: it is here that the bus speed really changes.
 		switch(protoNum){
 			case 6: case 7:  elm_apply_bitrate_divisor(1);    break;	//CAN 500 kbit/s
 			case 8: case 9:  elm_apply_bitrate_divisor(2);    break;	//CAN 250 kbit/s
@@ -841,14 +841,14 @@ static void elm_handle_at(const char *at){
 		elm_line("OK"); return;
 	}
 
-	//ATIB/ATFC/ATBRT: accettati senza effetto
+	//ATIB/ATFC/ATBRT: accepted with no effect
 	if(!strncmp(at, "IB", 2) || !strncmp(at, "FC", 2) || !strncmp(at, "BRT", 3)){
 		elm_line("OK"); return;
 	}
 
 	if(!strncmp(at, "BRD", 3)){
-		// Su USB CDC il baud rate e' virtuale: eseguiamo solo l'handshake previsto
-		// dall'ELM327 (OK -> stringa id -> attesa CR dal tool -> OK).
+		// On USB CDC the baud rate is virtual: we only perform the handshake foreseen
+		// by the ELM327 (OK -> id string -> wait for CR from the tool -> OK).
 		elm_puts("OK"); elm_eol();
 		elm_flush();
 		HAL_Delay(15);
@@ -857,19 +857,19 @@ static void elm_handle_at(const char *at){
 
 		uint32_t t0 = currentTime;
 		while(currentTime - t0 < 2000){
-			cdc_process();						//continua a raccogliere i byte dall'usb
+			cdc_process();						//keeps collecting the bytes from the usb
 			int16_t c = elm_ring_get();
 			if(c < 0) continue;
 			if(c == '\r' || c == '\n') break;
 		}
-		while(elm_ring_get() >= 0);				//scarta il resto
+		while(elm_ring_get() >= 0);				//discards the rest
 		cmdLen = 0;
 		elm_puts("OK"); elm_eol();
 		return;
 	}
 
 	#ifndef ELM327_TRACE_DISABLE
-	//ATLOG: stampa il dialogo registrato (non e' un comando ELM327, serve per la diagnosi)
+	//ATLOG: prints the recorded dialog (it is not an ELM327 command, it serves for diagnosis)
 	if(!strcmp(at, "LOG")){
 		traceDumping = 1;
 		elm_line("---- registro ----");
@@ -889,8 +889,8 @@ static void elm_handle_at(const char *at){
 	}
 	#endif
 
-	// Comando AT non riconosciuto. L'ELM327 originale risponde "?", ma diversi tool
-	// interrompono la connessione appena lo ricevono: di default rispondiamo "OK".
+	// Unrecognised AT command. The original ELM327 answers "?", but several tools
+	// break off the connection as soon as they receive it: by default we answer "OK".
 	#ifdef ELM327_UNKNOWN_AT_IS_ERROR
 		elm_line("?");
 	#else
@@ -898,11 +898,11 @@ static void elm_handle_at(const char *at){
 	#endif
 }
 
-// ---- modalita' raw (ATCAF0): usata da AlfaOBD -------------------------------
-// Con l'auto formatting disattivato l'ELM327 non aggiunge e non toglie niente:
-// trasmette i byte esattamente come li riceve (compreso il byte PCI) e stampa i
-// frame ricevuti uno per riga, cosi' come sono. La gestione ISO-TP (frammentazione
-// e flow control) la fa il programma sul PC.
+// ---- raw mode (ATCAF0): used by AlfaOBD --------------------------------------
+// With the auto formatting off the ELM327 adds nothing and removes nothing:
+// it transmits the bytes exactly as it receives them (PCI byte included) and prints the
+// received frames one per line, just as they are. The ISO-TP handling (fragmentation
+// and flow control) is done by the program on the PC.
 static uint8_t elm_handle_obd_raw(const uint8_t *payload, uint8_t payloadLen, uint8_t expectedResponses){
 	if(!elm_bus_send(payload, payloadLen, canSendHeader, extendedHeader)){
 		return 0;
@@ -911,17 +911,17 @@ static uint8_t elm_handle_obd_raw(const uint8_t *payload, uint8_t payloadLen, ui
 	CAN_RxHeaderTypeDef resp;
 	uint8_t  rd[8];
 	uint8_t  printed = 0;
-	uint8_t  sawPending = 0;	//1 se la centralina ha gia' risposto "sto lavorando"
+	uint8_t  sawPending = 0;	//1 if the ecu has already answered "I am working on it"
 	uint32_t t0    = currentTime;
 	uint32_t start = currentTime;
 
-	//limite assoluto: su un bus molto trafficato e senza filtro non si esce piu'
+	//absolute limit: on a very busy bus and without a filter one never gets out
 	uint16_t waitMs = elm_wait_budget();
 	while((currentTime - t0 < waitMs) &&
 	      (currentTime - start < (uint32_t)waitMs * 4 + 100) &&
 	      (printed < ELM327_MAX_RAW_FRAMES)){
 		elm_bus_pump();
-		if(elm_remote_finished()) break;	//lo slave ha chiuso: la linea e' gia' libera
+		if(elm_remote_finished()) break;	//the slave has closed: the line is already free
 		if(!elm_can_get_frame(&resp, rd)) continue;
 
 		onboardLed_blue_on();
@@ -931,36 +931,36 @@ static uint8_t elm_handle_obd_raw(const uint8_t *payload, uint8_t payloadLen, ui
 			elm_puthex(rd[i]);
 		}
 		elm_eol();
-		// Spedita subito, senza aspettare il prompt: e' cosi' che si comporta l'ELM327 vero
-		// e i programmi contano su questo per capire che la centralina sta rispondendo.
-		// Tenere la riga in buffer faceva scadere il timeout del programma sulle scritture
-		// lunghe, dove fra "sto lavorando" e conferma passa quasi un secondo.
+		// Sent straight away, without waiting for the prompt: this is how the real ELM327 behaves
+		// and the programs count on it to understand that the ecu is answering.
+		// Keeping the line in the buffer made the timeout of the program expire on the long
+		// writes, where almost a second passes between "I am working on it" and the confirmation.
 		elm_flush();
 		printed++;
 
-		//se l'ecu manda un First Frame e il flow control automatico e' attivo, rispondiamo noi
+		//if the ecu sends a First Frame and the automatic flow control is on, we answer it
 		if((rd[0] & 0xF0) == 0x10 && cfcOn) elm_send_flow_control();
 
-		//se il tool ha indicato quante risposte aspettarsi, ci fermiamo appena le abbiamo
+		//if the tool has said how many answers to expect, we stop as soon as we have them
 		if(expectedResponses && printed >= expectedResponses){ elm_remote_drain(); return 1; }
 
-		// Coppia tipica delle scritture (allineamento proxi): prima "sto lavorando"
-		// (7F xx 78), poi la risposta vera. Appena arriva la seconda si chiude subito
-		// invece di restare in ascolto fino al timeout: e' quel ritardo che faceva
-		// scadere l'attesa del programma e mandava le risposte fuori sincrono.
+		// Typical pair of the writes (proxi alignment): first "I am working on it"
+		// (7F xx 78), then the real answer. As soon as the second one arrives we close immediately
+		// instead of listening until the timeout: it is that delay that made
+		// the wait of the program expire and sent the answers out of sync.
 		if((rd[0] & 0xF0) == 0x00){
 			if(rd[1] == 0x7F && rd[3] == 0x78) sawPending = 1;
 			else if(sawPending){ elm_remote_drain(); return 1; }
 		}
 
-		t0 = currentTime;	//ci sono altri frame in arrivo: riparte l'attesa
+		t0 = currentTime;	//there are more frames coming: the wait restarts
 	}
 
-	elm_remote_drain();		//linea libera prima di ridare il prompt al programma
+	elm_remote_drain();		//line free before giving the prompt back to the program
 	return printed ? 1 : 0;
 }
 
-// ---- modalita' automatica (ATCAF1): PCI aggiunto e risposta ISO-TP ricomposta -----
+// ---- automatic mode (ATCAF1): PCI added and ISO-TP answer reassembled -------------
 static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, uint8_t expectedResponses){
 	(void)expectedResponses;
 	uint8_t frame[8];
@@ -970,20 +970,20 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 		memset(frame, ELM327_PAD_BYTE, sizeof(frame));
 		frame[0] = (uint8_t)payloadLen;
 		memcpy(&frame[1], payload, payloadLen);
-		//ATV1: DLC pari ai soli byte utili; ATV0 (default): riempimento fino a 8
+		//ATV1: DLC equal to the useful bytes only; ATV0 (default): padding up to 8
 		uint8_t dlc = variableDlc ? (uint8_t)(payloadLen + 1) : 8;
 		if(!elm_bus_send(frame, dlc, canSendHeader, extendedHeader)){
 			return 0;
 		}
 	}else{
-		// ---- First Frame + Consecutive Frames (richieste piu' lunghe di 7 byte) ----
+		// ---- First Frame + Consecutive Frames (requests longer than 7 bytes) ----
 		memset(frame, ELM327_PAD_BYTE, sizeof(frame));
 		frame[0] = (uint8_t)(0x10 | ((payloadLen >> 8) & 0x0F));
 		frame[1] = (uint8_t)(payloadLen & 0xFF);
 		memcpy(&frame[2], payload, 6);
 		if(!elm_can_send_frame(frame)){ return 0; }
 
-		//attesa del Flow Control dell'ecu
+		//wait for the Flow Control of the ecu
 		uint8_t  blockSize = 0, stMin = 0;
 		uint8_t  gotFC = 0;
 		CAN_RxHeaderTypeDef h;
@@ -1001,7 +1001,7 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 			break;
 		}
 		if(!gotFC){ return 0; }
-		if(stMin > 127) stMin = 1;	//valori 0xF1..0xF9 sono microsecondi: arrotondiamo a 1ms
+		if(stMin > 127) stMin = 1;	//values 0xF1..0xF9 are microseconds: we round up to 1ms
 
 		uint16_t sent = 6;
 		uint8_t  sn   = 1;
@@ -1016,7 +1016,7 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 			sn++;
 			if(stMin) HAL_Delay(stMin);
 
-			//se l'ecu ha chiesto blocchi limitati, attendiamo il prossimo Flow Control
+			//if the ecu asked for limited blocks, we wait for the next Flow Control
 			if(blockSize){
 				inBlock++;
 				if(inBlock >= blockSize && sent < payloadLen){
@@ -1040,7 +1040,7 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 		}
 	}
 
-	// ------------------ attesa e ricomposizione della risposta ------------------
+	// ------------------ waiting for and reassembling the answer ------------------
 	static uint8_t isoData[ELM327_ISOTP_MAX_LEN];
 	uint16_t isoTotal    = 0;
 	uint16_t isoReceived = 0;
@@ -1049,13 +1049,13 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 
 	CAN_RxHeaderTypeDef resp;
 	uint8_t  rd[8];
-	uint8_t  answered = 0;		//1 se qualcosa e' gia' stato passato al programma
+	uint8_t  answered = 0;		//1 if something has already been passed to the program
 	uint32_t t0 = currentTime;
 
 	uint16_t waitMs = elm_wait_budget();
 	while(currentTime - t0 < waitMs){
 		elm_bus_pump();
-		if(elm_remote_finished()) break;	//lo slave ha chiuso: non arrivera' altro								//coda di trasmissione locale o frame dal bus remoto
+		if(elm_remote_finished()) break;	//the slave has closed: nothing else will arrive								//local transmission queue or frame from the remote bus
 		if(!elm_can_get_frame(&resp, rd)) continue;
 
 		uint8_t pci = rd[0];
@@ -1071,12 +1071,12 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 				elm_puthex(rd[i]);
 			}
 			elm_eol();
-			elm_flush();	//spedito subito, come fa l'ELM327 vero
+			elm_flush();	//sent straight away, as the real ELM327 does
 
-			// "Richiesta ricevuta, sto lavorando" (7F xx 78): non e' la risposta finale.
-			// La si passa subito al programma (cosi' sa che la centralina c'e') e si
-			// continua ad aspettare quella vera, che nelle scritture lunghe come
-			// l'allineamento proxi arriva anche mezzo secondo dopo.
+			// "Request received, I am working on it" (7F xx 78): it is not the final answer.
+			// It is passed to the program straight away (so it knows the ecu is there) and we
+			// keep waiting for the real one, which in the long writes such as
+			// the proxi alignment arrives even half a second later.
 			if(rd[1] == 0x7F && rd[3] == 0x78){
 				answered = 1;
 				t0 = currentTime;
@@ -1120,28 +1120,28 @@ static uint8_t elm_handle_obd_caf(const uint8_t *payload, uint16_t payloadLen, u
 				return 1;
 			}
 		}
-		//i frame di Flow Control (0x30) in ingresso vengono ignorati
+		//the incoming Flow Control frames (0x30) are ignored
 	}
 
-	elm_remote_drain();		//linea libera prima di ridare il prompt al programma
-	//se e' passato almeno un "sto lavorando" il programma una risposta l'ha avuta
+	elm_remote_drain();		//line free before giving the prompt back to the program
+	//if at least one "I am working on it" went through, the program did get an answer
 	return answered;
 }
 
-// ------------------------------------------------------------------ comandi OBD (hex)
-// Sceglie il bus e passa la richiesta al gestore giusto. Con il gateway attivo, se sul bus
-// locale non risponde nessuno la stessa richiesta viene inoltrata agli altri due chip; il
-// bus che risponde viene ricordato, cosi' le richieste successive vanno dirette.
+// ------------------------------------------------------------------ OBD commands (hex)
+// Chooses the bus and passes the request to the right handler. With the gateway active, if
+// nobody answers on the local bus the same request is forwarded to the other two chips; the
+// bus that answers is remembered, so that the following requests go straight there.
 static void elm_handle_obd(const char *hexCmd){
 	uint8_t  payload[32];
 	uint16_t payloadLen = 0;
 	uint16_t l = (uint16_t)strlen(hexCmd);
 	uint8_t  expectedResponses = 0;
 
-	// Una cifra finale in piu' indica il numero di risposte attese (es. "0100 1"), ma vale
-	// solo con la formattazione automatica attiva: con ATCAF0 ogni byte e' dato grezzo e
-	// l'ELM327 originale rifiuta il comando con "?". Verificato sul log di un ELM327 vero:
-	// MultiECUScan riceve il "?" e rimanda subito il comando senza la cifra.
+	// An extra final digit indicates the number of expected answers (e.g. "0100 1"), but it only
+	// applies with the automatic formatting on: with ATCAF0 every byte is raw data and
+	// the original ELM327 refuses the command with "?". Verified on the log of a real ELM327:
+	// MultiECUScan receives the "?" and immediately sends the command again without the digit.
 	if(l & 1){
 		if(!cafOn){ elm_line("?"); return; }
 		expectedResponses = elm_hexval(hexCmd[l - 1]);
@@ -1158,8 +1158,8 @@ static void elm_handle_obd(const char *hexCmd){
 	uint8_t order[ELMLINK_BUS_COUNT];
 	uint8_t candidates = elm_bus_order(order);
 
-	//se il bus e' gia' noto si va diretti con il timeout pieno, altrimenti si sondano
-	//i bus con un timeout ridotto per non pagare 612 ms per ogni tentativo a vuoto
+	//if the bus is already known we go straight there with the full timeout, otherwise
+	//the buses are probed with a reduced timeout so as not to pay 612 ms for every empty attempt
 	uint8_t probing = (candidates > 1);
 
 	for(uint8_t k = 0; k < candidates; k++){
@@ -1170,15 +1170,15 @@ static void elm_handle_obd(const char *hexCmd){
 		          (activeBus == ELMLINK_BUS_C2   ? "{C2}" : "{BH}"));
 		if(activeBus != ELMLINK_BUS_LOCAL){
 			elm_remote_clear();
-			//la configurazione si manda solo quando cambia: meno blocchi sulla linea,
-			//meno finestre di collisione e comandi piu' rapidi
+			//the configuration is sent only when it changes: fewer blocks on the line,
+			//fewer collision windows and faster commands
 			if(cfgSentBus != activeBus || cfgSentFilter != canFilterValue ||
 			   cfgSentMask != canFilterMask || cfgSentTimeout != rspTimeout || cfgSentFc != cfcOn){
 				elmlink_send_config(activeBus, canFilterValue, canFilterMask, rspTimeout, cfcOn);
 				cfgSentBus = activeBus;       cfgSentFilter  = canFilterValue;
 				cfgSentMask = canFilterMask;  cfgSentTimeout = rspTimeout; cfgSentFc = cfcOn;
 			}
-			//se il programma ha impostato un flow control personalizzato, lo slave deve saperlo
+			//if the program has set a custom flow control, the slave has to know about it
 			if(fcMode && fcDataLen)
 				elmlink_send_fc_config(activeBus, fcHeader ? fcHeader : canSendHeader,
 				                       fcHeader ? fcHeaderExt : extendedHeader, fcData, fcDataLen);
@@ -1189,7 +1189,7 @@ static void elm_handle_obd(const char *hexCmd){
 			: elm_handle_obd_raw(payload, (uint8_t)payloadLen, expectedResponses);
 
 		if(answered){
-			elm_route_store(elm_target_addr(), activeBus);	//da ora si va diretti
+			elm_route_store(elm_target_addr(), activeBus);	//from now on we go straight there
 			activeBus  = ELMLINK_BUS_LOCAL;
 			rspTimeout = cmdTimeout;
 			return;
@@ -1209,12 +1209,12 @@ static void elm_handle_obd(const char *hexCmd){
 
 // ------------------------------------------------------------------ dispatcher
 static void elm_execute(char *cmd){
-	//registra il comando ricevuto (l'eco dell'uscita viene registrata da elm_putc)
+	//records the received command (the echo of the output is recorded by elm_putc)
 	trace_str("\r\n<");
 	trace_str(cmd);
 	trace_str(">");
 
-	if(echoOn){					//eco del comando ricevuto, come fa l'ELM327 reale
+	if(echoOn){					//echo of the received command, as the real ELM327 does
 		elm_puts(cmd);
 		elm_eol();
 	}
@@ -1228,47 +1228,47 @@ static void elm_execute(char *cmd){
 	}
 
 	#ifdef ELM327_EXTRA_CR_BEFORE_PROMPT
-		elm_putc('\r');		//riga vuota prima del prompt, come l'ELM327 originale
+		elm_putc('\r');		//empty line before the prompt, like the original ELM327
 	#endif
 	elm_putc('>');				//prompt
 	elm_flush();
 }
 
-// Interpreta al massimo un comando per chiamata, cosi' il main loop resta reattivo.
+// Interprets at most one command per call, so that the main loop stays responsive.
 void elm327_process(void){
 	int16_t c;
 
 	#if defined(C1baccable)
-		if(!elmModeOn) return;					//modalita' spenta: la BACCAble lavora normalmente
+		if(!elmModeOn) return;					//mode off: the BACCAble works normally
 
-		// Via d'uscita automatica: con l'ELM327 acceso il quadro non risponde ai pulsanti,
-		// quindi dal menu non si potrebbe piu' spegnere. Se per un po' non arriva niente dal
-		// PC (cavo staccato, programma chiuso) si torna da soli al funzionamento normale.
+		// Automatic way out: with the ELM327 on the cluster does not answer the buttons,
+		// so it could no longer be switched off from the menu. If nothing arrives from the
+		// PC for a while (cable unplugged, program closed) we go back to normal operation by ourselves.
 		if((currentTime - elmLastCmd) > ELM327_IDLE_EXIT_MS){
 			elm327_set_enabled(0);
 			return;
 		}
 	#endif
 
-	//se un comando e' rimasto incompleto (nessun CR) lo scartiamo dopo un secondo:
-	//evita che un frammento di una sessione precedente rovini il comando successivo.
+	//if a command has been left incomplete (no CR) we discard it after one second:
+	//it prevents a fragment of a previous session from ruining the next command.
 	if(cmdLen && (currentTime - lastRxByteTime) > 1000) cmdLen = 0;
 
 	while((c = elm_ring_get()) >= 0){
 		lastRxByteTime = currentTime;
 		#if defined(C1baccable)
-			elmLastCmd = currentTime;			//c'e' vita sulla porta: la modalita' resta accesa
+			elmLastCmd = currentTime;			//there is life on the port: the mode stays on
 		#endif
 		if(c == '\r' || c == '\n'){
-			if(cmdLen == 0) continue;			//riga vuota: ELM ripeterebbe l'ultimo comando, qui la ignoriamo
+			if(cmdLen == 0) continue;			//empty line: ELM would repeat the last command, here we ignore it
 			cmdBuf[cmdLen] = '\0';
 			cmdLen = 0;
 			elm_execute(cmdBuf);
-			return;								//un comando per giro di loop
+			return;								//one command per loop iteration
 		}
-		if(c == ' ') continue;					//l'ELM327 ignora gli spazi nei comandi
-		if(c < 0x20 || c >= 0x7F) continue;		//scarta i caratteri non stampabili
-		if(cmdLen >= (ELM327_CMD_BUF_LEN - 1)){	//comando troppo lungo: lo si scarta
+		if(c == ' ') continue;					//the ELM327 ignores the spaces in the commands
+		if(c < 0x20 || c >= 0x7F) continue;		//discards the non printable characters
+		if(cmdLen >= (ELM327_CMD_BUF_LEN - 1)){	//command too long: it is discarded
 			cmdLen = 0;
 			continue;
 		}

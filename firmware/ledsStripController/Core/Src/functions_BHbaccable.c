@@ -73,6 +73,7 @@
 
 			if(currentGear==0x0E){ //if reverse gear is selected
 exitReverseTime = 0; //Reset hysteresis timer while in Reverse
+				neutralGearEntryTime = 0; //we are not in Neutral
 
 					switch(turnIndicator){
 						case 0x02: //left arrow inserted
@@ -112,7 +113,20 @@ exitReverseTime = 0; //Reset hysteresis timer while in Reverse
 						default:
 					}
 
-			}else{ //if Drive (D) or any other gear is selected
+			}else if(currentGear==0x00){ //Neutral
+				if(neutralGearEntryTime==0) neutralGearEntryTime=currentTime; //remember when Neutral began
+
+				//A brief pass through Neutral (a gear shift crossing N: R->D, D->N->D, ...) holds the
+				//exit-reverse countdown at zero, exactly like Reverse does, so the shift transient never
+				//starts nor restarts the 10 s return timer. Once Neutral has lasted longer than a shift
+				//transient we do nothing and leave exitReverseTime as it is.
+				if(currentTime-neutralGearEntryTime < TIMING__BH____NEUTRAL_GEAR_TRANSIENT_MS){
+					exitReverseTime = 0;
+				}
+
+			}else{ //if Drive (D), Park (P) or any other gear is selected
+				neutralGearEntryTime = 0; //we are not in Neutral
+
 				if((leftParkMirrorPositionRequired || rightParkMirrorPositionRequired) && exitReverseTime == 0){ //if mirrors are potentially not in operative position,
 					exitReverseTime = currentTime; //Capture the moment we switched to D
 

@@ -426,7 +426,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t parkSensorsMuteFunctionEnabled=0;
 
 	//
-	uint8_t carSteadyCounter=0; //tells how many msec car is steady (200 is max value. on C1 max value means 2000msec, on C2 max value means 2000msec too (0x116 arrives every 10msec))
+	uint8_t carSteadyCounter=0; //how long the car has been steady, capped at 200 (=2000msec). Fed on C1 only, from 0x101
 #endif
 
 #if defined(C2baccable)
@@ -451,31 +451,14 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t parkSensorsFunctionStatus=0; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
 	uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
 
-	//park sensors mute 28/08/2026 - see globalVariables.h for how these work together
-	uint8_t  pdcStateKnown=0;		//note it starts at 0 on purpose: 0 is also a valid parkSensorsFunctionStatus
-	uint8_t  pdcMutedByUs=0;
-	uint8_t  pdcPressPhase=0;
-	uint8_t  pdcPressAttempts=0;
-	uint32_t pdcPressTime=0;
-	uint32_t pdcLastPressTime=0;
+	// @netzmark PDC auto disable - see functions_C2baccable.c
+	volatile uint8_t  pdc_is_beeping     = 0; //1=front sensors in alarm (from 0x3E7)
+	volatile uint8_t  pdc_auto_disabled  = 0; //1=the park sensors are off because WE switched them off
+	volatile uint8_t  requestToTogglePDC = 0; //1=a button press has to be simulated
+	volatile int      pdc_send_counter   = 0; //0=nothing in progress, 1=button pushed, waiting to release it
+	volatile uint32_t last_pdc_shot_time = 0; //when the push was sent
 	uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
-
-	/*
-	// @netzmark PDC code - begin
-	#if defined(C2baccable)
-		volatile uint8_t pdc_state_disabled	 = 0; // 0 = PDC enabled, 1 = PDC disabled (LED off)
-		volatile uint8_t pdc_is_beeping   	 = 0; // 1 = sensors in alarms
-		volatile uint8_t pdc_auto_disabled 	 = 0; // 1 = PDC was disabled with our procedure
-		volatile uint8_t  requestToTogglePDC = 0;
-		volatile uint8_t  reverseGearActive  =0; //used on CAN C2
-		uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-		CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
-		volatile int pdc_send_counter=0;
-		volatile uint32_t last_pdc_shot_time = 0;
-	#endif
-	// @netzmark PDC code - end
-	*/
 
 #endif
 
@@ -643,6 +626,7 @@ uint32_t rightParkMirrorPositionRequiredRequestTime=0;
 uint8_t rightParkMirrorPositionRequired=0;
 uint8_t parkMirrorOperativePositionNotStored=1;
 uint32_t exitReverseTime=0; //@netzmark parkingMirror returning delay
+uint32_t neutralGearEntryTime=0; //park mirror - moment Neutral (currentGear==0x00) was entered, 0 when not in Neutral
 
 //HAS_FUNCTION_ENABLED
 uint8_t HAS_function_enabled=0;
