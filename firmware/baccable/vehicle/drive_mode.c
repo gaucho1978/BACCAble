@@ -1,0 +1,136 @@
+#include "vehicle/drive_mode.h"
+
+void vehicle_handle_drive_mode(const CAN_RxHeaderTypeDef *rx_header, uint8_t *frame_data) {
+    if (rx_header->DLC < 8)
+        return;
+// pressStartButton
+#if defined(BACCABLE_C1)
+    if (telemetry_state.drive_mode !=
+        (frame_data[1] & 0x7C)) { // RDNA mode was changed, reset the ESCandTCinversion
+        chassis_state.stability_inverted = 0;
+    }
+    // current DNA mode, also called "Drive Style Status" (RDNA mode) is on byte 1 from bit 6 to bit 2
+    // (0x0=Natural [shifted by 2 bits becomes 0x00], 0x2=dynamic [shifted by 2 bits becomes 0x08],
+    // 0x4=AllWeather [shifted by 2 bits becomes 0x10], 0xC=race [shifted by 2 bits becomes 0x30]
+    telemetry_state.drive_mode =
+        frame_data[1] & 0x7C; // 7C is the mask from bit 6 to 2 (we avoid bit shift to save cpu loops)
+    if (chassis_state.stability_inverted) {
+
+        if (telemetry_state.drive_mode != 0x30) { // if not in race
+            frame_data[1] =
+                (frame_data[1] & ~0x7C) | 0x30; // set Race mode (0x30) to show on IPC the race screen (msg
+                                                // from body to TCM, IPC, ECM, DTCM, DCTM, DASM, CDCM, BCM)
+        }
+        // uint8_t tmpCounter=(frame_data[6] & 0x0F)+1;
+        // if(tmpCounter>0x0F) tmpCounter=0;
+        // frame_data[6]= (frame_data[6] & 0xF0) | tmpCounter;   //increment counter
+        frame_data[7] = frame_checksum(frame_data, rx_header->DLC); // update CRC
+        can_forward(rx_header, frame_data);                         // transmit the modified packet
+        // can_process(); //we try to send it ASAP - I commented it since It had no success
+        // status_led_activity();
+    }
+    // memcpy(&DNA_msg_data, frame_data, 8);
+
+#endif
+
+#if defined(BACCABLE_C2)
+    // on C2 can bus, msg 0x384 contains, in byte3, bit6 contains left stalk button press status (LANE
+    // indicator button)
+    if ((frame_data[3] & 0x40) == 0x40) { // left stalk button was pressed (lane following indicator)
+        if (chassis_state.lan_ebutton_press_begin_time ==
+            0) { // if button was not pressed, and now it is pressed
+            chassis_state.lan_ebutton_press_begin_time =
+                currentTime; // save current time it was pressed (press begin)
+            chassis_state.number_of_lane_button_clicks++;
+            if (chassis_state.number_of_lane_button_clicks == 1)
+                chassis_state.lan_ebutton_first_click_time = currentTime;
+        }
+
+        if ((currentTime - chassis_state.lan_ebutton_press_begin_time) > 2000) { // if pressed since 2 seconds
+
+            if (settings_state.esc_tc_customizator_enabled) {
+                chassis_state.stability_inverted = !chassis_state.stability_inverted; // toggle the status
+                // if dyno is enabled or its change is in progress, avoid to switch ESP/TC.
+                if (chassis_state.dyno_mode_enabled || chassis_state.dyno_state_machine != 0xff)
+                    chassis_state.stability_inverted =
+                        !chassis_state.stability_inverted; // revert the change. won't do both things
+            }
+            if (chassis_state.stability_inverted &&
+                settings_state.show_race_mask) { // if enabled, notify C1 and BH
+                uint8_t tmpArr1[2] = {C1_Bh_BusID, C1BHcmdShowRaceScreen};
+                board_uart_send(tmpArr1, 2);
+            } else {
+                uint8_t tmpArr1[2] = {C1_Bh_BusID, C1BHcmdStopShowRaceScreen};
+                board_uart_send(tmpArr1, 2);
+            }
+
+            status_led_activity();
+
+            chassis_state.lan_ebutton_press_begin_time = 0; // reset the timer, like if it was not pressed
+            chassis_state.number_of_lane_button_clicks = 0;
+        }
+    } else {
+        chassis_state.lan_ebutton_press_begin_time =
+            0; // use this value to remember that button is not pressed
+
+        if (currentTime - chassis_state.lan_ebutton_first_click_time >
+            1000) { // if more than 1 second is passed since first button click
+            chassis_state.number_of_lane_button_clicks =
+                0; // reset also the counter of the number of consecutive clics :-)
+        }
+
+        if (chassis_state.number_of_lane_button_clicks >= 2) { // if double click
+            chassis_state.number_of_lane_button_clicks = 0;    // ensure we don't return here :-)
+            // execute action :-)
+            if (settings_state.has_function_enabled) {
+                comfort_state.has_button_press_requested = 5;
+                // notify to C1
+                uint8_t tmpArr0[2] = {C1BusID, C1cmdLaneDoubleTap};
+                board_uart_send(tmpArr0, 2);
+            }
+            status_led_activity();
+        }
+    }
+
+    if (telemetry_state.drive_mode !=
+        (frame_data[1] & 0x7C)) { // RDNA mode was changed, reset the ESCandTCinversion
+        chassis_state.stability_inverted = 0;
+    }
+    // current DNA mode, also called "Drive Style Status" (RDNA mode) is on byte 1 from bit 6 to bit 2
+    // (0x0=Natural [shifted by 2 bits becomes 0x00], 0x2=dynamic [shifted by 2 bits becomes 0x08],
+    // 0x4=AllWeather [shifted by 2 bits becomes 0x10], 0xC=race [shifted by 2 bits becomes 0x30]
+    telemetry_state.drive_mode =
+        frame_data[1] & 0x7C; // 7C is the mask from bit 6 to 2 (we avoid bit shift to save cpu loops)
+    if (chassis_state.stability_inverted) {
+        // memcpy(&DNA_msg_data, frame_data, 8);
+        if (telemetry_state.drive_mode == 0x30) { // race
+            // DNA_msg_data[1]= (DNA_msg_data[1] & ~0x7C) | (0x08 & 0x7C); //set Dynamic mode (0x08) to enable
+            // ESC and TC
+            frame_data[1] =
+                (frame_data[1] & ~0x7C) | 0x08; // set Dynamic mode (0x08) to enable ESC and TC (msg from body
+                                                // to HAL, ORC, EPS, BSM. this disables controls)
+        } else {
+            // DNA_msg_data[1] = (DNA_msg_data[1] & ~0x7C) | (0x30 & 0x7C);  //set Race mode (0x30) to disable
+            // ESC and TC
+            frame_data[1] = (frame_data[1] & ~0x7C) | 0x30; // set Race mode (0x30) to disable ESC and TC
+        }
+        // uint8_t tmpCounter=(frame_data[6] & 0x0F)+1;
+        // if(tmpCounter>0x0F) tmpCounter=0;
+        // frame_data[6]= (frame_data[6] & 0xF0) | tmpCounter;   //increment counter
+        frame_data[7] = frame_checksum(frame_data, rx_header->DLC); // update CRC
+        can_forward(rx_header, frame_data);                         // transmit the modified packet
+        // can_process(); //we try to send it ASAP - I commented it since it had no success
+        // status_led_activity();
+    }
+#endif
+
+    // Command Ignition Status is on byte0 from bit 3 to 1.
+    // Command Ignition Fail Status is on byte 0 bit0 and in byte1 bit7.
+    // Drive Style Status (RDNA mode) is on byte 1 from bit 6 to bit 2 (0x0=Natural, 0x2=dynamic,
+    // 0x4=AllWeather, 0xC=race) External temperature is on byte 1 from bit 1 to 0 and on byte 2 from bit 7 to
+    // bit 1. External temperature fail is on byte2 bit0 Low Beam Status is on byte3 bit7 Lane Indicator
+    // button status (left stalk button) is on byte 3 bit6. Power Mode Status is on byte 3 from bit 5 to 4.
+    // Park Brake Status is on byte 3 bit 3.
+    // Int. Relay Fail Status is on byte 4 from bit 7 to 6
+    // SuspensionLevel is on byte 5 bit0 and byte 6 bit7.
+}

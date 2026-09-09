@@ -1,0 +1,91 @@
+#include "platform/system.h"
+#include "platform/debug.h"
+
+// System Clock Configuration
+void SystemClock_Config(void) {
+    HAL_Init();
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+    /** Initializes the RCC Oscillators according to the specified parameters
+     * in the RCC_OscInitTypeDef structure.
+     */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48;
+    RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        Error_Handler(2000);
+    }
+
+    // configure CRS to stabilize HSI48
+    //__HAL_RCC_CRS_CLK_ENABLE();
+    //
+    // RCC_CRSInitTypeDef crs = {0};
+    // crs.Prescaler = RCC_CRS_SYNC_DIV1;
+    // crs.Source = RCC_CRS_SYNC_SOURCE_USB;
+    // crs.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
+    // crs.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000, 1000);
+    // crs.ErrorLimitValue = RCC_CRS_ERRORLIMIT_DEFAULT;
+    // crs.HSI48CalibrationValue = 0x20;
+    // HAL_RCCEx_CRSConfig(&crs);
+
+    /** Initializes the CPU, AHB and APB buses clocks
+     */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI48;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
+        Error_Handler(1500);
+    }
+
+    // the following part is used by usb, used by canable
+
+    // Set USB clock source to HSI48 (48 MHz)
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+    PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
+        Error_Handler(1000);
+    }
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+}
+
+void Error_Handler(uint16_t halfPeriod) {
+    // status_led_error();
+    // LOGS("System error\r\n");
+    //__disable_irq();
+    // NVIC_SystemReset();
+
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN; // ensure clock is enabled on port gpioA
+
+    uint8_t tmpBool01 = 0;
+    while (1) {
+
+        // now toggle leds without using HAL, to be more resilient
+        if (tmpBool01) {
+            GPIOA->BSRR = GPIO_PIN_0 << 16; // set PA0 low (red led)
+
+        } else {
+            GPIOA->BSRR = GPIO_PIN_0; // set PA0 high (red led)
+        }
+
+        tmpBool01 = !tmpBool01;
+
+        for (volatile uint32_t i = 0; i < (12500 * halfPeriod); i++) { // 12500cycles=1msec
+            __asm("nop");
+        }
+    }
+}
+
+// Disable all interrupts
+void system_irq_disable(void) {
+    __disable_irq();
+    __DSB();
+    __ISB();
+}
+
+// Enable all interrupts
+void system_irq_enable(void) { __enable_irq(); }
