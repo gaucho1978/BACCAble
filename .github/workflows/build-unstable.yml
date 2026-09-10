@@ -1,92 +1,71 @@
 name: Build Beta Version
-    
-permissions:
-  contents: write
-  
-on: 
+on:
   workflow_dispatch:
     inputs:
       TAG_NAME:
-        description: "Tag name to generate (DO NOT USE vX.X.X!!!)"
-        default: "continuous"
+        description: "Beta tag (must not be a stable vX.Y.Z tag)"
+        default: continuous
         required: true
       CFLAGS:
-        description: "Optional GCC flags (-D)"
+        description: "Optional preprocessor definitions (-DNAME or -DNAME=value)"
         default: ""
         required: false
-      
+permissions:
+  contents: read
 jobs:
-  build:
-    name: BACCAble Beta Version
+  validate:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: carlosperate/arm-none-eabi-gcc-action@v1
-
-      - run: arm-none-eabi-gcc --version
-
-      - name: Clone
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+      - id: version
+        env:
+          TAG: ${{ inputs.TAG_NAME }}
+        shell: bash
+        run: |
+          [[ "$TAG" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || exit 1
+          [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]] || exit 1
+          echo "version=beta-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+    with:
+      version: ${{ needs.validate.outputs.version }}
+      extra_cppflags: ${{ inputs.CFLAGS }}
+  publish:
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
-         fetch-depth: 0
-
-      - name: Set short git commit SHA
+          pattern: baccable-*
+          merge-multiple: true
+          path: release
+      - name: Prepare beta artifacts
         run: |
-          calculatedSha=$(git rev-parse --short ${{ github.sha }})
-          echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
-
-      - name: Set CFLAGS
+          cp release/baccable-C1.elf release/baccableC1_beta.elf
+          cp release/baccable-C2.elf release/baccableC2_beta.elf
+          cp release/baccable-BH.elf release/baccableBH_beta.elf
+          if test -f release/baccable-CAN.elf; then
+            cp release/baccable-CAN.elf release/baccableActAsCanable_beta.elf
+          fi
+      - name: Move beta tag after successful validation
+        env:
+          TAG: ${{ inputs.TAG_NAME }}
         run: |
-          echo "CFLAGS=${{github.event.inputs.CFLAGS}}" >> $GITHUB_ENV
-
-      - name: Echo GITHUB_ENV
-        run: echo ${{ env.CFLAGS }}
-
-      - name: Compile BH
-        working-directory: ./firmware/ledsStripController
-        run: |
-          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=BH_FLAVOR -DBH_FLAVOR=1' make all
-          cp build/baccable-*.elf baccableBH_beta.elf
-          
-      - name: Compile C1
-        working-directory: ./firmware/ledsStripController
-        run: |
-          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1' make clean all
-          cp build/baccable-*.elf baccableC1_beta.elf
-
-      - name: Compile C2
-        working-directory: ./firmware/ledsStripController
-        run: |
-          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=C2_FLAVOR -DC2_FLAVOR=1' make clean all
-          cp build/baccable-*.elf baccableC2_beta.elf
-
-      - name: Compile ActAsCanable
-        working-directory: ./firmware/ledsStripController
-        if: ${{ !contains(env.CFLAGS, '-DDEBUG_MODE')}}
-        run: |
-          CFLAGS='${{ env.CFLAGS }} -DBUILD_VERSION=\"${{ env.COMMIT_SHORT_SHA }}\" -DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1' make clean all
-          cp build/baccable-*.elf baccableActAsCanable_beta.elf
- 
-      - name: CANable placeholder
-        working-directory: ./firmware/ledsStripController
-        if: ${{ contains(env.CFLAGS, '-DDEBUG_MODE')}}
-        run: |
-          echo "EMPTY" > baccableActAsCanable_beta.elf
-
-      - name: Move tag to latest commit
-        run: |
-         git config user.name "github-actions"
-         git config user.email "github-actions@github.com"
-         git tag -f ${{ github.event.inputs.TAG_NAME }}
-         git push -f origin ${{ github.event.inputs.TAG_NAME }}
-
-      - name: Release
-        uses: softprops/action-gh-release@v3
+          git tag -f "$TAG"
+          git push origin "+refs/tags/$TAG:refs/tags/$TAG"
+      - uses: softprops/action-gh-release@v3
         with:
           prerelease: true
-          tag_name: ${{github.event.inputs.TAG_NAME}}
-          name: Beta Version ${{ env.COMMIT_SHORT_SHA }}
+          tag_name: ${{ inputs.TAG_NAME }}
+          name: Beta Version ${{ needs.validate.outputs.version }}
+          fail_on_unmatched_files: true
           files: |
-            ./firmware/ledsStripController/baccableBH_beta.elf
-            ./firmware/ledsStripController/baccableC1_beta.elf
-            ./firmware/ledsStripController/baccableC2_beta.elf
-            ./firmware/ledsStripController/baccableActAsCanable_beta.elf
+            release/*_beta.elf
+            release/*.bin
+            release/*.hex

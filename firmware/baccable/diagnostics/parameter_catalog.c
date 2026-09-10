@@ -1,0 +1,1473 @@
+#include "diagnostics/parameter_catalog.h"
+
+float displayed_parameter_values[2];
+
+uint8_t parameter_page_count = 0;
+
+uint8_t gasoline_page_count = 46;
+uint8_t diesel_page_count = 55;
+uint8_t selected_parameter_element = 0;
+
+// Display templates and their source measurements.
+
+// format string $x.yf for float params where y is decimal part and x is integer part
+// format string $enum for enumerator values derived from specific enum arrays
+const ParameterPage parameter_pages[2][60] = {
+    {
+        {.id = 0x01,
+         .group = 5,
+         .label = "Power / torque",
+         .name = "Power $3.0fPS $3.0fNm",
+         .parameter_ids = {1, 2}}, // param couple: PWR and Torque
+        {.id = 0x02,
+         .group = 2,
+         .label = "Oil bar/coolant",
+         .name = "Oil$1.1fbar Cool$3.0fC",
+         .parameter_ids = {0, 42}}, // param couple: OIL pressure and Water Temp.
+        {.id = 0x03,
+         .group = 2,
+         .label = "Oil bar / temp",
+         .name = "Oil $1.1fbar $3.0fC",
+         .parameter_ids = {0, 5}}, // param couple: OIL pressure and Oil Temp.
+        {.id = 0x04,
+         .group = 2,
+         .label = "Oil/coolant temp",
+         .name = "Oil $3.0fC Cool $3.0fC",
+         .parameter_ids = {5, 42}}, // param couple: OIL temp. and Water Temp.
+        {.id = 0x05,
+         .group = 1,
+         .label = "Oil level/qual.",
+         .name = "Oil $1.1fL Q $3.0f%",
+         .parameter_ids = {28, 31}}, // param couple: OIL level and Oil Quality
+        {.id = 0x06,
+         .group = 3,
+         .label = "Batt charge / A",
+         .name = "Batt $3.0f% $4.1fA",
+         .parameter_ids = {3, 4}}, // param couple: BAT State Of Charge and current
+        {.id = 0x07,
+         .group = 3,
+         .label = "Battery V / A",
+         .name = "Batt $2.1fV $4.1fA",
+         .parameter_ids = {35, 4}}, // param couple: BAT voltage and current
+        {.id = 0x08,
+         .group = 5,
+         .label = "Power",
+         .name = "Power $3.1f PS",
+         .parameter_ids = {1, 1}}, // Power
+        {.id = 0x09,
+         .group = 5,
+         .label = "Torque",
+         .name = "Torque $3.0f Nm",
+         .parameter_ids = {2, 2}}, // Torque
+        {.id = 0x0a,
+         .group = 2,
+         .label = "Intercooler out",
+         .name = "IC out $3.0f C",
+         .parameter_ids = {22, 22}}, // Intercooler output air temperature
+        {.id = 0x0b,
+         .group = 2,
+         .label = "Intercooler in",
+         .name = "IC in $3.0f C",
+         .parameter_ids = {23, 23}}, // Intercooler input air temperature
+        {.id = 0x0c,
+         .group = 1,
+         .label = "Intake abs press",
+         .name = "Intake $2.2f bar",
+         .parameter_ids = {24, 24}}, // Boost Absolute Pressure
+        {.id = 0x0d,
+         .group = 1,
+         .label = "Boost pressure",
+         .name = "Boost $2.2f bar",
+         .parameter_ids = {25, 25}}, // Boost Pressure calculated from Absolute pressure
+        {.id = 0x0e,
+         .group = 1,
+         .label = "Turbo sensor V",
+         .name = "Turbo $1.3f V",
+         .parameter_ids = {26, 26}}, // Turbo Sensor Voltage
+        {.id = 0x0f,
+         .group = 5,
+         .label = "Distance (ECU)",
+         .name = "Distance $6.0fkm",
+         .parameter_ids = {27, 27}}, // distance since last time odometer was zeroized
+        {.id = 0x10,
+         .group = 1,
+         .label = "Oil volume",
+         .name = "Oil volume $2.2fL",
+         .parameter_ids = {28, 28}}, // Oil Quantity
+        {.id = 0x11,
+         .group = 1,
+         .label = "Oil pressure",
+         .name = "Oil press $2.2fbar",
+         .parameter_ids = {29, 29}}, // Oil Pressure
+        {.id = 0x12,
+         .group = 2,
+         .label = "Oil temp (ECU)",
+         .name = "Oil temp $3.0f C",
+         .parameter_ids = {30, 30}}, // Oil Temperature
+        {.id = 0x13,
+         .group = 1,
+         .label = "Oil quality",
+         .name = "Oil quality $3.0f%",
+         .parameter_ids = {31, 31}}, // Oil Quality
+        {.id = 0x14,
+         .group = 2,
+         .label = "MultiAir temp",
+         .name = "MultiAir $3.0f C",
+         .parameter_ids = {32, 32}}, // Multiair Module Oil Temperature
+        {.id = 0x15,
+         .group = 2,
+         .label = "Gearbox temp",
+         .name = "Gearbox $3.0f C",
+         .parameter_ids = {33, 33}}, // Gearbox Temperature
+        {.id = 0x16,
+         .group = 3,
+         .label = "Batt charge ECU",
+         .name = "Batt charge $3.0f%",
+         .parameter_ids = {34, 34}}, // Battery State Of Charge
+        {.id = 0x17,
+         .group = 3,
+         .label = "Battery current",
+         .name = "Battery $4.1f A",
+         .parameter_ids = {4, 4}}, // Battery Current
+        {.id = 0x18,
+         .group = 3,
+         .label = "Battery voltage",
+         .name = "Battery $2.2f V",
+         .parameter_ids = {35, 35}}, // Battery Voltage
+        {.id = 0x19,
+         .group = 6,
+         .label = "A/C pressure",
+         .name = "A/C press $2.2fbar",
+         .parameter_ids = {36, 36}}, // Air Conditioner Pressure
+        {.id = 0x1a, .group = 1, .label = "Gear", .name = "Gear $enum", .parameter_ids = {6, 6}}, // Current
+        {.id = 0x1b,
+         .group = 1,
+         .label = "Engine run time",
+         .name = "Run time $6.0fmin",
+         .parameter_ids = {37, 37}}, // Time Since engine on
+        {.id = 0x1c,
+         .group = 1,
+         .label = "Over-rev time",
+         .name = "Over-rev $3.0f s",
+         .parameter_ids = {38, 38}}, // elapsed time in engine overspeed condition
+        {.id = 0x1d,
+         .group = 1,
+         .label = "Over-rev count",
+         .name = "Over-rev #$6.0f",
+         .parameter_ids = {39, 39}}, // number of times of engine overspeed condition
+        {.id = 0x1e,
+         .group = 2,
+         .label = "Exhaust temp",
+         .name = "Exhaust $4.0f C",
+         .parameter_ids = {40, 40}}, // Exaust gas temperature
+        {.id = 0x1f,
+         .group = 2,
+         .label = "Catalyst temp",
+         .name = "Catalyst $4.0f C",
+         .parameter_ids = {41, 41}}, // catalytic converter temperature sensor
+        {.id = 0x20,
+         .group = 2,
+         .label = "Coolant temp",
+         .name = "Coolant temp $3.0fC",
+         .parameter_ids = {42, 42}}, // water temperature
+        {.id = 0x21,
+         .group = 1,
+         .label = "Knock sensor",
+         .name = "Knock $4.1f mV",
+         .parameter_ids = {43, 43}}, // head knock sensor voltage
+        {.id = 0x22,
+         .group = 6,
+         .label = "Key ID",
+         .name = "Key ID $4.0f",
+         .parameter_ids = {44, 44}}, // inserted Key ID
+        {.id = 0x23,
+         .group = 1,
+         .label = "Ignition cyl 1",
+         .name = "Ign cyl1 $3.1fdeg",
+         .parameter_ids = {45, 45}}, // Cylinder correction
+        {.id = 0x24,
+         .group = 1,
+         .label = "Ignition cyl 2",
+         .name = "Ign cyl2 $3.1fdeg",
+         .parameter_ids = {46, 46}}, // Cylinder correction
+        {.id = 0x25,
+         .group = 1,
+         .label = "Ignition cyl 3",
+         .name = "Ign cyl3 $3.1fdeg",
+         .parameter_ids = {47, 47}}, // Cylinder correction
+        {.id = 0x26,
+         .group = 1,
+         .label = "Ignition cyl 4",
+         .name = "Ign cyl4 $3.1fdeg",
+         .parameter_ids = {48, 48}}, // Cylinder correction
+        {.id = 0x27,
+         .group = 6,
+         .label = "DNA mode",
+         .name = "DNA mode $enum",
+         .parameter_ids = {15, 15}}, // Drive Style
+        {.id = 0x28,
+         .group = 5,
+         .label = "Speed",
+         .name = "Speed $3.0f km/h",
+         .parameter_ids = {7, 7}}, // Speed
+        {.id = 0x29,
+         .group = 6,
+         .label = "Seatbelt alarm",
+         .name = "Seatbelt alarm $enum",
+         .parameter_ids = {13, 13}}, // SeatBelt Alarm
+        {.id = 0x2a,
+         .group = 5,
+         .label = "0-100 km/h",
+         .name = "0-100 $2.2f s",
+         .parameter_ids = {9, 9}}, // 0-100km/h time statistic
+        {.id = 0x2b,
+         .group = 5,
+         .label = "100-200 km/h",
+         .name = "100-200 $2.2f s",
+         .parameter_ids = {10, 10}}, // 100-200km/h time statistic
+        {.id = 0x2c,
+         .group = 5,
+         .label = "Best 0-100",
+         .name = "Best 0-100 $2.2fs",
+         .parameter_ids = {11, 11}}, // 0-100km/h Best time statistic
+        {.id = 0x2d,
+         .group = 5,
+         .label = "Best 100-200",
+         .name = "Best100-200 $2.2fs",
+         .parameter_ids = {12, 12}}, // 100-200km/h Best time statistic
+        {.id = 0x2e,
+         .group = 6,
+         .label = "Pedal map",
+         .name = "Pedal map $enum",
+         .parameter_ids = {17, 17}}, // selected Pedal Map
+
+    },
+    {
+        {.id = 0x81,
+         .group = 5,
+         .label = "Power / torque",
+         .name = "Power $3.0fPS $3.0fNm",
+         .parameter_ids = {1, 2}}, // param couple: PWR and Torque
+        {.id = 0x82,
+         .group = 2,
+         .label = "Oil bar/coolant",
+         .name = "Oil$1.1fbar Cool$3.0fC",
+         .parameter_ids = {0, 68}}, // param couple: OIL pressure and Water Temp.
+        {.id = 0x83,
+         .group = 2,
+         .label = "Oil bar / temp",
+         .name = "Oil $1.1fbar $3.0fC",
+         .parameter_ids = {0, 5}}, // param couple: OIL pressure and Oil Temp.
+        {.id = 0x84,
+         .group = 2,
+         .label = "Oil/coolant temp",
+         .name = "Oil $3.0fC Cool $3.0fC",
+         .parameter_ids = {5, 68}}, // param couple: OIL temp. and Water Temp.
+        {.id = 0x85,
+         .group = 1,
+         .label = "Oil level/qual.",
+         .name = "Oil $2.1fmm Q $3.0f%",
+         .parameter_ids = {64, 63}}, // param couple: OIL level and Oil Quality
+        {.id = 0x86,
+         .group = 3,
+         .label = "Batt charge / A",
+         .name = "Batt $3.0f% $4.1fA",
+         .parameter_ids = {3, 4}}, // param couple: BAT State Of Charge and current
+        {.id = 0x87,
+         .group = 3,
+         .label = "Battery V / A",
+         .name = "Batt $2.1fV $4.1fA",
+         .parameter_ids = {62, 4}}, // param couple: BAT voltage and current
+        {.id = 0x88,
+         .group = 4,
+         .label = "DPF load / temp",
+         .name = "DPF $3.0f% $4.0fC",
+         .parameter_ids = {55, 56}}, // param couple: DPF clogging percentage and temperature
+        {.id = 0x89,
+         .group = 4,
+         .label = "DPF regen / temp",
+         .name = "Regen $3.0f% $4.0fC",
+         .parameter_ids = {57, 56}}, // param couple: DPF regeneration progress percentage and temperature
+        {.id = 0x8a,
+         .group = 5,
+         .label = "Power",
+         .name = "Power $3.1f PS",
+         .parameter_ids = {1, 1}}, // Power
+        {.id = 0x8b,
+         .group = 5,
+         .label = "Torque",
+         .name = "Torque $3.0f Nm",
+         .parameter_ids = {2, 2}}, // Torque
+        {.id = 0x8c,
+         .group = 4,
+         .label = "DPF load load",
+         .name = "DPF load $3.1f%",
+         .parameter_ids = {55, 55}}, // DPF clogging percentage
+        {.id = 0x8d,
+         .group = 4,
+         .label = "DPF temp",
+         .name = "DPF temp $4.0f C",
+         .parameter_ids = {56, 56}}, // DPF Temperature
+        {.id = 0x8e,
+         .group = 4,
+         .label = "DPF regen %",
+         .name = "DPF regen $3.0f%",
+         .parameter_ids = {57, 57}}, // DPF regeneration progress percentage
+        {.id = 0x8f,
+         .group = 4,
+         .label = "DPF regen mode",
+         .name = "Regen $enum",
+         .parameter_ids = {8, 8}}, // DPF regeneration type
+        {.id = 0x90,
+         .group = 4,
+         .label = "Since DPF regen",
+         .name = "Since regen$5.0fkm",
+         .parameter_ids = {58, 58}}, // DPF last regeneration distance in km
+        {.id = 0x91,
+         .group = 4,
+         .label = "DPF regen count",
+         .name = "Regen count $5.0f",
+         .parameter_ids = {59, 59}}, // DPF total number of regenerations
+        {.id = 0x92,
+         .group = 4,
+         .label = "DPF avg interval",
+         .name = "Regen avg $5.0fkm",
+         .parameter_ids = {60, 60}}, // DPF mean regeneration distance in km
+        {.id = 0x93,
+         .group = 4,
+         .label = "DPF avg duration",
+         .name = "Regen avg $3.0fmin",
+         .parameter_ids = {61, 61}}, // DPF mean regeneration duration in minutes
+        {.id = 0x94,
+         .group = 3,
+         .label = "Battery voltage",
+         .name = "Battery $2.2f V",
+         .parameter_ids = {62, 62}}, // Battery Voltage
+        {.id = 0x95,
+         .group = 3,
+         .label = "Battery charge",
+         .name = "Batt charge $3.0f%",
+         .parameter_ids = {3, 3}}, // Battery State Of Charge percentage
+        {.id = 0x96,
+         .group = 3,
+         .label = "Battery current",
+         .name = "Battery $4.1f A",
+         .parameter_ids = {4, 4}}, // Battery current
+        {.id = 0x97,
+         .group = 1,
+         .label = "Oil quality",
+         .name = "Oil quality $3.0f%",
+         .parameter_ids = {63, 63}}, // Oil Quality
+        {.id = 0x98,
+         .group = 2,
+         .label = "Oil temp",
+         .name = "Oil temp $3.0f C",
+         .parameter_ids = {5, 5}}, // Oil temperature
+        {.id = 0x99,
+         .group = 1,
+         .label = "Oil pressure",
+         .name = "Oil press $2.2fbar",
+         .parameter_ids = {0, 0}}, // Oil pressure
+        {.id = 0x9a,
+         .group = 1,
+         .label = "Oil level",
+         .name = "Oil level $3.1fmm",
+         .parameter_ids = {64, 64}}, // Oil quantity in mm
+        {.id = 0x9b,
+         .group = 4,
+         .label = "AdBlue volume",
+         .name = "AdBlue $2.2f L",
+         .parameter_ids = {65, 65}}, // Adblue quantity in Liters
+        {.id = 0x9c,
+         .group = 4,
+         .label = "AdBlue level",
+         .name = "AdBlue level $3.0f%",
+         .parameter_ids = {66, 66}}, // Adblue quantity in percentage
+        {.id = 0x9d,
+         .group = 2,
+         .label = "Gearbox temp",
+         .name = "Gearbox $3.0f C",
+         .parameter_ids = {33, 33}}, // gearbox temperature
+        {.id = 0x9e,
+         .group = 2,
+         .label = "Exhaust temp",
+         .name = "Exhaust $4.0f C",
+         .parameter_ids = {67, 67}}, // exhaust gas temperature (turbo input)
+        {.id = 0x9f, .group = 1, .label = "Gear", .name = "Gear $enum", .parameter_ids = {6, 6}}, // current
+
+        {.id = 0xa0,
+         .group = 2,
+         .label = "Coolant temp",
+         .name = "Coolant temp $3.0fC",
+         .parameter_ids = {68, 68}}, // water temperature
+        {.id = 0xa1,
+         .group = 1,
+         .label = "EGR target",
+         .name = "EGR target $3.0f%",
+         .parameter_ids = {73, 73}}, // EGR command
+        {.id = 0xa2,
+         .group = 1,
+         .label = "EGR actual",
+         .name = "EGR actual $3.0f%",
+         .parameter_ids = {74, 74}}, // EGR status
+        {.id = 0xa3,
+         .group = 1,
+         .label = "Turbo target bar",
+         .name = "Turbo req$3.2fbar",
+         .parameter_ids = {76, 76}}, // Turbo Request pressure
+        {.id = 0xa4,
+         .group = 1,
+         .label = "Turbo target %",
+         .name = "Turbo req $3.0f%",
+         .parameter_ids = {77, 77}}, // Turbo Request percentage
+        {.id = 0xa5,
+         .group = 2,
+         .label = "Turbo temp",
+         .name = "Turbo temp $3.0f C",
+         .parameter_ids = {78, 78}}, // Turbo temperature
+        {.id = 0xa6,
+         .group = 1,
+         .label = "Turbo actual bar",
+         .name = "Turbo $3.2f bar",
+         .parameter_ids = {79, 79}}, // Turbo pressure
+        {.id = 0xa7,
+         .group = 1,
+         .label = "Turbo actual %",
+         .name = "Turbo $3.0f%",
+         .parameter_ids = {80, 80}}, // Turbo percentage
+        {.id = 0xa8,
+         .group = 1,
+         .label = "Boost target",
+         .name = "Boost req$3.2fbar",
+         .parameter_ids = {81, 81}}, // Boost Request pressure
+        {.id = 0xa9,
+         .group = 1,
+         .label = "Intake sensor V",
+         .name = "Intake $1.3f V",
+         .parameter_ids = {82, 82}}, // Boost sensor voltage
+        {.id = 0xaa,
+         .group = 1,
+         .label = "Fuel pressure",
+         .name = "Fuel $4.0f bar",
+         .parameter_ids = {83, 83}}, // Rail pressure
+        {.id = 0xab,
+         .group = 2,
+         .label = "Fuel temp",
+         .name = "Fuel temp $3.0f C",
+         .parameter_ids = {84, 84}}, // Diesel temperature
+        {.id = 0xac,
+         .group = 5,
+         .label = "Distance (ECU)",
+         .name = "Distance $6.0fkm",
+         .parameter_ids = {85, 85}}, // Distance in km since last odometer reset
+        {.id = 0xad,
+         .group = 6,
+         .label = "A/C pressure",
+         .name = "A/C press $2.2fbar",
+         .parameter_ids = {86, 86}}, // Air conditioner pressure
+        {.id = 0xae,
+         .group = 1,
+         .label = "Fuel rate",
+         .name = "Fuel $2.2f L/h",
+         .parameter_ids = {87, 87}}, // Fuel Consume
+        {.id = 0xaf,
+         .group = 2,
+         .label = "Intake air temp",
+         .name = "Intake air $3.0f C",
+         .parameter_ids = {88, 88}}, // Debimeter temperature
+        {.id = 0xb0,
+         .group = 5,
+         .label = "Speed",
+         .name = "Speed $3.0f km/h",
+         .parameter_ids = {7, 7}}, // speed
+        {.id = 0xb1,
+         .group = 6,
+         .label = "Seatbelt alarm",
+         .name = "Seatbelt alarm $enum",
+         .parameter_ids = {13, 13}}, // Seatbelt Alarm Status
+        {.id = 0xb2,
+         .group = 5,
+         .label = "0-100 km/h",
+         .name = "0-100 $2.2f s",
+         .parameter_ids = {9, 9}}, // 0-100km/h Statistic
+        {.id = 0xb3,
+         .group = 5,
+         .label = "100-200 km/h",
+         .name = "100-200 $2.2f s",
+         .parameter_ids = {10, 10}}, // 100-200km/h Statistic
+        {.id = 0xb4,
+         .group = 5,
+         .label = "Best 0-100",
+         .name = "Best 0-100 $2.2fs",
+         .parameter_ids = {11, 11}}, // 0-100km/h Best Statistic
+        {.id = 0xb5,
+         .group = 5,
+         .label = "Best 100-200",
+         .name = "Best100-200 $2.2fs",
+         .parameter_ids = {12, 12}}, // 0-100km/h Best Statistic
+        {.id = 0xb6,
+         .group = 6,
+         .label = "DNA mode",
+         .name = "DNA mode $enum",
+         .parameter_ids = {15, 15}}, // Drive Style
+        {.id = 0xb7,
+         .group = 6,
+         .label = "Pedal map",
+         .name = "Pedal map $enum",
+         .parameter_ids = {17, 17}}, // selected Pedal Map
+
+    }};
+
+const ParameterDefinition parameter_definitions[100] = {
+    {
+        .request_id = 0x10,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x000004B2,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = 0,
+    }, // 0 oil pressure
+    {
+        .request_id = 0x11,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x000000FB,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -500,
+        .scale = 0.000142378,
+        .scaled_offset = 0,
+    }, // 1 power
+    {
+        .request_id = 0x12,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x000000FB,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = -500,
+    }, // 2 torque
+    {
+        .request_id = 0x13,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x0000041A,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 3 Battery percentage
+    {
+        .request_id = 0x14,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x0000041A,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = -250,
+    }, // 4 battery current
+    {
+        .request_id = 0x15,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x000004B2,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = -40,
+    }, // 5 oil temperature
+
+    {
+        .request_id = 0x17,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x000002EF,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 6 current gear
+    {
+        .request_id = 0x18,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000101,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0625,
+        .scaled_offset = 0,
+    }, // 7 speed
+    {
+        .request_id = 0x19,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x000005AE,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 8 DPF Regeneration type
+    {
+        .request_id = 0x1A,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 9 statistic 0/100
+    {
+        .request_id = 0x1B,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 10 statistic 100/200
+    {
+        .request_id = 0x1C,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 11 best statistic 0/100
+    {
+        .request_id = 0x1D,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 12 best statistic 100/200
+    {
+        .request_id = 0x1E,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032255A0),
+        .response_id = 0x18DAF160,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 13 seat belt alarm
+    {
+        .request_id = 0x1F,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 14 debug string
+    {
+        .request_id = 0x20,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 15 Drive Style
+    {
+        .request_id = 0x21,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 16 Free RAM
+    {
+        .request_id = 0x22,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x00000000),
+        .response_id = 0x00000000,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    },  // 17 Selected Pedal Map
+    {}, // 18
+    {}, // 19
+    {}, // 20
+    {}, // 21
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221935),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = -40,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 22 intercooler air out (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223A58),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = -40,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 23 intercooler air in (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322195A),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -1,
+        .scale = 0.001,
+        .scaled_offset = 0,
+    }, // 24 boost absolute pressure (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322195A),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -1,
+        .scale = 0.001,
+        .scaled_offset = -1,
+    }, // 25 boost pressure extracted from absolute pressure (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221936),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0001,
+        .scaled_offset = 0,
+    }, // 26 turbo (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03222002),
+        .response_id = 0x18DAF110,
+        .value_length = 3,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = 0,
+    }, // 27 odometer last (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223A41),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.001,
+        .scaled_offset = 0,
+
+    }, // 28 oil quantity (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322130A),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.039215686,
+        .scaled_offset = 0,
+    }, // 29 oil pressure (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221302),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 1,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 30 oil temperature (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223813),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0015259022,
+        .scaled_offset = 0,
+    }, // 31 oil quality (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322198E),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0625,
+        .scaled_offset = -40,
+    }, // 32 multiair module oil temperature (gasoline)
+    {
+        .request_id = 0x18DA18F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032204FE),
+        .response_id = 0x18DAF118,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = -40,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 33 gearbox temperature
+    {
+        .request_id = 0x18DA40F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221005),
+        .response_id = 0x18DAF140,
+        .value_length = 2,
+        .value_offset = 1,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 34 battery percentage (gasoline)
+    {
+        .request_id = 0x18DA40F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221004),
+        .response_id = 0x18DAF140,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = 0,
+    }, // 35 battery voltage (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322192F),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.01,
+        .scaled_offset = 0,
+    }, // 36 air conditioner pressure (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221009),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.25,
+        .scaled_offset = 0,
+    }, // 37 time since engine ON (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03222006),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.01,
+        .scaled_offset = 0,
+    }, // 38 time spent in engine overspeed (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03222004),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 39 engine overspeed number of times (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218BA),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 5,
+        .scaled_offset = -50,
+    }, // 40 exhaust gas temperature (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221837),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 5,
+        .scaled_offset = -50,
+    }, // 41 Catalytic sensor temperature (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221003),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = -40,
+    }, // 42 Water temperature (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221841),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.125,
+        .scaled_offset = 0,
+    }, // 43 head knock (gasoline)
+    {
+        .request_id = 0x18DA40F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03220131),
+        .response_id = 0x18DAF140,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 44 Key ID (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322186C),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0625,
+        .scaled_offset = 0,
+    }, // 45 cylinder1 correction (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322186D),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0625,
+        .scaled_offset = 0,
+    }, // 46 cylinder2 correction (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322186E),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0625,
+        .scaled_offset = 0,
+    }, // 47 cylinder3 correction (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322186F),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0625,
+        .scaled_offset = 0,
+    }, // 48 cylinder4 correction (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218F0),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 49 drive style selector position (gasoline)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x022240B3),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 50 front right tyre pressure (not implemented now)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x022230B4),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 51 rear right tyre pressure (not implemented now)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x022240B2),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 52 front left tyre pressure (not implemented now)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x022240B1),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 53 rear left tyre pressure (not implemented now)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218AA),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.001,
+        .scaled_offset = 0,
+    }, // 54 particulate (gasoline)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218E4),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.015259022,
+        .scaled_offset = 0,
+    }, // 55 DPF clogging percentage (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218DE),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.02,
+        .scaled_offset = -40,
+    }, // 56 DPF temperature (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322380B),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.001525902,
+        .scaled_offset = 0,
+    }, // 57 DPF regeneration progress percentage (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223807),
+        .response_id = 0x18DAF110,
+        .value_length = 3,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = 0,
+    }, // 58 last regeneration (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218A4),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 59 total regenerations number (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223809),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 60 mean regeneration (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322380A),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.01666666666,
+        .scaled_offset = 0,
+    }, // 61 mean regeneration duration (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221955),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0005,
+        .scaled_offset = 0,
+    }, // 62 battery voltage (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223813),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0015259022,
+        .scaled_offset = 0,
+    }, // 63 oil quality (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322194E),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = 0,
+    }, // 64 oil level [mm in oil pan (50-70mmm)] (diesel)
+    {
+        .request_id = 0x18DA01F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322D930),
+        .response_id = 0x18DAF101,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.00097676774,
+        .scaled_offset = 0,
+    }, // 65 adblue level in liters (diesel)
+    {
+        .request_id = 0x18DA01F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322D97C),
+        .response_id = 0x18DAF101,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.390625,
+        .scaled_offset = 0,
+    }, // 66 adblue level in % (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03223836),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.02,
+        .scaled_offset = -40,
+    }, // 67 exhaust gas temperature (turbo input) (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221003),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.02,
+        .scaled_offset = -40,
+    }, // 68 water temperature (diesel)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032240B1),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 69 from left tire temperature (not implemented) (diesel)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032240B2),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 70 front right tire temperature (diesel)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032240B3),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 71 rear left tire temperature (diesel)
+    {
+        .request_id = 0x18DAC7F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032240B4),
+        .response_id = 0x18DAF1C7,
+        .value_length = 1,
+        .value_offset = 4,
+        .raw_offset = -50,
+        .scale = 1,
+        .scaled_offset = 0,
+    }, // 72 rear right tire temperature (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322189B),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -32767,
+        .scale = 0.00305185095,
+        .scaled_offset = 0,
+    }, // 73 EGR command (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322189A),
+        .response_id = 0x18DAF110,
+        .value_length = 1,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1953125,
+        .scaled_offset = 0,
+    }, // 74 EGR status (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322189C),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -32767,
+        .scale = 0.00305185095,
+        .scaled_offset = 0,
+    }, // 75 EGR measured (diesel); historical captures reported occasional incorrect values.
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221942),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.000030517578,
+        .scaled_offset = 0,
+    }, // 76 Turbo request pressure (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322189F),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.00152590219,
+        .scaled_offset = 0,
+    }, // 77 Turbo request percentage (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221935),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.02,
+        .scaled_offset = -40,
+    }, // 78 Turbo temperature (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322195A),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -32768,
+        .scale = 0.001,
+        .scaled_offset = -1,
+    }, // 79 Turbo Pressure (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x032218A0),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.00152590219,
+        .scaled_offset = 0,
+    }, // 80 Turbo percentage (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221959),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = -32768,
+        .scale = 0.001,
+        .scaled_offset = -1,
+    }, // 81 Boost pressure Request (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322195B),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0001,
+        .scaled_offset = 0,
+    }, // 82 Boost sensor voltage (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221947),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.05,
+        .scaled_offset = 0,
+    }, // 83 Rail pressure (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221900),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.02,
+        .scaled_offset = -40,
+    }, // 84 Diesel temperature (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03222002),
+        .response_id = 0x18DAF110,
+        .value_length = 3,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.1,
+        .scaled_offset = 0,
+    }, // 85 Odometer Last (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322192F),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.01,
+        .scaled_offset = 0,
+    }, // 86 Air Conditioner pressure (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x03221942),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.0000394789,
+        .scaled_offset = 0,
+    }, // 87 Fuel consume (diesel)
+    {
+        .request_id = 0x18DA10F1,
+        .request_length = 4,
+        .request_data = SWAP_UINT32(0x0322193F),
+        .response_id = 0x18DAF110,
+        .value_length = 2,
+        .value_offset = 0,
+        .raw_offset = 0,
+        .scale = 0.02,
+        .scaled_offset = -40,
+    }, // 88 Debimeter temperature (diesel)
+
+};
+
+const char *regeneration_labels[] = {"NONE      ", "DPF LO    ", "DPF HI    ", "NSC De-NOx",
+                                     "NSC De-SOx", "SCR HeatUp", "NONE.     ", "?         "};
+
+const char *seatbelt_labels[] = {"ON", "OFF", "--"};
+
+const uint8_t gear_symbols[11] = {'N', '1', '2', '3', '4', '5', '6', 'R', '7', '8', '9'};
+
+const char *statistics_labels[] = {"MISS", "RUN", "--"};

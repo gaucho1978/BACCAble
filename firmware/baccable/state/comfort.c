@@ -1,0 +1,73 @@
+#include "state/comfort.h"
+ComfortState comfort_state = {
+    .reserved = 0,
+#if defined(BACCABLE_C1) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
+    .acc_msg_header = {.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x2FA, .DLC = 3},
+    .new_wheel_pressed_button_id = 0x10,
+    .acc_was_engaged_when_res_was_pressed = 0,
+    .disable_start_and_stop_msg_header = {.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x4B1, .DLC = 8},
+    .disable_start_and_stop_msg_data = {0x04, 0x00, 0x00, 0x10, 0xA0, 0x08, 0x08, 0x00},
+    .start_and_stop_enabled = 1,
+    .start_andstop_car_status = 1,
+    .last_time_start_andstop_disabler_button_pressed = 0,
+    .request_to_disable_start_and_stop = 0,
+    .cruise_control_disabled = 1,
+    .acc_disabled = 1,
+    .acc_engaged = 0,
+    .wheel_pressed_button_id = 0x10,
+    .last_pressed_speed_up_wheel_button_duration = 0x00,
+    .time_since_last_received_accelerator_message = 0,
+    .close_windows_request = 0,
+    .door_close_time = 0,
+    .door_locks_requests_counter = 0,
+    .open_windows_request = 0,
+    .door_open_time = 0,
+    .door_unlocks_requests_counter = 0,
+    .rf_requestor = 0,
+    .rf_fob_number = 0,
+    .force_q_vexhaust_valve_opened = 0,
+    .last_sent_q_vexhaust_valve_msg_time = 0,
+    .force_q_vexhaust_valve_msg_header =
+        {{.IDE = CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId = 0x18DA17F1, .DLC = 3},
+         {.IDE = CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId = 0x18DA17F1, .DLC = 3},
+         {.IDE = CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId = 0x18DA17F1, .DLC = 7},
+         {.IDE = CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId = 0x18DA17F1, .DLC = 5}},
+    .force_q_vexhaust_valve_msg_data = {{
+                                            0x02,
+                                            0x10,
+                                            0x03,
+                                        },
+                                        {
+                                            0x02,
+                                            0x3E,
+                                            0x00,
+                                        },
+                                        {
+                                            0x06,
+                                            0x2F,
+                                            0x51,
+                                            0x90,
+                                            0x03,
+                                            0x00,
+                                            0x00,
+                                        },
+                                        {
+                                            0x04,
+                                            0x2F,
+                                            0x51,
+                                            0x90,
+                                            0x00,
+                                        }},
+    .number_of_release_button_clicks = 0,
+    .releasebutton_first_click_time = 0,
+    .releasebutton_press_begin_time = 0,
+    .exhaust_valve_mosfet_command_time = 0,
+    .chinese_exhaust_valve_request = 0,
+    .chinese_valve_is_opened = 0,
+#endif
+#if defined(BACCABLE_C1) || defined(BACCABLE_C2)
+    .lights_animation_state_machine = 22,
+#endif
+
+    .has_button_press_requested = 0,
+};

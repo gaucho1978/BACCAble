@@ -115,43 +115,43 @@ Note1: If you are not using new baccable board, you will need to connect canable
 ## Low Consume functionality Notes
 This function, is enabled by default. If using the new Baccable PCB Board (it includes 3 baccable), it will allow the master baccable, to reset the other 2 chips and to put can transiceivers in low consumption, by means of 2 dedicated GPIO. Low consume is activated after one minute without messages on the bus, and it will wake up as soon as messages start to flow again on the bus.
 
-## Firmware notes
+## Firmware Notes
 
-Note1: The parameters array is customizable ,It resides in global_variabes.c. (search for uds_params_array array)
+Firmware is organized under [firmware/baccable](firmware/baccable).
+See the [architecture and extension guide](docs/architecture/README.md),
+[analysis](docs/architecture/ANALYSIS_PL.md),
+[initial verification report](docs/architecture/VALIDATION_PL.md), and
+[final cleanup and validation](docs/architecture/CLEANUP.md).
+The [menu UX guide](docs/architecture/MENU_UX_PL.md) describes navigation,
+favorites, sorting, display transport and the new preference format.
 
-This is the structure of each element:
- 
-- name[15]:						It is the name of the parameter. shall be short otherwise the string will be cutted and not entirely shown in dashoard 
-- reqId:						It is the msg id to request in UDS command. It Typically starts with 18DA....
-- reqLen:						It is the total length of the can message to send
-- reqData:						It is the entire can message to send. It follows the following UDS syntax:
-								First byte is the length of the following bytes, 
-								Second byte is the requested service (tipically 0x22, request parameter by ID),
-								Third and fourth byte are the DID (the requested parameter).
-- replyId:						It is the message ID of the received reply. Tipically if the reqID is 18DAAABB the replyID shall be 18DABBAA
-- replyLen:						It is the number of bytes of the parameter that we want to extract from the received message
-- replyOffset:					It defines where is located the parameter. 0 means that it is the first byte of the expected field of UDS message, 1 means that we shall start from second byte, and so on.
-- replyValOffset: 				Once the parameter is decoded as unsigned integer, the first calculation on the value will be + replyValOffset 
-- replyScale:					Once the parameter has been summed with replyValOffset, the result will be multiplied by replyScale
-- replyScaleOffset:				Once the parameter has been multiplied by replyScale, the result will be summed to replyScaleOffset
-- replyMeasurementUnit[7]:		It is a string appended at the end of the parameter string to define measurement unit. Too long strings will have measurement unit cutted and not shown on the dashboard.
-- replyDecimalDigits:			The parameter, after previous calculations, will be converted to string, and rounded to the specified number of decimal digits. 
-
-Note2: if you change number of elements in the array, you shall update total number of elements in the variable total_pages_in_dashboard_menu.
+Parameter definitions and dashboard pages are in
+[parameter_catalog.c](firmware/baccable/diagnostics/parameter_catalog.c).
+`ParameterDefinition` describes the request, response ID, byte offset/length,
+signed raw offset, scale, unit and decimal places. `ParameterPage` associates
+two parameter IDs with a stable page ID, group, short label and display template.
+Never renumber existing page IDs. Update the gasoline/diesel page
+counts when extending the page tables.
 
 ## BACCABLE Compile Instructions
 
-We introduced automatic compilation on github. Stable releases are downloadable from "Releases" section:  [![Release](https://img.shields.io/github/v/release/gaucho1978/BACCAble)](https://github.com/gaucho1978/BACCAble/releases)
+Use the [Makefile instructions](firmware/baccable/MAKEFILE.md). Local builds and
+GitHub Actions use the same entry points:
 
+```sh
+make -C tests test
+make -C firmware/baccable FLAVOR=C1 lint
+make -C firmware/baccable -j4 FLAVOR=C1 all
+```
 
-If you want to compile it on your PC, the easiest way is to use stm32CubeIde software.
-Once the project has been opened, select the desired compile option, and the related elf file will be generated under firmware\ledsStripController, in a subfolder named according to the selected compile option. Inside that folder you will find generated elf file.
+Select `C1`, `C2`, `BH`, or `CAN`. Artifacts are produced in
+`firmware/baccable/build/FLAVOR/`. The old CubeIDE generated build profiles no
+longer describe this source tree; use an external Makefile project in your IDE.
 
-![Compilation Options](hardware/system_interconnection/compileOptions.jpg)
-
-select C1, C2, BH release options, depending on the board for which you are compiling it.
-
-Default options are enough for anyone, but if any customization is required, it can be done following instructions contained in file firmware\ledsStripController\Core\Inc\user_config.h.sample
+The new persistence format is incompatible with previous firmware. Review the
+[storage migration and hardware requirements](docs/architecture/README.md#persistent-data-and-compatibility)
+before updating boards. Vehicle behavior, particularly the Race mask, requires
+hardware validation after the refactor.
 
 
 ## BACCABLE Flash Instructions
