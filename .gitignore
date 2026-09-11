@@ -8,6 +8,7 @@ user_config.h
 # outputs
 Debug
 Release*
+!.github/scripts/release-tag.sh
 build
 SavvyCAN-Windows_x64
 
