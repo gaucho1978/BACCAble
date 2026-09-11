@@ -7,27 +7,30 @@ on:
       TAG_NAME:
         description: "Release tag (vX.Y.Z)"
         required: true
+concurrency:
+  group: release-${{ inputs.TAG_NAME || github.ref_name }}
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
       - id: tag
         env:
+          GH_TOKEN: ${{ github.token }}
           REQUESTED_TAG: ${{ inputs.TAG_NAME }}
         shell: bash
         run: |
           tag="${REQUESTED_TAG:-${GITHUB_REF#refs/tags/}}"
           [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
-          if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
-            test "$(git rev-parse "$tag^{commit}")" = "$(git rev-parse HEAD)"
-          fi
+          bash .github/scripts/release-tag.sh validate stable "$tag"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
   build:
     needs: validate
@@ -36,29 +39,33 @@ jobs:
       version: ${{ needs.validate.outputs.tag }}
   publish:
     needs: [validate, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: baccable-*
           merge-multiple: true
           path: release
-      - name: Preserve release ELF filenames
-        run: |
-          cp release/baccable-C1.elf release/baccableC1_stable.elf
-          cp release/baccable-C2.elf release/baccableC2_stable.elf
-          cp release/baccable-BH.elf release/baccableBH_stable.elf
-          cp release/baccable-CAN.elf release/baccableActAsCanable_stable.elf
-      - uses: softprops/action-gh-release@v3
+      - name: Package and verify firmware
+        env:
+          TAG: ${{ needs.validate.outputs.tag }}
+          VERSION: ${{ needs.validate.outputs.tag }}
+          EXTRA_CPPFLAGS: ''
+        run: python3 .github/scripts/package-release.py stable "$TAG" "$VERSION" "$GITHUB_SHA" "$EXTRA_CPPFLAGS"
+      - name: Publish verified tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: bash .github/scripts/release-tag.sh publish stable "$TAG"
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           prerelease: false
           tag_name: ${{ needs.validate.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: Stable Version ${{ needs.validate.outputs.tag }}
           fail_on_unmatched_files: true
-          files: |
-            release/*_stable.elf
-            release/*.bin
-            release/*.hex
+          files: dist/*

@@ -10,22 +10,28 @@ on:
         description: "Optional preprocessor definitions (-DNAME or -DNAME=value)"
         default: ""
         required: false
+concurrency:
+  group: release-${{ inputs.TAG_NAME || github.ref_name }}
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - id: version
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.TAG_NAME }}
         shell: bash
         run: |
           [[ "$TAG" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || exit 1
           [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]] || exit 1
+          bash .github/scripts/release-tag.sh validate beta "$TAG"
           echo "version=beta-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
   build:
     needs: validate
@@ -35,37 +41,32 @@ jobs:
       extra_cppflags: ${{ inputs.CFLAGS }}
   publish:
     needs: [validate, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: baccable-*
           merge-multiple: true
           path: release
-      - name: Prepare beta artifacts
-        run: |
-          cp release/baccable-C1.elf release/baccableC1_beta.elf
-          cp release/baccable-C2.elf release/baccableC2_beta.elf
-          cp release/baccable-BH.elf release/baccableBH_beta.elf
-          if test -f release/baccable-CAN.elf; then
-            cp release/baccable-CAN.elf release/baccableActAsCanable_beta.elf
-          fi
-      - name: Move beta tag after successful validation
+      - name: Package and verify firmware
         env:
           TAG: ${{ inputs.TAG_NAME }}
-        run: |
-          git tag -f "$TAG"
-          git push origin "+refs/tags/$TAG:refs/tags/$TAG"
-      - uses: softprops/action-gh-release@v3
+          VERSION: ${{ needs.validate.outputs.version }}
+          EXTRA_CPPFLAGS: ${{ inputs.CFLAGS }}
+        run: python3 .github/scripts/package-release.py beta "$TAG" "$VERSION" "$GITHUB_SHA" "$EXTRA_CPPFLAGS"
+      - name: Publish verified tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.TAG_NAME }}
+        run: bash .github/scripts/release-tag.sh publish beta "$TAG"
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           prerelease: true
           tag_name: ${{ inputs.TAG_NAME }}
           name: Beta Version ${{ needs.validate.outputs.version }}
           fail_on_unmatched_files: true
-          files: |
-            release/*_beta.elf
-            release/*.bin
-            release/*.hex
+          files: dist/*

@@ -11,23 +11,98 @@ on:
       extra_cppflags:
         type: string
         default: ""
+# Separate reusable release runs from branch/PR CI; never cancel a release build.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}-${{ inputs.version || 'check' }}-${{ inputs.version != '' && github.run_id || 'branch' }}
+  cancel-in-progress: ${{ inputs.version == '' && (github.event_name == 'push' || github.event_name == 'pull_request') }}
 permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    outputs:
+      firmware: ${{ steps.changes.outputs.firmware }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changes
+        name: Detect documentation-only changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          EVENT: ${{ github.event_name }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          build=true
+          base="$BASE"
+          if [[ -z "$RELEASE_VERSION" && "$EVENT" == pull_request ]] && git cat-file -e "$base^{commit}" 2>/dev/null; then
+            git diff --name-only -z "$base" HEAD > /tmp/changed-paths
+            if python3 -c 'from pathlib import Path; names=Path("/tmp/changed-paths").read_bytes().split(b"\0"); exit(any(n and not n.endswith(b".md") for n in names))'; then
+              build=false
+            fi
+          fi
+          echo "firmware=$build" >> "$GITHUB_OUTPUT"
+          echo "Firmware build required: $build" >> "$GITHUB_STEP_SUMMARY"
       - name: Check conflict markers
         run: |
           if git grep -nE '^(<<<<<<< .+|=======$|>>>>>>> .+)' -- '*.c' '*.h' '*.s' '*.ld' '*.yml' '*.yaml' '*.md'; then
             exit 1
           fi
+      - name: Release script regression tests
+        run: python3 .github/scripts/test-ci.py
       - name: Host regression tests with ASan and UBSan
-        run: make -C tests test
+        run: |
+          set -o pipefail
+          clang --version
+          make -C tests -j2 test 2>&1 | tee host-tests.log
+      - name: Test summary
+        if: always()
+        run: |
+          echo '### Host regression tests (ASan/UBSan)' >> "$GITHUB_STEP_SUMMARY"
+          if test -f host-tests.log; then
+            grep '^PASS:' host-tests.log >> "$GITHUB_STEP_SUMMARY" || true
+            tail -n 15 host-tests.log
+          fi
+          echo 'Failures are reported by the test step; see its full log.' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: host-test-log
+          path: host-tests.log
+          if-no-files-found: ignore
+  lint:
+    needs: test
+    if: needs.test.outputs.firmware == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      EXTRA_CPPFLAGS: ${{ inputs.extra_cppflags }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install pinned cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cppcheck=2.13.0-2ubuntu3
+          cppcheck --version
+      - name: Analyze all enabled flavors
+        run: |
+          for flag in $EXTRA_CPPFLAGS; do
+            [[ "$flag" =~ ^-D[A-Za-z_][A-Za-z0-9_]*(=[A-Za-z0-9_.+-]+)?$ ]] || exit 1
+          done
+          for flavor in C1 C2 BH CAN; do
+            if [[ "$flavor" == CAN && "$EXTRA_CPPFLAGS" == *-DDEBUG_MODE* ]]; then continue; fi
+            make -C firmware/baccable FLAVOR="$flavor" VERSION=lint lint
+            echo "cppcheck: $flavor PASS" >> "$GITHUB_STEP_SUMMARY"
+          done
   firmware:
     needs: test
-    runs-on: ubuntu-latest
+    if: needs.test.outputs.firmware == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -37,9 +112,9 @@ jobs:
       REQUESTED_VERSION: ${{ inputs.version }}
       EXTRA_CPPFLAGS: ${{ inputs.extra_cppflags }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          fetch-depth: 0
+          persist-credentials: false
       - name: Validate build inputs
         shell: bash
         run: |
@@ -49,25 +124,26 @@ jobs:
             [[ "$flag" =~ ^-D[A-Za-z_][A-Za-z0-9_]*(=[A-Za-z0-9_.+-]+)?$ ]] || exit 1
           done
           echo "VERSION=$version" >> "$GITHUB_ENV"
-      - name: Install cppcheck
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cppcheck
       - name: Install ARM GCC
-        uses: carlosperate/arm-none-eabi-gcc-action@v1
+        uses: carlosperate/arm-none-eabi-gcc-action@98c40e51546516419841748d3210c290df0d2c6c # v1
         with:
           release: "15.3.Rel1"
-      - name: Analyze and build
+      - name: Build firmware
         if: matrix.flavor != 'CAN' || !contains(inputs.extra_cppflags, '-DDEBUG_MODE')
         working-directory: firmware/baccable
         run: |
           arm-none-eabi-gcc --version
-          make lint
           make -j2 all
           test -s "build/$FLAVOR/baccable-$FLAVOR.bin"
           test -s "build/$FLAVOR/baccable-$FLAVOR.hex"
           arm-none-eabi-size "build/$FLAVOR/baccable-$FLAVOR.elf"
-      - uses: actions/upload-artifact@v7
+      - name: Firmware size and identity
+        if: matrix.flavor != 'CAN' || !contains(inputs.extra_cppflags, '-DDEBUG_MODE')
+        env:
+          FLASH_LIMIT: ${{ vars[format('FLASH_LIMIT_{0}', matrix.flavor)] }}
+          RAM_LIMIT: ${{ vars[format('RAM_LIMIT_{0}', matrix.flavor)] }}
+        run: python3 .github/scripts/firmware-report.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: matrix.flavor != 'CAN' || !contains(inputs.extra_cppflags, '-DDEBUG_MODE')
         with:
           name: baccable-${{ matrix.flavor }}
@@ -76,4 +152,27 @@ jobs:
             firmware/baccable/build/${{ matrix.flavor }}/*.bin
             firmware/baccable/build/${{ matrix.flavor }}/*.hex
             firmware/baccable/build/${{ matrix.flavor }}/*.map
+            firmware/baccable/build/${{ matrix.flavor }}/build-info-*.json
           if-no-files-found: error
+  result:
+    name: CI result
+    if: always()
+    needs: [test, lint, firmware]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Check required results
+        env:
+          TEST: ${{ needs.test.result }}
+          LINT: ${{ needs.lint.result }}
+          FIRMWARE: ${{ needs.firmware.result }}
+          REQUIRED: ${{ needs.test.outputs.firmware }}
+        run: |
+          test "$TEST" = success
+          if [[ "$REQUIRED" == true ]]; then
+            test "$LINT" = success
+            test "$FIRMWARE" = success
+          else
+            test "$LINT" = skipped
+            test "$FIRMWARE" = skipped
+          fi
