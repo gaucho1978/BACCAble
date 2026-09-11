@@ -1,6 +1,11 @@
 #include "app/main.h"
 #include "stm32f0xx_it.h"
 #include "diagnostics/parameter_cache.h"
+#include "features/parking.h"
+#include "features/ibs_override.h"
+#include "features/usb_modes.h"
+#include "protocol/elm327.h"
+#include "transport/diagnostic_link.h"
 
 /* Prepare this board's enabled features and restore its saved preferences. */
 static void application_init(void) {
@@ -16,8 +21,12 @@ static void application_init(void) {
 #endif
 #if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ENABLE_USB_MASS_STORAGE) ||                    \
     defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
-    if (RCC->CSR & RCC_CSR_PORRSTF)
+    if (RCC->CSR & RCC_CSR_PORRSTF) {
+    #if defined(BACCABLE_C1)
+        led_strip_set_usb(true);
+    #endif
         MX_USB_DEVICE_Init();
+    }
     RCC->CSR |= RCC_CSR_RMVF;
 #endif
 #if defined(BACCABLE_C1) || defined(BACCABLE_C2)
@@ -26,6 +35,10 @@ static void application_init(void) {
 #endif
 #if defined(BACCABLE_BH)
     body_init();
+#endif
+#if !defined(ACT_AS_CANABLE)
+    elmlink_init();
+    usb_modes_apply();
 #endif
 }
 
@@ -46,6 +59,16 @@ static void receive_can_frames(void) {
         if (length > 0)
             CDC_Transmit_FS(text, (uint16_t)length);
 #else
+        usb_sniffer_observe(&header, data);
+        parking_observe(&header, data);
+    #if defined(BACCABLE_C1)
+        ibs_override_observe(&header, data);
+        if (header.IDE == CAN_ID_STD && header.RTR == CAN_RTR_DATA && header.StdId == 0x41a &&
+            header.DLC >= 2) {
+            parameter_cache_put(95, data[0], currentTime);
+            parameter_cache_put(96, data[1], currentTime);
+        }
+    #endif
         if (header.RTR != CAN_RTR_DATA || header.DLC == 0)
             continue;
         if (header.IDE == CAN_ID_EXT)
@@ -88,21 +111,37 @@ int main(void) {
     application_init();
     for (;;) {
         uint32_t started = currentTime;
-        receive_can_frames();
         board_uart_process();
+#if !defined(ACT_AS_CANABLE)
+        usb_modes_process();
+    #ifdef ACT_AS_ELM327
+        if (elm327_is_enabled()) {
+            elm327_process();
+            can_process();
+            status_led_process();
+            continue;
+        }
+    #endif
+        elmlink_process();
+        if (elmlink_is_enabled()) {
+            can_process();
+            status_led_process();
+            continue;
+        }
+#endif
+        receive_can_frames();
 #if defined(BACCABLE_C1)
         pedal_uart_process();
         powertrain_process();
+        ibs_override_process();
 #elif defined(BACCABLE_C2)
         chassis_process();
+        parking_process();
 #elif defined(BACCABLE_BH)
         body_process();
+        parking_process();
 #endif
-#if defined(BACCABLE_BH) || defined(BACCABLE_C2)
-        if (currentTime > TIMING__C2_BH_USB_CONNECT_TO_C1_NOTIFICATION_DELAY_MS + 300 &&
-            runtime_state.usb_connected_to_slave)
-            uart_pause(&huart2);
-#endif
+
 #if defined(ACT_AS_CANABLE) || defined(DEBUG_MODE) || defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
         cdc_process();
 #endif

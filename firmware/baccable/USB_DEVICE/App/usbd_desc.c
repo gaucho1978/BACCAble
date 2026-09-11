@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h"
 #include "usbd_desc.h"
+#include "usb_device.h"
 #include "usbd_conf.h"
 
 /* USER CODE BEGIN INCLUDE */
@@ -222,6 +223,11 @@ __ALIGN_BEGIN uint8_t USBD_StringSerial[USB_SIZ_STRING_SERIAL] __ALIGN_END = {
  */
 uint8_t *USBD_FS_DeviceDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) {
     UNUSED(speed);
+    USBD_FS_DeviceDesc[4] = usb_device_is_serial() ? 2 : 0;
+    USBD_FS_DeviceDesc[5] = usb_device_is_serial() ? 2 : 0;
+    uint16_t pid = usb_device_is_serial() ? 22336 : 22314;
+    USBD_FS_DeviceDesc[10] = LOBYTE(pid);
+    USBD_FS_DeviceDesc[11] = HIBYTE(pid);
     *length = sizeof(USBD_FS_DeviceDesc);
     return USBD_FS_DeviceDesc;
 }
@@ -246,9 +252,11 @@ uint8_t *USBD_FS_LangIDStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) 
  */
 uint8_t *USBD_FS_ProductStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) {
     if (speed == 0) {
-        USBD_GetString((uint8_t *)USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
+        USBD_GetString((uint8_t *)(usb_device_is_serial() ? "BACCAble serial" : "BACCAble MSC"), USBD_StrDesc,
+                       length);
     } else {
-        USBD_GetString((uint8_t *)USBD_PRODUCT_STRING_FS, USBD_StrDesc, length);
+        USBD_GetString((uint8_t *)(usb_device_is_serial() ? "BACCAble serial" : "BACCAble MSC"), USBD_StrDesc,
+                       length);
     }
     return USBD_StrDesc;
 }
@@ -292,9 +300,11 @@ uint8_t *USBD_FS_SerialStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) 
  */
 uint8_t *USBD_FS_ConfigStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) {
     if (speed == USBD_SPEED_HIGH) {
-        USBD_GetString((uint8_t *)USBD_CONFIGURATION_STRING_FS, USBD_StrDesc, length);
+        USBD_GetString((uint8_t *)(usb_device_is_serial() ? "CDC Config" : "MSC Config"), USBD_StrDesc,
+                       length);
     } else {
-        USBD_GetString((uint8_t *)USBD_CONFIGURATION_STRING_FS, USBD_StrDesc, length);
+        USBD_GetString((uint8_t *)(usb_device_is_serial() ? "CDC Config" : "MSC Config"), USBD_StrDesc,
+                       length);
     }
     return USBD_StrDesc;
 }
@@ -307,9 +317,11 @@ uint8_t *USBD_FS_ConfigStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) 
  */
 uint8_t *USBD_FS_InterfaceStrDescriptor(USBD_SpeedTypeDef speed, uint16_t *length) {
     if (speed == 0) {
-        USBD_GetString((uint8_t *)USBD_INTERFACE_STRING_FS, USBD_StrDesc, length);
+        USBD_GetString((uint8_t *)(usb_device_is_serial() ? "CDC Interface" : "MSC Interface"), USBD_StrDesc,
+                       length);
     } else {
-        USBD_GetString((uint8_t *)USBD_INTERFACE_STRING_FS, USBD_StrDesc, length);
+        USBD_GetString((uint8_t *)(usb_device_is_serial() ? "CDC Interface" : "MSC Interface"), USBD_StrDesc,
+                       length);
     }
     return USBD_StrDesc;
 }

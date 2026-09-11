@@ -5,6 +5,21 @@
 
 /* Keep the pedal controller aligned with the selected driving preferences. */
 void pedal_booster_process(void) {
+    static uint32_t last_limiter;
+    /* The upstream limiter requests minimum throttle above its RPM or speed threshold. */
+    if (settings_state.pedal_booster_enabled == 8 && telemetry_state.current_rpm_speed > 400 &&
+        (telemetry_state.current_rpm_speed > (settings_state.is_diesel_enabled ? 3000U : 4000U) ||
+         telemetry_state.current_speed_km_h > 100.0f) &&
+        currentTime - last_limiter > 400) {
+        uint8_t command[UART1_BUFFER_SIZE] = {'#', 0xff, 0};
+        command[8] = frame_checksum(command, sizeof(command));
+        pedal_uart_send(command, sizeof(command));
+        last_limiter = currentTime;
+    }
+
+    if (settings_state.pedal_booster_enabled == 8)
+        pedal_state.play_motor_jingle = 0;
+
     if (settings_state.pedal_booster_enabled) { // if enabled, communicate with schizzaForte each 250msec
         if (telemetry_state.current_rpm_speed < 400)
             pedal_state.current_schizzaforte_map =

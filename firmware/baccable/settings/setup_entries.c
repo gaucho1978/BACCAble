@@ -49,6 +49,9 @@
     #define SETUP_FLASH_QV_EXHAUST_FLAP 28
     #define SETUP_FLASH_PEDAL_POWER 29
     #define SETUP_FLASH_EUJOT 30
+    #define SETUP_FLASH_PDC_MUTE 31
+    #define SETUP_FLASH_REVERSE_AUDIO 32
+    #define SETUP_FLASH_ROTATE 33
 
     #define SETUP_TEXT_HIDDEN 0
 
@@ -251,6 +254,10 @@
     #define SETUP_HIDDEN_TOGGLE(flash, def, variable)                                                        \
         {flash, 1, def, SETUP_VALUE_UINT8, SETUP_DISPLAY_NONE, &(variable), SETUP_TEXT_HIDDEN, 0, 0}
 
+static void setup_action_usb_sniffer(void);
+    #ifdef ACT_AS_ELM327
+static void setup_action_usb_elm327(void);
+    #endif
 static void setup_action_start_stop(void);
 static void setup_action_launch_torque(void);
 static void setup_action_shift_rpm(void);
@@ -314,7 +321,8 @@ const SetupParam setup_params[] = {
                  settings_state.awd_disabler_enabled),
     SETUP_TOGGLE(SETUP_FLASH_CLEAR_FAULTS, "Clear Faults", DEFAULT_CLEAR_FAULTS,
                  settings_state.clear_faults_enabled),
-    SETUP_HIDDEN_TOGGLE(SETUP_FLASH_READ_FAULTS, DEFAULT_READ_FAULTS, settings_state.read_faults_enabled),
+    SETUP_TOGGLE(SETUP_FLASH_READ_FAULTS, "Read BCM faults", DEFAULT_READ_FAULTS,
+                 settings_state.read_faults_enabled),
     SETUP_HIDDEN_TOGGLE(SETUP_FLASH_REMOTE_START, DEFAULT_REMOTE_START, settings_state.remote_start_enabled),
     SETUP_TOGGLE_RENDER_ACTION(SETUP_FLASH_DIESEL_PARAMS, "Engine type", DEFAULT_DIESEL_PARAMS,
                                settings_state.is_diesel_enabled, setup_render_diesel_params,
@@ -323,7 +331,7 @@ const SetupParam setup_params[] = {
     // Driver assistance and comfort
     SETUP_TOGGLE_ACTION(SETUP_FLASH_ODOMETER_BLINK, "Stop odo blink", DEFAULT_ODOMETER_BLINK,
                         settings_state.disable_odometer_blink, setup_action_odometer_blink),
-    SETUP_VALUE8_ACTION(SETUP_FLASH_PEDAL_BOOSTER, "Pedal Booster", 6, DEFAULT_PEDAL_BOOSTER,
+    SETUP_VALUE8_ACTION(SETUP_FLASH_PEDAL_BOOSTER, "Pedal Booster", 8, DEFAULT_PEDAL_BOOSTER,
                         settings_state.pedal_booster_enabled, setup_render_pedal_booster,
                         setup_action_pedal_booster),
     SETUP_SIGNED_VALUE8_ACTION(SETUP_FLASH_PEDAL_POWER, "Pedal trim", DEFAULT_PEDAL_POWER,
@@ -345,6 +353,15 @@ const SetupParam setup_params[] = {
                  settings_state.qv_exhaust_flap_function_enabled),
     SETUP_HIDDEN_TOGGLE(SETUP_FLASH_EUJOT, DEFAULT_EUJOT, settings_state.eujot_enabled),
 
+    SETUP_TOGGLE(SETUP_FLASH_PDC_MUTE, "Front PDC mute", 0, settings_state.parking_sensor_mute),
+    SETUP_TOGGLE(SETUP_FLASH_REVERSE_AUDIO, "Reverse mute", 0, settings_state.reverse_audio_mute),
+    SETUP_TOGGLE(SETUP_FLASH_ROTATE, "Rotate readings", 0, settings_state.rotate_readings),
+
+    SETUP_TOGGLE_ACTION(34, "USB CAN capture", 0, settings_state.usb_sniffer, setup_action_usb_sniffer),
+    #ifdef ACT_AS_ELM327
+    SETUP_TOGGLE_ACTION(35, "USB ELM327", 0, settings_state.usb_elm327, setup_action_usb_elm327),
+    #endif
+
     // Hidden persisted values
     SETUP_HIDDEN_TOGGLE(SETUP_FLASH_SHOW_RACE_MASK, DEFAULT_SHOW_RACE_MASK, settings_state.show_race_mask),
 };
@@ -365,6 +382,21 @@ static void setup_write_number(const char *format, int value) {
     snprintf_(text, sizeof(text), format, value);
     setup_write_text(0, text);
 }
+
+/* Select CAN capture for the next saved USB session. */
+static void setup_action_usb_sniffer(void) {
+    settings_state.usb_sniffer = !settings_state.usb_sniffer;
+    if (settings_state.usb_sniffer)
+        settings_state.usb_elm327 = 0;
+}
+    #ifdef ACT_AS_ELM327
+/* Select ELM327 diagnostics for the next saved USB session. */
+static void setup_action_usb_elm327(void) {
+    settings_state.usb_elm327 = !settings_state.usb_elm327;
+    if (settings_state.usb_elm327)
+        settings_state.usb_sniffer = 0;
+}
+    #endif
 
 /* Toggle the automatic engine-stop blocking preference. */
 static void setup_action_start_stop(void) {
@@ -417,7 +449,7 @@ static void setup_action_odometer_blink(void) {
 /* Select the next accelerator-response mode and notify the other boards. */
 static void setup_action_pedal_booster(void) {
     settings_state.pedal_booster_enabled++;
-    if (settings_state.pedal_booster_enabled > 6)
+    if (settings_state.pedal_booster_enabled > 8)
         settings_state.pedal_booster_enabled = 0;
     if (settings_state.pedal_booster_enabled == 0)
         pedal_booster_set_map(2);
@@ -496,10 +528,11 @@ static void setup_render_diesel_params(void) {
 
 /* Show the selected accelerator-response mode. */
 static void setup_render_pedal_booster(void) {
-    static const char *const labels[] = {"Pedal: OFF",   "Pedal: Auto",  "Pedal: Bypass", "Pedal: A map",
-                                         "Pedal: N map", "Pedal: D map", "Pedal: R map"};
+    static const char *const labels[] = {"Pedal: OFF",   "Pedal: Auto",   "Pedal: Bypass",
+                                         "Pedal: A map", "Pedal: N map",  "Pedal: D map",
+                                         "Pedal: R map", "Pedal: Hybrid", "Pedal: Kids limit"};
     uint8_t index = settings_state.pedal_booster_enabled;
-    setup_write_text(0, labels[index <= 6 ? index : 0]);
+    setup_write_text(0, labels[index <= 8 ? index : 0]);
 }
 
 /* Show the signed pedal-response trim. */

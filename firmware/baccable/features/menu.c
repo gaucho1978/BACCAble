@@ -1,4 +1,6 @@
 #include "features/menu.h"
+#include "diagnostics/fault_reader.h"
+#include "features/ibs_override.h"
 #include "app/powertrain.h"
 #include "diagnostics/parameter_cache.h"
 #include "diagnostics/parameter_request.h"
@@ -16,9 +18,11 @@ typedef enum {
     EDIT_FAVORITES,
     EDIT_VISIBLE,
     ORDER_FAVORITES,
-    INFO
+    INFO,
+    FAULTS
 } MenuView;
 typedef enum {
+    ACTION_READ,
     ACTION_CLEAR,
     ACTION_IMMO,
     ACTION_DYNO,
@@ -27,7 +31,9 @@ typedef enum {
     ACTION_AWD,
     ACTION_HAS,
     ACTION_EXHAUST,
-    ACTION_STATS
+    ACTION_STATS,
+    ACTION_PEAK,
+    ACTION_IBS
 } MenuAction;
 typedef struct {
     MenuAction id;
@@ -41,8 +47,11 @@ static const ActionEntry actions[] = {{ACTION_EXHAUST, 0, "QV exhaust"},
                                       {ACTION_DYNO, 2, "Dyno"},
                                       {ACTION_BRAKE, 2, "Front brake"},
                                       {ACTION_AWD, 2, "4WD"},
+                                      {ACTION_READ, 3, "Read BCM faults"},
                                       {ACTION_CLEAR, 3, "Clear faults"},
-                                      {ACTION_STATS, 3, "Reset records"}};
+                                      {ACTION_STATS, 3, "Reset records"},
+                                      {ACTION_PEAK, 3, "Maximum hold"},
+                                      {ACTION_IBS, 3, "IBS override"}};
 static const char *const roots[] = {"Favorites", "Readings", "Functions", "Settings", "Information"};
 static const char *const settings[] = {"Feature setup",     "Edit favorites", "Visible pages",
                                        "Reorder favorites", "Sort order",     "Save"};
@@ -63,15 +72,15 @@ static MenuPreferences preferences;
 static MenuInput input;
 static MenuView view = FAVORITES;
 static uint8_t root, group = 1, function, setting, info, editor_page, engine;
-static uint8_t list[60], list_count, selection, order_selected;
-static uint8_t setup_last;
+static uint8_t list[64], list_count, selection, order_selected;
+static uint8_t setup_last, fault_index;
 static uint32_t page_changed, last_render, last_query, notice_started;
 static const char *notice;
 static uint8_t previous_text[DASHBOARD_MESSAGE_MAX_LENGTH], previous_valid;
 static uint32_t previous_sent;
 static uint8_t confirmed_action = 255;
 static bool retry_back;
-static uint32_t confirm_started;
+static uint32_t confirm_started, last_input;
 static void build_pages(uint16_t selected);
 
 /* Move through a list and continue from the other end at its boundary. */
@@ -84,6 +93,8 @@ static unsigned wrap(unsigned value, unsigned count, int delta) {
 /* Check whether a vehicle action is enabled by the user's preferences. */
 static bool available(MenuAction id) {
     switch (id) {
+    case ACTION_READ:
+        return settings_state.read_faults_enabled;
     case ACTION_CLEAR:
         return settings_state.clear_faults_enabled;
     case ACTION_DYNO:
@@ -205,7 +216,7 @@ void menu_parameters_refresh(void) {
     if (dashboard_state.dashboard_page_index >= parameter_page_count)
         return;
     const ParameterPage *page = &parameter_pages[engine][dashboard_state.dashboard_page_index];
-    for (unsigned i = 0; i < 2; ++i)
+    for (unsigned i = 0; i < parameter_page_elements(page); ++i)
         displayed_parameter_values[i] = parameter_cache_get(page->parameter_ids[i], currentTime);
 }
 
@@ -227,6 +238,7 @@ static void select_page(void) {
     else
         preferences.last[engine][group] = id;
     parameter_request_cancel();
+    parameter_peak_reset();
     selected_parameter_element = 0;
     page_changed = currentTime;
     menu_parameters_refresh();
@@ -272,6 +284,22 @@ static void action_run(void) {
         menu_notice("Unavailable");
         return;
     }
+    if (id == ACTION_READ) {
+        if (diagnostics_state.clear_faults_request) {
+            menu_notice("Clear in progress");
+            return;
+        }
+        parameter_request_cancel();
+        fault_reader_start(0x40);
+        fault_index = 0;
+        view = FAULTS;
+        return;
+    }
+    if (id == ACTION_PEAK) {
+        parameter_peak_enable(!parameter_peak_enabled());
+        menu_notice(parameter_peak_enabled() ? "Maximum hold ON" : "Live readings");
+        return;
+    }
     if (id == ACTION_IMMO) {
         menu_notice("Immobilizer status");
         return;
@@ -285,6 +313,14 @@ static void action_run(void) {
     confirmed_action = 255;
     uint8_t command[2] = {C2BusID, 0};
     switch (id) {
+    case ACTION_IBS:
+        if (telemetry_state.current_rpm_speed <= 400) {
+            menu_notice("Start engine first");
+            return;
+        }
+        ibs_override_enable(!ibs_override_enabled());
+        menu_notice(ibs_override_enabled() ? "IBS override ON" : "IBS override OFF");
+        return;
     case ACTION_CLEAR:
         diagnostics_state.clear_faults_request = 255;
         menu_notice("Clear requested");
@@ -352,6 +388,10 @@ static void action_run(void) {
 /* Describe the selected action's current state or requested change. */
 static const char *action_status(MenuAction id) {
     switch (id) {
+    case ACTION_IBS:
+        return ibs_override_enabled() ? "ON" : "OFF";
+    case ACTION_PEAK:
+        return parameter_peak_enabled() ? "ON" : "OFF";
     case ACTION_IMMO:
         return security_state.immobilizer_enabled ? "ON" : "OFF";
     case ACTION_CLEAR:
@@ -379,6 +419,11 @@ void menu_render(void) {
         return;
     }
     notice = NULL;
+    if (settings_state.awd_disabler_enabled && chassis_state.awd_sequence &&
+        currentTime - last_input > 1500 && currentTime % 6000 < 1000) {
+        menu_present("4WD disabled");
+        return;
+    }
     char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
     switch (view) {
     case ROOT:
@@ -435,6 +480,9 @@ void menu_render(void) {
         snprintf_(text, sizeof(text), "%c %s", order_selected ? '*' : ' ',
                   parameter_pages[engine][list[selection]].label);
         break;
+    case FAULTS:
+        fault_reader_text(fault_index, text, sizeof(text));
+        break;
     case INFO:
         if (info == 0)
             snprintf_(text, sizeof(text), "%s", FW_VERSION);
@@ -464,6 +512,11 @@ static bool save_all(void) {
 
 /* Return to the parent menu and save edits before leaving their editor. */
 static void back(void) {
+    if (view == FAULTS) {
+        fault_reader_cancel();
+        view = FUNCTIONS;
+        return;
+    }
     if (view == ROOT) {
         if (!save_all()) {
             retry_back = true;
@@ -501,6 +554,7 @@ static void back(void) {
 void menu_event(MenuEvent event) {
     if (!event)
         return;
+    last_input = currentTime;
     if (engine != !!settings_state.is_diesel_enabled)
         menu_engine_changed();
     if (!dashboard_state.baccable_dashboard_menu_visible) {
@@ -539,6 +593,9 @@ void menu_event(MenuEvent event) {
             break;
         case SETTINGS:
             setting = wrap(setting, 6, direction);
+            break;
+        case FAULTS:
+            fault_index = wrap(fault_index, fault_reader_count(), direction);
             break;
         case INFO:
             info = wrap(info, 4, direction);
@@ -650,6 +707,10 @@ void menu_event(MenuEvent event) {
         case ORDER_FAVORITES:
             order_selected = !order_selected;
             break;
+        case FAULTS:
+            fault_reader_start(0x40);
+            fault_index = 0;
+            break;
         case INFO:
             view = ROOT;
             break;
@@ -670,24 +731,29 @@ void menu_button(uint8_t button, bool allowed) {
 
 /* Refresh the display and request readings at their intended intervals. */
 void menu_process(void) {
+    fault_reader_process();
     if (engine != !!settings_state.is_diesel_enabled)
         menu_engine_changed();
     if (!dashboard_state.baccable_dashboard_menu_visible)
         return;
+    if (menu_parameters_active() && settings_state.rotate_readings && currentTime - page_changed >= 5000) {
+        selection = wrap(selection, list_count, 1);
+        select_page();
+    }
     if (menu_parameters_active() && !diagnostics_state.clear_faults_request &&
         currentTime - page_changed >= 150 && currentTime - last_query >= 500) {
         const ParameterPage *page = &parameter_pages[engine][dashboard_state.dashboard_page_index];
         /* One UDS transaction per interval; native values are fed by their CAN sources. */
         unsigned first = selected_parameter_element;
-        for (unsigned i = 0; i < 2; ++i) {
-            unsigned element = (first + i) % 2;
+        for (unsigned i = 0; i < parameter_page_elements(page); ++i) {
+            unsigned element = (first + i) % parameter_page_elements(page);
             if (parameter_definitions[page->parameter_ids[element]].request_id > 0xff) {
                 selected_parameter_element = element;
                 parameter_request_begin();
                 break;
             }
         }
-        selected_parameter_element = !selected_parameter_element;
+        selected_parameter_element = (selected_parameter_element + 1) % parameter_page_elements(page);
         last_query = currentTime;
     }
     if (currentTime - last_render >= 100) {

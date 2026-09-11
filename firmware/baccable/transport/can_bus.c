@@ -87,6 +87,27 @@ void can_enable(void) {
     }
 }
 
+/* Limit diagnostic traffic before it reaches the small hardware receive queue; a zero mask restores normal
+ * traffic. */
+uint32_t can_set_receive_filter(uint32_t id, uint32_t mask, uint8_t extended) {
+    uint32_t limit = extended ? 0x1fffffffU : 0x7ffU;
+    if (bus_state != ON_BUS || id > limit || mask > limit)
+        return HAL_ERROR;
+    unsigned shift = extended ? 3 : 21;
+    uint32_t value = (id << shift) | (extended ? CAN_ID_EXT : CAN_ID_STD);
+    uint32_t bits = mask ? (mask << shift) | 6U : 0;
+    CAN_FilterTypeDef filter = {.FilterIdHigh = value >> 16,
+                                .FilterIdLow = value & 0xffff,
+                                .FilterMaskIdHigh = bits >> 16,
+                                .FilterMaskIdLow = bits & 0xffff,
+                                .FilterFIFOAssignment = CAN_RX_FIFO0,
+                                .FilterBank = 0,
+                                .FilterMode = CAN_FILTERMODE_IDMASK,
+                                .FilterScale = CAN_FILTERSCALE_32BIT,
+                                .FilterActivation = ENABLE};
+    return HAL_CAN_ConfigFilter(&can_handle, &filter);
+}
+
 /* Leave the vehicle bus and discard commands that are no longer relevant. */
 void can_disable(void) {
     if (bus_state == ON_BUS) {

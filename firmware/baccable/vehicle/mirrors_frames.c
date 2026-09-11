@@ -92,19 +92,4 @@ void vehicle_handle_transmission_mode(const CAN_RxHeaderTypeDef *rx_header, uint
         }
     }
 #endif
-
-#if defined(BACCABLE_BH)
-    if (settings_state.park_mirror) {
-        // BH movement of mirror is requested
-        if (mirrors_state.left_park_mirror_position_required ||
-            mirrors_state.right_park_mirror_position_required ||
-            mirrors_state.restore_operative_mirrors_position) { // if required
-            if (!mirrors_state.store_operative_mirror_position &&
-                !mirrors_state
-                     .park_mirrors_steady) { // if Operative position was stored and mirror is not steady
-                can_tx(&mirrors_state.park_mirror_msg_header, mirrors_state.park_mirror_msg_data); // send msg
-            }
-        }
-    }
-#endif
 }

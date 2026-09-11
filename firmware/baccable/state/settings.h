@@ -28,6 +28,10 @@ typedef struct {
     uint8_t open_windows_with_door_lock;
     uint8_t qv_exhaust_flap_function_enabled;
     uint8_t eujot_enabled;
+    uint8_t parking_sensor_mute;
+    uint8_t reverse_audio_mute;
+    uint8_t rotate_readings;
+    uint8_t usb_sniffer, usb_elm327;
 #endif
 #if defined(BACCABLE_C1) || defined(BACCABLE_C2)
     uint8_t lights_animation_enabled;

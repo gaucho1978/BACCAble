@@ -1,10 +1,12 @@
 #include "diagnostics/parameter_cache.h"
+#include "diagnostics/fault_reader.h"
 #include "vehicle/diagnostic_frames.h"
 #include "diagnostics/parameter_request.h"
 
 /* Deliver diagnostic replies and acknowledge supported vehicle-state changes. */
 void vehicle_dispatch_diagnostic(const CAN_RxHeaderTypeDef *rx_header, uint8_t *frame_data) {
 #if defined(BACCABLE_C1)
+    fault_reader_receive(rx_header, frame_data);
     if (security_state.immobilizer_enabled &&
         (telemetry_state.engine_on_since_more_than5seconds < 500)) { // if immo enabled and engine is off
         // if it is a message of connection to RFHUB, reset the connection periodically, but start the panic

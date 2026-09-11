@@ -208,7 +208,11 @@ void vehicle_handle_adaptive_cruise(const CAN_RxHeaderTypeDef *rx_header, uint8_
             comfort_state.acc_disabled = 1; // enable additional parameter menu commands
             comfort_state.acc_engaged = 0;  // acc not engaged
             break;
-        case 0x02: // acc engaged
+        case 0x02: // ACC decelerating
+        case 0x03: // ACC braking
+        case 0x04: // ACC accelerating
+        case 0x06: // ACC decelerating with ISC
+        case 0x07: // ACC accelerating with ISC
             comfort_state.acc_engaged = 1;
             comfort_state.acc_disabled = 0; // disable additional parameter menu commands
             break;

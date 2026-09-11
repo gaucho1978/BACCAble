@@ -6,6 +6,7 @@ typedef struct {
 unsigned int HAL_GetTick(void);
 #include <stdint.h>
 #include <stddef.h>
+typedef uint32_t HAL_StatusTypeDef;
 #define HAL_OK 0
 #define HAL_ERROR 1
 #define HAL_BUSY 2
@@ -24,6 +25,9 @@ unsigned int HAL_GetTick(void);
 #define CAN_FILTERMODE_IDMASK 0
 #define CAN_FILTERSCALE_32BIT 0
 #define CAN_MCR_RESET 1
+#define GPIO_PIN_11 2048
+#define GPIO_PIN_12 4096
+void HAL_GPIO_DeInit(void *, uint32_t);
 #define GPIO_PIN_8 256
 #define GPIO_PIN_9 512
 #define GPIO_MODE_AF_PP 0
@@ -132,6 +136,7 @@ typedef struct {
 #define __HAL_UART_FLUSH_DRREGISTER(uart) ((void)(uart))
 uint32_t HAL_HalfDuplex_Init(UART_HandleTypeDef *);
 uint32_t HAL_UART_Receive_IT(UART_HandleTypeDef *, uint8_t *, uint16_t);
+uint32_t HAL_UART_Transmit(UART_HandleTypeDef *, uint8_t *, uint16_t, uint32_t);
 uint32_t HAL_UART_Transmit_IT(UART_HandleTypeDef *, uint8_t *, uint16_t);
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *);
 void HAL_Delay(uint32_t);

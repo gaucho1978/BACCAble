@@ -67,14 +67,20 @@ void vehicle_handle_steering_controls(const CAN_RxHeaderTypeDef *rx_header, uint
         }
     }
 
+    if (!settings_state.acc_autostart || !comfort_state.acc_engaged ||
+        runtime_state.car_steady_counter < 200 || !chassis_state.brake_intervention_acc_esc_asr ||
+        frame_data[0] != 0x10)
+        runtime_state.autostart_msg_counter = 0;
+
     if (settings_state.acc_autostart) {
         if (comfort_state.acc_engaged) {
             if (runtime_state.car_steady_counter == 200 &&
                 chassis_state
                     .brake_intervention_acc_esc_asr) { // if car is steady and brake is pressed by ACC
                 if (frame_data[0] == 0x10) {           // if no button was pressed on cruise control pad
-                    if (currentTime - runtime_state.last_sent_autostart_msg > 500) { // once each 1,5 seconds
-                        frame_data[0] = 0x90;                                        // Res button press
+                    if (currentTime - runtime_state.last_sent_autostart_msg >
+                        450) {                // Pause between five-frame resume requests
+                        frame_data[0] = 0x90; // Res button press
 
                         if (settings_state.acc_autostart == 2) {
                             frame_data[0] = 0x08; // ACC gently up button press

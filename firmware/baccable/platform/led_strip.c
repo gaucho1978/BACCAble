@@ -78,13 +78,26 @@ uint8_t currentColorPreset = 0;
 
 uint32_t lastVumeterUpdate = 0; // last time we called the related function
 
+static uint8_t usb_owns_pin;
 uint8_t vuMeterInitState = 0;  // state machine of the initialization phase. used to divide actions on more
                                // loops and avoid blocking execution
 uint32_t newInternalDelay = 0; // used to manage pauses inside init sequence
 int16_t newInternalIndex = 0;  // used for cycles inside init sequence
 
 /* Prepare the optional LED display in stages so other features can keep running. */
+/* Release the LED output while USB owns its shared pin, then restart the strip when released. */
+void led_strip_set_usb(uint8_t enabled) {
+    if (usb_owns_pin == !!enabled)
+        return;
+    if (enabled && htim1.Instance)
+        HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);
+    usb_owns_pin = !!enabled;
+    vuMeterInitState = 0;
+}
+
 void led_strip_init(void) {
+    if (usb_owns_pin)
+        return;
     switch (vuMeterInitState) {
     case 0:
         // initialize GPIO, DMA, and TIMER
@@ -250,6 +263,8 @@ void led_strip_init(void) {
 
 /* Turn off the optional LED display. */
 void led_strip_shutdown() {
+    if (usb_owns_pin)
+        return;
     // start sending zeros in order to avoid white leds ON at the beginning
     for (int i = 0; i < 24 * MAX_LED; i++) {
         pwmData[i] = 17; // sets logical 0 (duty 17)
@@ -349,6 +364,8 @@ void setEuropeanFlag() {
 
 /* Refresh the LED display for the latest intensity and color selection. */
 void led_strip_update(float volume, uint8_t colorPreset) {
+    if (usb_owns_pin)
+        return;
     if (vuMeterInitState < 50)
         return; // initialization still not completed
     if (volume > 24)
@@ -501,6 +518,8 @@ void Set_Brightness(uint8_t brightness) {
 
 /* Start displaying the prepared LED pattern. */
 void WS2812_Send(void) {
+    if (usb_owns_pin)
+        return;
     uint32_t indx = 0;
     uint32_t color;
     uint8_t i;

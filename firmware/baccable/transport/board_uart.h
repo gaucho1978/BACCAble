@@ -43,6 +43,12 @@
 #define C1usbConnected                                                                                       \
     0x23 // second byte of the message to C1 bus, identifies the connection to usb connector of the slave
          // board
+#define C2_BH_CMD_PARKING_OPTIONS 0x43 /* Front sensor mute and reverse audio preferences. */
+void board_uart_set_diagnostic(uint8_t enabled);
+uint8_t board_uart_diagnostic_send(const uint8_t *data, size_t length);
+
+#define C1_CMD_USB_PRESENCE 0x42
+#define C2_BH_CMD_USB_CAPTURE 0x44
 #define C1cmdStatusC2 0x40
 #define C1cmdStatusBH 0x41
 #define C1cmdDynoActive 0x25    // second byte of the message to C2 bus, identifies the status dyno Active

@@ -1,4 +1,5 @@
 #include "diagnostics/parameter_catalog.h"
+#include "app/build_config.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -18,7 +19,7 @@ static void check_screen_width(const ParameterPage *page) {
             ++s;
             continue;
         }
-        assert(element < 2 && strlen(s) >= 5);
+        assert(element < parameter_page_elements(page) && strlen(s) >= 5);
         if (!strncmp(s, "$enum", 5)) {
             uint8_t id = page->parameter_ids[element];
             width += id == 8 ? 10 : id == 13 ? 3 : 2;
@@ -29,19 +30,19 @@ static void check_screen_width(const ParameterPage *page) {
         ++element;
         s += 5;
     }
-    assert(width <= 18);
+    assert(width <= DASHBOARD_MESSAGE_MAX_LENGTH);
 }
 int main(void) {
     const uint8_t counts[] = {gasoline_page_count, diesel_page_count};
     for (unsigned engine = 0; engine < 2; ++engine) {
-        assert(counts[engine] <= 60);
-        for (unsigned page = 0; page < 60; ++page) {
+        assert(counts[engine] <= 64);
+        for (unsigned page = 0; page < 64; ++page) {
             const ParameterPage *entry = &parameter_pages[engine][page];
             assert((entry->name != NULL) == (page < counts[engine]));
             if (page >= counts[engine])
                 continue;
             check_screen_width(entry);
-            for (unsigned element = 0; element < 2; ++element) {
+            for (unsigned element = 0; element < parameter_page_elements(entry); ++element) {
                 assert(entry->parameter_ids[element] < 100);
                 const ParameterDefinition *parameter = &parameter_definitions[entry->parameter_ids[element]];
                 assert(parameter->request_id);

@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include "protocol/slcan.h"
+#include "protocol/elm327.h"
+#include "usb_device.h"
 #if defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
     #include "transport/board_uart.h"
 #endif
@@ -31,6 +33,8 @@ static int8_t CDC_Init_FS(void) {
 
 /* Discard pending replies when the USB serial session ends. */
 static int8_t CDC_DeInit_FS(void) {
+    received.tail = received.head;
+    line_length = discard_line = rx_lost = 0;
     tx_head = tx_tail = tx_active = 0;
     return USBD_OK;
 }
@@ -64,7 +68,9 @@ static int8_t CDC_Receive_FS(uint8_t *data, uint32_t *length) {
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS = {CDC_Init_FS, CDC_DeInit_FS, CDC_Control_FS, CDC_Receive_FS};
 
 /* Send queued replies as the USB host becomes ready. */
-static void cdc_process_tx(void) {
+void cdc_process_tx(void) {
+    if (!usb_device_is_serial())
+        return;
     uint32_t irq = __get_PRIMASK();
     __disable_irq();
     USBD_CDC_HandleTypeDef *cdc = hUsbDeviceFS.pClassData;
@@ -83,6 +89,8 @@ static void cdc_process_tx(void) {
 
 /* Process incoming USB commands or pedal-controller data and advance pending replies. */
 void cdc_process(void) {
+    if (!usb_device_is_serial())
+        return;
     cdc_process_tx();
     uint8_t packet[RX_BUF_SIZE];
     uint32_t length = 0;
@@ -93,6 +101,9 @@ void cdc_process(void) {
         rx_lost = 0;
         line_length = 0;
         discard_line = 1;
+#ifdef ACT_AS_ELM327
+        elm327_rx_lost();
+#endif
     }
     if (received.tail != received.head) {
         length = received.msglen[received.tail];
@@ -108,6 +119,14 @@ void cdc_process(void) {
         CDC_Transmit_FS(packet, length);
     #endif
 #else
+    #ifdef ACT_AS_ELM327
+    if (elm327_is_enabled()) {
+        for (uint32_t i = 0; i < length; ++i)
+            elm327_rx_byte(packet[i]);
+        cdc_process_tx();
+        return;
+    }
+    #endif
     for (uint32_t i = 0; i < length; ++i) {
         if (packet[i] == '\r') {
     #ifdef ACT_AS_CANABLE
@@ -130,7 +149,7 @@ void cdc_process(void) {
 
 /* Queue a copy of a USB reply, or report that the connection cannot accept it. */
 uint8_t CDC_Transmit_FS(uint8_t *data, uint16_t length) {
-    if (!data || !length || length > TX_BUF_SIZE)
+    if (!usb_device_is_serial() || !data || !length || length > TX_BUF_SIZE)
         return USBD_FAIL;
     uint32_t irq = __get_PRIMASK();
     __disable_irq();

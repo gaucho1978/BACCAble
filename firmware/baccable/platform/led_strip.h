@@ -7,6 +7,7 @@
 #include "platform/status_led.h"
 #include "platform/system.h"
 
+void led_strip_set_usb(uint8_t enabled);
 void led_strip_init(void);
 void led_strip_update(float volume, uint8_t colorPreset);
 void Set_LED(uint8_t LEDnum, uint8_t Red, uint8_t Green, uint8_t Blue);

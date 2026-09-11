@@ -13,6 +13,14 @@ void SystemClock_Config(void) {
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48;
     RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+#ifdef HSE_ENABLED_FOR_UCAN
+    RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+#endif
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
         Error_Handler(2000);
     }
@@ -23,6 +31,9 @@ void SystemClock_Config(void) {
      */
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI48;
+#ifdef HSE_ENABLED_FOR_UCAN
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+#endif
     RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
     RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
@@ -36,6 +47,9 @@ void SystemClock_Config(void) {
     RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
     PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
     PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+#ifdef HSE_ENABLED_FOR_UCAN
+    PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLLCLK;
+#endif
 
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
         Error_Handler(1000);

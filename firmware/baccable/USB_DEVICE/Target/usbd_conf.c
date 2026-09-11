@@ -31,11 +31,9 @@
 #endif
 #include "usbd_def.h"
 #include "usbd_core.h"
-#ifdef ENABLE_USB_MASS_STORAGE
-    #include "usbd_msc.h"
-#else
-    #include "usbd_cdc.h"
-#endif
+#include "usbd_msc.h"
+#include "usbd_cdc.h"
+#include "usb_device.h"
 
 #include "platform/status_led.h"
 
@@ -342,18 +340,11 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev) {
     HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x00, PCD_SNG_BUF, 0x18);
     HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x80, PCD_SNG_BUF, 0x58);
     /* USER CODE END EndPoint_Configuration */
-#ifdef ENABLE_USB_MASS_STORAGE
-    /* USER CODE BEGIN EndPoint_Configuration_MSC */
-    HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x81, PCD_SNG_BUF, 0x98);
-    HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x01, PCD_SNG_BUF, 0xD8);
-    /* USER CODE END EndPoint_Configuration_MSC */
-#else
-    /* USER CODE BEGIN EndPoint_Configuration_CDC */
+    /* Both classes use bulk endpoints 1; CDC additionally uses interrupt endpoint 2. */
     HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x81, PCD_SNG_BUF, 0xC0);
     HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x01, PCD_SNG_BUF, 0x110);
     HAL_PCDEx_PMAConfig((PCD_HandleTypeDef *)pdev->pData, 0x82, PCD_SNG_BUF, 0x100);
-    /* USER CODE END EndPoint_Configuration_CDC */
-#endif
+
     return USBD_OK;
 }
 
@@ -588,12 +579,12 @@ void USBD_LL_Delay(uint32_t Delay) { HAL_Delay(Delay); }
  * @retval None
  */
 void *USBD_static_malloc(uint32_t size) {
-#ifdef ENABLE_USB_MASS_STORAGE
-    static uint32_t mem[(sizeof(USBD_MSC_BOT_HandleTypeDef) / 4) + 1]; /* On 32-bit boundary */
-#else
-    static uint32_t mem[(sizeof(USBD_CDC_HandleTypeDef) / 4) + 1]; /* On 32-bit boundary */
-#endif
-    return mem;
+    static union {
+        USBD_MSC_BOT_HandleTypeDef storage;
+        USBD_CDC_HandleTypeDef serial;
+        uint32_t alignment;
+    } memory;
+    return size <= sizeof(memory) ? &memory : NULL;
 }
 
 /**

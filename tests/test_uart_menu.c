@@ -44,6 +44,10 @@ uint32_t HAL_UART_Transmit_IT(UART_HandleTypeDef *uart, uint8_t *data, uint16_t 
     ++transmissions;
     return HAL_OK;
 }
+uint32_t HAL_UART_Transmit(UART_HandleTypeDef *uart, uint8_t *data, uint16_t size, uint32_t timeout) {
+    (void)timeout;
+    return HAL_UART_Transmit_IT(uart, data, size);
+}
 void status_led_activity(void) {}
 void status_led_error(void) {}
 void Error_Handler(uint16_t value) {

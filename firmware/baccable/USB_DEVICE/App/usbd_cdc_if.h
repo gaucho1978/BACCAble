@@ -30,6 +30,7 @@ typedef struct _usbrx_buf_ {
 /** CDC Interface callback. */
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 void cdc_process(void);
+void cdc_process_tx(void);
 uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len);
 #ifdef DEBUG_MODE
 uint8_t print_to_usb_(char *message);

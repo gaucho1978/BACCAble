@@ -10,6 +10,7 @@ uint32_t fake_primask;
 static uint32_t start_result, tx_result, init_result, filter_result, free_mailboxes = 3;
 static unsigned sent_count, requested_fifo;
 static CAN_TxHeaderTypeDef sent_header;
+static CAN_FilterTypeDef configured_filter;
 static uint8_t sent_data[8];
 static bool single_mailbox;
 void HAL_GPIO_Init(void *port, GPIO_InitTypeDef *config) {
@@ -21,6 +22,7 @@ void HAL_NVIC_SetPriority(int irq, int preempt, int sub) {
     (void)preempt;
     (void)sub;
 }
+uint8_t usb_device_is_serial(void) { return 1; }
 void HAL_NVIC_EnableIRQ(int irq) { (void)irq; }
 uint32_t HAL_CAN_Init(CAN_HandleTypeDef *can) {
     (void)can;
@@ -28,7 +30,7 @@ uint32_t HAL_CAN_Init(CAN_HandleTypeDef *can) {
 }
 uint32_t HAL_CAN_ConfigFilter(CAN_HandleTypeDef *can, CAN_FilterTypeDef *filter) {
     (void)can;
-    (void)filter;
+    configured_filter = *filter;
     return filter_result;
 }
 uint32_t HAL_CAN_Start(CAN_HandleTypeDef *can) {
@@ -130,6 +132,30 @@ static void test_can(void) {
         assert(can_tx(&header, data) == HAL_ERROR);
         *failures[i] = HAL_OK;
     }
+}
+
+/* Check that diagnostic filtering selects the intended replies and can restore vehicle traffic. */
+static void test_can_filters(void) {
+    can_enable();
+    assert(can_set_receive_filter(0x7e8, 0x7f8, 0) == HAL_OK);
+    assert(configured_filter.FilterIdHigh == (0x7e8U << 5));
+    assert(configured_filter.FilterIdLow == 0);
+    assert(configured_filter.FilterMaskIdHigh == (0x7f8U << 5));
+    assert(configured_filter.FilterMaskIdLow == 6);
+    uint32_t id = (0x18daf110U << 3) | CAN_ID_EXT;
+    assert(can_set_receive_filter(0x18daf110, 0x1fffffff, 1) == HAL_OK);
+    assert(configured_filter.FilterIdHigh == id >> 16);
+    assert(configured_filter.FilterIdLow == (id & 0xffff));
+    assert(configured_filter.FilterMaskIdLow == 0xfffe);
+    assert(can_set_receive_filter(0x800, 0x7ff, 0) == HAL_ERROR);
+    assert(can_set_receive_filter(0, 0x20000000, 1) == HAL_ERROR);
+    filter_result = HAL_ERROR;
+    assert(can_set_receive_filter(0, 0, 0) == HAL_ERROR);
+    filter_result = HAL_OK;
+    assert(can_set_receive_filter(0, 0, 0) == HAL_OK);
+    assert(!configured_filter.FilterMaskIdHigh && !configured_filter.FilterMaskIdLow);
+    can_disable();
+    assert(can_set_receive_filter(0, 0, 0) == HAL_ERROR);
 }
 
 static void test_can_queue_roundtrip(void) {
@@ -258,6 +284,7 @@ static void test_usb(void) {
 int main(void) {
     test_can();
     test_can_queue_roundtrip();
+    test_can_filters();
     test_usb();
     puts("PASS: CAN validation/retry/silent mode, USB TX ownership/RX overflow/IRQ state");
     return 0;

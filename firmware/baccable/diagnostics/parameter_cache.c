@@ -3,7 +3,21 @@
 #if defined(BACCABLE_C1)
     #include "app/powertrain.h"
     #include <string.h>
-static float values[100];
+static float values[100], peaks[100];
+static uint8_t peak_valid[(100 + 7) / 8];
+static bool hold;
+
+/* Start a new maximum-hold interval without discarding live measurements. */
+void parameter_peak_reset(void) { memset(peak_valid, 0, sizeof(peak_valid)); }
+
+/* Select live readings or their highest values since the page was selected. */
+void parameter_peak_enable(bool enabled) {
+    hold = enabled;
+    parameter_peak_reset();
+}
+
+/* Report whether the display is retaining maximum readings. */
+bool parameter_peak_enabled(void) { return hold; }
 static uint32_t updated[100];
 static uint8_t valid[(100 + 7) / 8];
 static uint32_t rpm_updated;
@@ -13,6 +27,7 @@ static uint8_t rpm_valid;
 void parameter_cache_reset(void) {
     memset(valid, 0, sizeof(valid));
     rpm_valid = 0;
+    parameter_peak_reset();
 }
 
 /* Remember a fresh measurement and invalidate unavailable values. */
@@ -22,9 +37,12 @@ void parameter_cache_put(uint8_t id, float value, uint32_t now) {
     values[id] = value;
     updated[id] = now;
     uint8_t mask = 1U << (id % 8);
-    if (isfinite(value))
+    if (isfinite(value)) {
         valid[id / 8] |= mask;
-    else
+        if (!(peak_valid[id / 8] & mask) || value > peaks[id])
+            peaks[id] = value;
+        peak_valid[id / 8] |= mask;
+    } else
         valid[id / 8] &= (uint8_t)~mask;
 }
 
@@ -34,7 +52,11 @@ float parameter_cache_get(uint8_t id, uint32_t now) {
         return native_parameter_read(id);
     if (id >= 100 || !(valid[id / 8] & (1U << (id % 8))) || now - updated[id] > 3000)
         return NAN;
-    return values[id];
+    /* Status enums and run statistics stay live even while numerical readings are held. */
+    return hold && (peak_valid[id / 8] & (1U << (id % 8))) && id != 6 && id != 8 && id != 9 && id != 10 &&
+                   id != 13 && id != 15 && id != 17
+               ? peaks[id]
+               : values[id];
 }
 
 /* Refresh a reading from the latest reported vehicle state. */

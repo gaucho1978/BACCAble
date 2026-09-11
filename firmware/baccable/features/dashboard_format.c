@@ -56,6 +56,11 @@ static const char *number_text(uint32_t id, float value, unsigned decimals, unsi
     if (width > 19)
         width = 19;
     char number[32];
+    float half_step = 0.5f;
+    for (unsigned i = 0; i < decimals; ++i)
+        half_step *= 0.1f;
+    if (value < 0 && value > -half_step)
+        value = 0;
     int length =
         isfinite(value) ? snprintf_(number, sizeof(number), "%.*f", (int)decimals, (double)value) : -1;
     memset(buffer, ' ', width);
@@ -80,13 +85,14 @@ static bool number_placeholder(const char *text) {
 /* The caller provides DASHBOARD_MESSAGE_MAX_LENGTH + 1 output bytes. */
 
 /* Build a readable screen from its labels, values and units. */
-void dashboard_format_values(const char *template, float values[2], const uint8_t paramId[2], char *result) {
+void dashboard_format_values(const char *template, const float *values, const uint8_t *paramId,
+                             char *result) {
     size_t length = 0;
     unsigned element = 0;
     for (const char *text = template; *text && length < DASHBOARD_MESSAGE_MAX_LENGTH;) {
         bool numeric = number_placeholder(text);
         bool enumeration = !strncmp(text, "$enum", 5);
-        if (element >= 2 || paramId[element] >= 100 || (!numeric && !enumeration)) {
+        if (element >= 4 || paramId[element] >= 100 || (!numeric && !enumeration)) {
             result[length++] = *text++;
             continue;
         }

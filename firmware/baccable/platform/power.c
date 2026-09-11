@@ -1,4 +1,6 @@
+#include "features/periodic.h"
 #include "platform/power.h"
+#include "features/usb_modes.h"
 
 #if defined(BACCABLE_C1)
 
@@ -12,37 +14,60 @@ void power_init(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    #ifdef UCAN_POWER_PINS
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_13;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    #endif
     power_release_slaves();
 
     GPIO_InitStruct.Pin = CAN_LOW_CONSUME_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // we need to be able to set it to 3,3V
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    #ifdef UCAN_POWER_PINS
+    GPIO_InitStruct.Pin = GPIO_PIN_13;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    #endif
     power_transceivers_wake();
 }
 
 /* Keep auxiliary boards stopped while the main board prepares them. */
 void power_hold_slaves_in_reset(void) {
-    HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 0); // resets the other chips
+    HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 0);
+    #ifdef UCAN_POWER_PINS
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13, 0);
+    #endif // resets the other chips
 }
 
 /* Allow auxiliary boards to start operating. */
 void power_release_slaves(void) {
-    HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 1); // remove reset of other chips
+    HAL_GPIO_WritePin(CHIP_LOW_CONSUME, 1);
+    #ifdef UCAN_POWER_PINS
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_13, 1);
+    #endif // remove reset of other chips
 }
 
 /* Place the vehicle-bus interfaces in their low-consumption state. */
 void power_transceivers_sleep(void) {
-    HAL_GPIO_WritePin(CAN_LOW_CONSUME, 1); // set other can transceivers to Sleep
+    HAL_GPIO_WritePin(CAN_LOW_CONSUME, 1);
+    #ifdef UCAN_POWER_PINS
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 1);
+    #endif // set other can transceivers to Sleep
 }
 
 /* Restore the vehicle-bus interfaces for normal operation. */
 void power_transceivers_wake(void) {
-    HAL_GPIO_WritePin(CAN_LOW_CONSUME, 0); // set other can transceivers to wakeUp
+    HAL_GPIO_WritePin(CAN_LOW_CONSUME, 0);
+    #ifdef UCAN_POWER_PINS
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, 0);
+    #endif // set other can transceivers to wakeUp
 }
 
 /* Choose sleep or wake operation from recent vehicle activity. */
 void power_process(void) {
+    if (usb_modes_active())
+        return;
 
     if (runtime_state.low_consume_is_active) { // se siamo in basso consumo
 
@@ -57,7 +82,7 @@ void power_process(void) {
             runtime_state.low_consume_is_active = 0;
 
             runtime_state.all_processors_wakeup_time = currentTime;
-            runtime_state.instruct_slave_boards_trigger_enabled = 1;
+            board_sync_restart();
         }
     } else { // Otherwise enter low-consumption mode if needed.
         // Enter low-consumption mode after the inactivity timeout.
@@ -86,8 +111,8 @@ void power_sleep(void) {
 /* Restore enabled features and auxiliary boards when vehicle activity returns. */
 void power_wake(void) {
     if (runtime_state.low_consume_is_active) {
-        power_transceivers_wake(); // wake up transceivers
-        power_release_slaves();    // wake up other processors
+        power_transceivers_wake();
+        power_release_slaves();
         status_led_activity();
     }
 }

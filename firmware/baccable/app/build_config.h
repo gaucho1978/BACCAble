@@ -35,6 +35,13 @@
     #define UCAN_BOARD_LED_INVERSION
 #endif
 
+#if defined(BACCABLE_C1) && !defined(ACT_AS_SCHIZZAFORTE_SERIAL_CONTROLLER)
+    #define ACT_AS_ELM327
+    #define ELM327_TRACE_DISABLE
+    #define ELM327_UNKNOWN_AT_IS_ERROR
+    #define ELM327_BITRATE_STR "500"
+#endif
+
 /* C1: powertrain bus, OBD pins 6 and 14. Other feature defaults live in state/. */
 #ifdef BACCABLE_C1
     #ifndef DISABLE_CLEAR_FAULTS_ENABLED

@@ -1,6 +1,8 @@
+#include "features/periodic.h"
 #include "app/powertrain.h"
 #include "storage/flash_records.h"
 #include "features/menu.h"
+#include "features/usb_modes.h"
 #if defined(BACCABLE_C1)
 static uint16_t saved_settings[SETUP_FLASH_PARAM_BUFFER_SIZE];
 static uint16_t best_times[2];
@@ -42,6 +44,8 @@ uint8_t settings_save(void) {
         return 255;
     memcpy(saved_settings, values, sizeof(values));
     settings_loaded = 1;
+    board_sync_restart();
+    usb_modes_apply();
     return 0;
 }
 

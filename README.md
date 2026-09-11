@@ -41,9 +41,17 @@ L'autore del progetto non si assume alcuna responsabilità per eventuali danni, 
 Si raccomanda di non impiegare questo progetto in applicazioni reali su veicoli.
 
 ## Scope
-This project is able to use the famous CANABLE (the cheapest can bus device on the market).
-Now it is also available a dedicated PCB board for the baccable, including, in a single board, 3 canable, more efficient power consumption and additional I/O for future espansion (You can find more details in the dedicated subparagraph).
-Current available functions are:
+BACCAble supports separate CANable boards and the dedicated three-controller PCB.
+C1 serves the powertrain bus, C2 the chassis bus and BH the body bus. The separate
+CAN firmware flavor provides a USB SLCAN adapter.
+
+The current integration adds 64 gasoline and 60 diesel reading pages, maximum
+hold, page rotation, BCM fault reading, parking mute controls, Hybrid/Kids pedal
+modes, binary USB capture and ELM-compatible diagnostics. See the
+[integration report](docs/architecture/UPSTREAM_SYNC.md) for scope and limitations.
+Vehicle-dependent features require compatible equipment and configuration.
+
+Other supported functions include:
 - sniff on the can bus (useful for debug and exploit purposes)
 - decode and store some parameters sniffed on the bus (like motor rpm, accelerator pedal position and gear selection)
 - control a WS281x leds strip by means of the decoded can bus data, then lighting the leds strip according to accelerator pedal position and gear selection.
@@ -83,7 +91,10 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 I developed a custom Board for Baccable, including 3 canable in a small factor form. You can find more details in the dedicated subparagraph.
 
 ## manuals
-These are Available manuals:
+These upstream manuals cover the original firmware and hardware. Their menu,
+build and storage instructions may differ from this fork. Use the current
+[menu guide](docs/architecture/MENU_UX.md), [USB guide](docs/architecture/USB_DIAGNOSTICS.md)
+and [flashing guide](docs/FLASHING.md) for this implementation.
 
 | <a href="manuals/Baccable_manual_EN.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual EN"></a> | <a href="manuals/Baccable_manual_IT.pdf"><img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" width="200" alt="Manual IT"></a> |
 | :---: | :---: |
@@ -93,10 +104,10 @@ These are Available manuals:
 - Subfolder firmware contains the firmware
 - Subfolder hardware/canable contains canable board layout and pcb wiring diagram. It comes from https://github.com/makerbase-mks/CANable-MKS. There are different designs of canable, but theay are all similar.
 - Subfolder hardware/box contains the 3d model of the cases to accomodate required components.
-- Subfolder hardware/system interconnection contains interconnection diagram to connect required components
+- Subfolder hardware/system_interconnection contains interconnection diagram to connect required components
 - Subfolder tools contains the famous savvyCan sniffer tool for windows (portable) and excel sheet used to calculate pwm and clocks settings.
 - Subfolder hardware/newBaccableDedicatedPcb contains the new pcb for Baccable
-- Subfolder Manuals contains the manuals
+- Subfolder manuals contains the manuals
 
 ## Immobilizer functionality Notes
 Note1: Panic alarm will start only if you previusly enabled panic alarm in your ECU, with the MES proxy alignment procedure shown in this video: 
@@ -112,26 +123,28 @@ Note1: If you are not using new baccable board, you will need to connect canable
 
 ![DashboardFunctionInterconnections](hardware/system_interconnection/ShowParamsOnDashboardConnections.png)
 
-## Low Consume functionality Notes
-This function, is enabled by default. If using the new Baccable PCB Board (it includes 3 baccable), it will allow the master baccable, to reset the other 2 chips and to put can transiceivers in low consumption, by means of 2 dedicated GPIO. Low consume is activated after one minute without messages on the bus, and it will wake up as soon as messages start to flow again on the bus.
+## Low-consumption behavior
+
+With low-consumption support enabled, C1 considers sleep after 3500 ms without
+CAN traffic (`app/runtime_config.h`). It holds the auxiliary controllers in reset
+and retains the CAN wake path. Active USB modes or a reported auxiliary USB
+connection prevent normal sleep. Vehicle traffic wakes the auxiliary boards and
+restarts settings synchronization. Verify this behavior on the intended hardware.
 
 ## Firmware Notes
 
 Firmware is organized under [firmware/baccable](firmware/baccable).
-See the [architecture and extension guide](docs/architecture/README.md),
-[analysis](docs/architecture/ANALYSIS_PL.md),
-[initial verification report](docs/architecture/VALIDATION_PL.md), and
-[final cleanup and validation](docs/architecture/CLEANUP.md).
-The [menu UX guide](docs/architecture/MENU_UX_PL.md) describes navigation,
-favorites, sorting, display transport and the new preference format.
+Use the [architecture guide](docs/architecture/README.md) for module ownership,
+[development constraints](docs/architecture/DEVELOPMENT.md) for lessons to retain,
+and [menu guide](docs/architecture/MENU_UX.md) for navigation and extensions.
+The [upstream porting guide](docs/architecture/UPSTREAM_PORTING.md) explains how
+to integrate gaucho/netzmark changes. Source revisions and dated validation are
+recorded in the [integration report](docs/architecture/UPSTREAM_SYNC.md).
 
-Parameter definitions and dashboard pages are in
-[parameter_catalog.c](firmware/baccable/diagnostics/parameter_catalog.c).
-`ParameterDefinition` describes the request, response ID, byte offset/length,
-signed raw offset, scale, unit and decimal places. `ParameterPage` associates
-two parameter IDs with a stable page ID, group, short label and display template.
-Never renumber existing page IDs. Update the gasoline/diesel page
-counts when extending the page tables.
+[parameter_catalog.c](firmware/baccable/diagnostics/parameter_catalog.c) contains
+request/response IDs, byte offsets, lengths and signed scaling. Display templates
+supply units and precision. Pages contain up to four readings. Preserve existing
+page IDs and table order; the gasoline catalog has reached its 64-page capacity.
 
 ## BACCABLE Compile Instructions
 
@@ -148,15 +161,16 @@ Select `C1`, `C2`, `BH`, or `CAN`. Artifacts are produced in
 `firmware/baccable/build/FLAVOR/`. The old CubeIDE generated build profiles no
 longer describe this source tree; use an external Makefile project in your IDE.
 
-The new persistence format is incompatible with previous firmware. Review the
-[storage migration and hardware requirements](docs/architecture/README.md#persistent-data-and-compatibility)
-before updating boards. Vehicle behavior, particularly the Race mask, requires
-hardware validation after the refactor.
+Current settings retain the v5-beta record layout. Older pre-refactor data is not
+fully imported; see [storage compatibility](docs/architecture/README.md#persistent-data-and-compatibility).
+C1 requires physically confirmed 128 KiB Flash. Vehicle behavior, particularly
+the Race mask, still requires hardware validation.
 
 
 ## BACCABLE Flash Instructions
 
-See Manual, paragraph 1.11
+Follow the [flashing guide](docs/FLASHING.md) to select matching C1/C2/BH images,
+verify capacity and use the correct board USB port.
 
 ## The hardware using NEW BACCABLE BOARD
 The following video describes the new pcb board. 
@@ -189,7 +203,9 @@ click on the following image to see the full hardware and interconnections video
 Used hardware:
 
 Canable: This is the first I purchased (https://a.aliexpress.com/_Ev1yBz1 )
-Generally speaking I found these compatible devices (It is important that the chip is a stm32F072):
+The following are original hardware references, not a current compatibility list.
+Check the MCU, pinout and physical Flash capacity; an STM32F072 name alone does
+not establish support for the current C1 image:
 
     - Original MKS Canable
     - Canable DykbRadio Nano
@@ -203,14 +219,15 @@ Amazon alternatives:
 Canable: https://amzn.to/3zzeNMq
 Leds strip: https://amzn.to/3W3TifJ
 
-Note: use recommended canable links cause some of them uses different st chip and I'm not sure if other chips are supported.
+Use the board specifications to confirm compatibility; the linked product listings may change.
 
 ## The interconnections (CANABLE connections to the CAR)
 Since I found how to disable Start&Stop by only sending can message, the new required connections are just: CAN bus from canable to car (termination board on canable) and power supply from usb hub 5V usb to the usb port of the canable.
 If you enable the function to control a led strip, the usb data shall be connected to led strip, as defined in the old schematic here reported for reference.
 If you use the function to show params on dashboard, you have to add the wire between the 2 boards (watch the diagram in the DASHBOARD MENU functionality  section of this page.
 
-Note: In "Usage Instructions" section it is defined when you need to connect to a different can bus. The following old diagram shows the connection to C1 can bus (pin 6 and 14 of the OBD port), commonly used for immobilizer,start&stop, leds strip controller and other functionalitites, but there are also C2 can bus (pin 12 and 13 of the OBD port) required in example for ESC&TC disabler functionality and BH can bus (pin 3 and 11 of the OBD port) for the  functionality to add parameters on the dashboard). 
+The original diagram below shows C1 on OBD pins 6/14. C2 uses pins 12/13
+for chassis functions; BH uses pins 3/11 for body and dashboard functions.
 This is the old original wiring diagram:
 
 ![Interconnections](hardware/system_interconnection/SCHEMA_DI_INTERCONNESSIONE.png)
@@ -283,7 +300,8 @@ With such configuration the device is seen by the pc as a virtual serial port im
 - tIIILDD... - Transmit data frame (Standard ID) [ID, length, data]
 - RIIIIIIIIL - Transmit remote frame (Extended ID) [ID, length]
 - rIIIL - Transmit remote frame (Standard ID) [ID, length]
-- V - Returns firmware version and remote path as a string
+- V - Returns the firmware version string
+- E - Returns the CANable error register
 Note: Channel configuration commands must be sent before opening the channel. The channel must be opened before transmitting frames.
 
 This firmware currently does not provide any ACK/NACK feedback for serial commands.
@@ -311,9 +329,8 @@ WS2811 and WS2812 protocol is specific one and has defined values:
 
 ## STM32 DMA
 
-DMA controllers in STM32s support various operations, one of them being super handy for our WS LED driver, called *circular operation mode*.
-*Circular mode* will continuously transmit data from memory to peripheral (or, in general, can also go opposite direction) and periodically send *transfer-complete* or *half-transfer-complete* interrupts to the application.
-
-![STM32 DMA circular mode](https://raw.githubusercontent.com/MaJerle/stm32-ws2812b-tim-pwm-dma/master/docs/stm32-dma-circular.svg?sanitize=true)
-
-We will use *HT* and *TC* events extensively, as they will be use to *prepare data* for next operations to transfer all bits for all leds.
+The LED driver uses `DMA_NORMAL` with a complete PWM buffer. The transfer-complete
+callback stops PWM DMA; the next LED update prepares and starts another transfer.
+It does not use a circular half-buffer refill scheme. See
+[led_strip.c](firmware/baccable/platform/led_strip.c) and
+[STM32 setup](firmware/baccable/platform/stm32/stm32f0xx_hal_msp.c).

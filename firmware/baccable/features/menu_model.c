@@ -107,7 +107,7 @@ void menu_page_show(MenuPreferences *prefs, uint8_t engine, uint8_t index, bool 
 
 /* Build the requested parameter or favorite list in the chosen order. */
 unsigned menu_page_list(const MenuPreferences *prefs, uint8_t engine, uint8_t group, bool favorites,
-                        bool include_hidden, uint8_t list[60]) {
+                        bool include_hidden, uint8_t list[64]) {
     unsigned count = 0;
     if (engine > 1 || group >= MENU_GROUPS)
         return 0;

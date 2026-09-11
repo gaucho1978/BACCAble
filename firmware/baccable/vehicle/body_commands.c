@@ -57,7 +57,7 @@ void vehicle_handle_body_commands(const CAN_RxHeaderTypeDef *rx_header, uint8_t 
             switch (comfort_state.close_windows_request) {
             case 1: // we have to close the windows
                 if (currentTime - comfort_state.door_close_time >
-                    3500) { // if at least 3,5 seconds from door closure is passed
+                    4000) { // if at least 4 seconds from door closure is passed
                     // send message to close the windows
                     frame_data[1] = comfort_state.rf_fob_number |
                                     0x01; // set proper key fob and set request to close all windows (0x01)
@@ -66,7 +66,7 @@ void vehicle_handle_body_commands(const CAN_RxHeaderTypeDef *rx_header, uint8_t 
                     can_forward(rx_header, frame_data);                         // send msg
 
                     if (currentTime - comfort_state.door_close_time >
-                        8000) { // after 4,5 seconds of windows movement, they should be closed
+                        9000) { // after 5 seconds of windows movement, they should be closed
                         comfort_state.close_windows_request = 0;
 
                         if (comfort_state.door_locks_requests_counter >= 2) { // if windows Ajar is requested,
@@ -80,7 +80,7 @@ void vehicle_handle_body_commands(const CAN_RxHeaderTypeDef *rx_header, uint8_t 
                 break;
             case 2: // we have to set the windows Ajar
                 // send message to open the windows
-                if (currentTime - comfort_state.door_close_time > 8500) {
+                if (currentTime - comfort_state.door_close_time > 11000) {
                     frame_data[1] = comfort_state.rf_fob_number; // set proper key fob
                     frame_data[2] =
                         0xB0 |
@@ -90,8 +90,8 @@ void vehicle_handle_body_commands(const CAN_RxHeaderTypeDef *rx_header, uint8_t 
                 }
 
                 if (currentTime - comfort_state.door_close_time >
-                    8900) { // if at least 300msec from windows closed is passed, windows shoud be opened for
-                            // at least 3 centimeters
+                    11550) { // if at least 550msec from windows closed is passed, windows shoud be opened for
+                             // at least 3 centimeters
                     comfort_state.close_windows_request = 0; // task completed
                     comfort_state.door_locks_requests_counter = 0;
                 }
@@ -157,7 +157,7 @@ void vehicle_handle_body_commands(const CAN_RxHeaderTypeDef *rx_header, uint8_t 
 
             if (comfort_state.open_windows_request == 1) { // we have to open the windows
                 if (currentTime - comfort_state.door_open_time >
-                    3500) { // if at least 3,5 seconds from door opening is passed
+                    4000) { // if at least 4 seconds from door opening is passed
                     // send message to open the windows
                     frame_data[1] = comfort_state.rf_fob_number; // set proper key fob
                     frame_data[2] =
@@ -167,7 +167,7 @@ void vehicle_handle_body_commands(const CAN_RxHeaderTypeDef *rx_header, uint8_t 
                     can_forward(rx_header, frame_data);                         // send msg
 
                     if (currentTime - comfort_state.door_open_time >
-                        8000) { // after 4,5 seconds of windows movement, they should be opened
+                        9000) { // after 5 seconds of windows movement, they should be opened
                         comfort_state.open_windows_request = 0;
                         comfort_state.door_unlocks_requests_counter = 0;
                     }

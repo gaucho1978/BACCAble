@@ -1,5 +1,6 @@
 #include "features/body.h"
 #include "features/display_stream.h"
+#include "features/parking_mirrors.h"
 #include "storage/flash_records.h"
 
 #if defined(BACCABLE_BH)
@@ -71,80 +72,7 @@ void body_process() {
         }
     }
 
-    if (settings_state.park_mirror) { // if function parkmirror is enabled
-
-        if (telemetry_state.current_gear == 0x0E) { // if reverse gear is selected
-            if (!mirrors_state
-                     .restore_operative_mirrors_position) { // if we are not returning to operative position
-                switch (mirrors_state.turn_indicator) {
-                case 0x02: // left arrow inserted
-                    if (!mirrors_state.left_park_mirror_position_required &&
-                        !mirrors_state.right_park_mirror_position_required)
-                        mirrors_state.store_operative_mirror_position =
-                            1; // store current mirror position, if mirror was not previously lowered
-                    mirrors_state.left_park_mirror_position_required =
-                        1; // Enable sending command to move mirror
-                    break;
-                case 0x01: // right arrow inserted
-                    if (!mirrors_state.left_park_mirror_position_required &&
-                        !mirrors_state.right_park_mirror_position_required)
-                        mirrors_state.store_operative_mirror_position =
-                            1; // store current mirror position, if mirror was not previously lowered
-                    mirrors_state.right_park_mirror_position_required =
-                        1; // Enable sending command to move mirror
-                    break;
-                default:
-                }
-            }
-        } else {
-            if (mirrors_state.left_park_mirror_position_required ||
-                mirrors_state.right_park_mirror_position_required) { // if mirrors are potentially not in
-                                                                     // operative position,
-                mirrors_state.restore_operative_mirrors_position =
-                    1; // request to restore mirrors to their original position
-                mirrors_state.restore_operative_mirrors_position_request_time = currentTime;
-            }
-            mirrors_state.left_park_mirror_position_required =
-                0; // stop sending message to set Park position for mirrors
-            mirrors_state.right_park_mirror_position_required =
-                0; // stop sending message to set Park position for mirrors
-        }
-
-        // Prepare msg to send: set Operative position of the mirrors
-        mirrors_state.park_mirror_msg_data[0] = mirrors_state.left_mirror_horizontal_operative_pos;
-        mirrors_state.park_mirror_msg_data[1] = mirrors_state.left_mirror_vertical_operative_pos;
-        mirrors_state.park_mirror_msg_data[2] = mirrors_state.right_mirror_horizontal_operative_pos;
-        mirrors_state.park_mirror_msg_data[3] = mirrors_state.right_mirror_vertical_operative_pos;
-
-        // Prepare msg to send: if required, set park position of the mirrors
-        if (mirrors_state.left_park_mirror_position_required) {
-            mirrors_state.park_mirror_msg_data[0] = mirrors_state.left_park_mirror_horizontal_pos;
-            mirrors_state.park_mirror_msg_data[1] = mirrors_state.left_park_mirror_vertical_pos;
-        }
-        if (mirrors_state.right_park_mirror_position_required) {
-            mirrors_state.park_mirror_msg_data[2] = mirrors_state.right_park_mirror_horizontal_pos;
-            mirrors_state.park_mirror_msg_data[3] = mirrors_state.right_park_mirror_vertical_pos;
-        }
-
-        if (mirrors_state.left_park_mirror_position_required ||
-            mirrors_state.right_park_mirror_position_required ||
-            mirrors_state.restore_operative_mirrors_position) {   // if required
-            if (!mirrors_state.store_operative_mirror_position) { // if operative position was stored
-                if (currentTime - mirrors_state.last_park_mirror_msg_time >
-                    900) { // each 1000msec send a packet
-                    can_tx(&mirrors_state.park_mirror_msg_header,
-                           mirrors_state.park_mirror_msg_data); // send msg
-                    mirrors_state.last_park_mirror_msg_time = currentTime;
-                }
-            }
-            if (mirrors_state.restore_operative_mirrors_position) {
-                if (currentTime - mirrors_state.restore_operative_mirrors_position_request_time >
-                    15000) { // after 15 seconds
-                    mirrors_state.restore_operative_mirrors_position = 0;
-                }
-            }
-        }
-    }
+    parking_mirrors_process();
 }
 
 /* Remember the mirror positions needed for parking and normal driving. */

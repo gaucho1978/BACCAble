@@ -10,7 +10,8 @@
 typedef struct {
     uint8_t id; /* Stable ID, independent of table position: never reuse. */
     uint8_t group;
-    uint8_t parameter_ids[2];
+    uint8_t parameter_ids[4];
+    uint8_t element_count; /* Zero preserves the original one/two-reading pages. */
     const char *label;
     const char *name;
 } ParameterPage;
@@ -28,11 +29,16 @@ typedef struct {
     uint8_t value_offset;
 } ParameterDefinition;
 
-extern float displayed_parameter_values[2];
+/* Return the number of measurements requested by this screen. */
+static inline unsigned parameter_page_elements(const ParameterPage *page) {
+    return page->element_count ? page->element_count : 2;
+}
+
+extern float displayed_parameter_values[4];
 extern uint8_t parameter_page_count;
 extern uint8_t gasoline_page_count;
 extern uint8_t diesel_page_count;
-extern const ParameterPage parameter_pages[2][60];
+extern const ParameterPage parameter_pages[2][64];
 extern const ParameterDefinition parameter_definitions[100];
 extern uint8_t selected_parameter_element;
 

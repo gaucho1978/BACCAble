@@ -1,6 +1,9 @@
 #include "app/main.h"
 #include "features/body.h"
 #include "features/menu.h"
+#include "features/parking.h"
+#include "features/usb_modes.h"
+#include "transport/diagnostic_link.h"
 #if defined(BACCABLE_C2) || defined(BACCABLE_BH)
 
 /* Report this board's firmware version to the main board. */
@@ -18,11 +21,18 @@ static void reply_version(uint8_t command) {
 
 /* Apply requests from the other boards and collect their reported status. */
 void board_commands_dispatch(const uint8_t *message) {
+#if !defined(ACT_AS_CANABLE)
+    if (elmlink_on_uart_frame(message))
+        return;
+#endif
     switch (message[0]) {
     case C1BusID: // message directed to baccable connected to C1 bus
 
 #if defined(BACCABLE_C1)
         switch (message[1]) {
+        case C1_CMD_USB_PRESENCE:
+            usb_modes_peer(message[2], message[3] == 1);
+            break;
         case C1cmdStatusC2:
             menu_peer_status(0, message + 2);
             break;
@@ -216,9 +226,15 @@ void board_commands_dispatch(const uint8_t *message) {
     case C2_Bh_BusID: // message directed to baccable connected to C2 and BH bus
 #if defined(BACCABLE_C2) || defined(BACCABLE_BH)
         switch (message[1]) {
+        case C2_BH_CMD_USB_CAPTURE:
+            usb_modes_set_sniffer(message[2] == 1);
+            break;
+        case C2_BH_CMD_PARKING_OPTIONS:
+            parking_set_options(message[2] == 1, message[3] == 1);
+            break;
         case C2_Bh_cmdSetPedalBoostStatus:
             // third byte contains the pedal booster status
-            settings_state.pedal_booster_enabled = message[2];
+            settings_state.pedal_booster_enabled = message[2] <= 8 ? message[2] : 0;
             break;
         case C2_Bh_cmdFunctHAS_Disabled:
             settings_state.has_function_enabled = 0;

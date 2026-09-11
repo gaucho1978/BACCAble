@@ -1,18 +1,24 @@
 #include "diagnostics/parameter_catalog.h"
 
-float displayed_parameter_values[2];
+float displayed_parameter_values[4];
 
 uint8_t parameter_page_count = 0;
 
-uint8_t gasoline_page_count = 46;
-uint8_t diesel_page_count = 55;
+uint8_t gasoline_page_count = 64;
+uint8_t diesel_page_count = 60;
 uint8_t selected_parameter_element = 0;
+
+#ifdef LARGE_DISPLAY
+    #define TEMP_FOUR "Oil$3.0f W$3.0f In$3.0f Out$3.0f"
+#else
+    #define TEMP_FOUR "O$3.0fW$3.0fI$3.0fX$3.0fC"
+#endif
 
 // Display templates and their source measurements.
 
 // format string $x.yf for float params where y is decimal part and x is integer part
 // format string $enum for enumerator values derived from specific enum arrays
-const ParameterPage parameter_pages[2][60] = {
+const ParameterPage parameter_pages[2][64] = {
     {
         {.id = 0x01,
          .group = 5,
@@ -43,7 +49,7 @@ const ParameterPage parameter_pages[2][60] = {
          .group = 3,
          .label = "Batt charge / A",
          .name = "Batt $3.0f% $4.1fA",
-         .parameter_ids = {3, 4}}, // param couple: BAT State Of Charge and current
+         .parameter_ids = {21, 4}}, // param couple: BAT State Of Charge and current
         {.id = 0x07,
          .group = 3,
          .label = "Battery V / A",
@@ -241,6 +247,114 @@ const ParameterPage parameter_pages[2][60] = {
          .name = "Pedal map $enum",
          .parameter_ids = {17, 17}}, // selected Pedal Map
 
+        {.id = 0x2f,
+         .group = 1,
+         .label = "Ignition cyl 5",
+         .name = "Ign cyl5 $3.1fdeg",
+         .parameter_ids = {19, 19},
+         .element_count = 0},
+        {.id = 0x30,
+         .group = 1,
+         .label = "Ignition cyl 6",
+         .name = "Ign cyl6 $3.1fdeg",
+         .parameter_ids = {20, 20},
+         .element_count = 0},
+        {.id = 0x31,
+         .group = 1,
+         .label = "Oil height",
+         .name = "Oil level $3.1fmm",
+         .parameter_ids = {89, 89},
+         .element_count = 0},
+        {.id = 0x32,
+         .group = 1,
+         .label = "Misfires total",
+         .name = "Misfires $5.0f",
+         .parameter_ids = {90, 90},
+         .element_count = 0},
+        {.id = 0x33,
+         .group = 1,
+         .label = "Misfires cyl 1",
+         .name = "Cyl 1 misf $5.0f",
+         .parameter_ids = {91, 91},
+         .element_count = 0},
+        {.id = 0x34,
+         .group = 1,
+         .label = "Misfires cyl 2",
+         .name = "Cyl 2 misf $5.0f",
+         .parameter_ids = {92, 92},
+         .element_count = 0},
+        {.id = 0x35,
+         .group = 1,
+         .label = "Misfires cyl 3",
+         .name = "Cyl 3 misf $5.0f",
+         .parameter_ids = {93, 93},
+         .element_count = 0},
+        {.id = 0x36,
+         .group = 1,
+         .label = "Misfires cyl 4",
+         .name = "Cyl 4 misf $5.0f",
+         .parameter_ids = {94, 94},
+         .element_count = 0},
+        {.id = 0x37,
+         .group = 1,
+         .label = "Misfires cyl 1-4",
+         .name = "1$3.0f2$3.0f3$3.0f4$3.0f",
+         .parameter_ids = {91, 92, 93, 94},
+         .element_count = 4},
+        {.id = 0x38,
+         .group = 1,
+         .label = "Oil L / mm / %",
+         .name = "$1.2fL $2.0fmm Q$3.0f%",
+         .parameter_ids = {28, 89, 31},
+         .element_count = 3},
+        {.id = 0x39,
+         .group = 2,
+         .label = "Oil/water/IC C",
+         .name = TEMP_FOUR,
+         .parameter_ids = {30, 42, 23, 22},
+         .element_count = 4},
+        {.id = 0x3a,
+         .group = 2,
+         .label = "Oil/water/gear C",
+         .name = "O$3.0f W$3.0f G$3.0fC",
+         .parameter_ids = {30, 42, 33},
+         .element_count = 3},
+        {.id = 0x3b,
+         .group = 3,
+         .label = "Battery sources",
+         .name = "IBS$3.0f ECU$3.0f%",
+         .parameter_ids = {3, 21},
+         .element_count = 0},
+        {.id = 0x3c,
+         .group = 3,
+         .label = "Battery IBS raw",
+         .name = "IBS B0 $3.0f B1 $3.0f",
+         .parameter_ids = {95, 96},
+         .element_count = 0},
+        {.id = 0x3d,
+         .group = 3,
+         .label = "IBS raw0/SOC/V",
+         .name = "B0$3.0f $3.0f% $2.1fV",
+         .parameter_ids = {95, 34, 35},
+         .element_count = 3},
+        {.id = 0x3e,
+         .group = 3,
+         .label = "IBS raw1/SOC/V",
+         .name = "B1$3.0f $3.0f% $2.1fV",
+         .parameter_ids = {96, 34, 35},
+         .element_count = 3},
+        {.id = 0x3f,
+         .group = 1,
+         .label = "Oil volume/mm",
+         .name = "Oil$1.2fL $3.1fmm",
+         .parameter_ids = {28, 89},
+         .element_count = 0},
+        {.id = 0x40,
+         .group = 1,
+         .label = "Misfires/MA temp",
+         .name = "MF$4.0f MA$3.0fC",
+         .parameter_ids = {90, 32},
+         .element_count = 0},
     },
     {
         {.id = 0x81,
@@ -272,7 +386,7 @@ const ParameterPage parameter_pages[2][60] = {
          .group = 3,
          .label = "Batt charge / A",
          .name = "Batt $3.0f% $4.1fA",
-         .parameter_ids = {3, 4}}, // param couple: BAT State Of Charge and current
+         .parameter_ids = {21, 4}}, // param couple: BAT State Of Charge and current
         {.id = 0x87,
          .group = 3,
          .label = "Battery V / A",
@@ -516,6 +630,36 @@ const ParameterPage parameter_pages[2][60] = {
          .name = "Pedal map $enum",
          .parameter_ids = {17, 17}}, // selected Pedal Map
 
+        {.id = 0xb8,
+         .group = 3,
+         .label = "Battery sources",
+         .name = "IBS$3.0f ECU$3.0f%",
+         .parameter_ids = {3, 21},
+         .element_count = 0},
+        {.id = 0xb9,
+         .group = 3,
+         .label = "Battery IBS raw",
+         .name = "IBS B0 $3.0f B1 $3.0f",
+         .parameter_ids = {95, 96},
+         .element_count = 0},
+        {.id = 0xba,
+         .group = 3,
+         .label = "IBS raw0/SOC/V",
+         .name = "B0$3.0f $3.0f% $2.1fV",
+         .parameter_ids = {95, 34, 35},
+         .element_count = 3},
+        {.id = 0xbb,
+         .group = 3,
+         .label = "IBS raw1/SOC/V",
+         .name = "B1$3.0f $3.0f% $2.1fV",
+         .parameter_ids = {96, 34, 35},
+         .element_count = 3},
+        {.id = 0xbc,
+         .group = 2,
+         .label = "Oil/water/gear C",
+         .name = "O$3.0f W$3.0f G$3.0fC",
+         .parameter_ids = {5, 68, 33},
+         .element_count = 3},
     }};
 
 const ParameterDefinition parameter_definitions[100] = {
@@ -719,9 +863,24 @@ const ParameterDefinition parameter_definitions[100] = {
         .scaled_offset = 0,
     },  // 17 Selected Pedal Map
     {}, // 18
-    {}, // 19
-    {}, // 20
-    {}, // 21
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03223A16),
+     .response_id = 0x18DAF110,
+     .value_length = 1,
+     .scale = 0.0625f}, // 19
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03223A17),
+     .response_id = 0x18DAF110,
+     .value_length = 1,
+     .scale = 0.0625f}, // 20
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x032219BD),
+     .response_id = 0x18DAF110,
+     .value_length = 1,
+     .scale = 1}, // 21
     {
         .request_id = 0x18DA10F1,
         .request_length = 4,
@@ -1446,7 +1605,7 @@ const ParameterDefinition parameter_definitions[100] = {
         .value_length = 2,
         .value_offset = 0,
         .raw_offset = 0,
-        .scale = 0.0000394789,
+        .scale = 0.0004,
         .scaled_offset = 0,
     }, // 87 Fuel consume (diesel)
     {
@@ -1460,6 +1619,44 @@ const ParameterDefinition parameter_definitions[100] = {
         .scale = 0.02,
         .scaled_offset = -40,
     }, // 88 Debimeter temperature (diesel)
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03223A48),
+     .response_id = 0x18DAF110,
+     .value_length = 2,
+     .scale = 0.03125f}, // 89
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03222805),
+     .response_id = 0x18DAF110,
+     .value_length = 2,
+     .scale = 1}, // 90
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03222801),
+     .response_id = 0x18DAF110,
+     .value_length = 2,
+     .scale = 1}, // 91
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03222802),
+     .response_id = 0x18DAF110,
+     .value_length = 2,
+     .scale = 1}, // 92
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03222803),
+     .response_id = 0x18DAF110,
+     .value_length = 2,
+     .scale = 1}, // 93
+    {.request_id = 0x18DA10F1,
+     .request_length = 4,
+     .request_data = SWAP_UINT32(0x03222804),
+     .response_id = 0x18DAF110,
+     .value_length = 2,
+     .scale = 1},                                                              // 94
+    {.request_id = 0x23, .response_id = 0x41a, .value_length = 1, .scale = 1}, // 95
+    {.request_id = 0x24, .response_id = 0x41a, .value_length = 1, .scale = 1}, // 96
 
 };
 

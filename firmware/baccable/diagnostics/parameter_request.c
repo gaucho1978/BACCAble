@@ -18,7 +18,10 @@ void parameter_request_begin(void) {
         return;
     request.active = 0;
     if (settings_state.is_diesel_enabled > 1 ||
-        dashboard_state.dashboard_page_index >= parameter_page_count || selected_parameter_element > 1)
+        dashboard_state.dashboard_page_index >= parameter_page_count ||
+        selected_parameter_element >=
+            parameter_page_elements(
+                &parameter_pages[settings_state.is_diesel_enabled][dashboard_state.dashboard_page_index]))
         return;
     uint8_t id = parameter_pages[settings_state.is_diesel_enabled][dashboard_state.dashboard_page_index]
                      .parameter_ids[selected_parameter_element];

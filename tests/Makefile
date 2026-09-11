@@ -10,9 +10,13 @@ test: build/test_core build/test_transport build/test_catalog build/test_menu bu
 	./build/test_core
 	./build/test_transport
 	./build/test_catalog
+	./build/test_catalog_large
 	./build/test_menu
 	./build/test_menu_large
 	./build/test_uart_menu
+	./build/test_upstream
+	./build/test_parking_c2
+	./build/test_parking_bh
 
 build/test_catalog: test_catalog.c $(FIRMWARE)/diagnostics/parameter_catalog.c $(HEADERS) Makefile
 	@mkdir -p build
@@ -30,9 +34,9 @@ build/test_core: $(SOURCES) $(HEADERS) Makefile
 .PHONY: test
 
 MENU_SOURCES := test_menu.c $(addprefix $(FIRMWARE)/, features/menu.c features/menu_model.c \
- features/menu_input.c features/display_stream.c features/dashboard.c features/dashboard_format.c \
+ features/menu_input.c features/display_stream.c features/ibs_override.c features/board_sync.c features/dashboard.c features/dashboard_format.c \
  diagnostics/parameter_cache.c diagnostics/parameter_request.c diagnostics/parameter_catalog.c \
- diagnostics/uds_decode.c settings/persistence.c settings/setup_menu.c settings/setup_entries.c \
+ diagnostics/uds_decode.c diagnostics/fault_reader.c settings/persistence.c settings/setup_menu.c settings/setup_entries.c \
  third_party/printf/printf.c)
 build/test_menu: $(MENU_SOURCES) $(HEADERS) Makefile
 	@mkdir -p build
@@ -44,3 +48,26 @@ build/test_menu_large: $(MENU_SOURCES) $(HEADERS) Makefile
 build/test_uart_menu: test_uart_menu.c $(FIRMWARE)/transport/board_uart.c $(HEADERS) Makefile
 	@mkdir -p build
 	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DC1_FLAVOR=1 -DGIT_VERSION=\"test\" test_uart_menu.c $(FIRMWARE)/transport/board_uart.c -o $@
+
+UPSTREAM_SOURCES := test_upstream.c $(addprefix $(FIRMWARE)/, diagnostics/fault_reader.c protocol/elm327.c transport/diagnostic_link.c features/ibs_override.c features/usb_modes.c third_party/printf/printf.c)
+build/test_upstream: $(UPSTREAM_SOURCES) $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) -Istubs $(CPPFLAGS) -I$(FIRMWARE)/USB_DEVICE/App $(CFLAGS) -DC1_FLAVOR=1 -DGIT_VERSION=\"test\" $(UPSTREAM_SOURCES) -lm -o $@
+
+test: build/test_upstream
+
+PARKING_SOURCES := test_parking_link.c $(addprefix $(FIRMWARE)/, features/parking.c features/parking_mirrors.c state/parking.c transport/diagnostic_link.c)
+build/test_parking_c2: $(PARKING_SOURCES) $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DC2_FLAVOR=1 -DGIT_VERSION=\"test\" $(PARKING_SOURCES) -lm -o $@
+build/test_parking_bh: $(PARKING_SOURCES) $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DBH_FLAVOR=1 -DGIT_VERSION=\"test\" $(PARKING_SOURCES) -lm -o $@
+
+test: build/test_parking_c2 build/test_parking_bh
+
+build/test_catalog_large: test_catalog.c $(FIRMWARE)/diagnostics/parameter_catalog.c $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DLARGE_DISPLAY -DGIT_VERSION=\"test\" test_catalog.c $(FIRMWARE)/diagnostics/parameter_catalog.c -lm -o $@
+
+test: build/test_catalog_large

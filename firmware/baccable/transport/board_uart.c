@@ -50,6 +50,44 @@ SendQueue *tx_queue_uart1 = &queue_instance_uart1;
 #endif
 
 static uint8_t frame_synchronized = 0;
+static uint8_t diagnostic_mode;
+
+/* Give diagnostic traffic exclusive ownership of the shared board link. */
+void board_uart_set_diagnostic(uint8_t enabled) {
+    diagnostic_mode = !!enabled;
+    uint32_t irq = __get_PRIMASK();
+    __disable_irq();
+    queue_instance.head = queue_instance.tail = queue_instance.count = 0;
+#if defined(BACCABLE_C1)
+    screen_pending = 0;
+#endif
+    __set_PRIMASK(irq);
+}
+
+/* Send one diagnostic frame and listen immediately for its reply. */
+uint8_t board_uart_diagnostic_send(const uint8_t *data, size_t length) {
+#if !defined(ACT_AS_CANABLE)
+    if (!data || length != UART_BUFFER_SIZE)
+        return 0;
+    uint32_t started = currentTime;
+    while (board_tx_active && currentTime - started < 30) {
+    }
+    if (board_tx_active)
+        return 0;
+    uart_pause(&huart2);
+    CLEAR_BIT(huart2.Instance->CR1, USART_CR1_RE);
+    SET_BIT(huart2.Instance->CR1, USART_CR1_TE);
+    huart2.State = HAL_UART_STATE_READY;
+    HAL_StatusTypeDef result = HAL_UART_Transmit(&huart2, (uint8_t *)data, length, 30);
+    SET_BIT(huart2.Instance->CR1, USART_CR1_RE);
+    uart_resume(&huart2);
+    return result == HAL_OK;
+#else
+    (void)data;
+    (void)length;
+    return 0;
+#endif
+}
 
 /* Prepare communication with auxiliary boards and the pedal controller. */
 void uart_init() {
@@ -147,14 +185,23 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     if (huart->Instance == USART2) { // message from other baccable chips
         // evaluate received message
         if ((board_rx_buffer[0] >= C1BusID) &&
-            (board_rx_buffer[0] <=
-             C1_C2_BusID)) {          // if the received char indicates the beginning of a message
+            (board_rx_buffer[0] <= 0x10)) { // if the received char indicates the beginning of a message
             if (frame_synchronized) { // if we were sync, we can process the message, since the first char is
                                       // correct and the sync indicates that te remaining part too is complete
 #if defined(ACT_AS_CANABLE)
                 status_led_activity();
 #endif
 
+                if (board_rx_buffer[0] >= 0x0e) {
+                    uint8_t checksum = 0;
+                    for (unsigned i = 0; i < 17; ++i)
+                        checksum ^= board_rx_buffer[i];
+                    if (checksum != board_rx_buffer[17] || board_rx_buffer[7] > 8) {
+                        frame_synchronized = 0;
+                        HAL_UART_Receive_IT(&huart2, board_rx_buffer, 1);
+                        return;
+                    }
+                }
                 uint8_t next = (rx_head + 1) % UART_RX_SLOTS;
                 if (next != rx_tail) {
                     memcpy(rx_frames[rx_head], board_rx_buffer, UART_BUFFER_SIZE);
@@ -404,7 +451,7 @@ void board_uart_process(void) {
         __DMB();
         rx_tail = (rx_tail + 1) % UART_RX_SLOTS;
     }
-    if (currentTime < TIMING__ALL___SERIAL_IGNORE_WINDOW_MS)
+    if (diagnostic_mode || currentTime < TIMING__ALL___SERIAL_IGNORE_WINDOW_MS)
         return;
 #if defined(BACCABLE_C1)
     if (runtime_state.low_consume_is_active)

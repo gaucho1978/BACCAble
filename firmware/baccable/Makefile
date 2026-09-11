@@ -27,8 +27,12 @@ CPU_FLAGS := -mcpu=cortex-m0 -mthumb -mfloat-abi=soft
 CFLAGS += $(CPU_FLAGS) -Os -g3 -std=gnu11 -Wall -Wextra \
  -Wno-unused-parameter -Werror=implicit-function-declaration \
  -flto -ffunction-sections -fdata-sections -fstack-usage -MMD -MP
+LINKER_SCRIPT := STM32F072C8TX_FLASH.ld
+ifeq ($(FLAVOR),C1)
+LINKER_SCRIPT := STM32F072C8TX_FLASH_C1.ld
+endif
 LDFLAGS += $(CPU_FLAGS) -flto --specs=nano.specs --specs=nosys.specs \
- -TSTM32F072C8TX_FLASH.ld -Wl,--gc-sections,-Map=$(TARGET).map
+ -T$(LINKER_SCRIPT) -Wl,--gc-sections,-Map=$(TARGET).map
 LDLIBS := -Wl,--start-group -lc -lm -Wl,--end-group
 SOURCES := $(sort $(shell find $(APP_DIRS) third_party USB_DEVICE -name '*.c')) \
  $(wildcard $(HAL_DIR)/Src/*.c) $(wildcard $(USB_DIR)/Core/Src/*.c) \
@@ -52,7 +56,7 @@ $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/flags
 $(BUILD_DIR)/startup.o: Core/Startup/startup_stm32f072c8tx.s $(BUILD_DIR)/flags
 	$(CC) $(CPU_FLAGS) -c $< -o $@
 
-$(TARGET).elf: $(OBJECTS) STM32F072C8TX_FLASH.ld
+$(TARGET).elf: $(OBJECTS) $(LINKER_SCRIPT)
 	$(CC) $(LDFLAGS) $(OBJECTS) $(LDLIBS) -o $@
 	$(SIZE) $@
 

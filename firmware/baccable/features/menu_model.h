@@ -21,7 +21,7 @@ bool menu_preferences_decode(MenuPreferences *prefs, const uint8_t data[MENU_PRE
 bool menu_page_visible(const MenuPreferences *prefs, uint8_t engine, uint8_t index);
 void menu_page_show(MenuPreferences *prefs, uint8_t engine, uint8_t index, bool visible);
 unsigned menu_page_list(const MenuPreferences *prefs, uint8_t engine, uint8_t group, bool favorites,
-                        bool include_hidden, uint8_t list[60]);
+                        bool include_hidden, uint8_t list[64]);
 bool menu_favorite_toggle(MenuPreferences *prefs, uint8_t engine, uint16_t id);
 void menu_favorite_move(MenuPreferences *prefs, uint8_t engine, uint16_t id, int direction);
 #endif

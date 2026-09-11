@@ -1,4 +1,4 @@
-# Unimplemented signal notes
+# Signal research notes
 
 These observations were previously stored in inactive CAN handlers. They are
 reference material, not implemented features or validated decoding contracts.
@@ -9,7 +9,7 @@ Verify them against vehicle captures before adding behavior.
 | `0x1F0` | Clutch interlock: byte 0 bit 7; upstop: bit 6. Pedal position spans byte 0 bits 4–0 and byte 1 bits 7–5; analog position spans byte 1 bits 4–0 and byte 2 bits 7–5. |
 | `0x1FC` | C2 suspension/differential status. Byte 0 contains differential warning/control and damping mode; byte 1 includes damping/aero faults; byte 2 bit 5 is the CDCM warning lamp. |
 | `0x2EE` | BH steering-wheel media buttons: byte 3 bits 6/4/2/0 represent right/left/voice/phone. Byte 4 is a wrapping volume counter; byte 5 bits 7–6 indicate increase/decrease/mute. |
-| `0x358` | Possible volume position/direction in byte 2; the original note was unconfirmed. |
+| `0x358` | Volume position/direction decoding remains unconfirmed. Active reverse-mute handling in `features/parking.c` already captures this frame and sends the `0xe0` button command; do not add a competing sender. |
 
 The former `0x420` battery and `0x4B4` chassis handlers had no active behavior
 and no reliable additional decoding. Ordinary routing remains available through

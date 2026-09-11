@@ -1,4 +1,5 @@
 #include "features/menu.h"
+#include "features/periodic.h"
 #include "features/display_stream.h"
 #include "app/powertrain.h"
 #include "diagnostics/parameter_cache.h"
@@ -25,8 +26,11 @@ static char screen[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
 static uint8_t old_visibility[30], saved[MENU_PREFS_SIZE];
 static bool have_old, have_saved, fail_save;
 static unsigned commands, queries;
+static bool uart_busy;
 uint32_t HAL_GetTick(void) { return now; }
 uint8_t board_uart_send(const uint8_t *data, size_t size) {
+    if (uart_busy)
+        return 0;
     if (data[0] == BhBusIDparamString) {
         assert(size == UART_BUFFER_SIZE);
         memcpy(screen, data + 1, DASHBOARD_MESSAGE_MAX_LENGTH);
@@ -37,6 +41,7 @@ uint8_t board_uart_send(const uint8_t *data, size_t size) {
 }
 void pedal_booster_set_map(uint8_t map) { (void)map; }
 void _putchar(char c) { (void)c; }
+void usb_modes_apply(void) {}
 void status_led_error(void) {}
 void status_led_activity(void) {}
 uint32_t can_tx(CAN_TxHeaderTypeDef *header, uint8_t *data) {
@@ -136,7 +141,7 @@ static void test_display(void) {
 static void test_preferences(void) {
     MenuPreferences prefs, copy;
     menu_preferences_default(&prefs);
-    uint8_t list[60], raw[MENU_PREFS_SIZE];
+    uint8_t list[64], raw[MENU_PREFS_SIZE];
     for (unsigned e = 0; e < 2; ++e) {
         assert(menu_page_list(&prefs, e, 0, true, false, list) == 4);
         unsigned total = 0;
@@ -421,6 +426,50 @@ static void test_cache_flags(void) {
     parameter_cache_reset();
     assert(isnan(parameter_cache_get(99, 0)));
 }
+/* Hold numerical peaks without freezing status readings or showing stale measurements. */
+static void test_maximum_hold(void) {
+    parameter_cache_reset();
+    parameter_peak_enable(true);
+    parameter_cache_put(4, -12.0f, 100);
+    parameter_cache_put(4, -20.0f, 200);
+    assert(parameter_cache_get(4, 200) == -12.0f);
+    parameter_cache_put(8, 3, 100);
+    parameter_cache_put(8, 1, 200);
+    assert(parameter_cache_get(8, 200) == 1);
+    assert(isnan(parameter_cache_get(4, 3201)));
+    parameter_peak_reset();
+    parameter_cache_put(4, -30.0f, 3300);
+    assert(parameter_cache_get(4, 3300) == -30.0f);
+    parameter_peak_enable(false);
+    parameter_cache_put(4, -40.0f, 3400);
+    assert(parameter_cache_get(4, 3400) == -40.0f);
+    float values[] = {1, 2, 3, 4};
+    uint8_t ids[] = {91, 92, 93, 94};
+    char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+    dashboard_format_values("$1.0f/$1.0f/$1.0f/$1.0f", values, ids, text);
+    assert(!strcmp(text, "1/2/3/4"));
+}
+
+/* Retry auxiliary-board preferences after a busy link without losing or duplicating a setting. */
+static void test_board_sync_retry(void) {
+    now = 20000;
+    runtime_state.all_processors_wakeup_time = 0;
+    commands = 0;
+    board_sync_restart();
+    for (unsigned option = 0; option < 8; ++option) {
+        uart_busy = true;
+        board_sync_process();
+        assert(commands == option);
+        uart_busy = false;
+        board_sync_process();
+        assert(commands == option + 1);
+    }
+    board_sync_process();
+    assert(!runtime_state.instruct_slave_boards_trigger_enabled);
+    board_sync_process();
+    assert(commands == 8);
+}
+
 int main(void) {
     test_input();
     test_display();
@@ -429,5 +478,7 @@ int main(void) {
     test_navigation_regressions();
     test_readable_screens();
     test_cache_flags();
+    test_maximum_hold();
+    test_board_sync_retry();
     puts("PASS: menu gestures, stable views, favorites, sorting, migration, save failure, UDS freshness");
 }

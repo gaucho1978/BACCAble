@@ -28,8 +28,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 
-#include "stm32f0xx.h"
-#include "stm32f0xx_hal.h"
+#include <stdint.h>
 
 /* USER CODE BEGIN INCLUDE */
 
@@ -76,6 +75,9 @@ extern "C" {
 
 /** USB Device initialization function. */
 void MX_USB_DEVICE_Init(void);
+void usb_device_start(uint8_t serial);
+void usb_device_stop(void);
+uint8_t usb_device_is_serial(void);
 
 /*
  * -- Insert functions declaration here --

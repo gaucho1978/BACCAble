@@ -40,6 +40,7 @@ uint32_t can_tx(CAN_TxHeaderTypeDef *tx_msg_header, uint8_t *tx_msg_data);
 uint32_t can_rx(CAN_RxHeaderTypeDef *rx_msg_header, uint8_t *rx_msg_data);
 uint32_t can_forward(const CAN_RxHeaderTypeDef *received, uint8_t *data);
 
+uint32_t can_set_receive_filter(uint32_t id, uint32_t mask, uint8_t extended);
 void can_process(void);
 
 uint8_t is_can_msg_pending(uint8_t fifo);
