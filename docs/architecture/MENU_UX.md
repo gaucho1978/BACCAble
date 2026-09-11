@@ -28,6 +28,22 @@ Reading groups: All readings, Engine, Temperatures, Battery, DPF / AdBlue,
 Performance, Other. Empty lists show `No pages` or `No favorites`; returning still
 works. The main menu and group list show position counters; editors use full labels.
 
+## Menu symbols
+
+| Symbol | Meaning | Example |
+| --- | --- | --- |
+| `+` | Enabled state or included page | `+ Maximum hold` |
+| `-` | Disabled state or excluded page | `- Maximum hold` |
+| `*` | Selected item for moving or current sort mode | `* Sort: A-Z` |
+| `>` | Opens a submenu or browser | `> Feature setup` |
+| `<` | Saves and returns to the parent menu | `< Save and back` |
+| `!` | Warning, failed action or confirmation required | `! RES to confirm` |
+| `?` | Unknown board status | `? BH no reply` |
+
+Requested vehicle changes retain `Req ON` / `Req OFF`; these are not confirmed
+states. Reading values retain their full width and existing missing-value `--`
+notation. Hold RES to return from other screens; the symbols do not add buttons.
+
 ## Readable measurements and settings
 
 | Page label | Example screen | Meaning |
@@ -58,7 +74,7 @@ automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 
 1. In `Settings → Edit favorites`, RES adds/removes the selected page. `+` marks
    a favorite. Each engine profile has a six-page limit.
-2. In `Reorder favorites`, select an item with RES; `*` marks move mode. Move it
+2. In `Order favorites`, select an item with RES; `*` marks move mode. Move it
    with the direction controls and press RES again to finish. Movement stops at
    the list boundaries.
 3. In `Visible pages`, RES toggles catalog visibility. Hiding a page does not
@@ -105,9 +121,9 @@ every five seconds. Dedicated single-value pages remain available for clearer la
 - UART retains the latest waiting screen, preserves command FIFO and never
   overwrites an active transfer. A screen may precede a waiting status poll only
   once, so continuous browsing does not starve status replies.
-- BH finishes every part of the active screen before beginning another. CAN
-  queue rejection retains the current part for retry. Factory text does not
-  restart an active BACCAble screen transfer.
+- BH prioritizes the latest screen and skips unchanged fragments. CAN queue
+  rejection keeps work pending for retry. Factory text requests a full refresh
+  without resetting progress through the fragments.
 - Native readings refresh only from their corresponding valid CAN frames. UDS
   issues at most one request every 500 ms, after a 150 ms page-settling interval,
   cycling through up to four page values. Fault clearing pauses polling; the fault
@@ -121,6 +137,13 @@ requires a gap greater than 250 ms; display text travels in three-character part
 at intervals of at least 50 ms: six parts for 18 characters, eight for 24. Fast
 browsing can skip intermediate waiting screens. Actual smoothness, factory-message
 interaction and Race mask behavior still require vehicle testing.
+
+BH replaces unsent content with the latest target and sends only changed
+three-character fragments. Round-robin selection prevents frequent changes from
+starving the end of the screen; rejected CAN submissions remain pending. Nonblank
+text is refreshed after factory display traffic and after 500 ms without a
+successful fragment submission. CAN acceptance does not confirm IPC rendering:
+fragment updates cannot guarantee an atomic screen change.
 
 ## Compatibility
 
@@ -164,7 +187,8 @@ Storage requires the physical Flash capacity described in [architecture](README.
 See the [integration report](UPSTREAM_SYNC.md) and
 [dated build measurements](UPSTREAM_BUILD_SIZES.md) for validation scope and sizes. Host tests use
 production code with HAL/storage substitutes and cover gestures, lost reports,
-clock wrap, complete display transfers, retries, command ordering, sorting,
+clock wrap, complete and partial display transfers, target replacement, fair fragment
+selection, retries, command ordering, sorting,
 favorites, migration, empty lists, remembered pages, save failure, profile changes,
 late UDS replies, expiry, label/template widths, negative current and setting buffers.
 

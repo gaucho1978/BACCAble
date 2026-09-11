@@ -13,7 +13,7 @@
     #include "app/powertrain.h"
 
     #define SETUP_SAVE_EXIT_PAGE 0
-    #define SETUP_SAVE_EXIT_TEXT "Save and back"
+    #define SETUP_SAVE_EXIT_TEXT "< Save and back"
     #define SETUP_MARK_TEXT_START 2
 
 uint8_t setup_dashboardPageIndex = 0;

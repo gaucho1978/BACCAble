@@ -3,6 +3,10 @@
 #include "features/parking_mirrors.h"
 #include "storage/flash_records.h"
 
+/* Preserve the established IPC pacing while avoiding redundant text fragments. */
+#define DISPLAY_FRAGMENT_INTERVAL_MS 50U
+#define DISPLAY_KEEPALIVE_INTERVAL_MS 500U
+
 #if defined(BACCABLE_BH)
 
 static DisplayStream screen;
@@ -56,7 +60,12 @@ void body_init() {
 void body_process() {
     if (chassis_state.stability_inverted) {
         display_stream_reset(&screen);
-    } else if (currentTime - display_state.last_sent_telematic_display_info_msg_time >= 50) {
+    } else if (currentTime - display_state.last_sent_telematic_display_info_msg_time >=
+               DISPLAY_FRAGMENT_INTERVAL_MS) {
+        /* Suppressing identical submissions must not let an otherwise idle display expire. */
+        if (currentTime - display_state.last_sent_telematic_display_info_msg_time >=
+            DISPLAY_KEEPALIVE_INTERVAL_MS)
+            display_stream_refresh(&screen);
         uint8_t fragment, text[3];
         if (display_stream_peek(&screen, &fragment, text)) {
             uint8_t *data = display_state.telematic_display_info_msg_data;

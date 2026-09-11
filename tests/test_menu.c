@@ -106,35 +106,101 @@ static void test_input(void) {
         assert(menu_input_update(&input, 0x90, true, start + t) == MENU_NONE);
     assert(menu_input_update(&input, 0x90, true, start + 801) == MENU_BACK);
 }
+/* Apply queued fragments to a receiver that exposes each fragment immediately. */
+static unsigned drain_display(DisplayStream *stream, uint8_t *visible) {
+    uint8_t part, chars[3];
+    unsigned count = 0;
+    while (display_stream_peek(stream, &part, chars)) {
+        assert(++count <= DISPLAY_FRAGMENT_COUNT);
+        memcpy(visible + part * 3, chars, 3);
+        display_stream_accept(stream);
+    }
+    return count;
+}
+
+/* Check latest-target updates, retry ownership, fairness and restoration at both widths. */
 static void test_display(void) {
     DisplayStream stream = {0};
-    uint8_t a[DASHBOARD_MESSAGE_MAX_LENGTH], b[sizeof(a)], c[sizeof(a)], output[sizeof(a)], part, chars[3];
+    uint8_t a[DASHBOARD_MESSAGE_MAX_LENGTH], b[sizeof(a)], c[sizeof(a)], visible[sizeof(a)];
+    uint8_t part, chars[3];
     memset(a, 'A', sizeof(a));
     memset(b, 'B', sizeof(b));
     memset(c, 'C', sizeof(c));
     display_stream_submit(&stream, a);
-    for (unsigned i = 0; i < sizeof(a) / 3; ++i) {
+    assert(drain_display(&stream, visible) == DISPLAY_FRAGMENT_COUNT);
+    assert(!memcmp(visible, a, sizeof(a)));
+    display_stream_submit(&stream, a);
+    assert(!display_stream_peek(&stream, &part, chars));
+
+    unsigned changed = DISPLAY_FRAGMENT_COUNT / 2;
+    memcpy(a + changed * 3, "XYZ", 3);
+    display_stream_submit(&stream, a);
+    assert(display_stream_peek(&stream, &part, chars) && part == changed);
+    assert(!memcmp(chars, "XYZ", 3));
+    /* No accept after CAN failure: retry must retain the same pending fragment. */
+    assert(display_stream_peek(&stream, &part, chars) && part == changed);
+    assert(drain_display(&stream, visible) == 1);
+    assert(!memcmp(visible, a, sizeof(a)));
+
+    display_stream_reset(&stream);
+    display_stream_submit(&stream, a);
+    assert(display_stream_peek(&stream, &part, chars) && part == 0);
+    memcpy(visible, chars, 3);
+    display_stream_accept(&stream);
+    display_stream_submit(&stream, b);
+    assert(display_stream_peek(&stream, &part, chars) && part == 1 && chars[0] == 'B');
+    assert(drain_display(&stream, visible) == DISPLAY_FRAGMENT_COUNT);
+    assert(!memcmp(visible, b, sizeof(b)));
+
+    display_stream_submit(&stream, a);
+    assert(display_stream_peek(&stream, &part, chars));
+    uint8_t offered_part = part;
+    memcpy(visible + part * 3, chars, 3);
+    display_stream_submit(&stream, c); /* The accepted snapshot must not become C retroactively. */
+    display_stream_accept(&stream);
+    assert(stream.dirty & (1U << offered_part));
+    assert(drain_display(&stream, visible) == DISPLAY_FRAGMENT_COUNT);
+    assert(!memcmp(visible, c, sizeof(c)));
+
+    /* A failed obsolete fragment can be replaced by the newest target on retry. */
+    display_stream_submit(&stream, a);
+    assert(display_stream_peek(&stream, &part, chars));
+    display_stream_submit(&stream, b);
+    assert(display_stream_peek(&stream, &part, chars) && chars[0] == 'B');
+    drain_display(&stream, visible);
+    assert(!memcmp(visible, b, sizeof(b)));
+
+    /* Changing the start continually must not starve the end of the line. */
+    display_stream_reset(&stream);
+    for (unsigned i = 0; i < DISPLAY_FRAGMENT_COUNT; ++i) {
+        b[0] = 'a' + i;
+        display_stream_submit(&stream, b);
         assert(display_stream_peek(&stream, &part, chars) && part == i);
-        memcpy(output + i * 3, chars, 3);
-        if (i == 1) {
-            display_stream_submit(&stream, b);
-            display_stream_submit(&stream, c);
-        }
-        display_stream_refresh(&stream); /* Factory text does not restart the view. */
-        /* Failed CAN enqueue doesn't advance the stream. */
-        assert(display_stream_peek(&stream, &part, chars) && part == i);
+        memcpy(visible + part * 3, chars, 3);
         display_stream_accept(&stream);
     }
-    assert(!memcmp(output, a, sizeof(a)));
-    for (unsigned i = 0; i < sizeof(a) / 3; ++i) {
-        assert(display_stream_peek(&stream, &part, chars) && part == i);
-        assert(chars[0] == 'C');
+    drain_display(&stream, visible);
+    assert(!memcmp(visible, b, sizeof(b)));
+
+    memset(c, ' ', sizeof(c));
+    memcpy(c, "Oil", 3);
+    display_stream_submit(&stream, c);
+    drain_display(&stream, visible);
+    assert(!memcmp(visible, c, sizeof(c))); /* Clear the complete old suffix. */
+    display_stream_refresh(&stream);
+    for (unsigned i = 0; i < DISPLAY_FRAGMENT_COUNT; ++i) {
+        display_stream_submit(&stream, c);
+        display_stream_refresh(&stream); /* Repeated factory traffic does not restart restoration. */
+        assert(display_stream_peek(&stream, &part, chars));
         display_stream_accept(&stream);
     }
     assert(!display_stream_peek(&stream, &part, chars));
+    memset(c, ' ', sizeof(c));
+    display_stream_submit(&stream, c);
+    drain_display(&stream, visible);
     display_stream_refresh(&stream);
-    assert(display_stream_peek(&stream, &part, chars) && part == 0 && chars[0] == 'C');
-    display_stream_submit(&stream, b);
+    assert(!display_stream_peek(&stream, &part, chars));
+    display_stream_submit(&stream, a);
     display_stream_reset(&stream);
     assert(!display_stream_peek(&stream, &part, chars));
 }
@@ -196,6 +262,29 @@ static void to_settings(void) {
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT);
 }
+/* A rejected screen remains retryable, including a periodic resend of identical text. */
+static void test_present_retry(void) {
+    fresh_menu();
+    menu_present("Old screen");
+    uart_busy = true;
+    menu_present("New screen");
+    assert(!strncmp(screen, "Old screen", 10));
+    uart_busy = false;
+    menu_present("New screen");
+    assert(!strncmp(screen, "New screen", 10));
+
+    now += 500;
+    uart_busy = true;
+    menu_present("New screen");
+    uart_busy = false;
+    memset(screen, 0, sizeof(screen));
+    menu_present("New screen");
+    assert(!strncmp(screen, "New screen", 10));
+    /* Successful submissions still suppress immediate duplicates. */
+    memset(screen, 0, sizeof(screen));
+    menu_present("New screen");
+    assert(screen[0] == 0);
+}
 static void test_controller(void) {
     fresh_menu();
     assert(dashboard_state.baccable_dashboard_menu_visible);
@@ -213,16 +302,16 @@ static void test_controller(void) {
     menu_event(MENU_SELECT); /* Setup Save and back. */
     fail_save = true;
     menu_event(MENU_SELECT);
-    assert(strstr(screen, "Save failed"));
+    assert(strstr(screen, "! Save failed"));
     now += 1500;
     menu_render();
-    assert(strstr(screen, "Save and back"));
+    assert(strstr(screen, "< Save and back"));
     fail_save = false;
     menu_event(MENU_SELECT);
     assert(strstr(screen, "Saved"));
     now += 1500;
     menu_render();
-    assert(strstr(screen, "Feature setup"));
+    assert(strstr(screen, "> Feature setup"));
     /* Import old visibility, retaining the existing settings record. */
     memset(old_visibility, 0xff, sizeof(old_visibility));
     old_visibility[0] &= ~2;
@@ -289,12 +378,12 @@ static void test_navigation_regressions(void) {
     menu_event(MENU_NEXT); /* A setting instead of Save and back. */
     fail_save = true;
     menu_event(MENU_BACK);
-    assert(strstr(screen, "Save failed"));
+    assert(strstr(screen, "! Save failed"));
     fail_save = false;
     menu_event(MENU_SELECT); /* Retry BACK, without toggling the setting. */
     now += 1500;
     menu_render();
-    assert(strstr(screen, "Feature setup"));
+    assert(strstr(screen, "> Feature setup"));
 
     fresh_menu();
     settings_state.is_diesel_enabled = 1;
@@ -474,6 +563,7 @@ int main(void) {
     test_input();
     test_display();
     test_preferences();
+    test_present_retry();
     test_controller();
     test_navigation_regressions();
     test_readable_screens();

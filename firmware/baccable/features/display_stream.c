@@ -1,48 +1,67 @@
 #include "features/display_stream.h"
 #include <string.h>
 
-/* Keep the newest requested screen while the current screen finishes sending. */
+/* Identify fragments that still need to reach the requested screen. */
+static void update_dirty(DisplayStream *stream) {
+    stream->dirty = stream->forced;
+    for (unsigned i = 0; i < DISPLAY_FRAGMENT_COUNT; ++i) {
+        unsigned offset = i * DISPLAY_FRAGMENT_SIZE;
+        if (!(stream->known & (1U << i)) ||
+            memcmp(stream->sent + offset, stream->target + offset, DISPLAY_FRAGMENT_SIZE))
+            stream->dirty |= 1U << i;
+    }
+}
+
+/* Replace obsolete waiting content with the latest complete, space-padded screen. */
 void display_stream_submit(DisplayStream *stream, const uint8_t *text) {
-    if (stream->sending && !memcmp(stream->active, text, sizeof(stream->active))) {
-        stream->queued = false;
-        return;
-    }
-    memcpy(stream->pending, text, sizeof(stream->pending));
-    stream->queued = true;
+    memcpy(stream->target, text, sizeof(stream->target));
+    stream->valid = true;
+    update_dirty(stream);
 }
 
-/* Provide the next part of the screen without losing it if sending fails. */
+/* Offer the next changed fragment fairly, including newer content after a failed send. */
 bool display_stream_peek(DisplayStream *stream, uint8_t *fragment, uint8_t text[3]) {
-    if (!stream->sending) {
-        if (!stream->queued)
-            return false;
-        memcpy(stream->active, stream->pending, sizeof(stream->active));
-        stream->queued = false;
-        stream->sending = true;
-        stream->valid = true;
-        stream->fragment = 0;
+    stream->offering = false;
+    if (!stream->valid)
+        return false;
+    for (unsigned n = 0; n < DISPLAY_FRAGMENT_COUNT; ++n) {
+        unsigned i = (stream->cursor + n) % DISPLAY_FRAGMENT_COUNT;
+        if (!(stream->dirty & (1U << i)))
+            continue;
+        stream->fragment = i;
+        memcpy(stream->offered, stream->target + i * DISPLAY_FRAGMENT_SIZE, DISPLAY_FRAGMENT_SIZE);
+        memcpy(text, stream->offered, DISPLAY_FRAGMENT_SIZE);
+        *fragment = i;
+        stream->offering = true;
+        return true;
     }
-    *fragment = stream->fragment;
-    memcpy(text, stream->active + 3 * stream->fragment, 3);
-    return true;
+    return false;
 }
 
-/* Advance the screen after its current part has been accepted for sending. */
+/* Remember exactly the accepted fragment; a newer target remains pending if it differs. */
 void display_stream_accept(DisplayStream *stream) {
-    if (stream->sending && ++stream->fragment == DASHBOARD_MESSAGE_MAX_LENGTH / 3)
-        stream->sending = false;
+    if (!stream->offering)
+        return;
+    unsigned i = stream->fragment;
+    memcpy(stream->sent + i * DISPLAY_FRAGMENT_SIZE, stream->offered, DISPLAY_FRAGMENT_SIZE);
+    stream->known |= 1U << i;
+    stream->forced &= (uint8_t)~(1U << i);
+    stream->cursor = (i + 1) % DISPLAY_FRAGMENT_COUNT;
+    stream->offering = false;
+    update_dirty(stream);
 }
 
-/* Discard screen content when BACCAble display output is suspended. */
+/* Forget previous output when BACCAble relinquishes the display. */
 void display_stream_reset(DisplayStream *stream) { memset(stream, 0, sizeof(*stream)); }
 
-/* Restore the current screen after factory display traffic, without restarting an active update. */
+/* Restore or maintain nonblank text without repeatedly restarting a pending restoration. */
 void display_stream_refresh(DisplayStream *stream) {
-    if (!stream->valid || stream->sending || stream->queued)
+    if (!stream->valid || stream->forced)
         return;
-    for (unsigned i = 0; i < sizeof(stream->active); ++i) {
-        if (stream->active[i] != ' ') {
-            display_stream_submit(stream, stream->active);
+    for (unsigned i = 0; i < sizeof(stream->target); ++i) {
+        if (stream->target[i] != ' ') {
+            stream->forced = (1U << DISPLAY_FRAGMENT_COUNT) - 1U;
+            update_dirty(stream);
             return;
         }
     }
