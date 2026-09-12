@@ -142,6 +142,45 @@ unsigned menu_page_list(const MenuPreferences *prefs, uint8_t engine, uint8_t gr
     return count;
 }
 
+/* Apply engine capabilities without removing pages or changing their stable identities. */
+bool menu_page_supported(uint8_t engine, uint8_t index, bool gasoline_v6) {
+    if (index >= menu_page_count(engine))
+        return false;
+    uint8_t id = parameter_pages[engine][index].id;
+    if (!engine && (id == 0x2f || id == 0x30))
+        return gasoline_v6;
+    if (!engine && (id == 0x14 || id == 0x40))
+        return !gasoline_v6; /* MultiAir temperature applies to the I4 profile. */
+    return true;
+}
+
+/* Keep technical details and alternate layouts available without crowding ordinary browsing. */
+bool menu_page_advanced(uint8_t engine, uint8_t index) {
+    if (index >= menu_page_count(engine))
+        return false;
+    static const uint8_t ids[] = {0x02, 0x03, 0x05, 0x06, 0x0c, 0x0e, 0x0f, 0x13, 0x19, 0x1b, 0x1c,
+                                  0x1d, 0x21, 0x22, 0x29, 0x31, 0x33, 0x34, 0x35, 0x36, 0x38, 0x39,
+                                  0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x82, 0x83, 0x85, 0x86,
+                                  0x89, 0x91, 0x92, 0x93, 0x97, 0xa1, 0xa2, 0xa3, 0xa4, 0xa7, 0xa9,
+                                  0xac, 0xad, 0xb1, 0xb8, 0xb9, 0xba, 0xbb, 0xbc};
+    for (unsigned i = 0; i < sizeof(ids); ++i)
+        if (parameter_pages[engine][index].id == ids[i])
+            return true;
+    return false;
+}
+
+/* Filter a stable catalog list; explicit favorites and editors retain access to advanced pages. */
+unsigned menu_page_list_filtered(const MenuPreferences *prefs, uint8_t engine, uint8_t group, bool favorites,
+                                 bool include_hidden, bool gasoline_v6, bool advanced, uint8_t list[64]) {
+    unsigned count = menu_page_list(prefs, engine, group, favorites, include_hidden, list);
+    unsigned kept = 0;
+    for (unsigned i = 0; i < count; ++i)
+        if (menu_page_supported(engine, list[i], gasoline_v6) &&
+            (favorites || include_hidden || advanced || !menu_page_advanced(engine, list[i])))
+            list[kept++] = list[i];
+    return kept;
+}
+
 /* Add or remove a favorite while respecting the six-page limit. */
 bool menu_favorite_toggle(MenuPreferences *prefs, uint8_t engine, uint16_t id) {
     if (menu_page_index(engine, id) < 0)
@@ -173,5 +212,27 @@ void menu_favorite_move(MenuPreferences *prefs, uint8_t engine, uint16_t id, int
             items[next] = id;
             return;
         }
+    }
+}
+
+/* Move between visible favorites without losing or stepping onto another engine's hidden favorite. */
+void menu_favorite_move_supported(MenuPreferences *prefs, uint8_t engine, uint16_t id, int direction,
+                                  bool gasoline_v6) {
+    if (engine > 1)
+        return;
+    uint16_t *items = prefs->favorites[engine];
+    for (unsigned i = 0; i < MENU_FAVORITES; ++i) {
+        if (items[i] != id)
+            continue;
+        int step = direction < 0 ? -1 : 1;
+        for (int next = (int)i + step; next >= 0 && next < MENU_FAVORITES; next += step) {
+            int index = menu_page_index(engine, items[next]);
+            if (index >= 0 && menu_page_supported(engine, index, gasoline_v6)) {
+                items[i] = items[next];
+                items[next] = id;
+                return;
+            }
+        }
+        return;
     }
 }

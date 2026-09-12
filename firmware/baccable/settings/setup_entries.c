@@ -310,21 +310,21 @@ const SetupParam setup_params[] = {
     // Diagnostics and messages
     SETUP_TOGGLE(SETUP_FLASH_ROUTE_MESSAGES, "Route Messages", DEFAULT_ROUTE_MESSAGES,
                  settings_state.route_msg_enabled),
-    SETUP_TOGGLE_ACTION(SETUP_FLASH_ESC_TC_CUSTOMIZER, "ESC/TC Custom.", DEFAULT_ESC_TC_CUSTOMIZER,
+    SETUP_TOGGLE_ACTION(SETUP_FLASH_ESC_TC_CUSTOMIZER, "Allow ESC/TC", DEFAULT_ESC_TC_CUSTOMIZER,
                         settings_state.esc_tc_customizator_enabled, setup_action_esc_tc),
-    SETUP_TOGGLE(SETUP_FLASH_DYNO, "Dyno", DEFAULT_DYNO, settings_state.dyno_mode_master_enabled),
+    SETUP_TOGGLE(SETUP_FLASH_DYNO, "Allow Dyno", DEFAULT_DYNO, settings_state.dyno_mode_master_enabled),
     SETUP_TOGGLE(SETUP_FLASH_ACC_VIRTUAL_PAD, "ACC Virtual Pad", DEFAULT_ACC_VIRTUAL_PAD,
                  settings_state.acc_virtual_pad_enabled),
-    SETUP_TOGGLE(SETUP_FLASH_BRAKES_OVERRIDE, "Brakes Override", DEFAULT_BRAKES_OVERRIDE,
+    SETUP_TOGGLE(SETUP_FLASH_BRAKES_OVERRIDE, "Allow brake", DEFAULT_BRAKES_OVERRIDE,
                  settings_state.front_brake_forcer_master),
-    SETUP_TOGGLE(SETUP_FLASH_4WD_DISABLER, "4WD Disabler", DEFAULT_4WD_DISABLER,
+    SETUP_TOGGLE(SETUP_FLASH_4WD_DISABLER, "Allow 4WD", DEFAULT_4WD_DISABLER,
                  settings_state.awd_disabler_enabled),
-    SETUP_TOGGLE(SETUP_FLASH_CLEAR_FAULTS, "Clear Faults", DEFAULT_CLEAR_FAULTS,
+    SETUP_TOGGLE(SETUP_FLASH_CLEAR_FAULTS, "Allow fault clr", DEFAULT_CLEAR_FAULTS,
                  settings_state.clear_faults_enabled),
-    SETUP_TOGGLE(SETUP_FLASH_READ_FAULTS, "Read BCM faults", DEFAULT_READ_FAULTS,
+    SETUP_TOGGLE(SETUP_FLASH_READ_FAULTS, "Allow fault read", DEFAULT_READ_FAULTS,
                  settings_state.read_faults_enabled),
     SETUP_HIDDEN_TOGGLE(SETUP_FLASH_REMOTE_START, DEFAULT_REMOTE_START, settings_state.remote_start_enabled),
-    SETUP_TOGGLE_RENDER_ACTION(SETUP_FLASH_DIESEL_PARAMS, "Engine type", DEFAULT_DIESEL_PARAMS,
+    SETUP_TOGGLE_RENDER_ACTION(SETUP_FLASH_DIESEL_PARAMS, "Engine profile", DEFAULT_DIESEL_PARAMS,
                                settings_state.is_diesel_enabled, setup_render_diesel_params,
                                setup_action_diesel_params),
 
@@ -347,9 +347,9 @@ const SetupParam setup_params[] = {
     SETUP_VALUE8_ACTION(SETUP_FLASH_OPEN_WINDOWS, "Open Windows", 2, DEFAULT_OPEN_WINDOWS,
                         settings_state.open_windows_with_door_lock, setup_render_open_windows,
                         setup_action_open_windows),
-    SETUP_TOGGLE_ACTION(SETUP_FLASH_HAS_VIRTUAL_PAD, "HAS Virtual Pad", DEFAULT_HAS_VIRTUAL_PAD,
+    SETUP_TOGGLE_ACTION(SETUP_FLASH_HAS_VIRTUAL_PAD, "Allow HAS", DEFAULT_HAS_VIRTUAL_PAD,
                         settings_state.has_function_enabled, setup_action_has_virtual_pad),
-    SETUP_TOGGLE(SETUP_FLASH_QV_EXHAUST_FLAP, "QV Exhaust Flap", DEFAULT_QV_EXHAUST_FLAP,
+    SETUP_TOGGLE(SETUP_FLASH_QV_EXHAUST_FLAP, "Allow QV exhaust", DEFAULT_QV_EXHAUST_FLAP,
                  settings_state.qv_exhaust_flap_function_enabled),
     SETUP_HIDDEN_TOGGLE(SETUP_FLASH_EUJOT, DEFAULT_EUJOT, settings_state.eujot_enabled),
 
@@ -361,6 +361,9 @@ const SetupParam setup_params[] = {
     #ifdef ACT_AS_ELM327
     SETUP_TOGGLE_ACTION(35, "USB ELM327", 0, settings_state.usb_elm327, setup_action_usb_elm327),
     #endif
+
+    SETUP_TOGGLE(37, "Advanced pages", 0, settings_state.advanced_pages),
+    SETUP_HIDDEN_TOGGLE(36, 0, settings_state.gasoline_v6),
 
     // Hidden persisted values
     SETUP_HIDDEN_TOGGLE(SETUP_FLASH_SHOW_RACE_MASK, DEFAULT_SHOW_RACE_MASK, settings_state.show_race_mask),
@@ -430,9 +433,16 @@ static void setup_action_esc_tc(void) {
     board_uart_send(msg, 2);
 }
 
-/* Switch the menu between gasoline and diesel readings. */
+/* Cycle I4 gasoline, V6 gasoline and diesel without changing saved page identities. */
 static void setup_action_diesel_params(void) {
-    settings_state.is_diesel_enabled = !settings_state.is_diesel_enabled;
+    if (settings_state.is_diesel_enabled) {
+        settings_state.is_diesel_enabled = 0;
+        settings_state.gasoline_v6 = 0;
+    } else if (!settings_state.gasoline_v6) {
+        settings_state.gasoline_v6 = 1;
+    } else {
+        settings_state.is_diesel_enabled = 1;
+    }
     parameter_page_count = settings_state.is_diesel_enabled ? diesel_page_count : gasoline_page_count;
 }
 
@@ -523,7 +533,9 @@ static void setup_render_shift_rpm(void) {
 
 /* Show the engine profile used by the parameter menu. */
 static void setup_render_diesel_params(void) {
-    setup_write_text(0, settings_state.is_diesel_enabled ? "Engine: Diesel" : "Engine: Gasoline");
+    setup_write_text(0, settings_state.is_diesel_enabled ? "Engine: 2.2 D"
+                        : settings_state.gasoline_v6     ? "Engine: 2.9 V6"
+                                                         : "Engine: 2.0 I4");
 }
 
 /* Show the selected accelerator-response mode. */

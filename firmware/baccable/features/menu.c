@@ -24,7 +24,6 @@ typedef enum {
 typedef enum {
     ACTION_READ,
     ACTION_CLEAR,
-    ACTION_IMMO,
     ACTION_DYNO,
     ACTION_ESC,
     ACTION_BRAKE,
@@ -40,19 +39,13 @@ typedef struct {
     uint8_t group;
     const char *name;
 } ActionEntry;
-static const ActionEntry actions[] = {{ACTION_EXHAUST, 0, "QV exhaust"},
-                                      {ACTION_IMMO, 0, "Immobilizer"},
-                                      {ACTION_HAS, 1, "HAS button"},
-                                      {ACTION_ESC, 1, "ESC/TC"},
-                                      {ACTION_DYNO, 2, "Dyno"},
-                                      {ACTION_BRAKE, 2, "Front brake"},
-                                      {ACTION_AWD, 2, "4WD"},
-                                      {ACTION_READ, 3, "Read BCM faults"},
-                                      {ACTION_CLEAR, 3, "Clear faults"},
-                                      {ACTION_STATS, 3, "Reset records"},
-                                      {ACTION_PEAK, 3, "Maximum hold"},
+static const ActionEntry actions[] = {{ACTION_EXHAUST, 0, "QV exhaust"},   {ACTION_HAS, 1, "HAS button"},
+                                      {ACTION_ESC, 1, "ESC/TC"},           {ACTION_DYNO, 2, "Dyno"},
+                                      {ACTION_BRAKE, 2, "Front brake"},    {ACTION_AWD, 2, "4WD"},
+                                      {ACTION_READ, 3, "Read BCM faults"}, {ACTION_CLEAR, 3, "Clear faults"},
+                                      {ACTION_STATS, 3, "Reset records"},  {ACTION_PEAK, 3, "Maximum hold"},
                                       {ACTION_IBS, 3, "IBS override"}};
-static const char *const roots[] = {"Favorites", "Readings", "Functions", "Settings", "Information"};
+static const char *const roots[] = {"Favorites", "Readings", "Actions", "Settings", "Information"};
 static const char *const settings[] = {"Feature setup",   "Edit favorites", "Visible pages",
                                        "Order favorites", "Sort order",     "Save"};
 static char peer_versions[2][DASHBOARD_MESSAGE_MAX_LENGTH - 2];
@@ -71,6 +64,7 @@ void menu_peer_status(uint8_t peer, const uint8_t *version) {
 static MenuPreferences preferences;
 static MenuInput input;
 static MenuView view = FAVORITES;
+static uint8_t gasoline_v6, advanced_pages;
 static uint8_t root, group = 1, function, setting, info, editor_page, engine;
 static uint8_t list[64], list_count, selection, order_selected;
 static uint8_t setup_last, fault_index;
@@ -162,6 +156,8 @@ uint8_t menu_preferences_save(void) {
 /* Switch parameter catalogs and discard readings from the previous engine profile. */
 void menu_engine_changed(void) {
     engine = !!settings_state.is_diesel_enabled;
+    gasoline_v6 = !!settings_state.gasoline_v6;
+    advanced_pages = !!settings_state.advanced_pages;
     parameter_page_count = menu_page_count(engine);
     list_count = 0;
     parameter_request_cancel();
@@ -248,8 +244,9 @@ static void select_page(void) {
 
 /* Prepare the visible, sorted list and restore the requested selection. */
 static void build_pages(uint16_t selected) {
-    list_count = menu_page_list(&preferences, engine, group, view == FAVORITES || view == ORDER_FAVORITES,
-                                is_editor(), list);
+    list_count =
+        menu_page_list_filtered(&preferences, engine, group, view == FAVORITES || view == ORDER_FAVORITES,
+                                is_editor(), gasoline_v6, advanced_pages, list);
     selection = 0;
     for (unsigned i = 0; i < list_count; ++i)
         if (parameter_pages[engine][list[i]].id == selected)
@@ -266,13 +263,16 @@ static void open_pages(bool favorite) {
 
 /* Show an automatic result without changing the user's visibility preferences. */
 void menu_show_parameter(uint8_t index) {
-    if (index >= parameter_page_count)
+    if (!menu_page_supported(engine, index, gasoline_v6))
         return;
     group = parameter_pages[engine][index].group;
     view = VALUES;
     build_pages(parameter_pages[engine][index].id);
     /* Automatic result screens must not change the user's visibility preference. */
-    if (!menu_page_visible(&preferences, engine, index) && list_count < sizeof(list)) {
+    bool listed = false;
+    for (unsigned i = 0; i < list_count; ++i)
+        listed |= list[i] == index;
+    if (!listed && list_count < sizeof(list)) {
         selection = list_count;
         list[list_count++] = index;
         select_page();
@@ -300,10 +300,6 @@ static void action_run(void) {
     if (id == ACTION_PEAK) {
         parameter_peak_enable(!parameter_peak_enabled());
         menu_notice(parameter_peak_enabled() ? "+ Maximum hold" : "- Maximum hold");
-        return;
-    }
-    if (id == ACTION_IMMO) {
-        menu_notice("Immobilizer status");
         return;
     }
     if (confirmed_action != id || currentTime - confirm_started > 3000) {
@@ -394,8 +390,6 @@ static const char *action_status(MenuAction id) {
         return ibs_override_enabled() ? "+" : "-";
     case ACTION_PEAK:
         return parameter_peak_enabled() ? "+" : "-";
-    case ACTION_IMMO:
-        return security_state.immobilizer_enabled ? "+" : "-";
     case ACTION_CLEAR:
         return diagnostics_state.clear_faults_request ? "Busy" : "RES";
     case ACTION_DYNO:
@@ -498,6 +492,8 @@ void menu_render(void) {
     case INFO:
         if (info == 0)
             snprintf_(text, sizeof(text), "%s", FW_VERSION);
+        else if (info == 4)
+            snprintf_(text, sizeof(text), "%c Immobilizer", security_state.immobilizer_enabled ? '+' : '-');
         else if (info == 3)
             snprintf_(text, sizeof(text), "MY23:%s %u chars",
                       settings_state.ipc_my23_is_installed ? "ON" : "OFF", DASHBOARD_MESSAGE_MAX_LENGTH);
@@ -568,7 +564,8 @@ void menu_event(MenuEvent event) {
     if (!event)
         return;
     last_input = currentTime;
-    if (engine != !!settings_state.is_diesel_enabled)
+    if (engine != !!settings_state.is_diesel_enabled || gasoline_v6 != !!settings_state.gasoline_v6 ||
+        advanced_pages != !!settings_state.advanced_pages)
         menu_engine_changed();
     if (!dashboard_state.baccable_dashboard_menu_visible) {
         if (event == MENU_BACK) {
@@ -611,7 +608,7 @@ void menu_event(MenuEvent event) {
             fault_index = wrap(fault_index, fault_reader_count(), direction);
             break;
         case INFO:
-            info = wrap(info, 4, direction);
+            info = wrap(info, 5, direction);
             break;
         case SETUP:
             if (jump)
@@ -634,7 +631,7 @@ void menu_event(MenuEvent event) {
         case ORDER_FAVORITES:
             if (order_selected && list_count) {
                 uint16_t id = parameter_pages[engine][list[selection]].id;
-                menu_favorite_move(&preferences, engine, id, direction);
+                menu_favorite_move_supported(&preferences, engine, id, direction, gasoline_v6);
                 build_pages(id);
             } else
                 selection = wrap(selection, list_count, direction);
@@ -745,7 +742,8 @@ void menu_button(uint8_t button, bool allowed) {
 /* Refresh the display and request readings at their intended intervals. */
 void menu_process(void) {
     fault_reader_process();
-    if (engine != !!settings_state.is_diesel_enabled)
+    if (engine != !!settings_state.is_diesel_enabled || gasoline_v6 != !!settings_state.gasoline_v6 ||
+        advanced_pages != !!settings_state.advanced_pages)
         menu_engine_changed();
     if (!dashboard_state.baccable_dashboard_menu_visible)
         return;

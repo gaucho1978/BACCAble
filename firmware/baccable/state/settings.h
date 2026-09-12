@@ -9,6 +9,8 @@ typedef struct {
     uint8_t acc_virtual_pad_enabled;
     uint8_t smart_disable_start_stop_enabled;
     uint8_t is_diesel_enabled;
+    uint8_t gasoline_v6;
+    uint8_t advanced_pages;
     uint8_t route_msg_enabled;
     uint8_t remote_start_enabled;
     uint8_t read_faults_enabled;

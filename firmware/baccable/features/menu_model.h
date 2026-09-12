@@ -22,6 +22,12 @@ bool menu_page_visible(const MenuPreferences *prefs, uint8_t engine, uint8_t ind
 void menu_page_show(MenuPreferences *prefs, uint8_t engine, uint8_t index, bool visible);
 unsigned menu_page_list(const MenuPreferences *prefs, uint8_t engine, uint8_t group, bool favorites,
                         bool include_hidden, uint8_t list[64]);
+bool menu_page_supported(uint8_t engine, uint8_t index, bool gasoline_v6);
+bool menu_page_advanced(uint8_t engine, uint8_t index);
+unsigned menu_page_list_filtered(const MenuPreferences *prefs, uint8_t engine, uint8_t group, bool favorites,
+                                 bool include_hidden, bool gasoline_v6, bool advanced, uint8_t list[64]);
 bool menu_favorite_toggle(MenuPreferences *prefs, uint8_t engine, uint16_t id);
 void menu_favorite_move(MenuPreferences *prefs, uint8_t engine, uint16_t id, int direction);
+void menu_favorite_move_supported(MenuPreferences *prefs, uint8_t engine, uint16_t id, int direction,
+                                  bool gasoline_v6);
 #endif

@@ -5,6 +5,16 @@ preferences and text transport have separate modules. All display labels use
 English ASCII. Page labels fit within 16 characters, leaving two characters for
 editor marks on an 18-character display.
 
+## Engine profile and advanced pages
+
+Feature setup cycles `Engine: 2.0 I4`, `Engine: 2.9 V6`, `Engine: 2.2 D`.
+Existing gasoline settings default to I4; V6 owners should select V6 once.
+`Advanced pages` reveals technical and secondary layouts. Favorites retain saved
+IDs and can include advanced pages, but incompatible engine pages are temporarily
+filtered. Setup `Allow ...` switches permit access to Actions; they do not execute
+those actions. Immobilizer status is in Information.
+See the [full catalog audit](CATALOG_AUDIT.md) for classification and migration.
+
 ## Controls
 
 Menu controls are available when both cruise control and adaptive cruise control
@@ -23,7 +33,7 @@ into a stronger press may perform an item step before the group jump. There is n
 autorepeat. A gap longer than 300 ms in button reports requires a fresh release.
 Releasing RES after a hold does not select another item.
 
-Main menu: **Favorites → Readings → Functions → Settings → Information**.
+Main menu: **Favorites → Readings → Actions → Settings → Information**.
 Reading groups: All readings, Engine, Temperatures, Battery, DPF / AdBlue,
 Performance, Other. Empty lists show `No pages` or `No favorites`; returning still
 works. The main menu and group list show position counters; editors use full labels.
@@ -65,7 +75,7 @@ places and current uses one. This changes presentation rounding, not decoding.
 All 124 page templates, including units, are checked in both 18- and 24-character builds.
 Performance states `MISS` and `RUN` do not receive a seconds suffix.
 
-Settings describe their state directly: `Engine: Diesel`, `Pedal: Bypass`,
+Settings describe their state directly: `Engine: 2.2 D`, `Pedal: Bypass`,
 `Shift at 4500 RPM`, `Close: 2 locks`, `Open windows OFF`. A leading `+` enables
 the named boolean behavior; `-` disables it. `Auto stop block` means suppressing
 automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
@@ -73,7 +83,7 @@ automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 ## Personalization and actions
 
 1. In `Settings → Edit favorites`, RES adds/removes the selected page. `+` marks
-   a favorite. Each engine profile has a six-page limit.
+   a favorite. Gasoline and diesel each have a six-page limit; I4/V6 share the gasoline list.
 2. In `Order favorites`, select an item with RES; `*` marks move mode. Move it
    with the direction controls and press RES again to finish. Movement stops at
    the list boundaries.
@@ -98,7 +108,7 @@ Vehicle-control actions require a second RES within three seconds. Moving away
 or returning cancels confirmation. Reading BCM faults and toggling maximum hold
 do not require that confirmation. Existing availability, stationary-vehicle and dyno
 conditions still apply. `Command queued` and `requested` mean that a request was
-accepted, not that an ECU confirmed completion. Immobilizer displays its state;
+accepted, not that an ECU confirmed completion. Immobilizer displays its state in Information;
 the separate existing steering-wheel gesture changes it. `Read BCM faults` opens
 a result browser after the option is enabled in Feature setup. It reads BCM codes,
 not faults from every ECU. USB capture, ELM diagnostics and the temporary IBS

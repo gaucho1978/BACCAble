@@ -8,16 +8,16 @@ flashing. The commands below describe runtime USB, not the STM32 DFU bootloader.
 
 - `Settings` → `Feature setup` → `Rotate readings`: enable to advance through the
   current list every five seconds. Use favorites to create a short rotating set.
-- `Functions` → `Maximum hold`: toggle between live values and numerical maxima.
+- `Actions` → `Maximum hold`: toggle between live values and numerical maxima.
   Changing the selected page starts a new interval. An unavailable or stale signal
   displays `--` rather than an old maximum.
-- `Settings` → `Feature setup` → `Read BCM faults`: enable, then save. Open
-  `Functions` → `Read BCM faults`; browse results with previous/next, press RES to
+- `Settings` → `Feature setup` → `Allow fault read`: enable, then save. Open
+  `Actions` → `Read BCM faults`; browse results with previous/next, press RES to
   retry, or go Back to leave. A `+` after the result count means the BCM returned
   more than the displayed limit of 20 codes. Reading does not clear faults.
 - `Front PDC mute` and `Reverse mute` are independent options in Feature setup.
   They require valid current vehicle messages before acting.
-- `Functions` → `IBS override` is experimental and requires action confirmation
+- `Actions` → `IBS override` is experimental and requires action confirmation
   and a running engine. It substitutes 75% in a short burst of otherwise copied
   IBS messages when the observed SOC is within the upstream range. It is not a
   verified way to improve battery charging. It is off after startup and stops at

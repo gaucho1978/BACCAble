@@ -38,6 +38,8 @@ int main(void) {
         assert(counts[engine] <= 64);
         for (unsigned page = 0; page < 64; ++page) {
             const ParameterPage *entry = &parameter_pages[engine][page];
+            if (page < counts[engine])
+                assert(entry->id == (engine ? 0x81 : 0x01) + page); /* Persisted physical order. */
             assert((entry->name != NULL) == (page < counts[engine]));
             if (page >= counts[engine])
                 continue;

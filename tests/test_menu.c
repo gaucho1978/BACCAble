@@ -247,6 +247,8 @@ static void fresh_menu(void) {
     dashboard_state.checkbox_symbols[0] = '-';
     dashboard_state.checkbox_symbols[1] = '+';
     settings_state.is_diesel_enabled = 0;
+    settings_state.gasoline_v6 = 0;
+    settings_state.advanced_pages = 0;
     dashboard_state.baccable_dashboard_menu_visible = 0;
     now = 1000;
     have_saved = false;
@@ -470,9 +472,9 @@ static void test_readable_screens(void) {
     settings_state.shift_threshold = 4500;
     expect_setup(5, "Shift at 4500 RPM");
     settings_state.is_diesel_enabled = 0;
-    expect_setup(16, "Engine: Gasoline");
+    expect_setup(16, "Engine: 2.0 I4");
     settings_state.is_diesel_enabled = 1;
-    expect_setup(16, "Engine: Diesel");
+    expect_setup(16, "Engine: 2.2 D");
     settings_state.pedal_map_power = -10;
     expect_setup(29, "Pedal trim -10");
     settings_state.pedal_map_power = 10;
@@ -493,6 +495,107 @@ static void test_readable_screens(void) {
         assert(!strcmp(text, short_templates[i]));
     }
 }
+/* Engine and complexity filters preserve saved identities, including temporarily unavailable favorites. */
+static void test_engine_filters(void) {
+    MenuPreferences prefs, restored;
+    uint8_t raw[MENU_PREFS_SIZE], list[64];
+    menu_preferences_default(&prefs);
+    assert(menu_favorite_toggle(&prefs, 0, 0x2f));
+    assert(menu_favorite_toggle(&prefs, 0, 0x22));
+    menu_preferences_encode(&prefs, raw);
+    assert(menu_preferences_decode(&restored, raw));
+    assert(!memcmp(prefs.favorites, restored.favorites, sizeof(prefs.favorites)));
+    for (unsigned v6 = 0; v6 < 2; ++v6) {
+        unsigned count = menu_page_list_filtered(&prefs, 0, 0, false, false, v6, true, list);
+        unsigned ignition = 0;
+        for (unsigned i = 0; i < count; ++i) {
+            unsigned id = parameter_pages[0][list[i]].id;
+            assert(menu_page_index(0, id) == list[i]);
+            ignition += (id >= 0x23 && id <= 0x26) || id == 0x2f || id == 0x30;
+            assert(v6 || (id != 0x2f && id != 0x30));
+            assert(!v6 || (id != 0x14 && id != 0x40));
+        }
+        assert(ignition == (v6 ? 6 : 4));
+        count = menu_page_list_filtered(&prefs, 0, 0, true, false, v6, false, list);
+        assert(count == (v6 ? 6 : 5)); /* Advanced favorite stays; cylinder 5 is temporarily filtered. */
+    }
+    unsigned count = menu_page_list_filtered(&prefs, 1, 0, false, false, false, true, list);
+    assert(count == diesel_page_count);
+    for (unsigned i = 0; i < count; ++i)
+        assert(parameter_pages[1][list[i]].id >= 0x81);
+    count = menu_page_list_filtered(&prefs, 0, 0, false, false, false, false, list);
+    for (unsigned i = 0; i < count; ++i)
+        assert(!menu_page_advanced(0, list[i]));
+    assert(menu_page_list_filtered(&prefs, 0, 0, false, true, false, false, list) == gasoline_page_count - 2);
+    assert(menu_page_index(0, 0x2f) == 46 && menu_page_index(0, 0x30) == 47);
+    assert(parameter_page_elements(&parameter_pages[0][menu_page_index(0, 0x3b)]) == 2);
+    assert(parameter_page_elements(&parameter_pages[0][menu_page_index(0, 0x3c)]) == 2);
+    assert(parameter_page_elements(&parameter_pages[0][menu_page_index(0, 0x3f)]) == 2);
+    memset(prefs.favorites[0], 0, sizeof(prefs.favorites[0]));
+    prefs.favorites[0][0] = 0x04;
+    prefs.favorites[0][1] = 0x2f;
+    prefs.favorites[0][2] = 0x01;
+    menu_favorite_move_supported(&prefs, 0, 0x04, 1, false);
+    assert(prefs.favorites[0][0] == 0x01 && prefs.favorites[0][1] == 0x2f && prefs.favorites[0][2] == 0x04);
+    assert(setup_read_flash_value(36, 0xffff) == 0 && setup_read_flash_value(37, 0xffff) == 0);
+    assert(setup_read_flash_value(36, 0) == 0 && setup_read_flash_value(36, 1) == 1);
+    assert(setup_read_flash_value(36, 2) == 0);
+    fresh_menu();
+    const SetupParam *profile = setup_find_by_flash_index(16);
+    profile->action();
+    assert(!settings_state.is_diesel_enabled && settings_state.gasoline_v6);
+    expect_setup(16, "Engine: 2.9 V6");
+    uint16_t values[SETUP_FLASH_PARAM_BUFFER_SIZE] = {0};
+    settings_state.advanced_pages = 1;
+    setup_fill_flash_params(values);
+    assert(values[15] == 0 && values[35] == 1 && values[36] == 1);
+    profile->action();
+    assert(settings_state.is_diesel_enabled);
+    profile->action();
+    assert(!settings_state.is_diesel_enabled && !settings_state.gasoline_v6);
+}
+
+/* Only permitted vehicle actions appear; preferences still control their original runtime gates. */
+static void test_action_availability(void) {
+    uint8_t *gates[] = {
+        &settings_state.dyno_mode_master_enabled,    &settings_state.awd_disabler_enabled,
+        &settings_state.esc_tc_customizator_enabled, &settings_state.qv_exhaust_flap_function_enabled,
+        &settings_state.has_function_enabled,        &settings_state.front_brake_forcer_master,
+        &settings_state.read_faults_enabled,         &settings_state.clear_faults_enabled};
+    const char *names[] = {"Dyno",       "4WD",         "ESC/TC",          "QV exhaust",
+                           "HAS button", "Front brake", "Read BCM faults", "Clear faults"};
+    for (unsigned i = 0; i < 8; ++i)
+        *gates[i] = 0;
+    fresh_menu();
+    menu_event(MENU_SELECT);
+    menu_event(MENU_NEXT);
+    menu_event(MENU_NEXT);
+    assert(strstr(screen, "Actions"));
+    menu_event(MENU_SELECT);
+    for (unsigned gate = 0; gate < 8; ++gate) {
+        for (unsigned i = 0; i < 16; ++i) {
+            menu_event(MENU_NEXT);
+            assert(!strstr(screen, names[gate]));
+            assert(!strstr(screen, "Immobilizer"));
+        }
+        *gates[gate] = 1;
+        bool found = false;
+        for (unsigned i = 0; i < 16; ++i) {
+            menu_event(MENU_NEXT);
+            found |= strstr(screen, names[gate]) != NULL;
+        }
+        assert(found);
+        *gates[gate] = 0;
+    }
+    menu_event(MENU_BACK);
+    menu_event(MENU_NEXT); /* Settings */
+    menu_event(MENU_NEXT); /* Information */
+    menu_event(MENU_SELECT);
+    for (unsigned i = 0; i < 4; ++i)
+        menu_event(MENU_NEXT);
+    assert(strstr(screen, "Immobilizer"));
+}
+
 static void test_cache_flags(void) {
     parameter_cache_reset();
     const uint8_t ids[] = {0, 7, 8, 31, 32, 95, 96, 99};
@@ -570,5 +673,7 @@ int main(void) {
     test_cache_flags();
     test_maximum_hold();
     test_board_sync_retry();
+    test_engine_filters();
+    test_action_availability();
     puts("PASS: menu gestures, stable views, favorites, sorting, migration, save failure, UDS freshness");
 }
