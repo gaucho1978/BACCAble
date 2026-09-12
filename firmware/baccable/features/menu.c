@@ -73,7 +73,13 @@ static const char *notice;
 static uint8_t previous_text[DASHBOARD_MESSAGE_MAX_LENGTH], previous_valid;
 static uint32_t previous_sent;
 static uint8_t confirmed_action = 255;
-static bool retry_back;
+static bool retry_back, close_pending;
+#define MENU_IDLE_MS 30000U
+#define EDITOR_IDLE_MS 60000U
+#define NOTICE_CONFIRM_MS 750U
+#define NOTICE_WARNING_MS 1800U
+#define NOTICE_REQUEST_MS 1200U
+static uint32_t notice_duration;
 static uint32_t confirm_started, last_input;
 static void build_pages(uint16_t selected);
 
@@ -136,12 +142,18 @@ void menu_present(const char *text) {
     memcpy(previous_text, message + 1, sizeof(previous_text));
     previous_valid = 1;
     previous_sent = currentTime;
+    if (!text[0])
+        close_pending = false;
 }
 
 /* Show brief feedback about a selection, action or save result. */
 void menu_notice(const char *text) {
     notice = text;
     notice_started = currentTime;
+    notice_duration = text[0] == '!' ? NOTICE_WARNING_MS
+                      : text[0] == '+' || text[0] == '-' || !strcmp(text, "Saved") ||
+                                !strcmp(text, "Records cleared") ? NOTICE_CONFIRM_MS
+                                                                 : NOTICE_REQUEST_MS;
     if (dashboard_state.baccable_dashboard_menu_visible)
         menu_present(text);
 }
@@ -184,7 +196,8 @@ void menu_init(void) {
     last_query = 0;
     last_render = 0;
     order_selected = 0;
-    retry_back = false;
+    retry_back = close_pending = false;
+    last_input = currentTime;
     menu_preferences_default(&preferences);
     uint8_t data[MENU_PREFS_SIZE];
     if (!flash_record_load(VISIBILITY_RECORD, 0x104, data, sizeof(data)) ||
@@ -412,7 +425,7 @@ static const char *action_status(MenuAction id) {
 void menu_render(void) {
     if (!dashboard_state.baccable_dashboard_menu_visible)
         return;
-    if (notice && currentTime - notice_started < 1200) {
+    if (notice && currentTime - notice_started < notice_duration) {
         menu_present(notice);
         return;
     }
@@ -524,6 +537,17 @@ static bool save_all(void) {
     return true;
 }
 
+/* Release the display, retrying a rejected clear until the UART accepts it. */
+static void close_menu(void) {
+    dashboard_state.baccable_dashboard_menu_visible = 0;
+    parameter_request_cancel();
+    confirmed_action = 255;
+    close_pending = true;
+    /* Force a fresh clear even if an earlier blank screen was already accepted. */
+    previous_valid = 0;
+    dashboard_clear();
+}
+
 /* Return to the parent menu and save edits before leaving their editor. */
 static void back(void) {
     if (view == FAULTS) {
@@ -536,9 +560,7 @@ static void back(void) {
             retry_back = true;
             return;
         }
-        dashboard_state.baccable_dashboard_menu_visible = 0;
-        parameter_request_cancel();
-        dashboard_clear();
+        close_menu();
         return;
     }
     if (view == SETUP) {
@@ -575,6 +597,7 @@ void menu_event(MenuEvent event) {
     if (!dashboard_state.baccable_dashboard_menu_visible) {
         if (event == MENU_BACK) {
             notice = NULL;
+            close_pending = false;
             root = 0;
             dashboard_state.baccable_dashboard_menu_visible = 1;
             open_pages(true);
@@ -737,7 +760,16 @@ void menu_event(MenuEvent event) {
 /* Turn eligible steering-wheel button reports into menu gestures. */
 void menu_button(uint8_t button, bool allowed) {
     #ifndef HIDE_DASHBOARD_MENU
-    menu_event(menu_input_update(&input, button, allowed, currentTime));
+    MenuEvent event = menu_input_update(&input, button, allowed, currentTime);
+    bool repeat_allowed = allowed && dashboard_state.baccable_dashboard_menu_visible &&
+                          (view == FAVORITES || view == VALUES || view == GROUPS ||
+                           view == SETTINGS || view == SETUP || is_editor() ||
+                           (view == ORDER_FAVORITES && !order_selected));
+    if (event == MENU_NONE)
+        event = menu_input_repeat(&input, repeat_allowed, currentTime);
+    if (allowed && input.armed && button != 0x10)
+        last_input = currentTime;
+    menu_event(event);
     #else
     (void)button;
     (void)allowed;
@@ -750,8 +782,25 @@ void menu_process(void) {
     if (engine != !!settings_state.is_diesel_enabled || gasoline_v6 != !!settings_state.gasoline_v6 ||
         advanced_pages != !!settings_state.advanced_pages)
         menu_engine_changed();
+    if (close_pending)
+        dashboard_clear();
     if (!dashboard_state.baccable_dashboard_menu_visible)
         return;
+    bool editor = view == SETTINGS || view == SETUP || is_editor() || view == ORDER_FAVORITES;
+    /* Reading screens are intentionally persistent; active diagnostics get a fresh grace period. */
+    if (fault_reader_busy() || diagnostics_state.clear_faults_request) {
+        last_input = currentTime;
+    } else if (view != FAVORITES && view != VALUES && !retry_back &&
+               currentTime - last_input >= (editor ? EDITOR_IDLE_MS : MENU_IDLE_MS)) {
+        if (view == SETUP)
+            setup_last = setup_dashboardPageIndex;
+        if (save_all()) {
+            fault_reader_cancel();
+            close_menu();
+            return;
+        }
+        retry_back = true;
+    }
     if (menu_parameters_active() && settings_state.rotate_readings && currentTime - page_changed >= 5000) {
         selection = wrap(selection, list_count, 1);
         select_page();

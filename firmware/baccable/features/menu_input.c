@@ -4,6 +4,8 @@
 #define INPUT_STREAM_TIMEOUT_MS 300U
 /* Leave time for a deliberate click before treating a hold as BACK. */
 #define BACK_HOLD_MS 1200U
+#define REPEAT_DELAY_MS 500U
+#define REPEAT_INTERVAL_MS 180U
 
 /* Recognize one deliberate navigation gesture, including hold-to-return behavior. */
 MenuEvent menu_input_update(MenuInput *input, uint8_t button, bool allowed, uint32_t now) {
@@ -18,6 +20,10 @@ MenuEvent menu_input_update(MenuInput *input, uint8_t button, bool allowed, uint
     input->last_seen = now;
     if (button == 0x50)
         button = 0x90;
+    if (button != input->button) {
+        input->repeated_at = now;
+        input->repeating = false;
+    }
     if (!input->armed) {
         if (button == 0x10) {
             input->armed = true;
@@ -51,4 +57,17 @@ MenuEvent menu_input_update(MenuInput *input, uint8_t button, bool allowed, uint
         return MENU_BACK;
     }
     return MENU_NONE;
+}
+
+MenuEvent menu_input_repeat(MenuInput *input, bool allowed, uint32_t now) {
+    if (!allowed || !input->armed || now - input->last_seen > INPUT_STREAM_TIMEOUT_MS)
+        return MENU_NONE;
+    if (input->button != 0x18 && input->button != 0x08)
+        return MENU_NONE;
+    uint32_t interval = input->repeating ? REPEAT_INTERVAL_MS : REPEAT_DELAY_MS;
+    if (now - input->repeated_at < interval)
+        return MENU_NONE;
+    input->repeated_at = now;
+    input->repeating = true;
+    return input->button == 0x18 ? MENU_NEXT : MENU_PREVIOUS;
 }

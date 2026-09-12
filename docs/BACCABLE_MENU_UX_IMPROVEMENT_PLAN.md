@@ -19,8 +19,8 @@ background, not a requirement to implement everything. Use this assessment first
 | 11, 14: menu roles | Largely satisfied by Actions/Settings/Information and Advanced pages. Preserve the current structure. |
 | 13: missing readings | Cache expiration and `--` rendering already tested. Further work should address a demonstrated source-specific freshness issue. |
 | 1: faster fragments | Hardware experiment later. Keep 50 ms for now. Dirty fragments reduce obsolete work but cannot make a fragmented dashboard update atomic. No host test can certify 20–30 ms dashboard compatibility. |
-| 6: hold repeat | Defer: requires confirmed wheel report semantics and a navigation-only allowlist; never repeat vehicle-control actions. |
-| 7: auto-close | Defer: must define editor save failures, pending diagnostics and factory-display handover first. |
+| 6: hold repeat | Implemented with a navigation-only allowlist, fresh-report guard and no catch-up bursts. Vehicle feel still needs validation. |
+| 7: auto-close | Implemented: 30 s navigation, 60 s editors, persistent readings, diagnostic/save-error guards and retryable display clear. |
 | 10: pinned actions | Defer: new preference semantics and extra UX complexity without demonstrated need. |
 | 15: system health | Defer until optional board presence and heartbeat/version compatibility rules are established. Missing optional hardware must not become a false warning. |
 
@@ -46,14 +46,26 @@ assumption or broad refactor, report that dependency instead of expanding scope.
 These boundaries limit work; actual token consumption depends on the agent and
 cannot be guaranteed by this document.
 
-### Series completion
+### Next beta scope (2026-09-13)
 
-Tasks A–D are complete, with B limited to the request-state wording described
-above. Navigation context already worked; task D adds regression coverage on
-both display widths without changing firmware. Next: review/merge the final test
-increment, verify CI and perform a vehicle smoke test before a new beta release.
-Task E remains a separate hardware experiment. The 50 ms display interval has
-not changed, and this series does not claim faster dashboard transmission.
+A–D and the Actions test-report improvements are merged. This branch completes
+the next bounded package: navigation-only hold repeat (6), inactivity closure
+with save/error/diagnostic guards (7), and differentiated, dismissible notices
+(17–18). It also retries a rejected clear after closing the menu. Host tests cover
+both widths, exact timers, wraparound, exclusions and retry paths.
+
+| Remaining proposal | Release decision |
+| --- | --- |
+| 1: 20–30 ms display pacing | Keep 50 ms until a separate vehicle comparison confirms reliability. No claim of faster physical refresh. |
+| 4: longer input-stream timeout | Keep 300 ms; need measured report gaps before relaxing lost-release protection. |
+| 2: confirmed results for every vehicle action | Existing immediate acknowledgement retained. Further completion messages need actual ECU/peer confirmation, not inferred success. |
+| 10: pinned actions | Not required for this package. Existing Favorites and remembered Actions remain; avoid a new persistence format. |
+| 15: aggregate system health | Existing Information peer pages retained. A summary needs rules for optional boards, fresh replies and version compatibility before it can safely claim SYSTEM OK. |
+
+This is a complete release package, not a claim that every optional proposal below
+has been implemented. Vehicle smoke tests must cover hold repeat, editor timeout,
+RES/BACK and factory-display handover before treating the UX as hardware-validated.
+Do not expand this branch into transport, persistence-format or board-health work.
 
 ### First-increment release gate
 

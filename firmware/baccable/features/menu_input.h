@@ -12,9 +12,10 @@ typedef enum {
     MENU_BACK
 } MenuEvent;
 typedef struct {
-    uint32_t started, last_seen;
+    uint32_t started, last_seen, repeated_at;
     uint8_t button;
-    bool armed, consumed;
+    bool armed, consumed, repeating;
 } MenuInput;
 MenuEvent menu_input_update(MenuInput *input, uint8_t button, bool allowed, uint32_t now);
+MenuEvent menu_input_repeat(MenuInput *input, bool allowed, uint32_t now);
 #endif

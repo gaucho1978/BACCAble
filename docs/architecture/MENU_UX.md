@@ -25,12 +25,16 @@ open the last favorite. The distance button has the same menu function as RES.
 | --- | --- |
 | Short RES, then release | Enter or select; from a reading, open the main menu |
 | Hold RES for 1200 ms | Return one level; from the main menu, save and close |
-| Gentle down/up | Next/previous item, once per press |
+| Gentle down/up | Next/previous item; hold to repeat in lists |
 | Stronger down/up | Next/previous reading, action or setting group |
 
 In favorites, a stronger press also moves one item. Moving through a gentle press
-into a stronger press may perform an item step before the group jump. There is no
-autorepeat. A gap longer than 300 ms in button reports requires a fresh release.
+into a stronger press may perform an item step before the group jump. Holding a
+gentle direction repeats after 500 ms, then every 180 ms while fresh reports arrive.
+Repeat applies to readings, groups, Settings, Feature setup and page editors.
+It does not apply to Actions, RES/BACK, stronger presses, or moving a selected
+favorite in the reorder editor. Delayed reports never trigger a catch-up burst.
+A gap longer than 300 ms in button reports requires a fresh release.
 Releasing RES after a hold does not select another item.
 
 Main menu: **Favorites → Readings → Actions → Settings → Information**.
@@ -233,3 +237,21 @@ RES to leave. All messages fit the standard and large displays.
 
 Unrelated or ignored malformed frames still follow the existing filtering rules
 and may ultimately produce a timeout. No new ECU requests or retry rules are added.
+
+### Feedback and inactivity
+
+Simple toggle/save confirmations last 750 ms; warnings marked `!` last 1800 ms.
+Other request notices retain 1200 ms. Navigation dismisses notices immediately;
+vehicle confirmation rules are unchanged. Diagnostic progress remains driven by
+the diagnostic state, not a cosmetic timer.
+
+Idle navigation and information screens close after 30 seconds. Settings and
+editors allow 60 seconds and save before closing. Favorites and reading screens
+stay open for continuous monitoring. Active fault reading/clearing postpones
+closure. A save failure keeps the menu open and requires deliberate input to
+retry; it does not repeatedly attempt automatic writes. Existing record storage
+skips writing unchanged payloads.
+
+Closing retries the blank screen if UART is busy. Reopening cancels that pending
+clear so it cannot erase the new menu. This uses the existing dashboard handover;
+physical radio/display behavior still needs vehicle validation.

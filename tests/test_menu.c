@@ -318,7 +318,7 @@ static void test_controller(void) {
     fail_save = true;
     menu_event(MENU_SELECT);
     assert(strstr(screen, "! Save failed"));
-    now += 1500;
+    now += 1800;
     menu_render();
     assert(strstr(screen, "< Save and back"));
     fail_save = false;
@@ -529,6 +529,146 @@ static void test_navigation_context(void) {
         settings_state.dyno_mode_master_enabled = 0;
         settings_state.qv_exhaust_flap_function_enabled = 0;
     }
+}
+
+/* Held directions repeat in lists, never in Actions or while moving a favorite. */
+static void test_repeat_views(void) {
+    fresh_menu();
+    to_settings();
+    menu_button(0x10, true);
+    menu_button(0x18, true);
+    assert(strstr(screen, "Edit favorites"));
+    now += 250;
+    menu_button(0x18, true);
+    now += 250;
+    menu_button(0x18, true);
+    assert(strstr(screen, "Visible pages"));
+    now += 180;
+    menu_button(0x18, true);
+    assert(strstr(screen, "Order favorites"));
+    menu_button(0x10, true);
+    menu_event(MENU_SELECT);
+    menu_event(MENU_SELECT); /* Pick a favorite for reordering. */
+    menu_button(0x18, true);
+    char selected[sizeof(screen)];
+    memcpy(selected, screen, sizeof(selected));
+    for (unsigned i = 0; i < 5; ++i) {
+        now += 200;
+        menu_button(0x18, true);
+        assert(!strcmp(screen, selected));
+    }
+
+    fresh_menu();
+    menu_event(MENU_SELECT);
+    menu_event(MENU_NEXT);
+    menu_event(MENU_NEXT);
+    menu_event(MENU_SELECT); /* Actions */
+    menu_button(0x10, true);
+    menu_button(0x18, true);
+    memcpy(selected, screen, sizeof(selected));
+    unsigned before = commands;
+    for (unsigned i = 0; i < 5; ++i) {
+        now += 200;
+        menu_button(0x18, true);
+        assert(!strcmp(screen, selected) && commands == before);
+    }
+}
+
+/* Feedback durations differ without preventing navigation from dismissing a notice. */
+static void test_notice_timing(void) {
+    fresh_menu();
+    menu_notice("+ Maximum hold");
+    now += 749;
+    menu_render();
+    assert(strstr(screen, "+ Maximum hold"));
+    now += 1;
+    menu_render();
+    assert(!strstr(screen, "+ Maximum hold"));
+    menu_notice("! Unavailable");
+    now += 1799;
+    menu_render();
+    assert(strstr(screen, "! Unavailable"));
+    now += 1;
+    menu_render();
+    assert(!strstr(screen, "! Unavailable"));
+    menu_notice("! Unavailable");
+    menu_event(MENU_NEXT);
+    assert(!strstr(screen, "! Unavailable"));
+}
+
+/* Idle menus close, while readings, active operations and failed saves remain recoverable. */
+static void test_idle_close(void) {
+    fresh_menu();
+    now += 60001;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible); /* Readings stay visible. */
+    menu_event(MENU_SELECT);
+    now += 29999;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible);
+    now += 1;
+    uart_busy = true;
+    menu_process();
+    assert(!dashboard_state.baccable_dashboard_menu_visible);
+    uart_busy = false;
+    menu_process();
+    for (unsigned i = 0; i < DASHBOARD_MESSAGE_MAX_LENGTH; ++i)
+        assert(screen[i] == ' '); /* Clear retried even while the menu is hidden. */
+    menu_event(MENU_BACK);
+    assert(dashboard_state.baccable_dashboard_menu_visible);
+    menu_process();
+    assert(screen[0] != ' '); /* An old pending clear cannot erase a reopened menu. */
+
+    fresh_menu();
+    menu_event(MENU_SELECT);
+    uart_busy = true;
+    now += 30000;
+    menu_process();
+    assert(!dashboard_state.baccable_dashboard_menu_visible);
+    uart_busy = false;
+    menu_event(MENU_BACK); /* Reopen before the pending clear could be retried. */
+    char reopened[sizeof(screen)];
+    memcpy(reopened, screen, sizeof(reopened));
+    menu_process();
+    assert(!strcmp(screen, reopened));
+
+    fresh_menu();
+    to_settings();
+    now += 59999;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible);
+    fail_save = true;
+    now += 1;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible && strstr(screen, "Save failed"));
+    fail_save = false;
+    now += 60001;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible); /* Wait for deliberate retry. */
+    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
+    assert(!dashboard_state.baccable_dashboard_menu_visible);
+
+    fresh_menu();
+    menu_event(MENU_SELECT);
+    diagnostics_state.clear_faults_request = 1;
+    now += 30001;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible);
+    diagnostics_state.clear_faults_request = 0;
+    now += 29999;
+    menu_process();
+    assert(dashboard_state.baccable_dashboard_menu_visible);
+    now += 1;
+    menu_process();
+    assert(!dashboard_state.baccable_dashboard_menu_visible);
+
+    fresh_menu();
+    now = UINT32_MAX - 1000;
+    menu_event(MENU_SELECT);
+    now += 30000;
+    menu_process();
+    assert(!dashboard_state.baccable_dashboard_menu_visible);
 }
 
 static void expect_reading(uint8_t engine, uint16_t id, float first, float second, const char *expected) {
@@ -835,6 +975,9 @@ int main(void) {
         HOST_TEST(test_controller),
         HOST_TEST(test_navigation_regressions),
         HOST_TEST(test_navigation_context),
+        HOST_TEST(test_repeat_views),
+        HOST_TEST(test_notice_timing),
+        HOST_TEST(test_idle_close),
         HOST_TEST(test_readable_screens),
         HOST_TEST(test_action_request_labels),
         HOST_TEST(test_cache_flags),

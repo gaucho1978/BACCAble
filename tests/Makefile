@@ -6,7 +6,7 @@ HEADERS := test_report.h $(shell find stubs $(FIRMWARE)/app $(FIRMWARE)/protocol
 SOURCES := test_core.c $(FIRMWARE)/protocol/slcan_codec.c $(FIRMWARE)/diagnostics/uds_decode.c \
  $(FIRMWARE)/storage/record_store.c
 
-test: build/test_core build/test_transport build/test_catalog build/test_menu build/test_menu_large build/test_uart_menu
+test: build/test_core build/test_transport build/test_catalog build/test_menu build/test_menu_large build/test_uart_menu build/test_input_repeat
 	./build/test_core
 	./build/test_transport
 	./build/test_catalog
@@ -14,6 +14,7 @@ test: build/test_core build/test_transport build/test_catalog build/test_menu bu
 	./build/test_menu
 	./build/test_menu_large
 	./build/test_uart_menu
+	./build/test_input_repeat
 	./build/test_upstream
 	./build/test_parking_c2
 	./build/test_parking_bh
@@ -32,6 +33,10 @@ build/test_core: $(SOURCES) $(HEADERS) Makefile
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SOURCES) -lm -o $@
 
 .PHONY: test
+
+build/test_input_repeat: test_input_repeat.c $(FIRMWARE)/features/menu_input.c $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) $(CPPFLAGS) $(CFLAGS) test_input_repeat.c $(FIRMWARE)/features/menu_input.c -o $@
 
 MENU_SOURCES := test_menu.c $(addprefix $(FIRMWARE)/, features/menu.c features/menu_model.c \
  features/menu_input.c features/display_stream.c features/ibs_override.c features/board_sync.c features/dashboard.c features/dashboard_format.c \
