@@ -18,13 +18,13 @@ See the [full catalog audit](CATALOG_AUDIT.md) for classification and migration.
 ## Controls
 
 Menu controls are available when both cruise control and adaptive cruise control
-are disabled. Release the buttons after disabling them. Hold RES for 800 ms to
+are disabled. Release the buttons after disabling them. Hold RES for 1200 ms to
 open the last favorite. The distance button has the same menu function as RES.
 
 | Gesture | Result |
 | --- | --- |
 | Short RES, then release | Enter or select; from a reading, open the main menu |
-| Hold RES for 800 ms | Return one level; from the main menu, save and close |
+| Hold RES for 1200 ms | Return one level; from the main menu, save and close |
 | Gentle down/up | Next/previous item, once per press |
 | Stronger down/up | Next/previous reading, action or setting group |
 

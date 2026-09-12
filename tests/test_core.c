@@ -99,12 +99,19 @@ static void test_records(void) {
         bool saved = record_save(&storage, 1, after, sizeof(after));
         assert(record_load(&storage, 1, loaded, sizeof(loaded)));
         assert(!memcmp(loaded, saved ? after : before, sizeof(loaded)));
+        /* Saving the recoverable value again must not touch Flash after an interrupted save. */
+        flash.remaining = 0;
+        unsigned erases = flash.erases;
+        assert(record_save(&storage, 1, loaded, sizeof(loaded)));
+        assert(flash.remaining == 0 && flash.erases == erases);
     }
     flash = baseline;
     flash.remaining = -1;
     assert(record_save(&storage, 1, after, sizeof(after)));
     unsigned erases = flash.erases;
+    flash.remaining = 0; /* Any erase or program attempt would fail and consume this counter. */
     assert(record_save(&storage, 1, after, sizeof(after)) && flash.erases == erases);
+    assert(flash.remaining == 0);
     flash.pages[1][RECORD_HEADER_SIZE] ^= 1;
     assert(record_load(&storage, 1, loaded, sizeof(loaded)));
     assert(!memcmp(loaded, before, sizeof(loaded)));

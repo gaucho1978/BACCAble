@@ -76,35 +76,47 @@ bool flash_record_save(unsigned slot, uint16_t type, const void *data, size_t si
     }
     return true;
 }
+/* Distinguish clicks, holds and stream loss at exact boundaries, including tick wrap. */
 static void test_input(void) {
+    const uint32_t starts[] = {100, UINT32_MAX - 500};
+    for (unsigned run = 0; run < 2; ++run) {
+        uint32_t start = starts[run];
+        MenuInput input = {0};
+        assert(menu_input_update(&input, 0x90, true, start) == MENU_NONE);
+        assert(menu_input_update(&input, 0x10, true, start) == MENU_NONE);
+        assert(menu_input_update(&input, 0x90, true, start + 1) == MENU_NONE);
+        for (unsigned t = 101; t < 1200; t += 100)
+            assert(menu_input_update(&input, 0x90, true, start + t) == MENU_NONE);
+        assert(menu_input_update(&input, 0x90, true, start + 1200) == MENU_NONE);
+        assert(menu_input_update(&input, 0x90, true, start + 1201) == MENU_BACK);
+        assert(menu_input_update(&input, 0x90, true, start + 1300) == MENU_NONE);
+        assert(menu_input_update(&input, 0x10, true, start + 1400) == MENU_NONE);
+
+        /* Releasing just before BACK is still exactly one SELECT. */
+        start += 1500;
+        assert(menu_input_update(&input, 0x50, true, start) == MENU_NONE);
+        for (unsigned t = 100; t < 1200; t += 100)
+            assert(menu_input_update(&input, 0x50, true, start + t) == MENU_NONE);
+        assert(menu_input_update(&input, 0x10, true, start + 1199) == MENU_SELECT);
+        assert(menu_input_update(&input, 0x10, true, start + 1200) == MENU_NONE);
+
+        /* 300 ms gaps are tolerated; 301 ms cancels a lost gesture. */
+        assert(menu_input_update(&input, 0x90, true, start + 1300) == MENU_NONE);
+        assert(menu_input_update(&input, 0x10, true, start + 1600) == MENU_SELECT);
+        assert(menu_input_update(&input, 0x90, true, start + 1700) == MENU_NONE);
+        assert(menu_input_update(&input, 0x10, true, start + 2001) == MENU_NONE);
+        assert(menu_input_update(&input, 0x90, true, start + 2100) == MENU_NONE);
+        assert(menu_input_update(&input, 0x90, false, start + 2200) == MENU_NONE);
+        assert(menu_input_update(&input, 0x10, true, start + 2300) == MENU_NONE);
+    }
     MenuInput input = {0};
-    assert(menu_input_update(&input, 0x90, true, 0) == MENU_NONE); /* Require neutral after enable. */
-    assert(menu_input_update(&input, 0x10, true, 10) == MENU_NONE);
-    assert(menu_input_update(&input, 0x90, true, 20) == MENU_NONE);
-    assert(menu_input_update(&input, 0x10, true, 50) == MENU_SELECT);
-    assert(menu_input_update(&input, 0x10, true, 60) == MENU_NONE);
-    assert(menu_input_update(&input, 0x90, true, 100) == MENU_NONE);
-    for (unsigned t = 200; t < 900; t += 100)
-        assert(menu_input_update(&input, 0x90, true, t) == MENU_NONE);
-    assert(menu_input_update(&input, 0x90, true, 900) == MENU_BACK);
-    assert(menu_input_update(&input, 0x90, true, 1000) == MENU_NONE);
-    assert(menu_input_update(&input, 0x10, true, 1100) == MENU_NONE);
-    assert(menu_input_update(&input, 0x18, true, 1150) == MENU_NEXT);
-    assert(menu_input_update(&input, 0x18, true, 1200) == MENU_NONE);
-    assert(menu_input_update(&input, 0x20, true, 1250) == MENU_NEXT_GROUP);
-    menu_input_update(&input, 0x10, true, 1300);
-    menu_input_update(&input, 0x90, true, 1350);
-    assert(menu_input_update(&input, 0x10, true, 1800) == MENU_NONE); /* Lost input. */
-    menu_input_update(&input, 0x90, true, 1850);
-    menu_input_update(&input, 0x90, false, 1900);
-    assert(menu_input_update(&input, 0x10, true, 1950) == MENU_NONE);
-    memset(&input, 0, sizeof(input));
-    uint32_t start = UINT32_MAX - 500;
-    menu_input_update(&input, 0x10, true, start);
-    menu_input_update(&input, 0x90, true, start + 1);
-    for (unsigned t = 101; t < 801; t += 100)
-        assert(menu_input_update(&input, 0x90, true, start + t) == MENU_NONE);
-    assert(menu_input_update(&input, 0x90, true, start + 801) == MENU_BACK);
+    menu_input_update(&input, 0x10, true, 10);
+    assert(menu_input_update(&input, 0x18, true, 20) == MENU_NEXT);
+    assert(menu_input_update(&input, 0x18, true, 30) == MENU_NONE);
+    assert(menu_input_update(&input, 0x20, true, 40) == MENU_NEXT_GROUP);
+    menu_input_update(&input, 0x10, true, 50);
+    assert(menu_input_update(&input, 0x08, true, 60) == MENU_PREVIOUS);
+    assert(menu_input_update(&input, 0x00, true, 70) == MENU_PREVIOUS_GROUP);
 }
 /* Apply queued fragments to a receiver that exposes each fragment immediately. */
 static unsigned drain_display(DisplayStream *stream, uint8_t *visible) {
@@ -359,6 +371,36 @@ static void test_controller(void) {
     assert(isnan(parameter_cache_get(5, now)));
 }
 static void test_navigation_regressions(void) {
+    /* Rapid physical wheel reports update every selection while UART is busy. */
+    fresh_menu();
+    MenuPreferences defaults;
+    menu_preferences_default(&defaults);
+    uint8_t pages[256];
+    unsigned count = menu_page_list_filtered(&defaults, 0, 1, true, false, false, false, pages);
+    assert(count > 1);
+    unsigned initial = 0;
+    while (initial < count && pages[initial] != dashboard_state.dashboard_page_index)
+        ++initial;
+    assert(initial < count);
+    menu_button(0x10, true);
+    uart_busy = true;
+    for (unsigned i = 1; i <= 3; ++i) {
+        now += 20;
+        menu_button(0x18, true);
+        assert(dashboard_state.dashboard_page_index == pages[(initial + i) % count]);
+        menu_button(0x10, true);
+    }
+    uart_busy = false;
+    settings_state.rotate_readings = 1;
+    uint8_t manual_page = dashboard_state.dashboard_page_index;
+    now += 4999;
+    menu_process();
+    assert(dashboard_state.dashboard_page_index == manual_page);
+    now += 1;
+    menu_process();
+    assert(dashboard_state.dashboard_page_index == pages[(initial + 4) % count]);
+    settings_state.rotate_readings = 0;
+
     fresh_menu();
     menu_event(MENU_SELECT);
     menu_event(MENU_NEXT);

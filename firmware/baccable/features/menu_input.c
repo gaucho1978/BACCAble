@@ -1,13 +1,17 @@
 #include "features/menu_input.h"
 #include <string.h>
 
+#define INPUT_STREAM_TIMEOUT_MS 300U
+/* Leave time for a deliberate click before treating a hold as BACK. */
+#define BACK_HOLD_MS 1200U
+
 /* Recognize one deliberate navigation gesture, including hold-to-return behavior. */
 MenuEvent menu_input_update(MenuInput *input, uint8_t button, bool allowed, uint32_t now) {
     if (!allowed) {
         memset(input, 0, sizeof(*input));
         return MENU_NONE;
     }
-    if (input->armed && now - input->last_seen > 300) {
+    if (input->armed && now - input->last_seen > INPUT_STREAM_TIMEOUT_MS) {
         input->armed = false; /* A lost release must never become an action. */
         input->button = 0;
     }
@@ -42,7 +46,7 @@ MenuEvent menu_input_update(MenuInput *input, uint8_t button, bool allowed, uint
             return MENU_PREVIOUS;
         return MENU_NONE;
     }
-    if (button == 0x90 && !input->consumed && now - input->started >= 800) {
+    if (button == 0x90 && !input->consumed && now - input->started >= BACK_HOLD_MS) {
         input->consumed = true;
         return MENU_BACK;
     }

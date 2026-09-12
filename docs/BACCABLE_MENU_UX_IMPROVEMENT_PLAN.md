@@ -1,5 +1,63 @@
 # BACCAble Menu UX Improvement Plan
 
+## Review and incremental delivery (2026-09-12)
+
+Reviewed against `b05b3f6` (after v5-beta-3). The numbered proposals below are
+background, not a requirement to implement everything. Use this assessment first.
+
+| Items | Assessment and order |
+| --- | --- |
+| 20: regression tests | First. Extend the existing host harness; no new framework. Existing tests already cover latest-target streaming, fairness, retries, padding, stale readings and engine/favorite compatibility. |
+| 5: BACK threshold | First increment: 1200 ms instead of 800 ms, with exact-boundary and tick-wrap tests. This is a deliberate usability tradeoff, not a fix for lost CAN reports. |
+| 8: unchanged saves | Flash wear already addressed by `record_save()` payload comparison. First increment adds erase/program assertions, including interrupted-save recovery. Settings saves still synchronize boards and apply USB mode; skipping that is a separate behavior change. |
+| 4: input timeout | Measure before changing. 300 ms detects missing reports, not maximum press length. Increasing it can turn a late release into an unintended SELECT. First increment tests 300/301 ms boundaries. |
+| 19: rotation | Already resets on manual page selection through `select_page()`. First increment tests rapid navigation and the exact 5-second boundary. |
+| 3, 16: wording/symbols | Next small task: distinguish requested versus confirmed state. Never replace `Req ON` with `ON` without confirmation. Keep ASCII, both screen widths, and `<` for back. |
+| 2, 17, 18: feedback | Immediate render and dismissible notices exist. Pending/final results need action-specific evidence; do one action at a time. Cosmetic notices must not imply vehicle confirmation. |
+| 12: diagnostic errors | Useful independent task after tests. Start with fault-reader timeout/rejection messages; preserve the state machine and retry limits. |
+| 9: navigation context | Action, setting and information indices already live in RAM and are not reset on ordinary re-entry. Add observable re-entry tests before proposing new state. |
+| 11, 14: menu roles | Largely satisfied by Actions/Settings/Information and Advanced pages. Preserve the current structure. |
+| 13: missing readings | Cache expiration and `--` rendering already tested. Further work should address a demonstrated source-specific freshness issue. |
+| 1: faster fragments | Hardware experiment later. Keep 50 ms for now. Dirty fragments reduce obsolete work but cannot make a fragmented dashboard update atomic. No host test can certify 20–30 ms dashboard compatibility. |
+| 6: hold repeat | Defer: requires confirmed wheel report semantics and a navigation-only allowlist; never repeat vehicle-control actions. |
+| 7: auto-close | Defer: must define editor save failures, pending diagnostics and factory-display handover first. |
+| 10: pinned actions | Defer: new preference semantics and extra UX complexity without demonstrated need. |
+| 15: system health | Defer until optional board presence and heartbeat/version compatibility rules are established. Missing optional hardware must not become a false warning. |
+
+### Small agent tasks, in order
+
+Run only one implementation task at a time. An independent read-only review or
+small test addition may run alongside it. Give agents this section and the named
+files; do not pass the whole conversation or ask for a fresh repository audit.
+
+| Task | Scope and acceptance | Stop boundary |
+| --- | --- | --- |
+| A: regression baseline + BACK | `menu_input.c`, `test_menu.c`, `test_core.c`, menu guide. Exact 1199/1200 ms hold boundary, no SELECT after BACK, stream loss, tick wrap, rapid wheel input with busy UART, rotation and unchanged save tests. | Completed in this branch. No other timing changes. |
+| B: status wording | `menu.c` action status/rendering and focused `test_menu.c` assertions. Inventory requested/confirmed/unknown states first; improve only labels whose meaning is supported. Both display widths. | No new action state machine or command changes. |
+| C: diagnostic error feedback | `fault_reader.c/.h`, its menu renderer and existing fault-reader tests. Distinguish no reply/rejection only where available; test timeout and recovery. | No transport refactor or new logging infrastructure. |
+| D: navigation re-entry tests | `test_menu.c`; test returning to Actions, Settings and Information. Change `menu.c` only for a reproducible context-loss defect. | No new persistent fields or Favorites format. |
+| E: input/display measurements | Capture input-report gaps and dashboard behavior at existing pacing; compare a separate 30 ms experimental build only after baseline. | No release timing change without vehicle results. |
+
+Each task starts with a failing regression for the intended change, or a passing
+characterization test proving it already works. Reuse existing tests. Each agent
+returns the diff summary, commands/results and remaining uncertainty, then stops;
+it must not start the next task. If a task needs a new persistence format, protocol
+assumption or broad refactor, report that dependency instead of expanding scope.
+These boundaries limit work; actual token consumption depends on the agent and
+cannot be guaranteed by this document.
+
+### First-increment release gate
+
+The first increment is independently releasable; tasks B–E are not prerequisites.
+Run `make -C tests -j2 test`, compile C1/C2/BH/CAN, and run firmware lint. The existing
+release workflow must then pass on the merged commit. Use an immutable new beta
+tag and notes stating that BACK now needs 1.2 seconds. Verify short RES, held RES
+and navigation in the vehicle. Do not claim this increment fixes the previously
+reported freeze or guarantees atomic screen refresh. Do not publish a release
+from an agent's intermediate working tree.
+
+---
+
 ## Purpose
 
 This document is a focused implementation brief for improving the BACCAble menu UX.
