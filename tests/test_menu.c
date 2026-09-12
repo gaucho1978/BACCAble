@@ -469,6 +469,67 @@ static void test_navigation_regressions(void) {
     assert(menu_preferences_decode(&prefs, saved));
     assert(!menu_page_visible(&prefs, 0, 23));
 }
+/* Re-enter a section without resetting its remembered action, setting or information page. */
+static void test_navigation_context(void) {
+    for (unsigned section = 2; section <= 4; ++section) {
+        fresh_menu();
+        settings_state.dyno_mode_master_enabled = 1;
+        settings_state.qv_exhaust_flap_function_enabled = 1;
+        chassis_state.dyno_mode_enabled_on_master = 0;
+        menu_event(MENU_SELECT); /* Favorites -> root. */
+        for (unsigned i = 0; i < section; ++i)
+            menu_event(MENU_NEXT);
+        menu_event(MENU_SELECT);
+        if (section == 2) {
+            for (unsigned i = 0; i < 16 && !strstr(screen, "Dyno"); ++i)
+                menu_event(MENU_NEXT);
+            assert(strstr(screen, "Dyno"));
+        } else {
+            menu_event(MENU_NEXT);
+            menu_event(MENU_NEXT);
+            if (section == 3)
+                assert(strstr(screen, "Visible pages"));
+            else {
+                menu_event(MENU_NEXT);
+                assert(strstr(screen, "MY23:"));
+            }
+        }
+        char selected[sizeof(screen)];
+        memcpy(selected, screen, sizeof(selected));
+        unsigned before = commands;
+        menu_event(MENU_BACK);
+        menu_event(MENU_SELECT);
+        assert(!strcmp(screen, selected));
+        assert(commands == before); /* Re-entry must never execute the remembered action. */
+
+        if (section == 4) {
+            menu_event(MENU_SELECT); /* Information also allows SELECT to return. */
+            menu_event(MENU_SELECT);
+            assert(!strcmp(screen, selected));
+        }
+        menu_event(MENU_BACK);
+        menu_event(MENU_BACK); /* Close and save, but retain RAM navigation context. */
+        assert(!dashboard_state.baccable_dashboard_menu_visible);
+        menu_event(MENU_BACK); /* Reopen in Favorites. */
+        menu_event(MENU_SELECT);
+        for (unsigned i = 0; i < section; ++i)
+            menu_event(MENU_NEXT);
+        menu_event(MENU_SELECT);
+        assert(!strcmp(screen, selected));
+        assert(commands == before);
+
+        if (section == 2) {
+            menu_event(MENU_BACK);
+            settings_state.dyno_mode_master_enabled = 0;
+            menu_event(MENU_SELECT);
+            assert(!strstr(screen, "Dyno")); /* A remembered action must still pass availability. */
+            assert(commands == before);
+        }
+        settings_state.dyno_mode_master_enabled = 0;
+        settings_state.qv_exhaust_flap_function_enabled = 0;
+    }
+}
+
 static void expect_reading(uint8_t engine, uint16_t id, float first, float second, const char *expected) {
     int index = menu_page_index(engine, id);
     assert(index >= 0);
@@ -766,6 +827,7 @@ int main(void) {
     test_present_retry();
     test_controller();
     test_navigation_regressions();
+    test_navigation_context();
     test_readable_screens();
     test_action_request_labels();
     test_cache_flags();

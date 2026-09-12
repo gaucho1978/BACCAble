@@ -35,7 +35,7 @@ files; do not pass the whole conversation or ask for a fresh repository audit.
 | A: regression baseline + BACK | `menu_input.c`, `test_menu.c`, `test_core.c`, menu guide. Exact 1199/1200 ms hold boundary, no SELECT after BACK, stream loss, tick wrap, rapid wheel input with busy UART, rotation and unchanged save tests. | Completed in this branch. No other timing changes. |
 | B: status wording (first pass complete) | `menu.c` action status/rendering and focused `test_menu.c` assertions. Inventory requested/confirmed/unknown states first; improve only labels whose meaning is supported. Both display widths. | Implemented explicit 4WD/QV request labels and clear-request WAIT; no new action state machine or command changes. |
 | C: diagnostic error feedback (complete) | `fault_reader.c/.h`, its menu renderer and existing fault-reader tests. Distinguish no reply/rejection only where available; test timeout and recovery. | Implemented timeout, ECU rejection, invalid reply and unqueued-send messages with retry recovery tests. No transport refactor or new logging infrastructure. |
-| D: navigation re-entry tests | `test_menu.c`; test returning to Actions, Settings and Information. Change `menu.c` only for a reproducible context-loss defect. | No new persistent fields or Favorites format. |
+| D: navigation re-entry tests (complete) | `test_menu.c`; test returning to Actions, Settings and Information. Change `menu.c` only for a reproducible context-loss defect. | Existing behavior passed: section re-entry, close/reopen, Information SELECT return and unavailable remembered action. Test-only change; no new persistent fields or Favorites format. |
 | E: input/display measurements | Capture input-report gaps and dashboard behavior at existing pacing; compare a separate 30 ms experimental build only after baseline. | No release timing change without vehicle results. |
 
 Each task starts with a failing regression for the intended change, or a passing
@@ -45,6 +45,15 @@ it must not start the next task. If a task needs a new persistence format, proto
 assumption or broad refactor, report that dependency instead of expanding scope.
 These boundaries limit work; actual token consumption depends on the agent and
 cannot be guaranteed by this document.
+
+### Series completion
+
+Tasks A–D are complete, with B limited to the request-state wording described
+above. Navigation context already worked; task D adds regression coverage on
+both display widths without changing firmware. Next: review/merge the final test
+increment, verify CI and perform a vehicle smoke test before a new beta release.
+Task E remains a separate hardware experiment. The 50 ms display interval has
+not changed, and this series does not claim faster dashboard transmission.
 
 ### First-increment release gate
 
