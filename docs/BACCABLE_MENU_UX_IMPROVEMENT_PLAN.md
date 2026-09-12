@@ -1,0 +1,537 @@
+# BACCAble Menu UX Improvement Plan
+
+## Purpose
+
+This document is a focused implementation brief for improving the BACCAble menu UX.
+
+It is intended for a coding agent or developer who should **not spend time rediscovering the entire menu architecture from scratch**. The points below are based on a recent review of the current `master` branch and the existing host-side tests.
+
+The goal is to make the menu feel:
+
+- immediate,
+- predictable,
+- consistent,
+- easy to understand at a glance,
+- resistant to lost input,
+- resistant to stale or mixed display content,
+- comfortable to use with minimal driver attention.
+
+The implementation details below are **guidance, not a rigid design**. If the current architecture suggests a simpler or safer solution, prefer that and document the reasoning.
+
+---
+
+## Primary Code Areas
+
+Focus mainly on:
+
+- `firmware/baccable/features/menu.c`
+- `firmware/baccable/features/menu_input.c`
+- `firmware/baccable/features/display_stream.c`
+- `firmware/baccable/features/display_stream.h`
+- `firmware/baccable/features/body.c`
+- `firmware/baccable/features/dashboard.c`
+- `firmware/baccable/diagnostics/parameter_cache.c`
+- `firmware/baccable/diagnostics/fault_reader.c`
+- `firmware/baccable/settings/persistence.c`
+- `firmware/baccable/storage/flash_records.c`
+- existing tests under `tests/`
+
+Do not perform a broad refactor unless it is clearly necessary for one of the items below.
+
+---
+
+## Known Current State
+
+Some earlier UX work is already present and should be preserved:
+
+- root menu uses `Actions` rather than the older `Functions` naming,
+- engine profile support already distinguishes I4 / V6 / diesel behavior,
+- `Advanced pages` already exists,
+- `Maximum hold` / peak functionality is already exposed,
+- action availability already provides several user-facing notices,
+- reading/favorite page position is already remembered in some cases,
+- display streaming already uses a latest-target / dirty-fragment style mechanism,
+- failed display transmission is retried rather than blindly accepted,
+- menu events generally trigger immediate re-rendering.
+
+Do not re-implement these features from scratch.
+
+---
+
+# 1. Reduce Display Update Latency
+
+The display path still sends text in 3-character fragments with pacing in `body.c`.
+
+Evaluate reducing the current fragment interval from roughly 50 ms to a safer lower value, for example 20–30 ms, if the dashboard and CAN traffic tolerate it.
+
+Goals:
+
+- typical menu navigation should visibly react in under ~150–250 ms,
+- avoid excessive CAN load,
+- preserve retry behavior,
+- preserve fragment fairness,
+- do not introduce flicker or unstable display behavior.
+
+If 50 ms is required for reliability, keep it and document why.
+
+---
+
+# 2. Make Input Feedback Immediate
+
+Every accepted user action should produce immediate visible feedback, even if the underlying vehicle operation takes longer.
+
+Preferred interaction model:
+
+```text
+Action selected
+→ immediate acknowledgement
+→ pending state if required
+→ confirmed final state
+```
+
+Example:
+
+```text
+Dyno
+→ Confirm RES
+→ Dyno...
+→ Dyno ON
+```
+
+Avoid situations where the user presses a button and sees no obvious response.
+
+---
+
+# 3. Standardize Status Language
+
+Audit menu labels and status strings.
+
+Avoid mixing developer-oriented and user-oriented terms such as:
+
+```text
+Req ON
+Req OFF
+RES
+```
+
+Prefer a small, consistent vocabulary such as:
+
+```text
+ON
+OFF
+OPEN
+CLOSED
+WAIT
+READY
+ERROR
+```
+
+Use `RES` only when it is an instruction to press the RES button, not as a functional state.
+
+Keep strings short enough for the dashboard.
+
+---
+
+# 4. Revisit the 300 ms Input Timeout
+
+`menu_input_update()` currently has logic that can discard an active gesture after a relatively short gap in input reports.
+
+This can potentially turn a valid slower press/release into a lost click.
+
+Review the semantics and separate:
+
+- loss-of-input-stream detection,
+- normal click timing,
+- long-press detection.
+
+A longer stream timeout, e.g. roughly 700–1000 ms, may be more tolerant, but choose values based on the actual input protocol.
+
+Add regression tests for timing boundaries.
+
+---
+
+# 5. Increase the Long-Press BACK Threshold
+
+The current long-press threshold is close enough to a slow normal press that the boundary may feel unpredictable.
+
+Consider moving BACK long-press detection from roughly 800 ms toward ~1200–1500 ms.
+
+Requirements:
+
+- short press remains SELECT,
+- long press remains BACK,
+- one physical gesture must never produce both,
+- timing boundary must be covered by tests.
+
+---
+
+# 6. Add Hold-to-Repeat Navigation
+
+Long lists currently require repeated individual wheel actions.
+
+Implement auto-repeat where appropriate:
+
+```text
+initial movement → immediate NEXT/PREV
+hold ~500 ms
+→ repeat every ~150–200 ms
+```
+
+Use it for list navigation such as:
+
+- Settings,
+- Visible pages,
+- Favorites editing,
+- Readings,
+- other long lists.
+
+Do not enable repeat for actions where repetition could be unsafe.
+
+---
+
+# 7. Add Menu Auto-Close on Inactivity
+
+Use the existing input activity timestamp to automatically close the menu after inactivity.
+
+Suggested behavior:
+
+- normal menu: ~20–30 s,
+- editor / diagnostic screens: longer timeout if needed,
+- do not close while a confirmed operation is actively running,
+- closing the menu should cleanly release the display back to factory radio/RDS behavior.
+
+Avoid duplicating existing inactivity state if one already exists elsewhere.
+
+---
+
+# 8. Avoid Saving Flash When Nothing Changed
+
+The current menu flow can trigger settings/preferences persistence even when no user-visible value changed.
+
+Introduce change tracking, for example:
+
+```text
+settings_dirty
+preferences_dirty
+```
+
+or an equivalent mechanism.
+
+Benefits:
+
+- less blocking work,
+- less Flash wear,
+- fewer synchronization side effects,
+- better menu responsiveness.
+
+Do not write to Flash just because the user exits a menu level.
+
+---
+
+# 9. Preserve More Navigation Context
+
+Readings/Favorites already preserve some position state.
+
+Extend the same idea where useful to:
+
+- last Action,
+- last Setting,
+- last Information page.
+
+Prefer RAM-only restoration unless persistence across power cycles is clearly useful.
+
+The user should generally return close to where they left off instead of always starting from the first entry.
+
+---
+
+# 10. Minimize Steps for Frequent Tasks
+
+Review the number of interactions required for common runtime tasks.
+
+Frequently used operations should generally be reachable in one or two navigation steps.
+
+Possible approaches:
+
+- preserve the existing Favorites concept,
+- allow favorite/pinned actions,
+- reorder common runtime sections before rarely used setup sections.
+
+Do not add unnecessary menu depth.
+
+---
+
+# 11. Keep Runtime Actions Separate from Setup
+
+Preserve a clear mental model:
+
+```text
+Drive/runtime:
+- Favorites
+- Readings
+- Actions
+
+Configuration:
+- Settings
+- Information
+```
+
+Avoid mixing one-time setup options with operations a user may invoke while driving.
+
+Naming, ordering, and navigation should reinforce this distinction.
+
+---
+
+# 12. Improve Diagnostic Error Messages
+
+`fault_reader` should expose the reason for failure instead of collapsing different failures into a generic message.
+
+Where technically possible, distinguish cases such as:
+
+```text
+ECU no reply
+Timeout
+Rejected
+Invalid response
+Protocol error
+```
+
+Keep the internal state machine simple if possible.
+
+Do not expose low-level UDS details unless they help the user.
+
+---
+
+# 13. Make Stale / Missing Parameter Data Obvious
+
+The parameter cache already knows when data is stale.
+
+Ensure the UI never leaves an old numeric value looking current after the source has stopped updating.
+
+Use a clear representation such as:
+
+```text
+--
+NO DATA
+```
+
+or another short equivalent.
+
+If useful, distinguish:
+
+- valid/live,
+- stale,
+- never received.
+
+Do not add visual complexity unless it clearly improves trust in the reading.
+
+---
+
+# 14. Keep Technical Details Inside Information/Diagnostics
+
+Runtime menu entries should use user-oriented wording.
+
+Detailed technical information such as:
+
+- firmware versions,
+- peer version numbers,
+- protocol/display metadata,
+- raw diagnostic state,
+
+belongs in `Information` or a developer/advanced section.
+
+The normal menu should communicate actions and results, not implementation details.
+
+---
+
+# 15. Add a Clear Overall System Health State
+
+The code already knows peer versions and peer availability.
+
+Add a concise high-level status such as:
+
+```text
+SYSTEM OK
+BH OFFLINE
+C2 OFFLINE
+VERSION MISMATCH
+```
+
+Avoid requiring the user to inspect several separate information pages just to know whether the installation is healthy.
+
+Detailed versions can remain on secondary pages.
+
+---
+
+# 16. Define and Enforce a Small Symbol Vocabulary
+
+The menu already uses symbols such as:
+
+```text
+>
++
+-
+*
+!
+?
+```
+
+Formalize their meaning and use them consistently.
+
+Suggested interpretation:
+
+```text
+>  enter / submenu
++  enabled / positive state
+-  disabled / negative state
+*  selected / editing
+!  warning / attention
+?  unknown / unavailable
+```
+
+If the dashboard character set supports better single-byte glyphs, they may be used, but do not depend on UTF-8.
+
+---
+
+# 17. Use Different Feedback Durations for Different Message Types
+
+Avoid one fixed duration for every notice.
+
+Suggested categories:
+
+- simple toggle confirmation: ~600–800 ms,
+- warning/error: ~1500–2000 ms,
+- pending operation: visible until success/failure or explicit timeout.
+
+Normal navigation should remain responsive and should be able to dismiss non-critical notices.
+
+---
+
+# 18. Do Not Block Navigation for Cosmetic Feedback
+
+A successful toggle notice should not make the menu feel locked.
+
+Preserve the existing behavior where normal user input can interrupt non-critical notices.
+
+Only safety-critical confirmations or active operations may temporarily block navigation.
+
+Be careful not to introduce modal states unnecessarily.
+
+---
+
+# 19. Make Auto-Rotation Respect Recent User Interaction
+
+If automatic reading rotation is enabled, recent user input should postpone the next automatic page change.
+
+Reset or extend the auto-rotation timer after relevant navigation input so the page does not change just after the user intentionally selected it.
+
+The UI should never feel like it is “fighting” the user.
+
+---
+
+# 20. Add UX Regression Tests
+
+Add host-side tests for observable interaction behavior, not only internal logic.
+
+Important scenarios include:
+
+- rapid NEXT/NEXT/NEXT input does not lose events,
+- short press and long press produce exactly one expected action,
+- timeout boundaries are deterministic,
+- new display target supersedes stale content,
+- failed transport send is retried,
+- shortened text does not leave stale trailing characters,
+- stale parameter data stops displaying an old value,
+- menu auto-close respects active operations,
+- save without changes does not write Flash,
+- auto-rotation is postponed by manual interaction.
+
+Where timing is involved, use fake time instead of wall-clock delays.
+
+---
+
+## UX Performance Targets
+
+Use these as practical targets rather than hard protocol requirements:
+
+- visible response to accepted input: preferably <150 ms, always clearly acknowledged within ~250 ms,
+- no lost normal button presses,
+- no mixed old/new display content,
+- no stale numeric value presented as live,
+- no unnecessary Flash write on menu exit,
+- no ambiguous status strings,
+- no accidental SELECT/BACK overlap,
+- no menu state that requires a power cycle to recover.
+
+---
+
+## Safety and Compatibility Constraints
+
+Do not weaken existing safety checks.
+
+Preserve:
+
+- confirmation for potentially risky actions,
+- vehicle-state guards,
+- master-enable / availability checks,
+- CAN/UART retry behavior,
+- stable parameter/page IDs,
+- existing Favorites compatibility,
+- engine-profile filtering,
+- Advanced pages behavior.
+
+Do not introduce automatic execution of vehicle-control actions.
+
+---
+
+## Implementation Guidance
+
+Prefer:
+
+- small, isolated patches,
+- existing abstractions,
+- host-testable logic,
+- fake time in tests,
+- explicit state rather than hidden timing side effects.
+
+Avoid:
+
+- large architecture rewrites,
+- adding a new UI framework,
+- duplicating state already tracked elsewhere,
+- making the menu more deeply nested,
+- using long blocking delays.
+
+If a proposed implementation differs from this document but achieves the same UX outcome with less complexity, use it and explain the decision.
+
+---
+
+## Expected Deliverables
+
+For each implemented change, provide:
+
+1. short description of the UX problem,
+2. changed files,
+3. implementation summary,
+4. host-side tests added or updated,
+5. compatibility/safety considerations,
+6. any behavior intentionally left unchanged.
+
+If some items are already solved in the current code, mark them as **already satisfied** instead of rewriting them.
+
+---
+
+## Definition of Done
+
+The work is successful when the menu feels:
+
+- immediate,
+- stable,
+- predictable,
+- logically organized,
+- tolerant of normal human input timing,
+- clear about current state,
+- clear about errors,
+- easy to resume after interruption,
+- free from avoidable blocking and visual lag.
+
+The agent is encouraged to improve on the exact implementation details in this document, but should preserve these UX goals.
