@@ -50,8 +50,12 @@ works. The main menu and group list show position counters; editors use full lab
 | `!` | Warning, failed action or confirmation required | `! RES to confirm` |
 | `?` | Unknown board status | `? BH no reply` |
 
-Requested vehicle changes retain `Req ON` / `Req OFF`; these are not confirmed
-states. Reading values retain their full width and existing missing-value `--`
+Requested vehicle changes use `4WD OFF requested`, `QV OPEN requested` and
+`QV AUTO requested` (release to factory control). These describe local requests,
+not confirmed drivetrain or valve positions. Idle entries show `RES`, the button
+instruction; they do not assert that 4WD is on or the valves are closed.
+The periodic `! 4WD OFF request` warning also describes a request.
+`Clear faults WAIT` means the clear request is active, not completed. Reading values retain their full width and existing missing-value `--`
 notation. Hold RES to return from other screens; the symbols do not add buttons.
 
 ## Readable measurements and settings

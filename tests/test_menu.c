@@ -638,6 +638,61 @@ static void test_action_availability(void) {
     assert(strstr(screen, "Immobilizer"));
 }
 
+/* Action wording must describe requests without claiming vehicle confirmation. */
+static void test_action_request_labels(void) {
+    fresh_menu();
+    settings_state.awd_disabler_enabled = 1;
+    settings_state.qv_exhaust_flap_function_enabled = 1;
+    chassis_state.awd_sequence = 0;
+    comfort_state.force_q_vexhaust_valve_opened = 0;
+    menu_event(MENU_SELECT);
+    menu_event(MENU_NEXT);
+    menu_event(MENU_NEXT);
+    menu_event(MENU_SELECT);
+    for (unsigned i = 0; i < 16 && !strstr(screen, "QV exhaust"); ++i)
+        menu_event(MENU_NEXT);
+    assert(strstr(screen, "QV exhaust RES"));
+    for (unsigned state = 1; state <= 4; ++state) {
+        comfort_state.force_q_vexhaust_valve_opened = state;
+        now += 1;
+        menu_render();
+        const char *expected = state == 4 ? "QV AUTO requested" : "QV OPEN requested";
+        assert(!strncmp(screen, expected, strlen(expected)));
+        for (unsigned i = strlen(expected); i < DASHBOARD_MESSAGE_MAX_LENGTH; ++i)
+            assert(screen[i] == ' ');
+    }
+    comfort_state.force_q_vexhaust_valve_opened = 0;
+    menu_render();
+    assert(strstr(screen, "QV exhaust RES"));
+    for (unsigned i = 0; i < 16 && !strstr(screen, "4WD"); ++i)
+        menu_event(MENU_NEXT);
+    assert(strstr(screen, "4WD RES"));
+    for (unsigned state = 1; state <= 4; ++state) {
+        chassis_state.awd_sequence = state;
+        menu_render();
+        assert(strstr(screen, "4WD OFF requested"));
+    }
+    now = 12000; /* Periodic warning must also avoid claiming confirmed disablement. */
+    menu_render();
+    assert(strstr(screen, "! 4WD OFF request"));
+    chassis_state.awd_sequence = 0;
+    menu_render();
+    assert(strstr(screen, "4WD RES"));
+    settings_state.clear_faults_enabled = 1;
+    for (unsigned i = 0; i < 16 && !strstr(screen, "Clear faults"); ++i)
+        menu_event(MENU_NEXT);
+    assert(strstr(screen, "Clear faults RES"));
+    diagnostics_state.clear_faults_request = 255;
+    menu_render();
+    assert(strstr(screen, "Clear faults WAIT"));
+    diagnostics_state.clear_faults_request = 0;
+    menu_render();
+    assert(strstr(screen, "Clear faults RES"));
+    settings_state.clear_faults_enabled = 0;
+    settings_state.awd_disabler_enabled = 0;
+    settings_state.qv_exhaust_flap_function_enabled = 0;
+}
+
 static void test_cache_flags(void) {
     parameter_cache_reset();
     const uint8_t ids[] = {0, 7, 8, 31, 32, 95, 96, 99};
@@ -712,6 +767,7 @@ int main(void) {
     test_controller();
     test_navigation_regressions();
     test_readable_screens();
+    test_action_request_labels();
     test_cache_flags();
     test_maximum_hold();
     test_board_sync_retry();

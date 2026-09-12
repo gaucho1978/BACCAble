@@ -391,15 +391,18 @@ static const char *action_status(MenuAction id) {
     case ACTION_PEAK:
         return parameter_peak_enabled() ? "+" : "-";
     case ACTION_CLEAR:
-        return diagnostics_state.clear_faults_request ? "Busy" : "RES";
+        return diagnostics_state.clear_faults_request ? "WAIT" : "RES";
     case ACTION_DYNO:
         return chassis_state.dyno_mode_enabled_on_master ? "+" : "-";
     case ACTION_BRAKE:
         return chassis_state.front_brake_forced ? "+" : "-";
     case ACTION_AWD:
-        return chassis_state.awd_sequence ? "Req OFF" : "Req ON";
+        return chassis_state.awd_sequence ? "4WD OFF requested" : "4WD RES";
     case ACTION_EXHAUST:
-        return comfort_state.force_q_vexhaust_valve_opened ? "Req ON" : "RES";
+        /* The sequence tracks our request, not measured valve position. */
+        if (comfort_state.force_q_vexhaust_valve_opened == 4)
+            return "QV AUTO requested";
+        return comfort_state.force_q_vexhaust_valve_opened ? "QV OPEN requested" : "QV exhaust RES";
     default:
         return "RES";
     }
@@ -416,7 +419,7 @@ void menu_render(void) {
     notice = NULL;
     if (settings_state.awd_disabler_enabled && chassis_state.awd_sequence &&
         currentTime - last_input > 1500 && currentTime % 6000 < 1000) {
-        menu_present("! 4WD disabled");
+        menu_present("! 4WD OFF request");
         return;
     }
     char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
@@ -444,6 +447,8 @@ void menu_render(void) {
             if (actions[function].id == ACTION_BRAKE && chassis_state.front_brake_forced &&
                 chassis_state.launch_assist_enabled)
                 snprintf_(text, sizeof(text), "+ Brake: Launch");
+            else if (actions[function].id == ACTION_AWD || actions[function].id == ACTION_EXHAUST)
+                snprintf_(text, sizeof(text), "%s", status);
             else if (status[0] == '+' || status[0] == '-')
                 snprintf_(text, sizeof(text), "%c %s", status[0], actions[function].name);
             else if (actions[function].id == ACTION_READ)
