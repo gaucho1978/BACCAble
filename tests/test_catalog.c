@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "diagnostics/parameter_catalog.h"
 #include "app/build_config.h"
 #include <assert.h>
@@ -32,7 +33,7 @@ static void check_screen_width(const ParameterPage *page) {
     }
     assert(width <= DASHBOARD_MESSAGE_MAX_LENGTH);
 }
-int main(void) {
+static void test_catalog_behavior(void) {
     const uint8_t counts[] = {gasoline_page_count, diesel_page_count};
     for (unsigned engine = 0; engine < 2; ++engine) {
         assert(counts[engine] <= 64);
@@ -62,5 +63,17 @@ int main(void) {
     assert(fabsf(parameter_definitions[81].scale - 0.001f) < 1e-8f);
     assert(parameter_definitions[81].raw_offset == -32768);
     puts("PASS: gasoline/diesel page counts, parameter references, request schema, signed scaling");
-    return 0;
+
+}
+
+int main(void) {
+#ifdef LARGE_DISPLAY
+    const char *suite = "catalog-24";
+#else
+    const char *suite = "catalog-18";
+#endif
+    const HostTest tests[] = {
+        HOST_TEST(test_catalog_behavior)
+    };
+    host_tests_run(suite, tests, sizeof(tests) / sizeof(tests[0]));
 }

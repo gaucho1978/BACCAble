@@ -52,25 +52,24 @@ jobs:
           fi
       - name: Release script regression tests
         run: python3 .github/scripts/test-ci.py
-      - name: Host regression tests with ASan and UBSan
+      - id: host_tests
+        name: Host regression tests with ASan and UBSan
         run: |
           set -o pipefail
           clang --version
           make -C tests -j2 test 2>&1 | tee host-tests.log
-      - name: Test summary
+      - name: Test scenario report
         if: always()
-        run: |
-          echo '### Host regression tests (ASan/UBSan)' >> "$GITHUB_STEP_SUMMARY"
-          if test -f host-tests.log; then
-            grep '^PASS:' host-tests.log >> "$GITHUB_STEP_SUMMARY" || true
-            tail -n 15 host-tests.log
-          fi
-          echo 'Failures are reported by the test step; see its full log.' >> "$GITHUB_STEP_SUMMARY"
+        env:
+          TEST_OUTCOME: ${{ steps.host_tests.outcome }}
+        run: python3 .github/scripts/test-report.py --outcome "$TEST_OUTCOME" --summary "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: host-test-log
-          path: host-tests.log
+          path: |
+            host-tests.log
+            host-tests.html
           if-no-files-found: ignore
   lint:
     needs: test

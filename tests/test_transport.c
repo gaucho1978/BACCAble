@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "transport/can_bus.h"
 #include "usbd_cdc_if.h"
 #include <assert.h>
@@ -282,10 +283,13 @@ static void test_usb(void) {
     assert(CDC_Transmit_FS(data, 3) == USBD_FAIL);
 }
 int main(void) {
-    test_can();
-    test_can_queue_roundtrip();
-    test_can_filters();
-    test_usb();
+    const HostTest tests[] = {
+        HOST_TEST(test_can),
+        HOST_TEST(test_can_queue_roundtrip),
+        HOST_TEST(test_can_filters),
+        HOST_TEST(test_usb)
+    };
+    host_tests_run("transport", tests, sizeof(tests) / sizeof(tests[0]));
     puts("PASS: CAN validation/retry/silent mode, USB TX ownership/RX overflow/IRQ state");
     return 0;
 }

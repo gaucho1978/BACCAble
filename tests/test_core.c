@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "protocol/slcan_codec.h"
 #include "diagnostics/uds_decode.h"
 #include "storage/record_store.h"
@@ -126,9 +127,12 @@ static void test_records(void) {
 }
 
 int main(void) {
-    test_slcan();
-    test_uds();
-    test_records();
+    const HostTest tests[] = {
+        HOST_TEST(test_slcan),
+        HOST_TEST(test_uds),
+        HOST_TEST(test_records)
+    };
+    host_tests_run("core", tests, sizeof(tests) / sizeof(tests[0]));
     puts("PASS: SLCAN, UDS, interrupted Flash writes, storage bounds");
     return 0;
 }

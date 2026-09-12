@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "app/powertrain.h"
 #include "diagnostics/parameter_cache.h"
 #include <assert.h>
@@ -73,7 +74,7 @@ static void finish(void) {
     now += 251;
     runtime_state.all_processors_wakeup_time = now; /* Keep this test independent of background polls. */
 }
-int main(void) {
+static void test_uart_menu_behavior(void) {
     uart_init();
     runtime_state.all_processors_wakeup_time = now;
     const uint8_t command[] = {C2BusID, C2cmdNormalFrontBrake};
@@ -123,4 +124,11 @@ int main(void) {
     assert(!board_uart_send(command, sizeof(command)));
     assert(!board_uart_send(NULL, 0));
     puts("PASS: real UART display coalescing, command order, active buffer, HAL_BUSY and IRQ state");
+}
+
+int main(void) {
+    const HostTest tests[] = {
+        HOST_TEST(test_uart_menu_behavior)
+    };
+    host_tests_run("uart_menu", tests, sizeof(tests) / sizeof(tests[0]));
 }

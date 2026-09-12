@@ -91,5 +91,29 @@ class ReleaseTests(unittest.TestCase):
         self.command('bash', script, 'validate', 'stable', 'v5.0.0', ok=False)
         self.command('bash', script, 'validate', 'beta', 'v5.0.0', ok=False)
 
+class TestReportTests(unittest.TestCase):
+    def test_partial_run_and_escaping(self):
+        import runpy
+        report = runpy.run_path(str(SCRIPTS / 'test-report.py'))
+        log = ('CASE PLAN menu-18 test_input\nCASE PLAN menu-18 test_display\n'
+               'CASE PLAN menu-18 test_controller\nCASE RUN menu-18 test_input\n'
+               'CASE PASS menu-18 test_input\nCASE RUN menu-18 test_display\n'
+               'assertion <script>alert(1)</script>\n')
+        results = report['cases'](log)
+        self.assertEqual(list(results.values()), ['PASS', 'INCOMPLETE', 'NOT RUN'])
+        markdown, page = report['render'](log, 'failure')
+        self.assertIn('**failure**', markdown)
+        self.assertIn('| menu-18 | display | INCOMPLETE |', markdown)
+        self.assertNotIn('<script>', page)
+        self.assertIn('&lt;script&gt;', page)
+
+    def test_empty_and_successful_runs(self):
+        import runpy
+        report = runpy.run_path(str(SCRIPTS / 'test-report.py'))
+        markdown, _ = report['render']('', 'skipped')
+        self.assertIn('No scenario results', markdown)
+        log = 'CASE PLAN menu-24 test_input\nCASE RUN menu-24 test_input\nCASE PASS menu-24 test_input\n'
+        self.assertEqual(report['cases'](log), {('menu-24', 'test_input'): 'PASS'})
+
 if __name__ == '__main__':
     unittest.main()

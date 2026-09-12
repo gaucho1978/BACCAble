@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "features/menu.h"
 #include "features/periodic.h"
 #include "features/display_stream.h"
@@ -821,19 +822,27 @@ static void test_board_sync_retry(void) {
 }
 
 int main(void) {
-    test_input();
-    test_display();
-    test_preferences();
-    test_present_retry();
-    test_controller();
-    test_navigation_regressions();
-    test_navigation_context();
-    test_readable_screens();
-    test_action_request_labels();
-    test_cache_flags();
-    test_maximum_hold();
-    test_board_sync_retry();
-    test_engine_filters();
-    test_action_availability();
+#ifdef LARGE_DISPLAY
+    const char *suite = "menu-24";
+#else
+    const char *suite = "menu-18";
+#endif
+    const HostTest tests[] = {
+        HOST_TEST(test_input),
+        HOST_TEST(test_display),
+        HOST_TEST(test_preferences),
+        HOST_TEST(test_present_retry),
+        HOST_TEST(test_controller),
+        HOST_TEST(test_navigation_regressions),
+        HOST_TEST(test_navigation_context),
+        HOST_TEST(test_readable_screens),
+        HOST_TEST(test_action_request_labels),
+        HOST_TEST(test_cache_flags),
+        HOST_TEST(test_maximum_hold),
+        HOST_TEST(test_board_sync_retry),
+        HOST_TEST(test_engine_filters),
+        HOST_TEST(test_action_availability)
+    };
+    host_tests_run(suite, tests, sizeof(tests) / sizeof(tests[0]));
     puts("PASS: menu gestures, stable views, favorites, sorting, migration, save failure, UDS freshness");
 }

@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "app/powertrain.h"
 #include "features/parking.h"
 #include "features/parking_mirrors.h"
@@ -242,7 +243,15 @@ static void test_link(void) {
     assert(!elmlink_is_enabled());
 }
 int main(void) {
-    test_parking();
-    test_link();
+#if defined(C2_FLAVOR)
+    const char *suite = "parking-C2";
+#else
+    const char *suite = "parking-BH";
+#endif
+    const HostTest tests[] = {
+        HOST_TEST(test_parking),
+        HOST_TEST(test_link)
+    };
+    host_tests_run(suite, tests, sizeof(tests) / sizeof(tests[0]));
     puts("PASS: parking button ownership/release, freshness, diagnostic bridge validation/response/timeout");
 }

@@ -1,3 +1,4 @@
+#include "test_report.h"
 #include "app/powertrain.h"
 #include "diagnostics/fault_reader.h"
 #include "features/ibs_override.h"
@@ -403,11 +404,14 @@ static void test_link_loss(void) {
 }
 
 int main(void) {
-    test_fault_errors();
-    test_faults();
-    test_elm();
-    test_usb_modes();
-    test_ibs();
-    test_link_loss();
+    const HostTest tests[] = {
+        HOST_TEST(test_fault_errors),
+        HOST_TEST(test_faults),
+        HOST_TEST(test_elm),
+        HOST_TEST(test_usb_modes),
+        HOST_TEST(test_ibs),
+        HOST_TEST(test_link_loss)
+    };
+    host_tests_run("upstream", tests, sizeof(tests) / sizeof(tests[0]));
     puts("PASS: DTC/ISO-TP bounds, ELM/bridge retries and overflow, USB capture/lifecycle, IBS override");
 }
