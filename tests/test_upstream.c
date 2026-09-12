@@ -148,6 +148,56 @@ static void start_faults(void) {
     fault_reader_process();
     assert(last_data[1] == 0x19 && last_data[2] == 2 && last_data[3] == 0xff);
 }
+/* Failure messages fit both dashboard widths and a retry clears the old error. */
+static void expect_fault_error(const char *expected) {
+    assert(!fault_reader_busy() && fault_reader_count() == 0);
+    const size_t capacities[] = {19, 25};
+    for (unsigned i = 0; i < 2; ++i) {
+        char text[25];
+        fault_reader_text(0, text, capacities[i]);
+        assert(!strcmp(text, expected));
+    }
+}
+static void test_fault_errors(void) {
+    start_faults();
+    now += 1999;
+    fault_reader_process();
+    assert(fault_reader_busy());
+    now += 1;
+    fault_reader_process();
+    expect_fault_error("! Read timeout");
+
+    start_faults();
+    const uint8_t rejected[] = {3, 0x7f, 0x19, 0x22};
+    fault_reply(rejected, sizeof(rejected));
+    expect_fault_error("! ECU rejected");
+    fault_reader_cancel();
+    char text[25];
+    fault_reader_text(0, text, sizeof(text));
+    assert(!strcmp(text, "Read faults: RES"));
+
+    start_faults();
+    const uint8_t invalid[] = {0x10, 10, 0x59, 2, 0xff, 0, 0, 0};
+    fault_reply(invalid, sizeof(invalid));
+    expect_fault_error("! Invalid reply");
+
+    now = 100;
+    fault_reader_start(0x40);
+    tx_result = HAL_BUSY;
+    fault_reader_process();
+    assert(fault_reader_busy());
+    now += 2000;
+    fault_reader_process();
+    expect_fault_error("! CAN send failed");
+
+    start_faults();
+    fault_reader_text(0, text, sizeof(text));
+    assert(!strcmp(text, "Reading faults..."));
+    const uint8_t none[] = {3, 0x59, 2, 0xff};
+    fault_reply(none, sizeof(none));
+    fault_reader_text(0, text, sizeof(text));
+    assert(!strcmp(text, "No faults reported"));
+}
 static void test_faults(void) {
     char text[25];
     start_faults();
@@ -187,7 +237,7 @@ static void test_faults(void) {
     fault_reader_process();
     const uint8_t wrong[] = {0x22, 0, 0, 0, 0, 0};
     fault_reply(wrong, sizeof(wrong));
-    assert(!fault_reader_busy() && fault_reader_count() == 0);
+    expect_fault_error("! Invalid reply");
     start_faults();
     const uint8_t pending[] = {3, 0x7f, 0x19, 0x78};
     for (unsigned i = 0; i < 11; i++) {
@@ -195,7 +245,7 @@ static void test_faults(void) {
         fault_reply(pending, 4);
         fault_reader_process();
     }
-    assert(!fault_reader_busy());
+    expect_fault_error("! Read timeout");
     /* More than twenty faults are consumed without overflowing the stored result. */
     start_faults();
     uint8_t payload[87] = {0x59, 2, 0xff};
@@ -353,6 +403,7 @@ static void test_link_loss(void) {
 }
 
 int main(void) {
+    test_fault_errors();
     test_faults();
     test_elm();
     test_usb_modes();

@@ -11,11 +11,24 @@ static uint8_t ecu_address, sequence, count;
 static uint16_t expected, received;
 static uint32_t started, updated;
 static uint8_t payload[3 + 4 * FAULT_LIMIT];
+static const char *failure;
+
+/* Keep the reason for a stopped read until the user retries or leaves. */
+static void fail(const char *reason) {
+    failure = reason;
+    state = FAILED;
+}
+
+/* Distinguish a request that could not be queued from an overdue response. */
+static void fail_timeout(void) {
+    fail(state == START || state == QUERY || state == FLOW ? "! CAN send failed" : "! Read timeout");
+}
 
 /* Begin reading stored and current faults from the selected controller. */
 void fault_reader_start(uint8_t ecu) {
     ecu_address = ecu;
     state = START;
+    failure = NULL;
     count = received = expected = 0;
     started = updated = currentTime;
 }
@@ -43,7 +56,7 @@ void fault_reader_process(void) {
     if (!fault_reader_busy())
         return;
     if (currentTime - updated >= 2000 || currentTime - started >= 10000) {
-        state = FAILED;
+        fail_timeout();
         return;
     }
     const uint8_t session[] = {2, 0x10, 3};
@@ -72,7 +85,7 @@ static void append(const uint8_t *data, unsigned length) {
     updated = currentTime;
     if (received == expected) {
         if (payload[0] != 0x59 || payload[1] != 2 || expected < 3 || (expected - 3) % 4)
-            state = FAILED;
+            fail("! Invalid reply");
         else {
             count = (expected - 3) / 4 > FAULT_LIMIT ? FAULT_LIMIT : (expected - 3) / 4;
             state = DONE;
@@ -86,14 +99,14 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
         h->ExtId != (0x18daf100U | ecu_address) || h->DLC < 2 || h->DLC > 8)
         return;
     if (currentTime - updated >= 2000 || currentTime - started >= 10000) {
-        state = FAILED;
+        fail_timeout();
         return;
     }
     if (d[0] == 3 && h->DLC >= 4 && d[1] == 0x7f && d[2] == (state == SESSION ? 0x10 : 0x19)) {
         if (d[3] == 0x78)
             updated = currentTime;
         else
-            state = FAILED;
+            fail("! ECU rejected");
         return;
     }
     if (state == SESSION) {
@@ -112,7 +125,7 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
             return;
         expected = (uint16_t)(d[0] & 15) << 8 | d[1];
         if (expected <= 7 || (expected - 3) % 4) {
-            state = FAILED;
+            fail("! Invalid reply");
             return;
         }
         received = 0;
@@ -122,7 +135,7 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
     } else if (state == FRAGMENTS && (d[0] >> 4) == 2) {
         if ((d[0] & 15) != sequence || (expected - received > 7 && h->DLC != 8) ||
             h->DLC - 1 < (unsigned)(expected - received < 7 ? expected - received : 7)) {
-            state = FAILED;
+            fail("! Invalid reply");
             return;
         }
         sequence = (sequence + 1) & 15;
@@ -136,7 +149,7 @@ void fault_reader_text(unsigned index, char *text, size_t capacity) {
         snprintf_(text, capacity, "%s",
                   fault_reader_busy() ? "Reading faults..."
                   : state == DONE     ? "No faults reported"
-                  : state == FAILED   ? "Read failed: RES"
+                  : state == FAILED   ? failure
                                       : "Read faults: RES");
         return;
     }

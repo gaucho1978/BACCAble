@@ -218,3 +218,18 @@ Repeat baseline builds and lint for C2/BH/CAN. A 24-character board set also nee
 C2 and BH built with `-DLARGE_DISPLAY`; the MY23 option is handled on C1. Set `TOOLCHAIN`
 to the ARM compiler prefix if it is outside PATH. Host results do not establish
 physical-device or remote-CI results for these changes.
+
+### Fault-read failures
+
+The fault browser keeps the failure reason visible. Press RES to retry or hold
+RES to leave. All messages fit the standard and large displays.
+
+| Message | Meaning |
+| --- | --- |
+| `! Read timeout` | A response or its remaining fragments did not complete within the existing time limits, including repeated pending responses. |
+| `! ECU rejected` | The controller returned a negative response other than response-pending. |
+| `! Invalid reply` | The reader rejected a response length, payload layout or fragment sequence. |
+| `! CAN send failed` | The session request, fault query or flow-control frame was not queued before the read deadline; this does not diagnose a physical CAN fault. |
+
+Unrelated or ignored malformed frames still follow the existing filtering rules
+and may ultimately produce a timeout. No new ECU requests or retry rules are added.
