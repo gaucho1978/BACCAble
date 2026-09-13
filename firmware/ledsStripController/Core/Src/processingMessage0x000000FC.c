@@ -22,7 +22,14 @@ void processingMessage0x000000FC(){
 	#if defined(C2baccable)
 		if(currentRpmSpeed< 400 ){
 			if(ESCandTCinversion!=0) ESCandTCinversion=0;
-			if(DynoModeEnabled!=0) DynoModeEnabled=0;
+			if(DynoModeEnabled!=0){
+				DynoModeEnabled=0;
+				//engine off: tell C1 that Dyno is no longer active. Without this, DynoModeEnabledOnMaster
+				//stays stale (still 1) on C1, so after restart the "ENABLE DYNO" warning on the Front
+				//Brake page is skipped and Front Brake Assist is entered directly instead.
+				uint8_t tmpArrDynoOff[2]={C1BusID,C1cmdDynoNotActive};
+				addToUARTSendQueue(tmpArrDynoOff, 2);
+			}
 			if(front_brake_forced!=0) front_brake_forced=255;
 		}
 		// @netzmark: used by PDC DISABLE code (pdcAutoDisable)

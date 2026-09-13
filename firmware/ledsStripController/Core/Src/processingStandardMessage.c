@@ -218,8 +218,12 @@ void processingStandardMessage(){
 				if(parkSensorsMuteFunctionEnabled && rx_msg_header.DLC >= 5){
 					uint8_t currentPressure = rx_msg_data[4];
 
-					//reverse gear: the car enables the PDC by itself, so the marker is no longer ours to hold
+					//reverse gear: the car is *supposed* to enable the PDC by itself, but it doesn't always -
+					//check the actual LED status and re-enable ourselves if the sensors are still really off.
 					if (reverseGearActive == 1 && pdc_auto_disabled == 1) {
+						if (parkSensorsLedStatus == 1) { //led continuous -> park sensors still really disabled
+							requestToTogglePDC = 1;
+						}
 						pdc_auto_disabled = 0;
 					}
 					//DISABLE: brake pressed firmly enough and the sensors are beeping. Not while in reverse.
