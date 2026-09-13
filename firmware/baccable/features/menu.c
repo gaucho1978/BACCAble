@@ -1,4 +1,6 @@
 #include "features/menu.h"
+#include "features/ui_entry.h"
+#include "features/menu_diagnostics.h"
 #include "diagnostics/fault_reader.h"
 #include "features/ibs_override.h"
 #include "app/powertrain.h"
@@ -20,6 +22,9 @@ typedef enum {
     ORDER_FAVORITES,
     INFO,
     FAULTS
+#ifdef MENU_DIAGNOSTICS
+    , DIAGNOSTICS
+#endif
 } MenuView;
 typedef enum {
     ACTION_READ,
@@ -32,19 +37,43 @@ typedef enum {
     ACTION_EXHAUST,
     ACTION_STATS,
     ACTION_PEAK,
-    ACTION_IBS
+    ACTION_IBS,
+    ACTION_LAUNCH,
+    ACTION_COUNT
 } MenuAction;
 typedef struct {
     MenuAction id;
     uint8_t group;
     const char *name;
+    UiEntryType type;
 } ActionEntry;
-static const ActionEntry actions[] = {{ACTION_EXHAUST, 0, "QV exhaust"},   {ACTION_HAS, 1, "HAS button"},
-                                      {ACTION_ESC, 1, "ESC/TC"},           {ACTION_DYNO, 2, "Dyno"},
-                                      {ACTION_BRAKE, 2, "Front brake"},    {ACTION_AWD, 2, "4WD"},
-                                      {ACTION_READ, 3, "Read BCM faults"}, {ACTION_CLEAR, 3, "Clear faults"},
-                                      {ACTION_STATS, 3, "Reset records"},  {ACTION_PEAK, 3, "Maximum hold"},
-                                      {ACTION_IBS, 3, "IBS override"}};
+static const ActionEntry actions[] = {
+    {ACTION_EXHAUST, 0, "QV exhaust", UI_ENTRY_ACTION},
+    {ACTION_HAS, 1, "HAS button", UI_ENTRY_ACTION},
+    {ACTION_ESC, 1, "ESC/TC", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_DYNO, 2, "Dyno", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_BRAKE, 2, "Front brake", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_LAUNCH, 2, "Release launch", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_AWD, 2, "4WD", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_READ, 3, "Read BCM faults", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_CLEAR, 3, "Clear faults", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_STATS, 3, "Reset records", UI_ENTRY_ACTION},
+    {ACTION_PEAK, 3, "Maximum hold", UI_ENTRY_TOGGLE},
+    {ACTION_IBS, 3, "IBS override", UI_ENTRY_CONDITIONAL_ACTION}
+};
+typedef enum { REQUEST_NONE, REQUEST_WAIT, REQUEST_SENT, REQUEST_FAILED, REQUEST_TIMEOUT } RequestState;
+typedef struct {
+    uint32_t started;
+    uint8_t state;
+    bool target;
+} ActionRequest;
+static ActionRequest requests[ACTION_COUNT];
+#define ACTION_TIMEOUT_MS 10000U
+#ifdef MENU_DIAGNOSTICS
+#define INFO_PAGES 6U
+#else
+#define INFO_PAGES 5U
+#endif
 static const char *const roots[] = {"Favorites", "Readings", "Actions", "Settings", "Information"};
 static const char *const settings[] = {"Feature setup",   "Edit favorites", "Visible pages",
                                        "Order favorites", "Sort order",     "Save"};
@@ -70,6 +99,7 @@ static uint8_t list[64], list_count, selection, order_selected;
 static uint8_t setup_last, fault_index;
 static uint32_t page_changed, last_render, last_query, notice_started;
 static const char *notice;
+static char notice_text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
 static uint8_t previous_text[DASHBOARD_MESSAGE_MAX_LENGTH], previous_valid;
 static uint32_t previous_sent;
 static uint8_t confirmed_action = 255;
@@ -102,6 +132,7 @@ static bool available(MenuAction id) {
     case ACTION_ESC:
         return settings_state.esc_tc_customizator_enabled;
     case ACTION_BRAKE:
+    case ACTION_LAUNCH:
         return settings_state.front_brake_forcer_master;
     case ACTION_AWD:
         return settings_state.awd_disabler_enabled;
@@ -112,6 +143,97 @@ static bool available(MenuAction id) {
     default:
         return true;
     }
+}
+
+/* Keep a feature permission available until its in-flight menu request resolves. */
+bool menu_setting_busy(uint8_t flash_index) {
+    MenuAction id;
+    switch (flash_index) {
+    case 8: id = ACTION_DYNO; break;
+    case 10: id = ACTION_BRAKE; break;
+    case 13: id = ACTION_CLEAR; break;
+    case 14: id = ACTION_ESC; break;
+    case 27: id = ACTION_HAS; break;
+    default: return false;
+    }
+    return requests[id].state == REQUEST_WAIT;
+}
+
+/* Explain the same known conditions before selection and immediately before execution. */
+static const char *action_unavailable(MenuAction id) {
+    if (!available(id))
+        return "Disabled in setup";
+    if (requests[id].state == REQUEST_WAIT)
+        return "Request pending";
+    switch (id) {
+    case ACTION_READ:
+        return diagnostics_state.clear_faults_request ? "Clear active" : NULL;
+    case ACTION_CLEAR:
+        if (diagnostics_state.clear_faults_request)
+            return "Clear active";
+        return fault_reader_busy() ? "Read active" : NULL;
+    case ACTION_IBS:
+        return telemetry_state.current_rpm_speed <= 400 ? "Start engine" : NULL;
+    case ACTION_DYNO:
+        if (chassis_state.front_brake_forced)
+            return "Release brake";
+        if (chassis_state.stability_inverted)
+            return "Reset ESC first";
+        return runtime_state.car_steady_counter < 100 ? "Stop car" : NULL;
+    case ACTION_ESC:
+        return chassis_state.dyno_mode_enabled_on_master || requests[ACTION_DYNO].state == REQUEST_WAIT
+                   ? "Dyno active" : NULL;
+    case ACTION_BRAKE:
+        if (chassis_state.launch_assist_enabled)
+            return "Release launch";
+        if (!chassis_state.front_brake_forced) {
+            if (telemetry_state.current_speed_km_h != 0)
+                return "Stop car";
+            if (!chassis_state.dyno_mode_enabled_on_master)
+                return "Enable Dyno";
+        }
+        return NULL;
+    case ACTION_LAUNCH:
+        return chassis_state.launch_assist_enabled ? NULL : "Launch inactive";
+    case ACTION_AWD:
+        return !chassis_state.awd_sequence && runtime_state.car_steady_counter < 100 ? "Stop car" : NULL;
+    default:
+        return NULL;
+    }
+}
+
+/* Track only delivery/acknowledgement evidence; never infer physical vehicle success. */
+static void action_requests_process(void) {
+    for (unsigned id = 0; id < ACTION_COUNT; ++id) {
+        ActionRequest *request = &requests[id];
+        if (request->state != REQUEST_WAIT)
+            continue;
+        if ((id == ACTION_CLEAR && !diagnostics_state.clear_faults_request) ||
+            (id == ACTION_HAS && !comfort_state.has_button_press_requested))
+            request->state = REQUEST_SENT;
+        else if (currentTime - request->started >= ACTION_TIMEOUT_MS)
+            request->state = REQUEST_TIMEOUT;
+    }
+}
+
+/* Finish a menu request only when its existing C2 acknowledgement arrives. */
+void menu_action_reply(uint8_t command) {
+    MenuAction id;
+    bool enabled;
+    switch (command) {
+    case C1cmdDynoActive: id = ACTION_DYNO; enabled = true; break;
+    case C1cmdDynoNotActive: id = ACTION_DYNO; enabled = false; break;
+    case C1cmdForceFrontBrake: id = ACTION_BRAKE; enabled = true; break;
+    case C1cmdNormalFrontBrake: id = ACTION_BRAKE; enabled = false; break;
+    default: return;
+    }
+    if (requests[id].state == REQUEST_WAIT)
+        requests[id].state = requests[id].target == enabled ? REQUEST_SENT : REQUEST_FAILED;
+}
+
+/* Mark a successfully queued request as pending without replaying it automatically. */
+static void action_requested(MenuAction id, bool target) {
+    requests[id] = (ActionRequest){currentTime, REQUEST_WAIT, target};
 }
 
 /* Select the next available action or action group. */
@@ -148,12 +270,15 @@ void menu_present(const char *text) {
 
 /* Show brief feedback about a selection, action or save result. */
 void menu_notice(const char *text) {
-    notice = text;
+    snprintf_(notice_text, sizeof(notice_text), "%s", text);
+    notice = notice_text;
     notice_started = currentTime;
-    notice_duration = text[0] == '!' ? NOTICE_WARNING_MS
-                      : text[0] == '+' || text[0] == '-' || !strcmp(text, "Saved") ||
-                                !strcmp(text, "Records cleared") ? NOTICE_CONFIRM_MS
-                                                                 : NOTICE_REQUEST_MS;
+    size_t length = strlen(text);
+    bool toggle = (length >= 4 && !strcmp(text + length - 4, ": ON")) ||
+                  (length >= 5 && !strcmp(text + length - 5, ": OFF"));
+    notice_duration = text[0] == UI_SYMBOL_WARNING[0] ? NOTICE_WARNING_MS
+                      : toggle || !strcmp(text, "Saved") || !strcmp(text, "Records cleared")
+                          ? NOTICE_CONFIRM_MS : NOTICE_REQUEST_MS;
     if (dashboard_state.baccable_dashboard_menu_visible)
         menu_present(text);
 }
@@ -183,6 +308,11 @@ void menu_engine_changed(void) {
 /* Restore the user's menu layout or start with useful defaults. */
 void menu_init(void) {
     memset(&input, 0, sizeof(input));
+    memset(requests, 0, sizeof(requests));
+    setup_cancel_edit();
+#ifdef MENU_DIAGNOSTICS
+    menu_diagnostics_reset();
+#endif
     view = FAVORITES;
     root = 0;
     group = 1;
@@ -295,15 +425,14 @@ void menu_show_parameter(uint8_t index) {
 /* Confirm and request the selected vehicle action when its conditions are met. */
 static void action_run(void) {
     MenuAction id = actions[function].id;
-    if (!available(id)) {
-        menu_notice("! Unavailable");
+    const char *reason = action_unavailable(id);
+    if (reason) {
+        char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+        ui_render_unavailable(text, sizeof(text), reason);
+        menu_notice(text);
         return;
     }
     if (id == ACTION_READ) {
-        if (diagnostics_state.clear_faults_request) {
-            menu_notice("Clear in progress");
-            return;
-        }
         parameter_request_cancel();
         fault_reader_start(0x40);
         fault_index = 0;
@@ -312,13 +441,18 @@ static void action_run(void) {
     }
     if (id == ACTION_PEAK) {
         parameter_peak_enable(!parameter_peak_enabled());
-        menu_notice(parameter_peak_enabled() ? "+ Maximum hold" : "- Maximum hold");
+        char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+        ui_render_toggle(text, sizeof(text), "Maximum hold", parameter_peak_enabled());
+        menu_notice(text);
         return;
     }
     if (confirmed_action != id || currentTime - confirm_started > 3000) {
         confirmed_action = id;
         confirm_started = currentTime;
-        menu_notice("! RES to confirm");
+        menu_notice(id == ACTION_BRAKE && !chassis_state.front_brake_forced ? "Brake+launch? RES"
+                    : id == ACTION_DYNO ? "Dyno+ESC? RES"
+                    : id == ACTION_AWD && chassis_state.awd_sequence ? "Stop 4WD req? RES"
+                    : UI_SYMBOL_WARNING " RES to confirm");
         return;
     }
     confirmed_action = 255;
@@ -326,22 +460,25 @@ static void action_run(void) {
     switch (id) {
     case ACTION_IBS:
         if (telemetry_state.current_rpm_speed <= 400) {
-            menu_notice("! Start engine");
+            menu_notice(UI_SYMBOL_WARNING " Start engine");
             return;
         }
         ibs_override_enable(!ibs_override_enabled());
-        menu_notice(ibs_override_enabled() ? "+ IBS override" : "- IBS override");
+        char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+        ui_render_toggle(text, sizeof(text), "IBS override", ibs_override_enabled());
+        menu_notice(text);
         return;
     case ACTION_CLEAR:
         diagnostics_state.clear_faults_request = 255;
-        menu_notice("Clear requested");
+        action_requested(id, true);
+        menu_notice("Clear faults WAIT");
         return;
     case ACTION_STATS:
-        menu_notice(statistics_reset() == 0 ? "Records cleared" : "! Save failed");
+        menu_notice(statistics_reset() == 0 ? "Records cleared" : UI_SYMBOL_WARNING " Save failed");
         return;
     case ACTION_DYNO:
         if (runtime_state.car_steady_counter < 100) {
-            menu_notice("! Stop the car");
+            menu_notice(UI_SYMBOL_WARNING " Stop the car");
             return;
         }
         command[1] = C2cmdtoggleDyno;
@@ -350,35 +487,21 @@ static void action_run(void) {
         command[1] = C2cmdtoggleEscTc;
         break;
     case ACTION_HAS:
-        comfort_state.has_button_press_requested = 5;
         command[1] = C2cmdToggleHas;
         break;
+    case ACTION_LAUNCH:
+        chassis_state.launch_assist_enabled = 0;
+        menu_notice("Launch assist: OFF");
+        return;
     case ACTION_BRAKE:
-        if (chassis_state.front_brake_forced) {
-            if (chassis_state.launch_assist_enabled) {
-                chassis_state.launch_assist_enabled = 0;
-                menu_notice("- Launch assist");
-                return;
-            }
-            command[1] = C2cmdNormalFrontBrake;
-        } else {
-            if (telemetry_state.current_speed_km_h != 0) {
-                menu_notice("! Stop the car");
-                return;
-            }
-            if (!chassis_state.dyno_mode_enabled_on_master) {
-                menu_notice("! Enable Dyno");
-                return;
-            }
-            command[1] = C2cmdForceFrontBrake;
-        }
+        command[1] = chassis_state.front_brake_forced ? C2cmdNormalFrontBrake : C2cmdForceFrontBrake;
         break;
     case ACTION_AWD:
         if (chassis_state.awd_sequence)
             chassis_state.awd_sequence = 0;
         else {
             if (runtime_state.car_steady_counter < 100) {
-                menu_notice("! Stop the car");
+                menu_notice(UI_SYMBOL_WARNING " Stop the car");
                 return;
             }
             chassis_state.awd_sequence = 4;
@@ -393,31 +516,57 @@ static void action_run(void) {
     default:
         return;
     }
-    menu_notice(board_uart_send(command, sizeof(command)) ? "Command queued" : "! Queue full retry");
+    if (!board_uart_send(command, sizeof(command))) {
+        requests[id].state = REQUEST_FAILED;
+        menu_notice(UI_SYMBOL_WARNING " Queue full retry");
+        return;
+    }
+    if (id == ACTION_HAS)
+        comfort_state.has_button_press_requested = 5;
+    action_requested(id, id == ACTION_DYNO ? !chassis_state.dyno_mode_enabled_on_master
+                                          : id == ACTION_BRAKE ? !chassis_state.front_brake_forced : true);
+    menu_notice("Request queued");
 }
 
-/* Describe the selected action's current state or requested change. */
-static const char *action_status(MenuAction id) {
-    switch (id) {
-    case ACTION_IBS:
-        return ibs_override_enabled() ? "+" : "-";
-    case ACTION_PEAK:
-        return parameter_peak_enabled() ? "+" : "-";
-    case ACTION_CLEAR:
-        return diagnostics_state.clear_faults_request ? "WAIT" : "RES";
-    case ACTION_DYNO:
-        return chassis_state.dyno_mode_enabled_on_master ? "+" : "-";
-    case ACTION_BRAKE:
-        return chassis_state.front_brake_forced ? "+" : "-";
-    case ACTION_AWD:
-        return chassis_state.awd_sequence ? "4WD OFF requested" : "4WD RES";
-    case ACTION_EXHAUST:
-        /* The sequence tracks our request, not measured valve position. */
-        if (comfort_state.force_q_vexhaust_valve_opened == 4)
-            return "QV AUTO requested";
-        return comfort_state.force_q_vexhaust_valve_opened ? "QV OPEN requested" : "QV exhaust RES";
-    default:
-        return "RES";
+/* Render entry semantics and request evidence through the common presentation helpers. */
+static void action_render(char *text, size_t capacity, const ActionEntry *entry) {
+    MenuAction id = entry->id;
+    ActionRequest *request = &requests[id];
+    if (id == ACTION_CLEAR && diagnostics_state.clear_faults_request && request->state != REQUEST_TIMEOUT) {
+        ui_render_pending(text, capacity, entry->name, "");
+        return;
+    }
+    if (request->state == REQUEST_WAIT) {
+        ui_render_pending(text, capacity, entry->name,
+                          id == ACTION_DYNO || id == ACTION_BRAKE ? (request->target ? "ON" : "OFF") : "");
+        return;
+    }
+    if (request->state == REQUEST_FAILED || request->state == REQUEST_TIMEOUT) {
+        ui_render_unavailable(text, capacity, request->state == REQUEST_FAILED ? "Request failed" : "No confirmation");
+        return;
+    }
+    const char *reason = action_unavailable(id);
+    if (reason) {
+        char value[32];
+        snprintf_(value, sizeof(value), UI_SYMBOL_WARNING " %s", reason);
+        ui_render_value(text, capacity, entry->name, value);
+        return;
+    }
+    if (id == ACTION_AWD && chassis_state.awd_sequence) {
+        ui_render_pending(text, capacity, "4WD req", "OFF");
+    } else if (id == ACTION_EXHAUST && comfort_state.force_q_vexhaust_valve_opened) {
+        ui_render_pending(text, capacity, "QV req", comfort_state.force_q_vexhaust_valve_opened == 4 ? "AUTO" : "OPEN");
+    } else if ((id == ACTION_HAS || id == ACTION_CLEAR || id == ACTION_ESC) && request->state == REQUEST_SENT) {
+        ui_render_value(text, capacity, entry->name, "Request sent");
+    } else if (id == ACTION_DYNO) {
+        ui_render_toggle(text, capacity, "Dyno", chassis_state.dyno_mode_enabled_on_master);
+    } else if (id == ACTION_BRAKE) {
+        /* C2 confirms its override sequence, not measured brake pressure. */
+        ui_render_value(text, capacity, "Brake req", chassis_state.front_brake_forced ? "ON" : "OFF");
+    } else if (id == ACTION_IBS || entry->type == UI_ENTRY_TOGGLE) {
+        ui_render_toggle(text, capacity, entry->name, id == ACTION_IBS ? ibs_override_enabled() : parameter_peak_enabled());
+    } else {
+        ui_render_action(text, capacity, entry->name);
     }
 }
 
@@ -425,6 +574,7 @@ static const char *action_status(MenuAction id) {
 void menu_render(void) {
     if (!dashboard_state.baccable_dashboard_menu_visible)
         return;
+    action_requests_process();
     if (notice && currentTime - notice_started < notice_duration) {
         menu_present(notice);
         return;
@@ -432,16 +582,16 @@ void menu_render(void) {
     notice = NULL;
     if (settings_state.awd_disabler_enabled && chassis_state.awd_sequence &&
         currentTime - last_input > 1500 && currentTime % 6000 < 1000) {
-        menu_present("! 4WD OFF request");
+        menu_present(UI_SYMBOL_WARNING " 4WD OFF request");
         return;
     }
     char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
     switch (view) {
     case ROOT:
-        snprintf_(text, sizeof(text), "> %u/5 %s", root + 1, roots[root]);
+        snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %u/5 %s", root + 1, roots[root]);
         break;
     case GROUPS:
-        snprintf_(text, sizeof(text), "> %u/7 %s", group + 1, menu_group_names[group]);
+        snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %u/7 %s", group + 1, menu_group_names[group]);
         break;
     case FAVORITES:
     case VALUES:
@@ -455,26 +605,13 @@ void menu_render(void) {
     case FUNCTIONS:
         if (!available(actions[function].id))
             function_move(1, false);
-        {
-            const char *status = action_status(actions[function].id);
-            if (actions[function].id == ACTION_BRAKE && chassis_state.front_brake_forced &&
-                chassis_state.launch_assist_enabled)
-                snprintf_(text, sizeof(text), "+ Brake: Launch");
-            else if (actions[function].id == ACTION_AWD || actions[function].id == ACTION_EXHAUST)
-                snprintf_(text, sizeof(text), "%s", status);
-            else if (status[0] == '+' || status[0] == '-')
-                snprintf_(text, sizeof(text), "%c %s", status[0], actions[function].name);
-            else if (actions[function].id == ACTION_READ)
-                snprintf_(text, sizeof(text), "> %s", actions[function].name);
-            else
-                snprintf_(text, sizeof(text), "%s %s", actions[function].name, status);
-        }
+        action_render(text, sizeof(text), &actions[function]);
         break;
     case SETTINGS:
         if (setting == 4)
-            snprintf_(text, sizeof(text), "* Sort: %s", preferences.alphabetical ? "A-Z" : "groups");
+            ui_render_value(text, sizeof(text), "Sort", preferences.alphabetical ? "A-Z" : "groups");
         else
-            snprintf_(text, sizeof(text), "%s%s", setting < 4 ? "> " : "", settings[setting]);
+            snprintf_(text, sizeof(text), "%s%s", setting < 4 ? UI_SYMBOL_ENTER " " : "", settings[setting]);
         break;
     case SETUP:
         dashboard_send_setup();
@@ -493,7 +630,7 @@ void menu_render(void) {
                 for (unsigned i = 0; i < MENU_FAVORITES; ++i)
                     checked |= preferences.favorites[engine][i] == page->id;
             }
-            snprintf_(text, sizeof(text), "%c %s", checked ? '+' : '-', page->label);
+            ui_render_toggle(text, sizeof(text), page->label, checked);
         }
         break;
     case ORDER_FAVORITES:
@@ -501,17 +638,28 @@ void menu_render(void) {
             menu_present("No favorites");
             return;
         }
-        snprintf_(text, sizeof(text), "%c %s", order_selected ? '*' : ' ',
+        snprintf_(text, sizeof(text), "%c %s", order_selected ? UI_SYMBOL_SELECTED[0] : ' ',
                   parameter_pages[engine][list[selection]].label);
         break;
     case FAULTS:
         fault_reader_text(fault_index, text, sizeof(text));
         break;
+#ifdef MENU_DIAGNOSTICS
+    case DIAGNOSTICS:
+        menu_diagnostics_render(text, sizeof(text));
+        break;
+#endif
     case INFO:
+#ifdef MENU_DIAGNOSTICS
+        if (info == 5) {
+            ui_render_action(text, sizeof(text), "IPC diagnostics");
+            break;
+        }
+#endif
         if (info == 0)
             snprintf_(text, sizeof(text), "%s", FW_VERSION);
         else if (info == 4)
-            snprintf_(text, sizeof(text), "%c Immobilizer", security_state.immobilizer_enabled ? '+' : '-');
+            ui_render_toggle(text, sizeof(text), "Immobilizer", security_state.immobilizer_enabled);
         else if (info == 3)
             snprintf_(text, sizeof(text), "MY23:%s %u chars",
                       settings_state.ipc_my23_is_installed ? "ON" : "OFF", DASHBOARD_MESSAGE_MAX_LENGTH);
@@ -520,7 +668,7 @@ void menu_render(void) {
             if (peer_seen[peer] && currentTime - peer_updated[peer] <= 5000)
                 snprintf_(text, sizeof(text), "%s %s", peer ? "BH" : "C2", peer_versions[peer]);
             else
-                snprintf_(text, sizeof(text), "? %s no reply", peer ? "BH" : "C2");
+                snprintf_(text, sizeof(text), UI_SYMBOL_UNKNOWN " %s no reply", peer ? "BH" : "C2");
         }
         break;
     }
@@ -530,7 +678,7 @@ void menu_render(void) {
 /* Save device settings and menu preferences, reporting any failure. */
 static bool save_all(void) {
     if (settings_save() != 0 || menu_preferences_save() != 0) {
-        menu_notice("! Save failed: RES");
+        menu_notice(UI_SYMBOL_WARNING " Save failed: RES");
         return false;
     }
     menu_notice("Saved");
@@ -550,6 +698,12 @@ static void close_menu(void) {
 
 /* Return to the parent menu and save edits before leaving their editor. */
 static void back(void) {
+#ifdef MENU_DIAGNOSTICS
+    if (view == DIAGNOSTICS) {
+        view = INFO;
+        return;
+    }
+#endif
     if (view == FAULTS) {
         fault_reader_cancel();
         view = FUNCTIONS;
@@ -564,6 +718,8 @@ static void back(void) {
         return;
     }
     if (view == SETUP) {
+        if (setup_back())
+            return;
         setup_last = setup_dashboardPageIndex;
         if (!save_all()) {
             retry_back = true;
@@ -573,7 +729,7 @@ static void back(void) {
     } else if (is_editor() || view == ORDER_FAVORITES) {
         if (menu_preferences_save() != 0) {
             retry_back = true;
-            menu_notice("! Save failed: RES");
+            menu_notice(UI_SYMBOL_WARNING " Save failed: RES");
             return;
         }
         view = SETTINGS;
@@ -635,8 +791,13 @@ void menu_event(MenuEvent event) {
         case FAULTS:
             fault_index = wrap(fault_index, fault_reader_count(), direction);
             break;
+#ifdef MENU_DIAGNOSTICS
+        case DIAGNOSTICS:
+            menu_diagnostics_move(direction);
+            break;
+#endif
         case INFO:
-            info = wrap(info, 5, direction);
+            info = wrap(info, INFO_PAGES, direction);
             break;
         case SETUP:
             if (jump)
@@ -725,7 +886,7 @@ void menu_event(MenuEvent event) {
             }
             break;
         case SETUP:
-            if (setup_dashboardPageIndex == 0) {
+            if (setup_dashboardPageIndex == 0 && !setup_in_workflow()) {
                 if (save_all())
                     view = SETTINGS;
             } else
@@ -734,7 +895,7 @@ void menu_event(MenuEvent event) {
         case EDIT_FAVORITES:
             if (list_count &&
                 !menu_favorite_toggle(&preferences, engine, parameter_pages[engine][editor_page].id))
-                menu_notice("! Max 6 favorites");
+                menu_notice(UI_SYMBOL_WARNING " Max 6 favorites");
             break;
         case EDIT_VISIBLE:
             if (list_count) {
@@ -750,8 +911,19 @@ void menu_event(MenuEvent event) {
             fault_index = 0;
             break;
         case INFO:
+#ifdef MENU_DIAGNOSTICS
+            if (info == 5) {
+                view = DIAGNOSTICS;
+                break;
+            }
+#endif
             view = ROOT;
             break;
+#ifdef MENU_DIAGNOSTICS
+        case DIAGNOSTICS:
+            menu_diagnostics_select();
+            break;
+#endif
         }
     }
     menu_render();
@@ -779,6 +951,7 @@ void menu_button(uint8_t button, bool allowed) {
 /* Refresh the display and request readings at their intended intervals. */
 void menu_process(void) {
     fault_reader_process();
+    action_requests_process();
     if (engine != !!settings_state.is_diesel_enabled || gasoline_v6 != !!settings_state.gasoline_v6 ||
         advanced_pages != !!settings_state.advanced_pages)
         menu_engine_changed();
@@ -792,8 +965,10 @@ void menu_process(void) {
         last_input = currentTime;
     } else if (view != FAVORITES && view != VALUES && !retry_back &&
                currentTime - last_input >= (editor ? EDITOR_IDLE_MS : MENU_IDLE_MS)) {
-        if (view == SETUP)
+        if (view == SETUP) {
+            setup_cancel_edit();
             setup_last = setup_dashboardPageIndex;
+        }
         if (save_all()) {
             fault_reader_cancel();
             close_menu();

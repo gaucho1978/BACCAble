@@ -64,6 +64,7 @@ void vehicle_handle_steering_controls(const CAN_RxHeaderTypeDef *rx_header, uint
             comfort_state.acc_was_engaged_when_res_was_pressed = 0;
             break;
         default:
+            break;
         }
     }
 
@@ -108,7 +109,12 @@ void vehicle_handle_steering_controls(const CAN_RxHeaderTypeDef *rx_header, uint
     menu_button(frame_data[0], comfort_state.cruise_control_disabled && comfort_state.acc_disabled);
 
     #ifndef PERMANENTLY_DISABLE_IMMO
-    if (comfort_state.cruise_control_disabled &&
+    /* Menu navigation must not also arm the legacy long-hold immobilizer gesture. */
+    if (dashboard_state.baccable_dashboard_menu_visible) {
+        comfort_state.last_pressed_speed_up_wheel_button_duration = 0;
+        comfort_state.wheel_pressed_button_id = 0xF8; /* Require a release after leaving the menu. */
+    }
+    if (!dashboard_state.baccable_dashboard_menu_visible && comfort_state.cruise_control_disabled &&
         comfort_state.acc_disabled) { // if we are allowed to use the buttons of the cruise control
         if (telemetry_state.current_rpm_speed > 400) { // if motor is on
             if (telemetry_state.current_gear == 0) {   // gear is neutral

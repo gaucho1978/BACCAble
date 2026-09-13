@@ -6,16 +6,16 @@ flashing. The commands below describe runtime USB, not the STM32 DFU bootloader.
 
 ## Reading pages and actions
 
-- `Settings` → `Feature setup` → `Rotate readings`: enable to advance through the
+- `Settings` → `Feature setup` → `Auto rotate`: enable to advance through the
   current list every five seconds. Use favorites to create a short rotating set.
 - `Actions` → `Maximum hold`: toggle between live values and numerical maxima.
   Changing the selected page starts a new interval. An unavailable or stale signal
   displays `--` rather than an old maximum.
-- `Settings` → `Feature setup` → `Allow fault read`: enable, then save. Open
+- `Settings` → `Feature setup` → `Allow read`: enable, then save. Open
   `Actions` → `Read BCM faults`; browse results with previous/next, press RES to
   retry, or go Back to leave. A `+` after the result count means the BCM returned
   more than the displayed limit of 20 codes. Reading does not clear faults.
-- `Front PDC mute` and `Reverse mute` are independent options in Feature setup.
+- `PDC mute` and `Reverse mute` are independent options in Feature setup.
   They require valid current vehicle messages before acting.
 - `Actions` → `IBS override` is experimental and requires action confirmation
   and a running engine. It substitutes 75% in a short burst of otherwise copied
@@ -32,8 +32,8 @@ existing saved settings take priority over compiled defaults.
    described in the original manual, C1 is the right-hand port, C2 the middle and
    BH the left in the manual's orientation. Prefer PCB labels; viewing the board
    from the opposite side reverses left and right.
-2. Select `Settings` → `Feature setup` → `USB ELM327`, then Save. This disables
-   `USB CAN capture`. USB reconnects as a serial device; select its new port in
+2. Select `Settings` → `Feature setup` → `USB mode: ELM327`, then Save. This replaces
+   CAN capture. USB reconnects as a serial device; select its new port in
    the host application. Connect/open it promptly: an unconfigured USB session
    expires after ten seconds.
 3. Use a terminal or diagnostic application supporting an ELM-style CAN adapter.
@@ -66,7 +66,7 @@ on Windows, use the newly enumerated COM port. Port numbers are host-assigned.
 
 ## Binary CAN capture
 
-1. Select `USB CAN capture` in Feature setup and Save. ELM mode is switched off.
+1. Select `USB mode: CAN` in Feature setup and Save. ELM mode is switched off.
 2. Connect the USB port of the bus to record: C1 for powertrain, C2 for chassis,
    BH for body. Multiple host connections can record the buses separately.
    Eject an existing USB disk before changing its role.

@@ -2,7 +2,7 @@ CC := clang
 FIRMWARE := ../firmware/baccable
 CPPFLAGS := -I$(FIRMWARE)
 CFLAGS := -std=c11 -Wall -Wextra -Werror -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
-HEADERS := test_report.h $(shell find stubs $(FIRMWARE)/app $(FIRMWARE)/protocol $(FIRMWARE)/diagnostics $(FIRMWARE)/storage $(FIRMWARE)/features $(FIRMWARE)/transport $(FIRMWARE)/platform $(FIRMWARE)/USB_DEVICE/App $(FIRMWARE)/third_party/printf -name '*.h')
+HEADERS := test_report.h test_setup_ui.c test_unified_ui.c $(shell find stubs $(FIRMWARE)/app $(FIRMWARE)/protocol $(FIRMWARE)/diagnostics $(FIRMWARE)/storage $(FIRMWARE)/features $(FIRMWARE)/transport $(FIRMWARE)/platform $(FIRMWARE)/USB_DEVICE/App $(FIRMWARE)/third_party/printf -name '*.h')
 SOURCES := test_core.c $(FIRMWARE)/protocol/slcan_codec.c $(FIRMWARE)/diagnostics/uds_decode.c \
  $(FIRMWARE)/storage/record_store.c
 
@@ -13,7 +13,9 @@ test: build/test_core build/test_transport build/test_catalog build/test_menu bu
 	./build/test_catalog_large
 	./build/test_menu
 	./build/test_menu_large
+	./build/test_menu_debug
 	./build/test_uart_menu
+	./build/test_menu_diagnostics
 	./build/test_input_repeat
 	./build/test_upstream
 	./build/test_parking_c2
@@ -39,9 +41,9 @@ build/test_input_repeat: test_input_repeat.c $(FIRMWARE)/features/menu_input.c $
 	$(CC) $(CPPFLAGS) $(CFLAGS) test_input_repeat.c $(FIRMWARE)/features/menu_input.c -o $@
 
 MENU_SOURCES := test_menu.c $(addprefix $(FIRMWARE)/, features/menu.c features/menu_model.c \
- features/menu_input.c features/display_stream.c features/ibs_override.c features/board_sync.c features/dashboard.c features/dashboard_format.c \
+ features/menu_input.c features/ui_entry.c features/menu_diagnostics.c features/display_stream.c features/ibs_override.c features/board_sync.c features/dashboard.c features/dashboard_format.c \
  diagnostics/parameter_cache.c diagnostics/parameter_request.c diagnostics/parameter_catalog.c \
- diagnostics/uds_decode.c diagnostics/fault_reader.c settings/persistence.c settings/setup_menu.c settings/setup_entries.c \
+ protocol/checksum.c vehicle/steering_controls.c diagnostics/uds_decode.c diagnostics/fault_reader.c settings/persistence.c settings/setup_menu.c settings/setup_entries.c \
  third_party/printf/printf.c)
 build/test_menu: $(MENU_SOURCES) $(HEADERS) Makefile
 	@mkdir -p build
@@ -76,3 +78,15 @@ build/test_catalog_large: test_catalog.c $(FIRMWARE)/diagnostics/parameter_catal
 	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DLARGE_DISPLAY -DGIT_VERSION=\"test\" test_catalog.c $(FIRMWARE)/diagnostics/parameter_catalog.c -lm -o $@
 
 test: build/test_catalog_large
+
+build/test_menu_diagnostics: test_menu_diagnostics.c $(FIRMWARE)/features/menu_diagnostics.c $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DMENU_DIAGNOSTICS test_menu_diagnostics.c $(FIRMWARE)/features/menu_diagnostics.c -o $@
+
+test: build/test_menu_diagnostics
+
+build/test_menu_debug: $(MENU_SOURCES) $(HEADERS) Makefile
+	@mkdir -p build
+	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DC1_FLAVOR=1 -DMENU_DIAGNOSTICS -DGIT_VERSION=\"test\" $(MENU_SOURCES) -lm -o $@
+
+test: build/test_menu_debug

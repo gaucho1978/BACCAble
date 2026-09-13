@@ -29,6 +29,7 @@ void board_commands_dispatch(const uint8_t *message) {
     case C1BusID: // message directed to baccable connected to C1 bus
 
 #if defined(BACCABLE_C1)
+        menu_action_reply(message[1]);
         switch (message[1]) {
         case C1_CMD_USB_PRESENCE:
             usb_modes_peer(message[2], message[3] == 1);

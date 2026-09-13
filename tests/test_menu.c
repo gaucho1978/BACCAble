@@ -1,5 +1,9 @@
 #include "test_report.h"
 #include "features/menu.h"
+#include "features/ui_entry.h"
+#include "vehicle/steering_controls.h"
+#include "features/ibs_override.h"
+#include "diagnostics/fault_reader.h"
 #include "features/periodic.h"
 #include "features/display_stream.h"
 #include "app/powertrain.h"
@@ -27,6 +31,7 @@ static char screen[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
 static uint8_t old_visibility[30], saved[MENU_PREFS_SIZE];
 static bool have_old, have_saved, fail_save;
 static unsigned commands, queries;
+static uint8_t last_command;
 static bool uart_busy;
 uint32_t HAL_GetTick(void) { return now; }
 uint8_t board_uart_send(const uint8_t *data, size_t size) {
@@ -36,8 +41,10 @@ uint8_t board_uart_send(const uint8_t *data, size_t size) {
         assert(size == UART_BUFFER_SIZE);
         memcpy(screen, data + 1, DASHBOARD_MESSAGE_MAX_LENGTH);
         screen[DASHBOARD_MESSAGE_MAX_LENGTH] = 0;
-    } else
+    } else {
         ++commands;
+        last_command = size > 1 ? data[1] : 0;
+    }
     return 1;
 }
 void pedal_booster_set_map(uint8_t map) { (void)map; }
@@ -49,6 +56,11 @@ uint32_t can_tx(CAN_TxHeaderTypeDef *header, uint8_t *data) {
     (void)header;
     (void)data;
     ++queries;
+    return HAL_OK;
+}
+uint32_t can_forward(const CAN_RxHeaderTypeDef *header, uint8_t *data) {
+    (void)header;
+    (void)data;
     return HAL_OK;
 }
 float native_parameter_read(uint8_t id) { return (float)id + 0.5f; }
@@ -257,8 +269,6 @@ static void test_preferences(void) {
     assert(!menu_preferences_decode(&copy, raw));
 }
 static void fresh_menu(void) {
-    dashboard_state.checkbox_symbols[0] = '-';
-    dashboard_state.checkbox_symbols[1] = '+';
     settings_state.is_diesel_enabled = 0;
     settings_state.gasoline_v6 = 0;
     settings_state.advanced_pages = 0;
@@ -523,7 +533,7 @@ static void test_navigation_context(void) {
             menu_event(MENU_BACK);
             settings_state.dyno_mode_master_enabled = 0;
             menu_event(MENU_SELECT);
-            assert(!strstr(screen, "Dyno")); /* A remembered action must still pass availability. */
+            assert(strncmp(screen, "Dyno:", 5)); /* A remembered action must still pass availability. */
             assert(commands == before);
         }
         settings_state.dyno_mode_master_enabled = 0;
@@ -577,13 +587,13 @@ static void test_repeat_views(void) {
 /* Feedback durations differ without preventing navigation from dismissing a notice. */
 static void test_notice_timing(void) {
     fresh_menu();
-    menu_notice("+ Maximum hold");
+    menu_notice("Maximum hold: ON");
     now += 749;
     menu_render();
-    assert(strstr(screen, "+ Maximum hold"));
+    assert(strstr(screen, "Maximum hold: ON"));
     now += 1;
     menu_render();
-    assert(!strstr(screen, "+ Maximum hold"));
+    assert(!strstr(screen, "Maximum hold: ON"));
     menu_notice("! Unavailable");
     now += 1799;
     menu_render();
@@ -710,25 +720,25 @@ static void test_readable_screens(void) {
     expect_reading(0, 0x2d, 41, 41, "Best100-200 MISS");
 
     settings_state.launch_torque_threshold = 25;
-    expect_setup(18, "Launch  25 Nm");
+    expect_setup(18, "Launch Nm: 25");
     settings_state.launch_torque_threshold = 600;
-    expect_setup(18, "Launch 600 Nm");
+    expect_setup(18, "Launch Nm: 600");
     settings_state.shift_threshold = 4500;
-    expect_setup(5, "Shift at 4500 RPM");
+    expect_setup(5, "Shift RPM: 4500");
     settings_state.is_diesel_enabled = 0;
     expect_setup(16, "Engine: 2.0 I4");
     settings_state.is_diesel_enabled = 1;
     expect_setup(16, "Engine: 2.2 D");
     settings_state.pedal_map_power = -10;
-    expect_setup(29, "Pedal trim -10");
+    expect_setup(29, "Pedal trim: -10");
     settings_state.pedal_map_power = 10;
-    expect_setup(29, "Pedal trim +10");
+    expect_setup(29, "Pedal trim: +10");
     settings_state.close_windows_with_door_lock = 2;
     expect_setup(25, "Close: 2 locks");
     settings_state.open_windows_with_door_lock = 0;
-    expect_setup(26, "Open windows OFF");
+    expect_setup(26, "Open: OFF");
     settings_state.pedal_booster_enabled = 2;
-    expect_setup(20, "Pedal: Bypass");
+    expect_setup(20, "Pedal mode: Bypass");
 
     const char *short_templates[] = {"", "$", "$1", "$1.", "$1.0"};
     float values[] = {0, 0};
@@ -807,7 +817,7 @@ static void test_action_availability(void) {
         &settings_state.has_function_enabled,        &settings_state.front_brake_forcer_master,
         &settings_state.read_faults_enabled,         &settings_state.clear_faults_enabled};
     const char *names[] = {"Dyno",       "4WD",         "ESC/TC",          "QV exhaust",
-                           "HAS button", "Front brake", "Read BCM faults", "Clear faults"};
+                           "HAS button", "Brake req", "Read BCM faults", "Clear faults"};
     for (unsigned i = 0; i < 8; ++i)
         *gates[i] = 0;
     fresh_menu();
@@ -823,6 +833,12 @@ static void test_action_availability(void) {
             assert(!strstr(screen, "Immobilizer"));
         }
         *gates[gate] = 1;
+        chassis_state.front_brake_forced = 0;
+        chassis_state.launch_assist_enabled = 0;
+        chassis_state.stability_inverted = 0;
+        chassis_state.dyno_mode_enabled_on_master = gate == 5;
+        telemetry_state.current_speed_km_h = 0;
+        runtime_state.car_steady_counter = 100;
         bool found = false;
         for (unsigned i = 0; i < 16; ++i) {
             menu_event(MENU_NEXT);
@@ -843,6 +859,7 @@ static void test_action_availability(void) {
 /* Action wording must describe requests without claiming vehicle confirmation. */
 static void test_action_request_labels(void) {
     fresh_menu();
+    runtime_state.car_steady_counter = 100;
     settings_state.awd_disabler_enabled = 1;
     settings_state.qv_exhaust_flap_function_enabled = 1;
     chassis_state.awd_sequence = 0;
@@ -853,43 +870,43 @@ static void test_action_request_labels(void) {
     menu_event(MENU_SELECT);
     for (unsigned i = 0; i < 16 && !strstr(screen, "QV exhaust"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "QV exhaust RES"));
+    assert(strstr(screen, "QV exhaust >"));
     for (unsigned state = 1; state <= 4; ++state) {
         comfort_state.force_q_vexhaust_valve_opened = state;
         now += 1;
         menu_render();
-        const char *expected = state == 4 ? "QV AUTO requested" : "QV OPEN requested";
+        const char *expected = state == 4 ? "QV req: AUTO WAIT" : "QV req: OPEN WAIT";
         assert(!strncmp(screen, expected, strlen(expected)));
         for (unsigned i = strlen(expected); i < DASHBOARD_MESSAGE_MAX_LENGTH; ++i)
             assert(screen[i] == ' ');
     }
     comfort_state.force_q_vexhaust_valve_opened = 0;
     menu_render();
-    assert(strstr(screen, "QV exhaust RES"));
+    assert(strstr(screen, "QV exhaust >"));
     for (unsigned i = 0; i < 16 && !strstr(screen, "4WD"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "4WD RES"));
+    assert(strstr(screen, "4WD >"));
     for (unsigned state = 1; state <= 4; ++state) {
         chassis_state.awd_sequence = state;
         menu_render();
-        assert(strstr(screen, "4WD OFF requested"));
+        assert(strstr(screen, "4WD req: OFF WAIT"));
     }
     now = 12000; /* Periodic warning must also avoid claiming confirmed disablement. */
     menu_render();
     assert(strstr(screen, "! 4WD OFF request"));
     chassis_state.awd_sequence = 0;
     menu_render();
-    assert(strstr(screen, "4WD RES"));
+    assert(strstr(screen, "4WD >"));
     settings_state.clear_faults_enabled = 1;
     for (unsigned i = 0; i < 16 && !strstr(screen, "Clear faults"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "Clear faults RES"));
+    assert(strstr(screen, "Clear faults >"));
     diagnostics_state.clear_faults_request = 255;
     menu_render();
-    assert(strstr(screen, "Clear faults WAIT"));
+    assert(strstr(screen, "Clear faults: WAIT"));
     diagnostics_state.clear_faults_request = 0;
     menu_render();
-    assert(strstr(screen, "Clear faults RES"));
+    assert(strstr(screen, "Clear faults >"));
     settings_state.clear_faults_enabled = 0;
     settings_state.awd_disabler_enabled = 0;
     settings_state.qv_exhaust_flap_function_enabled = 0;
@@ -961,13 +978,31 @@ static void test_board_sync_retry(void) {
     assert(commands == 8);
 }
 
+#include "test_setup_ui.c"
+#include "test_unified_ui.c"
+
 int main(void) {
-#ifdef LARGE_DISPLAY
+#ifdef MENU_DIAGNOSTICS
+    const char *suite = "menu-debug";
+#elif defined(LARGE_DISPLAY)
     const char *suite = "menu-24";
 #else
     const char *suite = "menu-18";
 #endif
     const HostTest tests[] = {
+        HOST_TEST(test_setup_ui),
+        HOST_TEST(test_shared_renderers),
+        HOST_TEST(test_pending_action_feedback),
+        HOST_TEST(test_conditional_actions),
+        HOST_TEST(test_fault_action_exclusion),
+        HOST_TEST(test_numeric_menu_flow),
+        HOST_TEST(test_permission_guards),
+        HOST_TEST(test_usb_legacy_and_dependency),
+        HOST_TEST(test_steering_menu_ownership),
+        HOST_TEST(test_request_cancel_and_failure),
+#ifdef MENU_DIAGNOSTICS
+        HOST_TEST(test_hidden_diagnostics),
+#endif
         HOST_TEST(test_input),
         HOST_TEST(test_display),
         HOST_TEST(test_preferences),

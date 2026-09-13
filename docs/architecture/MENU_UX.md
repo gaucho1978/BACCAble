@@ -42,25 +42,41 @@ Reading groups: All readings, Engine, Temperatures, Battery, DPF / AdBlue,
 Performance, Other. Empty lists show `No pages` or `No favorites`; returning still
 works. The main menu and group list show position counters; editors use full labels.
 
-## Menu symbols
+## Shared entry types and symbols
 
-| Symbol | Meaning | Example |
-| --- | --- | --- |
-| `+` | Enabled state or included page | `+ Maximum hold` |
-| `-` | Disabled state or excluded page | `- Maximum hold` |
-| `*` | Selected item for moving or current sort mode | `* Sort: A-Z` |
-| `>` | Opens a submenu or browser | `> Feature setup` |
-| `<` | Saves and returns to the parent menu | `< Save and back` |
-| `!` | Warning, failed action or confirmation required | `! RES to confirm` |
-| `?` | Unknown board status | `? BH no reply` |
+`features/ui_entry.h` is the shared contract: toggle, enum, number, action,
+conditional action, capture, exclusive mode, submenu and status. Setup descriptors
+carry the type and numeric bounds; action descriptors carry the interaction type.
+Equivalent types use `ui_render_*` helpers. Vehicle modules retain command and
+sequence logic. [Complete entry audit](UNIFIED_UI_AUDIT.md) lists every setup slot,
+action, view and side effect.
 
-Requested vehicle changes use `4WD OFF requested`, `QV OPEN requested` and
-`QV AUTO requested` (release to factory control). These describe local requests,
-not confirmed drivetrain or valve positions. Idle entries show `RES`, the button
-instruction; they do not assert that 4WD is on or the valves are closed.
-The periodic `! 4WD OFF request` warning also describes a request.
-`Clear faults WAIT` means the clear request is active, not completed. Reading values retain their full width and existing missing-value `--`
-notation. Hold RES to return from other screens; the symbols do not add buttons.
+| Representation | Meaning |
+| --- | --- |
+| `Auto rotate: ON` / `OFF` | True toggle; SELECT flips the preference |
+| `Engine: 2.0 I4` | Named enum; SELECT cycles |
+| `* Shift RPM: 3500` | Numeric draft; directions edit, SELECT accepts, BACK cancels |
+| `Read faults >` | Action/workflow; SELECT enters or requests it |
+| `! Start engine` | Known unmet condition or failure |
+| `? BH no reply` | Unknown/stale status |
+| `< Back` | Exit a submenu; `< Save and back` also saves |
+| `*` in favorite ordering | Selected item being moved |
+
+Only ASCII glyphs are used in production. Signs on numeric readings and trim
+remain arithmetic signs, not toggle markers. Labels may shorten to preserve the
+value on the 18-character screen; named setup labels are kept compact.
+
+`4WD req: OFF WAIT` and `QV req: OPEN WAIT`/`AUTO WAIT` mean an unresolved request,
+not measured drivetrain or valve state. 4WD repeats until explicitly cancelled;
+its confirmation says `Stop 4WD req? RES`. Exhaust release requests factory control,
+not a confirmed closed position. Neither feature invents a positive vehicle ACK.
+
+Queued Dyno/brake commands remain WAIT until their existing C2 reply, a reported
+nonmatching result, or a 10-second UI confirmation timeout. Brake replies confirm
+an override sequence, not brake pressure. A timeout does not replay or cancel a
+vehicle command. Late physical/board behavior may still occur. HAS/clear countdown
+completion says `Request sent`, not HAS engaged or faults cleared; ESC has no
+reliable measured acknowledgement and can report `No confirmation`.
 
 ## Readable measurements and settings
 
@@ -83,14 +99,13 @@ places and current uses one. This changes presentation rounding, not decoding.
 All 124 page templates, including units, are checked in both 18- and 24-character builds.
 Performance states `MISS` and `RUN` do not receive a seconds suffix.
 
-Settings describe their state directly: `Engine: 2.2 D`, `Pedal: Bypass`,
-`Shift at 4500 RPM`, `Close: 2 locks`, `Open windows OFF`. A leading `+` enables
-the named boolean behavior; `-` disables it. `Auto stop block` means suppressing
+Settings describe their state directly: `Engine: 2.2 D`, `Pedal mode: Bypass`,
+`Shift RPM: 4500`, `Close: 2 locks`, `Open: OFF`. `Stop block` means suppressing
 automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 
 ## Personalization and actions
 
-1. In `Settings → Edit favorites`, RES adds/removes the selected page. `+` marks
+1. In `Settings → Edit favorites`, RES adds/removes the selected page. `ON` marks
    a favorite. Gasoline and diesel each have a six-page limit; I4/V6 share the gasoline list.
 2. In `Order favorites`, select an item with RES; `*` marks move mode. Move it
    with the direction controls and press RES again to finish. Movement stops at
@@ -115,15 +130,16 @@ preferences are separate saves, not a combined transaction.
 Vehicle-control actions require a second RES within three seconds. Moving away
 or returning cancels confirmation. Reading BCM faults and toggling maximum hold
 do not require that confirmation. Existing availability, stationary-vehicle and dyno
-conditions still apply. `Command queued` and `requested` mean that a request was
+conditions still apply. `Request queued` and WAIT mean that a request was
 accepted, not that an ECU confirmed completion. Immobilizer displays its state in Information;
-the separate existing steering-wheel gesture changes it. `Read BCM faults` opens
+the separate existing steering-wheel gesture changes it only outside the menu;
+a long menu direction hold cannot trigger that gesture. `Read BCM faults` opens
 a result browser after the option is enabled in Feature setup. It reads BCM codes,
 not faults from every ECU. USB capture, ELM diagnostics and the temporary IBS
 action are described in [USB diagnostics](USB_DIAGNOSTICS.md).
 
 `Maximum hold` retains numerical maxima until a page/profile change or toggle;
-status values remain live. `Rotate readings` advances through the selected list
+status values remain live. `Auto rotate` advances through the selected list
 every five seconds. Dedicated single-value pages remain available for clearer labels.
 
 ## Responsiveness and memory
@@ -255,3 +271,40 @@ skips writing unchanged payloads.
 Closing retries the blank screen if UART is busy. Reopening cancels that pending
 clear so it cannot erase the new menu. This uses the existing dashboard handover;
 physical radio/display behavior still needs vehicle validation.
+
+## Numeric editors, capture and exclusive modes
+
+SELECT enters a numeric draft, NEXT/PREV adjusts by the existing step, SELECT
+accepts and BACK cancels without saving the draft. Idle closure also discards an
+unaccepted draft. Shift RPM: 1500–6000/250; Launch Nm: 25–600/25; Pedal trim:
+−10…+10/2. Values clamp at boundaries. Existing in-range saved values are preserved.
+
+Park mirror opens Enabled, Store position and Back. Enabling sends only Enable;
+it never captures a position. Enable first, select Store position, adjust the
+mirror, then SELECT explicitly confirms capture. BACK cancels. `Store: queued`
+means UART accepted the original BH store command; the protocol has no persistence
+acknowledgement. Retry rejected sends explicitly. A store never silently enables
+a disabled feature.
+
+USB mode cycles OFF → CAN → ELM327 → OFF (without ELM327 support: OFF → CAN → OFF).
+The original two persisted flags remain; CAN wins when loading conflicting legacy
+flags. The second flag is hidden, including in non-ELM builds, so no independent
+switch implies both modes can run together. Stop IBS override before changing USB
+mode: USB activation otherwise disables that experiment. Modes apply on Save.
+
+Front brake activation explicitly confirms `Brake+launch? RES`, because the
+existing C2 reply arms Launch Assist. While launch is active, Front brake refuses
+to silently disable it; use the separately named Release launch action first.
+Known RPM, speed, Dyno and read/clear conflicts are shown before SELECT and checked
+again on execution. Dyno confirmation names its ESC reset dependency. Permissions
+for active Dyno/brake/4WD/QV/custom ESC cannot be disabled until their operation is
+released, avoiding hidden stops or resumed requests when permissions return.
+
+## Hidden IPC diagnostics
+
+Build C1 with `EXTRA_CPPFLAGS=-DMENU_DIAGNOSTICS`; no production menu entry is added
+without this flag. Information gains IPC diagnostics. NEXT/PREV cycles raw-byte
+groups labelled in hex; SELECT switches to an A/B refresh pattern; BACK returns.
+The test covers 0x20–0x7E and 0x80–0xFF as single bytes, including 0xD8. These bytes
+are test candidates, not approved production glyphs. MY23 selection is independent
+of LARGE_DISPLAY. Check each physical IPC before approving any non-ASCII symbol.

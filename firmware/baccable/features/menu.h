@@ -5,6 +5,8 @@
 void menu_init(void);
 void menu_peer_status(uint8_t peer, const uint8_t *version);
 void menu_process(void);
+void menu_action_reply(uint8_t command);
+bool menu_setting_busy(uint8_t flash_index);
 void menu_button(uint8_t button, bool allowed);
 void menu_event(MenuEvent event);
 void menu_render(void);

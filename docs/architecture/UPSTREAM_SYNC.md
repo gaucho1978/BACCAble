@@ -92,8 +92,8 @@ retained. New options use previously unused settings slots:
 | 31 | `Front PDC mute` | OFF |
 | 32 | `Reverse mute` | OFF |
 | 33 | `Rotate readings` | OFF |
-| 34 | `USB CAN capture` | OFF |
-| 35 | `USB ELM327` | OFF |
+| 34 | USB mode CAN flag (combined UI) | OFF |
+| 35 | Hidden USB ELM327 flag (combined UI) | OFF |
 
 `Read BCM faults` exposes existing slot 15; its saved value is preserved. Enable
 it in Feature setup if the action is absent. Pedal mode slot 20 now accepts values
