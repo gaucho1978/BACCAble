@@ -12,6 +12,7 @@ void menu_event(MenuEvent event);
 void menu_render(void);
 void menu_notice(const char *text);
 void menu_present(const char *text);
+void menu_present_reading(const char *text);
 bool menu_parameters_active(void);
 void menu_show_parameter(uint8_t index);
 uint8_t menu_preferences_save(void);

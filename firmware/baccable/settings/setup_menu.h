@@ -66,6 +66,9 @@ uint16_t setup_read_flash_value(uint8_t flash_index, uint16_t stored_value);
 // Render one setup page into dashboard_setup_screen.
 void setup_render_page(uint8_t page_index);
 
+// Report visible peer position; drafts and capture prompts are not lists.
+bool setup_list_position(unsigned *current, unsigned *total);
+
 // Move current setup page by delta and wrap inside the setup menu.
 void setup_move_page(int8_t delta);
 void setup_move_group(int8_t delta);

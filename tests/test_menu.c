@@ -286,7 +286,7 @@ static void fresh_menu(void) {
     menu_event(MENU_BACK);
 }
 static void to_settings(void) {
-    menu_event(MENU_SELECT); /* Favorites -> root. */
+    menu_event(MENU_BACK); /* Favorites -> root. */
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
@@ -302,7 +302,7 @@ static void test_automatic_persistence(void) {
     menu_event(MENU_SELECT); /* Setup. */
     menu_event(MENU_BACK); /* Unchanged exit. */
     assert(settings_writes == 0 && preference_writes == 0 && usb_applies == 0);
-    assert(strstr(screen, "Feature setup") && !strstr(screen, "Saved"));
+    assert(strstr(screen, "Features") && !strstr(screen, "Saved"));
     menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT);
     menu_event(MENU_SELECT); /* Sort changes preferences only. */
     menu_event(MENU_BACK);
@@ -400,7 +400,7 @@ static void test_controller(void) {
     assert(!strstr(screen, "Saved"));
     now += 1500;
     menu_render();
-    assert(strstr(screen, "> Feature setup"));
+    assert(strstr(screen, "> Features"));
     /* Import old visibility, retaining the existing settings record. */
     memset(old_visibility, 0xff, sizeof(old_visibility));
     old_visibility[0] &= ~2;
@@ -477,7 +477,7 @@ static void test_navigation_regressions(void) {
     settings_state.rotate_readings = 0;
 
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT); /* Parameter groups. */
     menu_event(MENU_SELECT); /* Engine group. */
@@ -502,7 +502,7 @@ static void test_navigation_regressions(void) {
     menu_event(MENU_SELECT); /* Retry BACK, without toggling the setting. */
     now += 1500;
     menu_render();
-    assert(strstr(screen, "> Feature setup"));
+    assert(strstr(screen, "> Features"));
 
     fresh_menu();
     settings_state.is_diesel_enabled = 1;
@@ -551,7 +551,7 @@ static void test_navigation_context(void) {
         settings_state.dyno_mode_master_enabled = 1;
         settings_state.qv_exhaust_flap_function_enabled = 1;
         chassis_state.dyno_mode_enabled_on_master = 0;
-        menu_event(MENU_SELECT); /* Favorites -> root. */
+        menu_event(MENU_BACK); /* Favorites -> root. */
         for (unsigned i = 0; i < section; ++i)
             menu_event(MENU_NEXT);
         menu_event(MENU_SELECT);
@@ -563,7 +563,7 @@ static void test_navigation_context(void) {
             menu_event(MENU_NEXT);
             menu_event(MENU_NEXT);
             if (section == 3)
-                assert(strstr(screen, "Visible pages"));
+                assert(strstr(screen, "Shown pages"));
             else {
                 menu_event(MENU_NEXT);
                 assert(strstr(screen, "MY23:"));
@@ -578,7 +578,7 @@ static void test_navigation_context(void) {
         assert(commands == before); /* Re-entry must never execute the remembered action. */
 
         if (section == 4) {
-            menu_event(MENU_SELECT); /* Information also allows SELECT to return. */
+            menu_event(MENU_SELECT); /* Information SELECT is a status no-op. */
             menu_event(MENU_SELECT);
             assert(!strcmp(screen, selected));
         }
@@ -586,7 +586,7 @@ static void test_navigation_context(void) {
         menu_event(MENU_BACK); /* Close and save, but retain RAM navigation context. */
         assert(!dashboard_state.baccable_dashboard_menu_visible);
         menu_event(MENU_BACK); /* Reopen in Favorites. */
-        menu_event(MENU_SELECT);
+        menu_event(MENU_BACK);
         for (unsigned i = 0; i < section; ++i)
             menu_event(MENU_NEXT);
         menu_event(MENU_SELECT);
@@ -611,15 +611,15 @@ static void test_repeat_views(void) {
     to_settings();
     menu_button(0x10, true);
     menu_button(0x18, true);
-    assert(strstr(screen, "Edit favorites"));
+    assert(strstr(screen, "Favorites"));
     now += 250;
     menu_button(0x18, true);
     now += 250;
     menu_button(0x18, true);
-    assert(strstr(screen, "Visible pages"));
+    assert(strstr(screen, "Shown pages"));
     now += 180;
     menu_button(0x18, true);
-    assert(strstr(screen, "Order favorites"));
+    assert(strstr(screen, "Fav. order"));
     menu_button(0x10, true);
     menu_event(MENU_SELECT);
     menu_event(MENU_SELECT); /* Pick a favorite for reordering. */
@@ -633,7 +633,7 @@ static void test_repeat_views(void) {
     }
 
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT); /* Actions */
@@ -676,7 +676,7 @@ static void test_idle_close(void) {
     now += 60001;
     menu_process();
     assert(dashboard_state.baccable_dashboard_menu_visible); /* Readings stay visible. */
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     now += 29999;
     menu_process();
     assert(dashboard_state.baccable_dashboard_menu_visible);
@@ -694,7 +694,7 @@ static void test_idle_close(void) {
     assert(screen[0] != ' '); /* An old pending clear cannot erase a reopened menu. */
 
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     uart_busy = true;
     now += 30000;
     menu_process();
@@ -723,7 +723,7 @@ static void test_idle_close(void) {
     assert(!dashboard_state.baccable_dashboard_menu_visible);
 
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     diagnostics_state.clear_faults_request = 1;
     now += 30001;
     menu_process();
@@ -738,7 +738,7 @@ static void test_idle_close(void) {
 
     fresh_menu();
     now = UINT32_MAX - 1000;
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     now += 30000;
     menu_process();
     assert(!dashboard_state.baccable_dashboard_menu_visible);
@@ -880,11 +880,11 @@ static void test_action_availability(void) {
         &settings_state.has_function_enabled,        &settings_state.front_brake_forcer_master,
         &settings_state.read_faults_enabled,         &settings_state.clear_faults_enabled};
     const char *names[] = {"Dyno",       "4WD",         "ESC/TC",          "QV exhaust",
-                           "HAS button", "Brake req", "Read BCM faults", "Clear faults"};
+                           "HAS button", "Brake", "BCM faults", "Clear DTCs"};
     for (unsigned i = 0; i < 8; ++i)
         *gates[i] = 0;
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
     assert(strstr(screen, "Actions"));
@@ -916,7 +916,7 @@ static void test_action_availability(void) {
     menu_event(MENU_SELECT);
     for (unsigned i = 0; i < 4; ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "Immobilizer"));
+    assert(strstr(screen, "Immobil") && (strstr(screen, ": ON") || strstr(screen, ": OFF")));
 }
 
 /* Action wording must describe requests without claiming vehicle confirmation. */
@@ -927,13 +927,13 @@ static void test_action_request_labels(void) {
     settings_state.qv_exhaust_flap_function_enabled = 1;
     chassis_state.awd_sequence = 0;
     comfort_state.force_q_vexhaust_valve_opened = 0;
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT);
     for (unsigned i = 0; i < 16 && !strstr(screen, "QV exhaust"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "QV exhaust >"));
+    assert(strstr(screen, "> QV exhaust"));
     for (unsigned state = 1; state <= 4; ++state) {
         comfort_state.force_q_vexhaust_valve_opened = state;
         now += 1;
@@ -945,10 +945,10 @@ static void test_action_request_labels(void) {
     }
     comfort_state.force_q_vexhaust_valve_opened = 0;
     menu_render();
-    assert(strstr(screen, "QV exhaust >"));
+    assert(strstr(screen, "> QV exhaust"));
     for (unsigned i = 0; i < 16 && !strstr(screen, "4WD"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "4WD >"));
+    assert(strstr(screen, "> 4WD"));
     for (unsigned state = 1; state <= 4; ++state) {
         chassis_state.awd_sequence = state;
         menu_render();
@@ -959,17 +959,17 @@ static void test_action_request_labels(void) {
     assert(strstr(screen, "! 4WD OFF request"));
     chassis_state.awd_sequence = 0;
     menu_render();
-    assert(strstr(screen, "4WD >"));
+    assert(strstr(screen, "> 4WD"));
     settings_state.clear_faults_enabled = 1;
-    for (unsigned i = 0; i < 16 && !strstr(screen, "Clear faults"); ++i)
+    for (unsigned i = 0; i < 16 && !strstr(screen, "Clear DTCs"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "Clear faults >"));
+    assert(strstr(screen, "> Clear DTCs"));
     diagnostics_state.clear_faults_request = 255;
     menu_render();
-    assert(strstr(screen, "Clear faults: WAIT"));
+    assert(strstr(screen, "Clear DTCs: WAIT"));
     diagnostics_state.clear_faults_request = 0;
     menu_render();
-    assert(strstr(screen, "Clear faults >"));
+    assert(strstr(screen, "> Clear DTCs"));
     settings_state.clear_faults_enabled = 0;
     settings_state.awd_disabler_enabled = 0;
     settings_state.qv_exhaust_flap_function_enabled = 0;
@@ -1043,6 +1043,7 @@ static void test_board_sync_retry(void) {
 
 #include "test_setup_ui.c"
 #include "test_unified_ui.c"
+#include "test_menu_contract.c"
 
 int main(void) {
 #ifdef MENU_DIAGNOSTICS
@@ -1055,6 +1056,12 @@ int main(void) {
     const HostTest tests[] = {
         HOST_TEST(test_setup_ui),
         HOST_TEST(test_shared_renderers),
+        HOST_TEST(test_navigation_contract),
+        HOST_TEST(test_visible_position_contract),
+        HOST_TEST(test_reading_position_integrity),
+        HOST_TEST(test_position_renderer_bounds),
+        HOST_TEST(test_filtered_editor_positions),
+        HOST_TEST(test_workflow_and_version_positions),
         HOST_TEST(test_pending_action_feedback),
         HOST_TEST(test_conditional_actions),
         HOST_TEST(test_fault_action_exclusion),

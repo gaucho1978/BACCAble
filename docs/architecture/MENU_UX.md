@@ -7,7 +7,7 @@ editor marks on an 18-character display.
 
 ## Engine profile and advanced pages
 
-Feature setup cycles `Engine: 2.0 I4`, `Engine: 2.9 V6`, `Engine: 2.2 D`.
+Features cycles `Engine: 2.0 I4`, `Engine: 2.9 V6`, `Engine: 2.2 D`.
 Existing gasoline settings default to I4; V6 owners should select V6 once.
 `Advanced pages` reveals technical and secondary layouts. Favorites retain saved
 IDs and can include advanced pages, but incompatible engine pages are temporarily
@@ -23,7 +23,7 @@ open the last favorite. The distance button has the same menu function as RES.
 
 | Gesture | Result |
 | --- | --- |
-| Short RES, then release | Enter or select; from a reading, open the main menu |
+| Short RES, then release | Use or confirm the current item; status/reading pages ignore SELECT |
 | Hold RES for 1200 ms | Return one level; from the main menu, close |
 | Gentle down/up | Next/previous item; hold to repeat in lists |
 | Stronger down/up | Next/previous reading, action or setting group |
@@ -31,7 +31,7 @@ open the last favorite. The distance button has the same menu function as RES.
 In favorites, a stronger press also moves one item. Moving through a gentle press
 into a stronger press may perform an item step before the group jump. Holding a
 gentle direction repeats after 500 ms, then every 180 ms while fresh reports arrive.
-Repeat applies to readings, groups, Settings, Feature setup and page editors.
+Repeat applies to readings, groups, Settings, Features and page editors.
 It does not apply to Actions, RES/BACK, stronger presses, or moving a selected
 favorite in the reorder editor. Delayed reports never trigger a catch-up burst.
 A gap longer than 300 ms in button reports requires a fresh release.
@@ -40,7 +40,17 @@ Releasing RES after a hold does not select another item.
 Main menu: **Favorites → Readings → Actions → Settings → Information**.
 Reading groups: All readings, Engine, Temperatures, Battery, DPF / AdBlue,
 Performance, Other. Empty lists show `No pages` or `No favorites`; returning still
-works. The main menu and group list show position counters; editors use full labels.
+works. All browsable lists show their visible position and total. Unavailable but
+browsable actions count; hidden entries do not. Drafts, notices, confirmations,
+pending/error states and charset ranges are not numbered.
+
+The common layout is `x/y > Label` or `x/y Label: value`. Labels shorten before
+values; compact warning rows may omit spacing to retain the entire condition.
+Dense readings and long firmware versions use a numbered title for 1200 ms after
+selection, followed by their complete original text. Short readings retain their
+counter continuously. This width exception avoids dropping values, units or
+version characters and does not delay CAN queries or change the 50 ms fragment
+interval. It also applies after automatic reading rotation.
 
 ## Shared entry types and symbols
 
@@ -56,7 +66,7 @@ action, view and side effect.
 | `Auto rotate: ON` / `OFF` | True toggle; SELECT flips the preference |
 | `Engine: 2.0 I4` | Named enum; SELECT cycles |
 | `* Shift RPM: 3500` | Numeric draft; directions edit, SELECT accepts, BACK cancels |
-| `Read faults >` | Action/workflow; SELECT enters or requests it |
+| `1/8 > BCM faults` | Action/workflow; SELECT enters or requests it |
 | `! Start engine` | Known unmet condition or failure |
 | `? BH no reply` | Unknown/stale status |
 | `< Back` | Exit a submenu |
@@ -105,12 +115,12 @@ automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 
 ## Personalization and actions
 
-1. In `Settings → Edit favorites`, RES adds/removes the selected page. `ON` marks
+1. In `Settings → Favorites`, RES adds/removes the selected page. `ON` marks
    a favorite. Gasoline and diesel each have a six-page limit; I4/V6 share the gasoline list.
-2. In `Order favorites`, select an item with RES; `*` marks move mode. Move it
+2. In `Fav. order`, select an item with RES; `*` marks move mode. Move it
    with the direction controls and press RES again to finish. Movement stops at
    the list boundaries.
-3. In `Visible pages`, RES toggles catalog visibility. Hiding a page does not
+3. In `Shown pages`, RES toggles catalog visibility. Hiding a page does not
    remove it from favorites. An automatic performance result may temporarily
    show a hidden page without changing its saved visibility.
 4. In `Sort order`, RES switches between functional grouping and A–Z by page
@@ -136,12 +146,12 @@ do not require that confirmation. Existing availability, stationary-vehicle and 
 conditions still apply. `Request queued` and WAIT mean that a request was
 accepted, not that an ECU confirmed completion. Immobilizer displays its state in Information;
 the separate existing steering-wheel gesture changes it only outside the menu;
-a long menu direction hold cannot trigger that gesture. `Read BCM faults` opens
-a result browser after the option is enabled in Feature setup. It reads BCM codes,
+a long menu direction hold cannot trigger that gesture. `BCM faults` opens
+a result browser after the option is enabled in Features. It reads BCM codes,
 not faults from every ECU. USB capture, ELM diagnostics and the temporary IBS
 action are described in [USB diagnostics](USB_DIAGNOSTICS.md).
 
-`Maximum hold` retains numerical maxima until a page/profile change or toggle;
+`Peak hold` retains numerical maxima until a page/profile change or toggle;
 status values remain live. `Auto rotate` advances through the selected list
 every five seconds. Dedicated single-value pages remain available for clearer labels.
 
@@ -297,7 +307,7 @@ mode: USB activation otherwise disables that experiment. Modes apply after succe
 
 Front brake activation explicitly confirms `Brake+launch? RES`, because the
 existing C2 reply arms Launch Assist. While launch is active, Front brake refuses
-to silently disable it; use the separately named Release launch action first.
+to silently disable it; use the separately named End launch action first.
 Known RPM, speed, Dyno and read/clear conflicts are shown before SELECT and checked
 again on execution. Dyno confirmation names its ESC reset dependency. Permissions
 for active Dyno/brake/4WD/QV/custom ESC cannot be disabled until their operation is
@@ -306,8 +316,40 @@ released, avoiding hidden stops or resumed requests when permissions return.
 ## Hidden IPC diagnostics
 
 Build C1 with `EXTRA_CPPFLAGS=-DMENU_DIAGNOSTICS`; no production menu entry is added
-without this flag. Information gains IPC diagnostics. NEXT/PREV cycles raw-byte
+without this flag. Information gains `IPC diag >`. NEXT/PREV cycles raw-byte
 groups labelled in hex; SELECT switches to an A/B refresh pattern; BACK returns.
 The test covers 0x20–0x7E and 0x80–0xFF as single bytes, including 0xD8. These bytes
 are test candidates, not approved production glyphs. MY23 selection is independent
 of LARGE_DISPLAY. Check each physical IPC before approving any non-ASCII symbol.
+
+
+## Global interaction contract
+
+NEXT/PREV moves between peers or changes the current numeric draft. SELECT uses
+or confirms the current item. BACK cancels an unfinished workflow or returns one
+level. Committed configuration changes save automatically, silently on success;
+a failed exit remains explicit and retryable. `x/y` is the position within the
+currently browsable list, subject to the dense-data title exception above.
+
+| View | SELECT | BACK |
+| --- | --- | --- |
+| ROOT | Enter selected section | Close |
+| FAVORITES | No-op | ROOT |
+| GROUPS | Enter readings | ROOT |
+| VALUES | No-op | GROUPS |
+| ACTIONS | Run/confirm selected operation | ROOT |
+| SETTINGS | Enter editor or change sort | ROOT |
+| FEATURES | Use entry / accept numeric draft | Cancel nested draft/capture, otherwise SETTINGS |
+| EDIT FAVORITES / SHOWN PAGES | Toggle membership/visibility | SETTINGS |
+| FAVORITE ORDER | Pick/drop a nonempty item | SETTINGS |
+| INFORMATION | No-op; explicit IPC diagnostic entry opens its screen | ROOT |
+| FAULTS | Restart read if Clear is inactive | Cancel read, ACTIONS |
+| DIAGNOSTICS | Switch test pattern | INFORMATION |
+
+Park Mirror has its own Enabled / Store position / Back list. BACK from capture
+returns to that list; BACK again returns to Features. The explicitly labelled
+`< Back` row is the sole SELECT-as-return entry. Physical BACK while the menu is
+closed still opens Favorites; the physical button protocol is unchanged.
+
+[Delivery and acceptance audit](../MENU_UX_CONSISTENCY_DELIVERY.md) records the
+requirements, preserved behavior and hardware validation still needed.

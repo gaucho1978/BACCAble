@@ -1,88 +1,86 @@
-# Menu consistency delivery
+# Menu consistency delivery and acceptance
 
-Scope: [requirements](BACCAble%20Menu%20UX%20Consistency%20Refactor%20Plan.md), based on v5-beta-6 / master `1dc0595`. This is a staged delivery plan, not a claim that the new behavior is implemented.
+Requirements: [Menu UX Consistency Refactor Plan](BACCAble%20Menu%20UX%20Consistency%20Refactor%20Plan.md).
+Baseline: v5-beta-6. Automatic persistence was delivered in PR #16; this follow-up
+completes the remaining software behavior. Physical dashboard checks remain separate.
+The original requirements document is retained unchanged.
 
-## Initial findings
+## Delivered requirements
 
-- `menu.c:save_all()` invokes settings and preference persistence, shows Saved, and short-circuits preference saving when settings saving fails.
-- ROOT/SETUP exits and idle close use that helper; preference editors have separate save paths. SETTINGS has Save; SETUP has a synthetic Save and back page.
-- Save retry rewrites SELECT to BACK through `retry_back`.
-- SELECT on readings/favorites returns to ROOT. Normal information pages also need the new status/no-op contract.
-- `settings_save()` restarts board synchronization and applies USB after a successful record save. Menu-level unchanged visits must avoid those side effects, even if the storage layer already avoids identical writes.
-- Numeric drafts, explicit mirror capture, request feedback and repeat protection already exist. Preserve them.
+| Plan phases | Result |
+| --- | --- |
+| 0–1 | Baseline inventory and a tested global interaction contract; current per-view table in [MENU_UX.md](architecture/MENU_UX.md). |
+| 2–7 | Both Save rows removed. Exact serialized comparison detects committed changes, including changes outside callbacks. Independent settings/preferences saves skip unchanged data, board sync and USB apply. Success is silent; SELECT retries the remembered failed exit; BACK cancels that exit without discarding RAM changes. |
+| 8–9 | BACK unwinds one level or cancels a nested draft/capture. Reading, favorite and normal information SELECT is a no-op. No SELECT event is rewritten to BACK. |
+| 10–18 | Shared bounded position rendering across Root, Groups, Settings, Actions, Information, Features and the nested Park Mirror list. Actual visible peers determine totals; temporarily unavailable actions still count. |
+| 19–21 | Reading/favorite positions, membership/visibility/order lists and fault-result positions. Existing filtering supplies counts. Empty lists and fault progress/failure have no artificial position. |
+| 22–25 | Existing request/confirmation semantics, entry types and hold-repeat restrictions retained. Idle cancels unaccepted drafts, persists committed data and closes only after successful persistence. |
+| 26–29 | Source transition/save audit and host contracts cover all views, visible counts, nested cancellation, save failures and 18/24-byte bounds. Existing setup/page filters are reused; setup exposes a small position query for nested lists. |
+| 30 | Cleanup reviewed. No action-module extraction: it is optional and adds no behavior needed for this delivery. No new UI framework, allocation, storage format or CAN protocol. |
 
-## Ordered deliveries
+## Width policy and explicit exceptions
 
-| Order | Scope | Completion gate |
-| --- | --- | --- |
-| 1 — Reliable automatic persistence | Finish per-view baseline and intended transition table; add behavioral tests, settings/preferences change tracking, one persistence-on-exit path and explicit retry state. Remove both Save entries only together with their replacement. Success is silent; unfinished drafts/capture remain cancelled on exit or idle. | No-change visits cause no save/sync/USB apply. Only changed domains save. Failure retains unsaved state; explicit retry resumes the intended exit. Partial success does not repeat the successful domain. Numeric cancel and capture cancel do not commit. |
-| 2 — Navigation consistency | Normalize one-level BACK and status SELECT no-op across all views. Preserve actionable diagnostics, fault operations, submenu entry, physical menu opening and safe repeat. | Table-driven transitions for every view, including nested Park/editor/diagnostic states, empty lists and save-error cancellation. No hidden SELECT-to-BACK rewriting. |
-| 3 — Compact menu numbering | Add one bounded position renderer and visible-position helpers; cover Root, Groups, Settings, Information, Actions, Setup and nested browsable menus. | 18/24-character cases, filtered counts, first/last positions, preserved ON/OFF and mode values; no numbering on pending/error/confirmation screens. |
-| 4 — Readings and remaining lists | Apply numbering to readings, favorites, membership/order editors and actual fault results. Reuse real filters and quality formatting. | Long/multi-value readings retain values, units and stale/no-data markers; correct engine/favorite counts; no counters on fault progress/failure or charset ranges. |
-| 5 — Acceptance and release readiness | Search for remaining navigation/save exceptions, update user docs, run full host/CI gates and document physical checks. | Four production flavors, 18/24 host suites and diagnostic integration pass; storage IDs and request semantics unchanged. Hardware checks reported separately. |
+Counters never justify dropping a measurement, unit, unknown marker or version
+character. Short readings keep `x/y` beside the complete text. If the original
+reading cannot fit with its counter, a numbered page title appears for 1200 ms
+after selection, then the complete original reading uses the full screen. The
+same rule protects long firmware-version strings. This is an intentional
+exception to a **continuously visible** counter, necessary for dense 18-character
+pages; it preserves existing page IDs and multi-value layouts. Automatic rotation
+also shows the title. Query cadence and the 50 ms transport interval are unchanged.
 
-Stage 1 is the first implementation task. Within it, establish tests before changes and land only a passing, complete persistence transition. Stage 2 must follow promptly so the eventual release has one navigation contract. Do not publish a final consistency release before stages 1–5 pass.
+Setup values take priority over shortened labels. Warning rows may remove spaces
+around the warning symbol to retain the entire condition. Compact English labels
+include Features, Favorites, Shown pages, Fav. order, BCM faults, Clear DTCs,
+Reset times, Peak hold, End launch and IPC diag. These labels do not rename IDs or
+change the operations they invoke.
 
-## Small work units and resource limits
+Notices, save errors, pending/completed request messages, numeric drafts, capture
+instructions and raw charset ranges are not peer-list screens and are unnumbered.
+A successful Dyno/brake reply restores the numbered action state. An explicit
+`< Back` row in Park Mirror is actionable; no status page silently goes backward.
+Physical BACK still opens Favorites when the menu is closed.
 
-- Use the existing host fixtures and sanitizer runner; add behavioral cases rather than another test framework.
-- One implementation owner at a time for `menu.c` and setup/persistence integration. Do not give overlapping edits to multiple agents.
-- If delegation is used, assign a bounded read-only audit or an isolated renderer/test task after its API is agreed. Pass only relevant files, expected behavior and acceptance cases.
-- Review only the changed paths during each stage. Run focused tests while editing; full checks once per completed delivery, repeating only after relevant changes or failures.
-- Keep numbering out of the first two deliveries. Do not retune CAN/display timing or redesign vehicle commands, entry types, storage or physical input.
-- `menu_actions.c` extraction is optional cleanup after acceptance, not a release dependency. Defer it unless the completed changes demonstrate a concrete need.
+## Persistence and baseline findings
 
-## Decisions required during implementation
+The baseline had explicit Save rows, multiple exit-save paths, success notices,
+SELECT-to-BACK retry rewriting and SELECT-to-ROOT status pages. PR #16 replaced
+persistence with independent saved-value comparisons. Settings reuse their cache;
+preferences retain an 80-byte snapshot. Missing/invalid records, defaults and
+migrated preferences remain unsaved until the first successful exit.
 
-- Inventory all mutation paths, including remembered pages, automatic rotation, external setting changes and startup defaults. Track committed serialized values or equivalent domain revisions; a UI callback-only flag must not miss changes made elsewhere.
-- Define the save-error destination explicitly: SELECT retries the pending persistence/exit; BACK cancels the attempted exit and stays in the current configuration context without discarding committed RAM changes. Avoid recursive event rewriting and automatic repeated flash attempts.
-- Keep successfully saved domains clean if another domain fails. Board synchronization and USB application must match successful settings persistence, not preference-only changes.
-- Distinguish visible actions from temporarily unavailable actions: an unavailable but browsable action still belongs in the denominator.
-- Numbering must not silently drop measurements. If a data-heavy page cannot fit all critical values and its counter, resolve its layout with 18-character tests before marking stage 4 complete.
+Only successful saves update snapshots. A preferences-only change does not restart
+board synchronization or apply USB. Partial success does not repeat the successful
+domain. Failed exits remain modal until SELECT retries or BACK cancels the exit;
+idle processing does not repeatedly retry flash. The two records remain separate,
+not an atomic transaction. Power loss before persistence can lose unsaved RAM changes.
 
-## Status
+## Audit and regression evidence
 
-Stage 1 implementation and baseline inventory are complete on this branch; verification and PR status are reported in the PR. Stages 2–5 remain pending. The original requirements document is unchanged.
+The audit covered MenuView transitions, MENU_SELECT/MENU_BACK, save calls,
+setup_back, notice/retry paths, display formatting and fault-result rendering.
+The fault-result SELECT path now also checks Clear before restarting a read;
+previously only entering the reader from Actions checked this condition.
 
-## Stage 1 implementation
+Existing sanitizer tests are extended, not replaced. `test_menu_contract.c` covers:
 
-Automatic persistence replaces both Save entries. Dirty state is derived from exact
-serialized comparisons against the last successfully stored values, rather than
-flags scattered among callbacks. Settings reuse their existing cache; preferences
-add an 80-byte snapshot. A missing/invalid record remains unsaved until the first
-successful exit, including default or migrated preferences. Runtime mutations and
-remembered page changes are detected without changing storage IDs or formats.
+- Every section's parent, status SELECT no-op, nested numeric/Park cancellation,
+  diagnostic return and fault-workflow return.
+- Visible action/setup counts, unavailable actions, filtered favorite/editor totals,
+  reorder position and retention of engine-incompatible saved favorite IDs.
+- Every supported gasoline/diesel page template, with ordinary and unavailable
+  values: the complete original reading survives numbering at 18/24 characters.
+- Bounded rendering, long-version protection, stale peer versions and fault codes.
 
-Both domains are attempted independently. Only a successful domain updates its
-snapshot; unchanged settings skip flash, board synchronization and USB application.
-On error, SELECT retries the original destination; BACK cancels the attempted exit
-and retains RAM changes. Idle retries and gesture repeat are disabled in the error
-state. Stage 2 status-page navigation and all new numbering remain pending.
+The previous persistence, queue retry, request timeout, mirror capture and repeat
+regressions remain in the host suite. CI exposes the additional cases in its
+existing summary and HTML artifact. Release readiness requires passing all host
+suites, production C1/C2/BH/CAN builds, static analysis and size gates.
 
-### Per-view baseline at beta 6
+## Hardware acceptance
 
-NEXT/PREV browses peer items unless stated. The target navigation table is in the
-original requirements; this table records the baseline, not the final contract.
-
-| View | SELECT | BACK / cancellation | Persistence / explicit Save | Numbering |
-| --- | --- | --- | --- | --- |
-| ROOT | Enter submenu | Close | Both domains on close | Yes |
-| FAVORITES | ROOT | ROOT | Remembered page saved on later exit | No |
-| GROUPS | VALUES | ROOT | None directly | Yes |
-| VALUES | ROOT | GROUPS | Remembered page saved on later exit | No |
-| ACTIONS | Run/confirm action | ROOT | Action-specific records only | No |
-| SETTINGS | Enter/change/Save | ROOT | Explicit Save; idle saves both | No |
-| SETUP | Toggle/cycle/edit/capture/Save and back | Cancel nested workflow or SETTINGS | Both on exit; explicit synthetic Save item | No |
-| EDIT_FAVORITES | Toggle membership | SETTINGS | Preferences on exit | No |
-| EDIT_VISIBLE | Toggle visibility | SETTINGS | Preferences on exit | No |
-| ORDER_FAVORITES | Pick/drop; NEXT/PREV reorders when picked | SETTINGS | Preferences on exit | No |
-| INFORMATION | ROOT, or diagnostic entry when built | ROOT | None directly | No |
-| FAULTS | Restart read | Cancel read, ACTIONS | None | Existing result index |
-| DIAGNOSTICS | Switch character/pattern test | INFORMATION | None | Raw byte ranges |
-| Numeric draft | Accept draft | Cancel draft, remain SETUP | RAM commit only | Not a peer list |
-| Park submenu/capture | Enable, confirm capture, or explicit Back | Cancel capture or return to SETUP | Enable persists on later exit; capture queues vehicle command | No |
-
-Stage 1 tests exercise unchanged visits, preference-only saves, both partial-failure
-orders, repeated failure, explicit retry, cancellation, idle close and numeric
-commit/cancel. Existing mirror capture regressions and the 18/24/debug suites remain
-required. Subsequent deliveries must not reintroduce explicit Save or event rewriting.
+Still verify rapid browsing, the 1200 ms dense-page title, readability of shortened
+labels, both real display widths and vehicle action feedback on an actual IPC.
+Host tests do not certify physical dashboard rendering. Extended glyph approval,
+CAN timing changes and investigation of the previously reported device freeze are
+outside this consistency refactor.

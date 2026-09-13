@@ -156,8 +156,9 @@ void fault_reader_text(unsigned index, char *text, size_t capacity) {
     }
     index %= count;
     const uint8_t *d = payload + 3 + index * 4;
-    snprintf_(text, capacity, "%u/%u%s %c%01X%01X%02X-%02X", index + 1, count,
-              expected > sizeof(payload) ? "+" : "", "PCBU"[d[0] >> 6], (d[0] >> 4) & 3, d[0] & 15, d[1],
-              d[2]);
+    char code[16];
+    snprintf_(code, sizeof(code), "%s%c%01X%01X%02X-%02X", expected > sizeof(payload) ? "+ " : "",
+              "PCBU"[d[0] >> 6], (d[0] >> 4) & 3, d[0] & 15, d[1], d[2]);
+    ui_render_list_entry(text, capacity, index + 1, count, code);
 }
 #endif

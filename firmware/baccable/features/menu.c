@@ -53,12 +53,12 @@ static const ActionEntry actions[] = {
     {ACTION_ESC, 1, "ESC/TC", UI_ENTRY_CONDITIONAL_ACTION},
     {ACTION_DYNO, 2, "Dyno", UI_ENTRY_CONDITIONAL_ACTION},
     {ACTION_BRAKE, 2, "Front brake", UI_ENTRY_CONDITIONAL_ACTION},
-    {ACTION_LAUNCH, 2, "Release launch", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_LAUNCH, 2, "End launch", UI_ENTRY_CONDITIONAL_ACTION},
     {ACTION_AWD, 2, "4WD", UI_ENTRY_CONDITIONAL_ACTION},
-    {ACTION_READ, 3, "Read BCM faults", UI_ENTRY_CONDITIONAL_ACTION},
-    {ACTION_CLEAR, 3, "Clear faults", UI_ENTRY_CONDITIONAL_ACTION},
-    {ACTION_STATS, 3, "Reset records", UI_ENTRY_ACTION},
-    {ACTION_PEAK, 3, "Maximum hold", UI_ENTRY_TOGGLE},
+    {ACTION_READ, 3, "BCM faults", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_CLEAR, 3, "Clear DTCs", UI_ENTRY_CONDITIONAL_ACTION},
+    {ACTION_STATS, 3, "Reset times", UI_ENTRY_ACTION},
+    {ACTION_PEAK, 3, "Peak hold", UI_ENTRY_TOGGLE},
     {ACTION_IBS, 3, "IBS override", UI_ENTRY_CONDITIONAL_ACTION}
 };
 typedef enum { REQUEST_NONE, REQUEST_WAIT, REQUEST_SENT, REQUEST_FAILED, REQUEST_TIMEOUT } RequestState;
@@ -75,8 +75,8 @@ static ActionRequest requests[ACTION_COUNT];
 #define INFO_PAGES 5U
 #endif
 static const char *const roots[] = {"Favorites", "Readings", "Actions", "Settings", "Information"};
-static const char *const settings[] = {"Feature setup",   "Edit favorites", "Visible pages",
-                                       "Order favorites", "Sort order"};
+static const char *const settings[] = {"Features",   "Favorites", "Shown pages",
+                                       "Fav. order", "Sort order"};
 static char peer_versions[2][DASHBOARD_MESSAGE_MAX_LENGTH - 2];
 static uint32_t peer_updated[2];
 static uint8_t peer_seen[2];
@@ -115,7 +115,7 @@ static bool preferences_saved;
 #define NOTICE_WARNING_MS 1800U
 #define NOTICE_REQUEST_MS 1200U
 static uint32_t notice_duration;
-static uint32_t confirm_started, last_input;
+static uint32_t confirm_started, last_input, info_changed;
 static void build_pages(uint16_t selected);
 
 /* Move through a list and continue from the other end at its boundary. */
@@ -181,16 +181,16 @@ static const char *action_unavailable(MenuAction id) {
         return telemetry_state.current_rpm_speed <= 400 ? "Start engine" : NULL;
     case ACTION_DYNO:
         if (chassis_state.front_brake_forced)
-            return "Release brake";
+            return "Release brk";
         if (chassis_state.stability_inverted)
-            return "Reset ESC first";
+            return "Reset ESC";
         return runtime_state.car_steady_counter < 100 ? "Stop car" : NULL;
     case ACTION_ESC:
         return chassis_state.dyno_mode_enabled_on_master || requests[ACTION_DYNO].state == REQUEST_WAIT
                    ? "Dyno active" : NULL;
     case ACTION_BRAKE:
         if (chassis_state.launch_assist_enabled)
-            return "Release launch";
+            return "End launch";
         if (!chassis_state.front_brake_forced) {
             if (telemetry_state.current_speed_km_h != 0)
                 return "Stop car";
@@ -199,7 +199,7 @@ static const char *action_unavailable(MenuAction id) {
         }
         return NULL;
     case ACTION_LAUNCH:
-        return chassis_state.launch_assist_enabled ? NULL : "Launch inactive";
+        return chassis_state.launch_assist_enabled ? NULL : "Launch OFF";
     case ACTION_AWD:
         return !chassis_state.awd_sequence && runtime_state.car_steady_counter < 100 ? "Stop car" : NULL;
     default:
@@ -273,6 +273,22 @@ void menu_present(const char *text) {
         close_pending = false;
 }
 
+/* Keep every reading byte intact; dense pages get position context before live data. */
+void menu_present_reading(const char *text) {
+    char numbered[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+    size_t used = ui_render_position(numbered, sizeof(numbered), selection + 1, list_count);
+    size_t length = strlen(text);
+    if (used && used + length < sizeof(numbered)) {
+        memcpy(numbered + used, text, length + 1);
+        menu_present(numbered);
+    } else if (used && currentTime - page_changed < NOTICE_REQUEST_MS) {
+        const ParameterPage *page = &parameter_pages[engine][dashboard_state.dashboard_page_index];
+        ui_render_list_entry(numbered, sizeof(numbered), selection + 1, list_count, page->label);
+        menu_present(numbered);
+    } else
+        menu_present(text);
+}
+
 /* Show brief feedback about a selection, action or save result. */
 void menu_notice(const char *text) {
     snprintf_(notice_text, sizeof(notice_text), "%s", text);
@@ -330,6 +346,7 @@ void menu_init(void) {
     function = 0;
     setting = 0;
     info = 0;
+    info_changed = currentTime;
     setup_last = 0;
     notice = NULL;
     confirmed_action = 255;
@@ -457,7 +474,7 @@ static void action_run(void) {
     if (id == ACTION_PEAK) {
         parameter_peak_enable(!parameter_peak_enabled());
         char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
-        ui_render_toggle(text, sizeof(text), "Maximum hold", parameter_peak_enabled());
+        ui_render_toggle(text, sizeof(text), "Peak hold", parameter_peak_enabled());
         menu_notice(text);
         return;
     }
@@ -562,9 +579,7 @@ static void action_render(char *text, size_t capacity, const ActionEntry *entry)
     }
     const char *reason = action_unavailable(id);
     if (reason) {
-        char value[32];
-        snprintf_(value, sizeof(value), UI_SYMBOL_WARNING " %s", reason);
-        ui_render_value(text, capacity, entry->name, value);
+        ui_render_unavailable(text, capacity, reason);
         return;
     }
     if (id == ACTION_AWD && chassis_state.awd_sequence) {
@@ -605,12 +620,15 @@ void menu_render(void) {
         return;
     }
     char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+    unsigned position = 0, total = 0;
     switch (view) {
     case ROOT:
-        snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %u/5 %s", root + 1, roots[root]);
+        snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %s", roots[root]);
+        position = root + 1; total = sizeof(roots) / sizeof(roots[0]);
         break;
     case GROUPS:
-        snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %u/7 %s", group + 1, menu_group_names[group]);
+        snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %s", menu_group_names[group]);
+        position = group + 1; total = MENU_GROUPS;
         break;
     case FAVORITES:
     case VALUES:
@@ -621,12 +639,27 @@ void menu_render(void) {
         menu_parameters_refresh();
         dashboard_send_values();
         return;
-    case FUNCTIONS:
+    case FUNCTIONS: {
         if (!available(actions[function].id))
             function_move(1, false);
         action_render(text, sizeof(text), &actions[function]);
+        MenuAction id = actions[function].id;
+        RequestState state = requests[id].state;
+        if (state != REQUEST_WAIT && state != REQUEST_FAILED && state != REQUEST_TIMEOUT &&
+            !(state == REQUEST_SENT && (id == ACTION_HAS || id == ACTION_CLEAR || id == ACTION_ESC)) &&
+            !(id == ACTION_AWD && chassis_state.awd_sequence) &&
+            !(id == ACTION_EXHAUST && comfort_state.force_q_vexhaust_valve_opened) &&
+            !(id == ACTION_CLEAR && diagnostics_state.clear_faults_request)) {
+            for (unsigned i = 0; i < ACTION_COUNT; ++i)
+                if (available(actions[i].id)) {
+                    ++total;
+                    if (i == function) position = total;
+                }
+        }
         break;
+    }
     case SETTINGS:
+        position = setting + 1; total = sizeof(settings) / sizeof(settings[0]);
         if (setting == 4)
             ui_render_value(text, sizeof(text), "Sort", preferences.alphabetical ? "A-Z" : "groups");
         else
@@ -637,6 +670,7 @@ void menu_render(void) {
         return;
     case EDIT_FAVORITES:
     case EDIT_VISIBLE:
+        position = selection + 1; total = list_count;
         if (!list_count) {
             menu_present("No pages");
             return;
@@ -653,6 +687,7 @@ void menu_render(void) {
         }
         break;
     case ORDER_FAVORITES:
+        position = selection + 1; total = list_count;
         if (!list_count) {
             menu_present("No favorites");
             return;
@@ -669,29 +704,43 @@ void menu_render(void) {
         break;
 #endif
     case INFO:
+        position = info + 1; total = INFO_PAGES;
 #ifdef MENU_DIAGNOSTICS
         if (info == 5) {
-            ui_render_action(text, sizeof(text), "IPC diagnostics");
+            ui_render_action(text, sizeof(text), "IPC diag");
             break;
         }
 #endif
         if (info == 0)
-            snprintf_(text, sizeof(text), "%s", FW_VERSION);
+            ui_render_value(text, sizeof(text), "FW",
+                            !strncmp(FW_VERSION, "BACCABLE ", 9) ? FW_VERSION + 9 : FW_VERSION);
         else if (info == 4)
             ui_render_toggle(text, sizeof(text), "Immobilizer", security_state.immobilizer_enabled);
         else if (info == 3)
-            snprintf_(text, sizeof(text), "MY23:%s %u chars",
+            snprintf_(text, sizeof(text), "MY23:%s %uch",
                       settings_state.ipc_my23_is_installed ? "ON" : "OFF", DASHBOARD_MESSAGE_MAX_LENGTH);
         else {
             unsigned peer = info - 1;
             if (peer_seen[peer] && currentTime - peer_updated[peer] <= 5000)
-                snprintf_(text, sizeof(text), "%s %s", peer ? "BH" : "C2", peer_versions[peer]);
+                ui_render_value(text, sizeof(text), peer ? "BH" : "C2", peer_versions[peer]);
             else
                 snprintf_(text, sizeof(text), UI_SYMBOL_UNKNOWN " %s no reply", peer ? "BH" : "C2");
         }
         break;
     }
-    menu_present(text);
+    if (total) {
+        char numbered[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
+        size_t prefix = ui_render_position(numbered, sizeof(numbered), position, total);
+        bool dense_version = view == INFO && info <= 2 && prefix + strlen(text) >= sizeof(numbered);
+        bool fits = !dense_version && ui_render_list_entry(numbered, sizeof(numbered), position, total, text);
+        if (dense_version)
+            snprintf_(numbered, sizeof(numbered), "%s", text);
+        if (!fits && view == INFO && currentTime - info_changed < NOTICE_REQUEST_MS)
+            ui_render_list_entry(numbered, sizeof(numbered), position, total,
+                                 info == 0 ? "FW version" : info == 1 ? "C2 version" : "BH version");
+        menu_present(numbered);
+    } else
+        menu_present(text);
 }
 
 /* Release the display, retrying a rejected clear until the UART accepts it. */
@@ -806,7 +855,7 @@ void menu_event(MenuEvent event) {
     if (event != MENU_SELECT) {
         switch (view) {
         case ROOT:
-            root = wrap(root, 5, direction);
+            root = wrap(root, sizeof(roots) / sizeof(roots[0]), direction);
             break;
         case GROUPS:
             group = wrap(group, MENU_GROUPS, direction);
@@ -815,7 +864,7 @@ void menu_event(MenuEvent event) {
             function_move(direction, jump);
             break;
         case SETTINGS:
-            setting = wrap(setting, 5, direction);
+            setting = wrap(setting, sizeof(settings) / sizeof(settings[0]), direction);
             break;
         case FAULTS:
             fault_index = wrap(fault_index, fault_reader_count(), direction);
@@ -827,6 +876,7 @@ void menu_event(MenuEvent event) {
 #endif
         case INFO:
             info = wrap(info, INFO_PAGES, direction);
+            info_changed = currentTime;
             break;
         case SETUP:
             if (jump)
@@ -873,6 +923,7 @@ void menu_event(MenuEvent event) {
                 break;
             case 4:
                 view = INFO;
+                info_changed = currentTime;
                 break;
             }
             break;
@@ -881,9 +932,7 @@ void menu_event(MenuEvent event) {
             break;
         case FAVORITES:
         case VALUES:
-            view = ROOT;
-            parameter_request_cancel();
-            break;
+            break; /* Status pages do not use SELECT as hidden backward navigation. */
         case FUNCTIONS:
             action_run();
             break;
@@ -926,11 +975,16 @@ void menu_event(MenuEvent event) {
             }
             break;
         case ORDER_FAVORITES:
-            order_selected = !order_selected;
+            if (list_count)
+                order_selected = !order_selected;
             break;
         case FAULTS:
-            fault_reader_start(0x40);
-            fault_index = 0;
+            if (diagnostics_state.clear_faults_request)
+                menu_notice(UI_SYMBOL_WARNING " Clear active");
+            else {
+                fault_reader_start(0x40);
+                fault_index = 0;
+            }
             break;
         case INFO:
 #ifdef MENU_DIAGNOSTICS
@@ -939,7 +993,6 @@ void menu_event(MenuEvent event) {
                 break;
             }
 #endif
-            view = ROOT;
             break;
 #ifdef MENU_DIAGNOSTICS
         case DIAGNOSTICS:

@@ -58,3 +58,51 @@ void ui_render_pending(char *text, size_t capacity, const char *label, const cha
     snprintf_(value, sizeof(value), "%s%sWAIT", request, request[0] ? " " : "");
     ui_render_value(text, capacity, label, value);
 }
+
+/* Invalid or empty lists have no position; callers can show their empty-state text. */
+size_t ui_render_position(char *text, size_t capacity, unsigned current, unsigned total) {
+    if (!capacity)
+        return 0;
+    text[0] = 0;
+    if (!current || current > total)
+        return 0;
+    int used = snprintf_(text, capacity, "%u/%u ", current, total);
+    return used > 0 && (size_t)used < capacity ? (size_t)used : 0;
+}
+
+/* Shorten descriptive labels before values or the explicit action/back symbol. */
+bool ui_render_list_entry(char *text, size_t capacity, unsigned current, unsigned total,
+                          const char *entry) {
+    size_t used = ui_render_position(text, capacity, current, total);
+    if (!capacity)
+        return false;
+    char *out = text + used;
+    size_t remaining = capacity - used;
+    if (entry[0] == '!' && entry[1] == ' ' && used &&
+        strlen(entry) >= remaining && strlen(entry + 2) < remaining) {
+        text[used - 1] = '!';
+        snprintf_(text + used, capacity - used, "%s", entry + 2);
+        return true;
+    }
+    const char *value = strstr(entry, ": ");
+    if (value) {
+        size_t suffix = strlen(value);
+        if (suffix >= remaining) {
+            /* Never turn a long version, mode or status into a different value. */
+            snprintf_(text, capacity, "%s", entry);
+            return false;
+        }
+        int label = remaining > suffix + 1 ? (int)(remaining - suffix - 1) : 0;
+        if (label > (int)(value - entry)) label = (int)(value - entry);
+        snprintf_(out, remaining, "%.*s%s", label, entry, value);
+    } else {
+        size_t length = strlen(entry);
+        if (length >= 2 && entry[length - 2] == ' ' && entry[length - 1] == '>') {
+            size_t label = remaining > 3 ? remaining - 3 : 0;
+            if (label > length - 2) label = length - 2;
+            snprintf_(out, remaining, "> %.*s", (int)label, entry);
+        } else
+            snprintf_(out, remaining, "%s", entry);
+    }
+    return used != 0;
+}

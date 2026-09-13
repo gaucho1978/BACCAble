@@ -2,7 +2,7 @@ CC := clang
 FIRMWARE := ../firmware/baccable
 CPPFLAGS := -I$(FIRMWARE)
 CFLAGS := -std=c11 -Wall -Wextra -Werror -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer
-HEADERS := test_report.h test_setup_ui.c test_unified_ui.c $(shell find stubs $(FIRMWARE)/app $(FIRMWARE)/protocol $(FIRMWARE)/diagnostics $(FIRMWARE)/storage $(FIRMWARE)/features $(FIRMWARE)/transport $(FIRMWARE)/platform $(FIRMWARE)/USB_DEVICE/App $(FIRMWARE)/third_party/printf -name '*.h')
+HEADERS := test_menu_contract.c test_report.h test_setup_ui.c test_unified_ui.c $(shell find stubs $(FIRMWARE)/app $(FIRMWARE)/protocol $(FIRMWARE)/diagnostics $(FIRMWARE)/storage $(FIRMWARE)/features $(FIRMWARE)/transport $(FIRMWARE)/platform $(FIRMWARE)/USB_DEVICE/App $(FIRMWARE)/third_party/printf -name '*.h')
 SOURCES := test_core.c $(FIRMWARE)/protocol/slcan_codec.c $(FIRMWARE)/diagnostics/uds_decode.c \
  $(FIRMWARE)/storage/record_store.c
 
@@ -56,7 +56,7 @@ build/test_uart_menu: test_uart_menu.c $(FIRMWARE)/transport/board_uart.c $(HEAD
 	@mkdir -p build
 	$(CC) -Istubs $(CPPFLAGS) $(CFLAGS) -DC1_FLAVOR=1 -DGIT_VERSION=\"test\" test_uart_menu.c $(FIRMWARE)/transport/board_uart.c -o $@
 
-UPSTREAM_SOURCES := test_upstream.c $(addprefix $(FIRMWARE)/, diagnostics/fault_reader.c protocol/elm327.c transport/diagnostic_link.c features/ibs_override.c features/usb_modes.c third_party/printf/printf.c)
+UPSTREAM_SOURCES := test_upstream.c $(addprefix $(FIRMWARE)/, features/ui_entry.c diagnostics/fault_reader.c protocol/elm327.c transport/diagnostic_link.c features/ibs_override.c features/usb_modes.c third_party/printf/printf.c)
 build/test_upstream: $(UPSTREAM_SOURCES) $(HEADERS) Makefile
 	@mkdir -p build
 	$(CC) -Istubs $(CPPFLAGS) -I$(FIRMWARE)/USB_DEVICE/App $(CFLAGS) -DC1_FLAVOR=1 -DGIT_VERSION=\"test\" $(UPSTREAM_SOURCES) -lm -o $@

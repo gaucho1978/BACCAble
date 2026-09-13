@@ -19,13 +19,14 @@ static void open_test_action(const char *label) {
     uart_busy = false;
     fault_reader_cancel();
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT);
-    for (unsigned i = 0; i < 20 && !strstr(screen, label); ++i)
+    const char *search = !strcmp(label, "IBS override") ? "IBS" : !strcmp(label, "Brake req") ? "Brake" : label;
+    for (unsigned i = 0; i < 20 && !strstr(screen, search); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, label));
+    assert(strstr(screen, search));
 }
 
 static void test_shared_renderers(void) {
@@ -120,12 +121,12 @@ static void test_conditional_actions(void) {
     menu_action_reply(C1cmdForceFrontBrake);
     now += 1300;
     menu_render();
-    assert(strstr(screen, "Release launch"));
+    assert(strstr(screen, "End launch"));
     unsigned before = commands;
     menu_event(MENU_SELECT);
     assert(chassis_state.launch_assist_enabled && commands == before);
     menu_event(MENU_NEXT); /* The explicitly named Release launch action. */
-    assert(strstr(screen, "Release launch"));
+    assert(strstr(screen, "End launch"));
     menu_event(MENU_SELECT);
     menu_event(MENU_SELECT);
     assert(!chassis_state.launch_assist_enabled && chassis_state.front_brake_forced);
@@ -137,11 +138,11 @@ static void test_conditional_actions(void) {
     menu_action_reply(C1cmdNormalFrontBrake);
     now += 1300;
     menu_render();
-    assert(strstr(screen, "Brake req: OFF"));
+    assert(strstr(screen, "Brake") && strstr(screen, ": OFF"));
 }
 
 static void test_fault_action_exclusion(void) {
-    open_test_action("Read BCM faults");
+    open_test_action("BCM faults");
     diagnostics_state.clear_faults_request = 1;
     menu_render();
     assert(strstr(screen, "Clear active"));
@@ -272,11 +273,11 @@ static void test_request_cancel_and_failure(void) {
 #ifdef MENU_DIAGNOSTICS
 static void test_hidden_diagnostics(void) {
     fresh_menu();
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     for (unsigned i = 0; i < 4; ++i) menu_event(MENU_NEXT);
     menu_event(MENU_SELECT);
     for (unsigned i = 0; i < 5; ++i) menu_event(MENU_NEXT);
-    assert(strstr(screen, "IPC diagnostics"));
+    assert(strstr(screen, "IPC diag"));
     menu_event(MENU_SELECT);
     assert(!strncmp(screen, "20-27 ", 6));
     for (unsigned i = 0; i < 12; ++i) menu_event(MENU_NEXT);
@@ -285,7 +286,7 @@ static void test_hidden_diagnostics(void) {
     menu_event(MENU_SELECT);
     assert(strstr(screen, "Display A"));
     menu_event(MENU_BACK);
-    assert(strstr(screen, "IPC diagnostics"));
+    assert(strstr(screen, "IPC diag"));
 }
 #endif
 

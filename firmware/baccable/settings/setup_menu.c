@@ -193,6 +193,16 @@ static const SetupParam *setup_find_by_page(uint8_t page_index) {
     return NULL;
 }
 
+/* Nested lists have their own position; unfinished edits have no peer counter. */
+bool setup_list_position(unsigned *current, unsigned *total) {
+    const SetupParam *param = setup_find_by_page(setup_dashboardPageIndex);
+    if (editing || park_capture || (param && setup_get_value(param) && menu_setting_busy(param->flash_index)))
+        return false;
+    *total = park_menu ? 3 : setup_menu_pages_count();
+    *current = (park_menu ? park_page : setup_dashboardPageIndex) + 1;
+    return *total != 0 && *current <= *total;
+}
+
 /* Jump to a different functional group of feature settings. */
 void setup_move_group(int8_t delta) {
     if (setup_in_workflow()) {
@@ -278,24 +288,24 @@ static const char *setup_unavailable(const SetupParam *param) {
     switch (param->flash_index) {
     case 8:
         return settings_state.dyno_mode_master_enabled && chassis_state.dyno_mode_enabled_on_master
-                   ? "Stop Dyno first" : NULL;
+                   ? "Stop Dyno" : NULL;
     case 10:
         return settings_state.front_brake_forcer_master && chassis_state.front_brake_forced
-                   ? "Release brake" : NULL;
+                   ? "Release brk" : NULL;
     case 11:
-        return settings_state.awd_disabler_enabled && chassis_state.awd_sequence ? "Cancel 4WD first" : NULL;
+        return settings_state.awd_disabler_enabled && chassis_state.awd_sequence ? "Cancel 4WD" : NULL;
     case 13:
         return settings_state.clear_faults_enabled && diagnostics_state.clear_faults_request ? "Clear active" : NULL;
     case 15:
         return settings_state.read_faults_enabled && fault_reader_busy() ? "Read active" : NULL;
     case 34:
-        return ibs_override_enabled() ? "Stop IBS first" : NULL;
+        return ibs_override_enabled() ? "Stop IBS" : NULL;
     case 14:
         return settings_state.esc_tc_customizator_enabled && chassis_state.stability_inverted
-                   ? "Reset ESC first" : NULL;
+                   ? "Reset ESC" : NULL;
     case 28:
         return settings_state.qv_exhaust_flap_function_enabled && comfort_state.force_q_vexhaust_valve_opened
-                   ? "Release QV first" : NULL;
+                   ? "Release QV" : NULL;
     default: return NULL;
     }
 }
