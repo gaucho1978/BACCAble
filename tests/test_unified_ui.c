@@ -175,21 +175,26 @@ static void test_numeric_menu_flow(void) {
     menu_event(MENU_SELECT);
     setup_dashboardPageIndex = setup_page_for(5);
     settings_state.shift_threshold = 3500;
+    assert(settings_save() == 0 && menu_preferences_save() == 0);
+    settings_writes = preference_writes = usb_applies = 0;
     menu_event(MENU_SELECT);
     assert(strstr(screen, "* Shift RPM"));
     menu_event(MENU_NEXT);
     assert(strstr(screen, "3750") && settings_state.shift_threshold == 3500);
     menu_event(MENU_BACK);
     assert(!setup_in_workflow() && settings_state.shift_threshold == 3500);
+    assert(settings_writes == 0 && preference_writes == 0 && usb_applies == 0);
     menu_event(MENU_SELECT);
     menu_event(MENU_PREVIOUS);
     menu_event(MENU_SELECT);
     assert(settings_state.shift_threshold == 3250 && !setup_in_workflow());
+    assert(settings_writes == 0); /* Commit changes RAM only. */
     menu_event(MENU_SELECT);
     menu_event(MENU_NEXT);
     now += 60000;
     menu_process();
     assert(settings_state.shift_threshold == 3250); /* Idle save discards an unaccepted draft. */
+    assert(settings_writes == 1 && preference_writes == 0 && usb_applies == 1);
 }
 
 static void test_permission_guards(void) {

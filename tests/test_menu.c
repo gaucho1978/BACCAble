@@ -31,6 +31,8 @@ static char screen[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
 static uint8_t old_visibility[30], saved[MENU_PREFS_SIZE];
 static bool have_old, have_saved, fail_save;
 static unsigned commands, queries;
+static unsigned settings_writes, preference_writes, usb_applies;
+static uint16_t fail_type;
 static uint8_t last_command;
 static bool uart_busy;
 uint32_t HAL_GetTick(void) { return now; }
@@ -49,7 +51,7 @@ uint8_t board_uart_send(const uint8_t *data, size_t size) {
 }
 void pedal_booster_set_map(uint8_t map) { (void)map; }
 void _putchar(char c) { (void)c; }
-void usb_modes_apply(void) {}
+void usb_modes_apply(void) { ++usb_applies; }
 void status_led_error(void) {}
 void status_led_activity(void) {}
 uint32_t can_tx(CAN_TxHeaderTypeDef *header, uint8_t *data) {
@@ -80,7 +82,9 @@ bool flash_record_load(unsigned slot, uint16_t type, void *data, size_t size) {
 }
 bool flash_record_save(unsigned slot, uint16_t type, const void *data, size_t size) {
     (void)slot;
-    if (fail_save)
+    if (type == 0x101) ++settings_writes;
+    if (type == 0x104) ++preference_writes;
+    if (fail_save || type == fail_type)
         return false;
     if (type == 0x104) {
         assert(size == sizeof(saved));
@@ -277,6 +281,7 @@ static void fresh_menu(void) {
     have_saved = false;
     have_old = false;
     fail_save = false;
+    fail_type = 0;
     menu_init();
     menu_event(MENU_BACK);
 }
@@ -287,6 +292,65 @@ static void to_settings(void) {
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT);
 }
+/* Persistence compares committed domains and retries only the unsuccessful work. */
+static void test_automatic_persistence(void) {
+    fresh_menu();
+    to_settings();
+    assert(settings_save() == 0 && menu_preferences_save() == 0);
+    settings_writes = preference_writes = usb_applies = 0;
+    runtime_state.instruct_slave_boards_trigger_enabled = 0;
+    menu_event(MENU_SELECT); /* Setup. */
+    menu_event(MENU_BACK); /* Unchanged exit. */
+    assert(settings_writes == 0 && preference_writes == 0 && usb_applies == 0);
+    assert(strstr(screen, "Feature setup") && !strstr(screen, "Saved"));
+    menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT);
+    menu_event(MENU_SELECT); /* Sort changes preferences only. */
+    menu_event(MENU_BACK);
+    assert(settings_writes == 0 && preference_writes == 1 && usb_applies == 0);
+    assert(!runtime_state.instruct_slave_boards_trigger_enabled);
+    menu_event(MENU_BACK); /* Consecutive exit does not write again. */
+    assert(preference_writes == 1);
+
+    fresh_menu();
+    to_settings();
+    assert(settings_save() == 0 && menu_preferences_save() == 0);
+    settings_writes = preference_writes = usb_applies = 0;
+    menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT);
+    menu_event(MENU_SELECT); /* Dirty preferences. */
+    settings_state.shift_indicator_enabled = !settings_state.shift_indicator_enabled;
+    fail_type = 0x104;
+    menu_event(MENU_BACK);
+    assert(settings_writes == 1 && preference_writes == 1 && usb_applies == 1);
+    assert(strstr(screen, "Save failed"));
+    now += 60001; menu_process();
+    menu_event(MENU_NEXT); /* Error is modal; browsing cannot dismiss it. */
+    assert(preference_writes == 1 && strstr(screen, "Save failed"));
+    menu_event(MENU_SELECT); /* Still failing. */
+    assert(settings_writes == 1 && preference_writes == 2 && usb_applies == 1);
+    fail_type = 0;
+    menu_event(MENU_SELECT);
+    assert(preference_writes == 3 && settings_writes == 1 && usb_applies == 1);
+    assert(strstr(screen, "Settings") && !strstr(screen, "Saved"));
+    menu_event(MENU_BACK);
+    assert(preference_writes == 3);
+
+    fresh_menu();
+    to_settings();
+    assert(settings_save() == 0 && menu_preferences_save() == 0);
+    settings_writes = preference_writes = usb_applies = 0;
+    settings_state.shift_indicator_enabled = !settings_state.shift_indicator_enabled;
+    menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT); menu_event(MENU_NEXT);
+    menu_event(MENU_SELECT); /* Preferences must save even when settings fail. */
+    fail_type = 0x101;
+    menu_event(MENU_BACK);
+    assert(strstr(screen, "Save failed") && usb_applies == 0);
+    menu_event(MENU_BACK); /* Cancel exit, retain committed RAM value. */
+    assert(strstr(screen, "Sort"));
+    fail_type = 0;
+    menu_event(MENU_BACK);
+    assert(settings_writes == 2 && preference_writes == 1 && usb_applies == 1);
+}
+
 /* A rejected screen remains retryable, including a periodic resend of identical text. */
 static void test_present_retry(void) {
     fresh_menu();
@@ -324,16 +388,16 @@ static void test_controller(void) {
     assert(dashboard_state.dashboard_page_index == selected);
     fresh_menu();
     to_settings();
-    menu_event(MENU_SELECT); /* Setup Save and back. */
+    menu_event(MENU_SELECT); /* Enter Feature setup. */
     fail_save = true;
-    menu_event(MENU_SELECT);
+    menu_event(MENU_BACK);
     assert(strstr(screen, "! Save failed"));
     now += 1800;
     menu_render();
-    assert(strstr(screen, "< Save and back"));
+    assert(strstr(screen, "! Save failed"));
     fail_save = false;
     menu_event(MENU_SELECT);
-    assert(strstr(screen, "Saved"));
+    assert(!strstr(screen, "Saved"));
     now += 1500;
     menu_render();
     assert(strstr(screen, "> Feature setup"));
@@ -430,7 +494,7 @@ static void test_navigation_regressions(void) {
     fresh_menu();
     to_settings();
     menu_event(MENU_SELECT);
-    menu_event(MENU_NEXT); /* A setting instead of Save and back. */
+    menu_event(MENU_NEXT); /* Browse a setting without committing it. */
     fail_save = true;
     menu_event(MENU_BACK);
     assert(strstr(screen, "! Save failed"));
@@ -655,8 +719,7 @@ static void test_idle_close(void) {
     now += 60001;
     menu_process();
     assert(dashboard_state.baccable_dashboard_menu_visible); /* Wait for deliberate retry. */
-    menu_event(MENU_SELECT);
-    menu_event(MENU_BACK);
+    menu_event(MENU_SELECT); /* Retry completes the original idle close. */
     assert(!dashboard_state.baccable_dashboard_menu_visible);
 
     fresh_menu();
@@ -1008,6 +1071,7 @@ int main(void) {
         HOST_TEST(test_preferences),
         HOST_TEST(test_present_retry),
         HOST_TEST(test_controller),
+        HOST_TEST(test_automatic_persistence),
         HOST_TEST(test_navigation_regressions),
         HOST_TEST(test_navigation_context),
         HOST_TEST(test_repeat_views),

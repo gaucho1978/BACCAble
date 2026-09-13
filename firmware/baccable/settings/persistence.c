@@ -40,6 +40,10 @@ uint8_t settings_save(void) {
     if (setup_flash_slots_count() > SETUP_FLASH_PARAM_BUFFER_SIZE)
         return 254;
     setup_fill_flash_params(values);
+    load_settings();
+    /* Serialized comparison also catches changes made outside menu callbacks. */
+    if (!memcmp(saved_settings, values, sizeof(values)))
+        return 0;
     if (!flash_record_save(SETTINGS_RECORD, 0x101, values, sizeof(values)))
         return 255;
     memcpy(saved_settings, values, sizeof(values));

@@ -24,7 +24,7 @@ open the last favorite. The distance button has the same menu function as RES.
 | Gesture | Result |
 | --- | --- |
 | Short RES, then release | Enter or select; from a reading, open the main menu |
-| Hold RES for 1200 ms | Return one level; from the main menu, save and close |
+| Hold RES for 1200 ms | Return one level; from the main menu, close |
 | Gentle down/up | Next/previous item; hold to repeat in lists |
 | Stronger down/up | Next/previous reading, action or setting group |
 
@@ -59,7 +59,7 @@ action, view and side effect.
 | `Read faults >` | Action/workflow; SELECT enters or requests it |
 | `! Start engine` | Known unmet condition or failure |
 | `? BH no reply` | Unknown/stale status |
-| `< Back` | Exit a submenu; `< Save and back` also saves |
+| `< Back` | Exit a submenu |
 | `*` in favorite ordering | Selected item being moved |
 
 Only ASCII glyphs are used in production. Signs on numeric readings and trim
@@ -116,14 +116,17 @@ automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 4. In `Sort order`, RES switches between functional grouping and A–Z by page
    label. Sorting affects the catalog and editors; favorites retain their custom
    order. Stronger presses move between groups in editors.
-5. Use `Save` or return with a long RES. Leaving an editor saves preferences;
-   leaving feature options also saves settings. Closing the main menu saves both.
+5. Return with a long RES. Committed changes are saved automatically when leaving
+   configuration or closing the menu. Unchanged domains are skipped; successful
+   persistence is silent. There are no explicit Save entries.
    The last favorite and last pages within groups are remembered.
 
 Favorites, visibility and remembered pages are separate for gasoline and diesel;
 sort order is shared. Switching engine profiles clears the measurement cache.
 `Save failed: RES` keeps the menu open and the changes in RAM. RES retries the
-save or pending return instead of accidentally toggling the selected option.
+pending exit explicitly. BACK cancels that exit and stays in the current view;
+committed RAM changes remain unsaved until a later successful exit. Other navigation
+is ignored while the error is shown; idle processing does not retry automatically.
 Persistent failure also prevents closing through the main menu. Settings and menu
 preferences are separate saves, not a combined transaction.
 
@@ -256,7 +259,7 @@ and may ultimately produce a timeout. No new ECU requests or retry rules are add
 
 ### Feedback and inactivity
 
-Simple toggle/save confirmations last 750 ms; warnings marked `!` last 1800 ms.
+Simple toggle confirmations last 750 ms; warnings marked `!` last 1800 ms.
 Other request notices retain 1200 ms. Navigation dismisses notices immediately;
 vehicle confirmation rules are unchanged. Diagnostic progress remains driven by
 the diagnostic state, not a cosmetic timer.
@@ -290,7 +293,7 @@ USB mode cycles OFF → CAN → ELM327 → OFF (without ELM327 support: OFF → 
 The original two persisted flags remain; CAN wins when loading conflicting legacy
 flags. The second flag is hidden, including in non-ELM builds, so no independent
 switch implies both modes can run together. Stop IBS override before changing USB
-mode: USB activation otherwise disables that experiment. Modes apply on Save.
+mode: USB activation otherwise disables that experiment. Modes apply after successful automatic settings persistence.
 
 Front brake activation explicitly confirms `Brake+launch? RES`, because the
 existing C2 reply arms Launch Assist. While launch is active, Front brake refuses

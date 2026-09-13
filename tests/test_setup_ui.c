@@ -3,7 +3,7 @@ static uint8_t setup_page_for(uint8_t slot) {
     const SetupParam *param = setup_find_by_flash_index(slot);
     assert(param && param->menu_text);
     setup_cancel_edit();
-    for (uint8_t page = 1; page < 40; ++page) {
+    for (uint8_t page = 0; page < 40; ++page) {
         setup_render_page(page);
         char expected[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
         if (param->entry_type == UI_ENTRY_TOGGLE)

@@ -14,8 +14,6 @@
     #include <string.h>
     #include "app/powertrain.h"
 
-    #define SETUP_SAVE_EXIT_PAGE 0
-    #define SETUP_SAVE_EXIT_TEXT "< Save and back"
 
 
 uint8_t setup_dashboardPageIndex = 0;
@@ -132,9 +130,9 @@ static void setup_set_value(const SetupParam *param, uint16_t value) {
 /* Check whether a saved preference has a user-facing menu entry. */
 static uint8_t setup_param_is_visible(const SetupParam *param) { return param->menu_text != 0; }
 
-/* Count the available feature settings, including the save-and-return entry. */
+/* Count the available feature settings, without synthetic navigation entries. */
 static uint8_t setup_menu_pages_count(void) {
-    uint8_t count = 1; // page 0 is Save and back
+    uint8_t count = 0;
     for (uint8_t i = 0; i < setup_params_count; i++)
         if (setup_param_is_visible(&setup_params[i]))
             count++;
@@ -183,9 +181,7 @@ static uint8_t setup_group(uint8_t id) {
 
 /* Find the feature setting at a visible menu position. */
 static const SetupParam *setup_find_by_page(uint8_t page_index) {
-    if (!page_index)
-        return NULL;
-    uint8_t visible_page = 1;
+    uint8_t visible_page = 0;
     for (unsigned group = 0; group < 5; ++group)
         for (unsigned i = 0; i < setup_params_count; ++i) {
             const SetupParam *param = &setup_params[i];
@@ -216,8 +212,7 @@ void setup_move_group(int8_t delta) {
 /* Prepare a clean screen for the selected setting. */
 static void setup_reset_page_text(uint8_t page) {
     const SetupParam *param = setup_find_by_page(page);
-    const char *text =
-        (page == SETUP_SAVE_EXIT_PAGE) ? SETUP_SAVE_EXIT_TEXT : (param ? param->menu_text : "");
+    const char *text = param ? param->menu_text : "";
     uint8_t col = 0;
 
     memset(dashboard_setup_screen, ' ', DASHBOARD_MESSAGE_MAX_LENGTH);
@@ -369,10 +364,6 @@ void setup_move_page(int8_t delta) {
 
 /* Apply the user's choice to the selected feature setting. */
 void setup_select_page(uint8_t page_index) {
-    /* Saving and returning are handled by the menu controller. */
-    if (page_index == 0)
-        return;
-
     const SetupParam *param = setup_find_by_page(page_index);
     if (!param)
         return;

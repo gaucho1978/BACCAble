@@ -76,7 +76,7 @@ static ActionRequest requests[ACTION_COUNT];
 #endif
 static const char *const roots[] = {"Favorites", "Readings", "Actions", "Settings", "Information"};
 static const char *const settings[] = {"Feature setup",   "Edit favorites", "Visible pages",
-                                       "Order favorites", "Sort order",     "Save"};
+                                       "Order favorites", "Sort order"};
 static char peer_versions[2][DASHBOARD_MESSAGE_MAX_LENGTH - 2];
 static uint32_t peer_updated[2];
 static uint8_t peer_seen[2];
@@ -103,7 +103,12 @@ static char notice_text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
 static uint8_t previous_text[DASHBOARD_MESSAGE_MAX_LENGTH], previous_valid;
 static uint32_t previous_sent;
 static uint8_t confirmed_action = 255;
-static bool retry_back, close_pending;
+static bool close_pending;
+/* A failed exit stays explicit until the user retries or cancels it. */
+static bool save_failed, save_close;
+static MenuView save_destination;
+static uint8_t saved_preferences[MENU_PREFS_SIZE];
+static bool preferences_saved;
 #define MENU_IDLE_MS 30000U
 #define EDITOR_IDLE_MS 60000U
 #define NOTICE_CONFIRM_MS 750U
@@ -277,7 +282,7 @@ void menu_notice(const char *text) {
     bool toggle = (length >= 4 && !strcmp(text + length - 4, ": ON")) ||
                   (length >= 5 && !strcmp(text + length - 5, ": OFF"));
     notice_duration = text[0] == UI_SYMBOL_WARNING[0] ? NOTICE_WARNING_MS
-                      : toggle || !strcmp(text, "Saved") || !strcmp(text, "Records cleared")
+                      : toggle || !strcmp(text, "Records cleared")
                           ? NOTICE_CONFIRM_MS : NOTICE_REQUEST_MS;
     if (dashboard_state.baccable_dashboard_menu_visible)
         menu_present(text);
@@ -287,7 +292,13 @@ void menu_notice(const char *text) {
 uint8_t menu_preferences_save(void) {
     uint8_t data[MENU_PREFS_SIZE];
     menu_preferences_encode(&preferences, data);
-    return flash_record_save(VISIBILITY_RECORD, 0x104, data, sizeof(data)) ? 0 : 255;
+    if (preferences_saved && !memcmp(data, saved_preferences, sizeof(data)))
+        return 0;
+    if (!flash_record_save(VISIBILITY_RECORD, 0x104, data, sizeof(data)))
+        return 255;
+    memcpy(saved_preferences, data, sizeof(data));
+    preferences_saved = true;
+    return 0;
 }
 
 /* Switch parameter catalogs and discard readings from the previous engine profile. */
@@ -326,7 +337,8 @@ void menu_init(void) {
     last_query = 0;
     last_render = 0;
     order_selected = 0;
-    retry_back = close_pending = false;
+    save_failed = save_close = close_pending = false;
+    preferences_saved = false;
     last_input = currentTime;
     menu_preferences_default(&preferences);
     uint8_t data[MENU_PREFS_SIZE];
@@ -339,6 +351,9 @@ void menu_init(void) {
             for (unsigned e = 0; e < 2; ++e)
                 for (unsigned i = 0; i < menu_page_count(e); ++i)
                     menu_page_show(&preferences, e, i, !!(old[i / 8] & (1U << (i % 8))));
+    } else {
+        memcpy(saved_preferences, data, sizeof(data));
+        preferences_saved = true;
     }
     menu_engine_changed();
 }
@@ -575,6 +590,10 @@ void menu_render(void) {
     if (!dashboard_state.baccable_dashboard_menu_visible)
         return;
     action_requests_process();
+    if (save_failed) {
+        menu_present(UI_SYMBOL_WARNING " Save failed: RES");
+        return;
+    }
     if (notice && currentTime - notice_started < notice_duration) {
         menu_present(notice);
         return;
@@ -675,16 +694,6 @@ void menu_render(void) {
     menu_present(text);
 }
 
-/* Save device settings and menu preferences, reporting any failure. */
-static bool save_all(void) {
-    if (settings_save() != 0 || menu_preferences_save() != 0) {
-        menu_notice(UI_SYMBOL_WARNING " Save failed: RES");
-        return false;
-    }
-    menu_notice("Saved");
-    return true;
-}
-
 /* Release the display, retrying a rejected clear until the UART accepts it. */
 static void close_menu(void) {
     dashboard_state.baccable_dashboard_menu_visible = 0;
@@ -696,7 +705,32 @@ static void close_menu(void) {
     dashboard_clear();
 }
 
-/* Return to the parent menu and save edits before leaving their editor. */
+/* Persist each changed domain independently before completing a requested exit. */
+static void persist_exit(void) {
+    uint8_t settings_result = settings_save();
+    uint8_t preferences_result = menu_preferences_save();
+    save_failed = settings_result != 0 || preferences_result != 0;
+    if (save_failed) {
+        menu_present(UI_SYMBOL_WARNING " Save failed: RES");
+        return;
+    }
+    notice = NULL;
+    parameter_request_cancel();
+    if (save_close) {
+        fault_reader_cancel();
+        close_menu();
+    } else
+        view = save_destination;
+}
+
+/* Remember the destination so retries never reinterpret a navigation event. */
+static void request_exit(MenuView destination, bool close) {
+    save_destination = destination;
+    save_close = close;
+    persist_exit();
+}
+
+/* Cancel one unfinished workflow or return to its parent after persistence. */
 static void back(void) {
 #ifdef MENU_DIAGNOSTICS
     if (view == DIAGNOSTICS) {
@@ -710,35 +744,22 @@ static void back(void) {
         return;
     }
     if (view == ROOT) {
-        if (!save_all()) {
-            retry_back = true;
-            return;
-        }
-        close_menu();
+        request_exit(ROOT, true);
         return;
     }
     if (view == SETUP) {
         if (setup_back())
             return;
         setup_last = setup_dashboardPageIndex;
-        if (!save_all()) {
-            retry_back = true;
-            return;
-        }
-        view = SETTINGS;
+        request_exit(SETTINGS, false);
     } else if (is_editor() || view == ORDER_FAVORITES) {
-        if (menu_preferences_save() != 0) {
-            retry_back = true;
-            menu_notice(UI_SYMBOL_WARNING " Save failed: RES");
-            return;
-        }
-        view = SETTINGS;
-        menu_notice("Saved");
+        request_exit(SETTINGS, false);
+    } else if (view == SETTINGS) {
+        request_exit(ROOT, false);
     } else if (view == VALUES)
         view = GROUPS;
-    else {
+    else
         view = ROOT;
-    }
     parameter_request_cancel();
 }
 
@@ -761,9 +782,17 @@ void menu_event(MenuEvent event) {
         }
         return;
     }
-    if (event == MENU_SELECT && retry_back)
-        event = MENU_BACK;
-    retry_back = false;
+    if (save_failed) {
+        if (event == MENU_SELECT)
+            persist_exit();
+        else if (event == MENU_BACK) {
+            save_failed = false;
+            notice = NULL;
+        }
+        if (dashboard_state.baccable_dashboard_menu_visible)
+            menu_render();
+        return;
+    }
     if (event != MENU_SELECT)
         confirmed_action = 255;
     notice = NULL;
@@ -786,7 +815,7 @@ void menu_event(MenuEvent event) {
             function_move(direction, jump);
             break;
         case SETTINGS:
-            setting = wrap(setting, 6, direction);
+            setting = wrap(setting, 5, direction);
             break;
         case FAULTS:
             fault_index = wrap(fault_index, fault_reader_count(), direction);
@@ -880,17 +909,10 @@ void menu_event(MenuEvent event) {
             case 4:
                 preferences.alphabetical = !preferences.alphabetical;
                 break;
-            case 5:
-                save_all();
-                break;
             }
             break;
         case SETUP:
-            if (setup_dashboardPageIndex == 0 && !setup_in_workflow()) {
-                if (save_all())
-                    view = SETTINGS;
-            } else
-                setup_select_page(setup_dashboardPageIndex);
+            setup_select_page(setup_dashboardPageIndex);
             break;
         case EDIT_FAVORITES:
             if (list_count &&
@@ -933,7 +955,7 @@ void menu_event(MenuEvent event) {
 void menu_button(uint8_t button, bool allowed) {
     #ifndef HIDE_DASHBOARD_MENU
     MenuEvent event = menu_input_update(&input, button, allowed, currentTime);
-    bool repeat_allowed = allowed && dashboard_state.baccable_dashboard_menu_visible &&
+    bool repeat_allowed = allowed && !save_failed && dashboard_state.baccable_dashboard_menu_visible &&
                           (view == FAVORITES || view == VALUES || view == GROUPS ||
                            view == SETTINGS || view == SETUP || is_editor() ||
                            (view == ORDER_FAVORITES && !order_selected));
@@ -963,18 +985,15 @@ void menu_process(void) {
     /* Reading screens are intentionally persistent; active diagnostics get a fresh grace period. */
     if (fault_reader_busy() || diagnostics_state.clear_faults_request) {
         last_input = currentTime;
-    } else if (view != FAVORITES && view != VALUES && !retry_back &&
+    } else if (view != FAVORITES && view != VALUES && !save_failed &&
                currentTime - last_input >= (editor ? EDITOR_IDLE_MS : MENU_IDLE_MS)) {
         if (view == SETUP) {
             setup_cancel_edit();
             setup_last = setup_dashboardPageIndex;
         }
-        if (save_all()) {
-            fault_reader_cancel();
-            close_menu();
+        request_exit(ROOT, true);
+        if (!save_failed)
             return;
-        }
-        retry_back = true;
     }
     if (menu_parameters_active() && settings_state.rotate_readings && currentTime - page_changed >= 5000) {
         selection = wrap(selection, list_count, 1);
