@@ -1,0 +1,14 @@
+name: Diagnostics build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    uses: ./.github/workflows/ci.yml
+    with:
+      version: diagnostics
+      extra_cppflags: -DMENU_DIAGNOSTICS
