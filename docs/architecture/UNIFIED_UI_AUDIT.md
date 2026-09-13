@@ -2,7 +2,8 @@
 
 Historical beta-6 inventory. For current navigation, automatic persistence and
 numbering, see [the consistency delivery](../MENU_UX_CONSISTENCY_DELIVERY.md) and
-[the menu guide](MENU_UX.md).
+[the menu guide](MENU_UX.md). Subsequent user-reported glyph validation and idle
+behavior are recorded in [idle and glyph delivery](IDLE_AND_GLYPHS.md).
 
 This inventory accompanies [the UX requirements](../BACCAble%20Unified%20Menu%20UX%20and%20Interaction%20Refactor%20Plan.md). Firmware sources, rather than vehicle assumptions, determine what can be reported as confirmed. Implementation and host validation are recorded below; hardware validation remains separate.
 

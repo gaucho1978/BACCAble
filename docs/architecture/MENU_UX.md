@@ -2,7 +2,7 @@
 
 The catalog contains 64 gasoline pages and 60 diesel pages. Navigation,
 preferences and text transport have separate modules. All display labels use
-English ASCII. Page labels fit within 16 characters, leaving two characters for
+English with selected raw Latin-1 glyphs. Page labels fit within 16 characters, leaving two characters for
 editor marks on an 18-character display.
 
 ## Engine profile and advanced pages
@@ -63,7 +63,7 @@ action, view and side effect.
 
 | Representation | Meaning |
 | --- | --- |
-| `Auto rotate: ON` / `OFF` | True toggle; SELECT flips the preference |
+| `Ø Auto rotate` / `O Auto rotate` | True editable toggle; SELECT flips the preference |
 | `Engine: 2.0 I4` | Named enum; SELECT cycles |
 | `* Shift RPM: 3500` | Numeric draft; directions edit, SELECT accepts, BACK cancels |
 | `1/8 > BCM faults` | Action/workflow; SELECT enters or requests it |
@@ -72,9 +72,18 @@ action, view and side effect.
 | `< Back` | Exit a submenu |
 | `*` in favorite ordering | Selected item being moved |
 
-Only ASCII glyphs are used in production. Signs on numeric readings and trim
-remain arithmetic signs, not toggle markers. Labels may shorten to preserve the
-value on the 18-character screen; named setup labels are kept compact.
+Production uses ASCII plus the small hardware-reported vocabulary in
+`features/ui_glyphs.h`. Editable booleans and membership lists use O/Ø; status-only
+and vehicle-request state retain ON/OFF. `*` still means editing/reordering, `>`
+means enter/action, `!` is attention/precondition, `?` is unknown, and `×` marks a
+failed local operation. A missing vehicle confirmation remains `?`, not a claim
+that the requested physical state failed. Signs on numeric readings remain signs.
+
+Temperature formatting reuses an existing unit gap for °C or adds a degree byte
+only if all original values/units fit. Dense pages may retain C. Numeric editors
+add «/» only when the complete existing label/value still fits; narrow editors
+keep their previous format. The verified · and ± are reserved for meaningful
+future uses, not added as decoration. See [idle and glyph delivery](IDLE_AND_GLYPHS.md).
 
 `4WD req: OFF WAIT` and `QV req: OPEN WAIT`/`AUTO WAIT` mean an unresolved request,
 not measured drivetrain or valve state. 4WD repeats until explicitly cancelled;
@@ -92,8 +101,8 @@ reliable measured acknowledgement and can report `No confirmation`.
 
 | Page label | Example screen | Meaning |
 | --- | --- | --- |
-| Oil temp / Oil temp (ECU) | `Oil temp 100 C` | Engine oil temperature |
-| Coolant temp | `Coolant temp  90C` | Engine coolant temperature |
+| Oil temp / Oil temp (ECU) | `Oil temp 100°C` | Engine oil temperature |
+| Coolant temp | `Coolant temp  90°C` | Engine coolant temperature |
 | Battery voltage | `Battery 14.20 V` | Battery voltage |
 | Battery current | `Battery  -12.3 A` | Signed battery current |
 | Battery charge | `Batt charge  80%` | Reported battery state of charge |
@@ -115,7 +124,7 @@ automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 
 ## Personalization and actions
 
-1. In `Settings → Favorites`, RES adds/removes the selected page. `ON` marks
+1. In `Settings → Favorites`, RES adds/removes the selected page. `Ø` marks
    a favorite. Gasoline and diesel each have a six-page limit; I4/V6 share the gasoline list.
 2. In `Fav. order`, select an item with RES; `*` marks move mode. Move it
    with the direction controls and press RES again to finish. Movement stops at
@@ -133,7 +142,7 @@ automatic Start/Stop; `Stop odo blink` means suppressing the blinking odometer.
 
 Favorites, visibility and remembered pages are separate for gasoline and diesel;
 sort order is shared. Switching engine profiles clears the measurement cache.
-`Save failed: RES` keeps the menu open and the changes in RAM. RES retries the
+`× Save failed: RES` keeps the menu open and the changes in RAM. RES retries the
 pending exit explicitly. BACK cancels that exit and stays in the current view;
 committed RAM changes remain unsaved until a later successful exit. Other navigation
 is ignored while the error is shown; idle processing does not retry automatically.
@@ -259,26 +268,28 @@ RES to leave. All messages fit the standard and large displays.
 
 | Message | Meaning |
 | --- | --- |
-| `! Read timeout` | A response or its remaining fragments did not complete within the existing time limits, including repeated pending responses. |
-| `! ECU rejected` | The controller returned a negative response other than response-pending. |
-| `! Invalid reply` | The reader rejected a response length, payload layout or fragment sequence. |
-| `! CAN send failed` | The session request, fault query or flow-control frame was not queued before the read deadline; this does not diagnose a physical CAN fault. |
+| `× Read timeout` | A response or its remaining fragments did not complete within the existing time limits, including repeated pending responses. |
+| `× ECU rejected` | The controller returned a negative response other than response-pending. |
+| `× Invalid reply` | The reader rejected a response length, payload layout or fragment sequence. |
+| `× CAN send failed` | The session request, fault query or flow-control frame was not queued before the read deadline; this does not diagnose a physical CAN fault. |
 
 Unrelated or ignored malformed frames still follow the existing filtering rules
 and may ultimately produce a timeout. No new ECU requests or retry rules are added.
 
 ### Feedback and inactivity
 
-Simple toggle confirmations last 750 ms; warnings marked `!` last 1800 ms.
+Simple toggle confirmations last 750 ms; warnings `!` and failure notices `×` last 1800 ms.
 Other request notices retain 1200 ms. Navigation dismisses notices immediately;
 vehicle confirmation rules are unchanged. Diagnostic progress remains driven by
 the diagnostic state, not a cosmetic timer.
 
-Idle navigation and information screens close after 30 seconds. Settings and
-editors allow 60 seconds and save before closing. Favorites and reading screens
-stay open for continuous monitoring. Active fault reading/clearing postpones
-closure. A save failure keeps the menu open and requires deliberate input to
-retry; it does not repeatedly attempt automatic writes. Existing record storage
+After 30 seconds, idle navigation/information returns to Favorites. Settings and
+editors allow 60 seconds: unfinished drafts/capture are cancelled and committed
+changes are persisted before returning home. The overlay stays visible, and
+NEXT/PREV works without reopening it. Favorites and readings remain live; active
+fault reading/clearing postpones the automatic return. Only ROOT + BACK explicitly
+closes and clears the overlay. A save failure keeps the menu open and requires
+deliberate input to retry; it does not repeatedly attempt automatic writes. Existing record storage
 skips writing unchanged payloads.
 
 Closing retries the blank screen if UART is busy. Reopening cancels that pending
@@ -288,7 +299,7 @@ physical radio/display behavior still needs vehicle validation.
 ## Numeric editors, capture and exclusive modes
 
 SELECT enters a numeric draft, NEXT/PREV adjusts by the existing step, SELECT
-accepts and BACK cancels without saving the draft. Idle closure also discards an
+accepts and BACK cancels without saving the draft. Idle return also discards an
 unaccepted draft. Shift RPM: 1500–6000/250; Launch Nm: 25–600/25; Pedal trim:
 −10…+10/2. Values clamp at boundaries. Existing in-range saved values are preserved.
 
@@ -318,9 +329,12 @@ released, avoiding hidden stops or resumed requests when permissions return.
 Build C1 with `EXTRA_CPPFLAGS=-DMENU_DIAGNOSTICS`; no production menu entry is added
 without this flag. Information gains `IPC diag >`. NEXT/PREV cycles raw-byte
 groups labelled in hex; SELECT switches to an A/B refresh pattern; BACK returns.
-The test covers 0x20–0x7E and 0x80–0xFF as single bytes, including 0xD8. These bytes
-are test candidates, not approved production glyphs. MY23 selection is independent
-of LARGE_DISPLAY. Check each physical IPC before approving any non-ASCII symbol.
+The diagnostic test still covers 0x20–0x7E and 0x80–0xFF as raw single bytes.
+The user reports printable ASCII and Latin-1-like 0xA0–0xFF on the tested IPC;
+0x80–0x9F is unsupported/control and must not be used by production renderers.
+Only the selected constants in ui_glyphs.h are adopted. Diagnostic coverage is not
+approval of every candidate on every IPC revision. MY23 and LARGE_DISPLAY remain
+independent settings; validate other physical IPC variants before assuming a match.
 
 
 ## Global interaction contract

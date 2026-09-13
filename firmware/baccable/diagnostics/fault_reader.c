@@ -22,7 +22,7 @@ static void fail(const char *reason) {
 
 /* Distinguish a request that could not be queued from an overdue response. */
 static void fail_timeout(void) {
-    fail(state == START || state == QUERY || state == FLOW ? UI_SYMBOL_WARNING " CAN send failed" : UI_SYMBOL_WARNING " Read timeout");
+    fail(state == START || state == QUERY || state == FLOW ? UI_SYMBOL_FAILURE " CAN send failed" : UI_SYMBOL_FAILURE " Read timeout");
 }
 
 /* Begin reading stored and current faults from the selected controller. */
@@ -86,7 +86,7 @@ static void append(const uint8_t *data, unsigned length) {
     updated = currentTime;
     if (received == expected) {
         if (payload[0] != 0x59 || payload[1] != 2 || expected < 3 || (expected - 3) % 4)
-            fail(UI_SYMBOL_WARNING " Invalid reply");
+            fail(UI_SYMBOL_FAILURE " Invalid reply");
         else {
             count = (expected - 3) / 4 > FAULT_LIMIT ? FAULT_LIMIT : (expected - 3) / 4;
             state = DONE;
@@ -107,7 +107,7 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
         if (d[3] == 0x78)
             updated = currentTime;
         else
-            fail(UI_SYMBOL_WARNING " ECU rejected");
+            fail(UI_SYMBOL_FAILURE " ECU rejected");
         return;
     }
     if (state == SESSION) {
@@ -126,7 +126,7 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
             return;
         expected = (uint16_t)(d[0] & 15) << 8 | d[1];
         if (expected <= 7 || (expected - 3) % 4) {
-            fail(UI_SYMBOL_WARNING " Invalid reply");
+            fail(UI_SYMBOL_FAILURE " Invalid reply");
             return;
         }
         received = 0;
@@ -136,7 +136,7 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
     } else if (state == FRAGMENTS && (d[0] >> 4) == 2) {
         if ((d[0] & 15) != sequence || (expected - received > 7 && h->DLC != 8) ||
             h->DLC - 1 < (unsigned)(expected - received < 7 ? expected - received : 7)) {
-            fail(UI_SYMBOL_WARNING " Invalid reply");
+            fail(UI_SYMBOL_FAILURE " Invalid reply");
             return;
         }
         sequence = (sequence + 1) & 15;

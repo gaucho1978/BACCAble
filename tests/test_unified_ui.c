@@ -41,7 +41,7 @@ static void test_shared_renderers(void) {
         ui_render_signed_number(text, size, "Pedal trim", 4, false);
         assert(!strcmp(text, "Pedal trim: +4"));
         ui_render_number(text, size, "Shift RPM", 3500, true);
-        assert(!strcmp(text, "* Shift RPM: 3500"));
+        assert(!strcmp(text, size == 19 ? "* Shift RPM: 3500" : "* Shift RPM: " "\xAB" " 3500 " "\xBB"));
         ui_render_action(text, size, "Read faults");
         assert(!strcmp(text, "Read faults >"));
         ui_render_pending(text, size, "4WD req", "OFF");
@@ -196,6 +196,7 @@ static void test_numeric_menu_flow(void) {
     menu_process();
     assert(settings_state.shift_threshold == 3250); /* Idle save discards an unaccepted draft. */
     assert(settings_writes == 1 && preference_writes == 0 && usb_applies == 1);
+    assert(menu_parameters_active() && dashboard_state.baccable_dashboard_menu_visible);
 }
 
 static void test_permission_guards(void) {

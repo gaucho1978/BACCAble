@@ -39,7 +39,7 @@ void body_init() {
     display_state.telematic_display_info_msg_data[1] =
         (display_state.telematic_display_info_msg_data[1] & ~0x3F) |
         ((display_state.telematic_display_info_field_info_code) & 0x3F);
-    // I don't use UTF chars, but ascii, so bytes 2,4,6 can be set to zero
+    // Single-byte IPC glyphs occupy the low bytes; the high bytes remain zero.
     display_state.telematic_display_info_msg_data[2] = 0;
     display_state.telematic_display_info_msg_data[4] = 0;
     display_state.telematic_display_info_msg_data[6] = 0;

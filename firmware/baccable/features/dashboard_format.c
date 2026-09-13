@@ -1,4 +1,5 @@
 #include "app/powertrain.h"
+#include "features/ui_glyphs.h"
 #include <stdbool.h>
 #if defined(BACCABLE_C1)
 
@@ -88,11 +89,17 @@ static bool number_placeholder(const char *text) {
 void dashboard_format_values(const char *template, const float *values, const uint8_t *paramId,
                              char *result) {
     size_t length = 0;
-    unsigned element = 0;
+    unsigned element = 0, degrees = 0;
+    size_t degree_positions[4];
+    const char *celsius = NULL;
     for (const char *text = template; *text && length < DASHBOARD_MESSAGE_MAX_LENGTH;) {
         bool numeric = number_placeholder(text);
         bool enumeration = !strncmp(text, "$enum", 5);
         if (element >= 4 || paramId[element] >= 100 || (!numeric && !enumeration)) {
+            if (text == celsius && length && text[-1] == ' ')
+                result[length - 1] = UI_GLYPH_DEGREE; /* Reuse the optional unit gap. */
+            else if (text == celsius && degrees < 4)
+                degree_positions[degrees++] = length;
             result[length++] = *text++;
             continue;
         }
@@ -110,6 +117,10 @@ void dashboard_format_values(const char *template, const float *values, const ui
         append_text(result, &length, formatted);
         ++element;
         text += 5;
+        const char *unit = text;
+        while (*unit == ' ') ++unit;
+        celsius = numeric && unit[0] == 'C' &&
+                  (unit[1] == 0 || unit[1] == ' ' || unit[1] == '/' || unit[1] == '$') ? unit : NULL;
         /* A run status is text, so it must not acquire the numeric seconds suffix. */
         if (formatted == statistics_labels[0] || formatted == statistics_labels[1]) {
             if (*text == ' ')
@@ -119,6 +130,14 @@ void dashboard_format_values(const char *template, const float *values, const ui
         }
     }
     result[length] = '\0';
+    /* Degrees are optional: dense pages retain all original numbers and units. */
+    if (length + degrees <= DASHBOARD_MESSAGE_MAX_LENGTH)
+        while (degrees) {
+            size_t position = degree_positions[--degrees];
+            memmove(result + position + 1, result + position, length - position + 1);
+            result[position] = UI_GLYPH_DEGREE;
+            ++length;
+        }
 }
 
 #endif

@@ -1,5 +1,6 @@
 #ifndef BACCABLE_UI_ENTRY_H
 #define BACCABLE_UI_ENTRY_H
+#include "features/ui_glyphs.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -16,7 +17,7 @@ typedef enum {
     UI_ENTRY_STATUS
 } UiEntryType;
 
-/* Production glyphs are ASCII; unverified IPC bytes belong only in diagnostic builds. */
+/* Semantic markers remain ASCII; verified decorative/state glyphs are centralized separately. */
 #define UI_SYMBOL_ENTER ">"
 #define UI_SYMBOL_WARNING "!"
 #define UI_SYMBOL_UNKNOWN "?"
@@ -31,6 +32,8 @@ bool ui_render_list_entry(char *text, size_t capacity, unsigned current, unsigne
 /* Return the space used by a valid position prefix, or zero for a non-list. */
 size_t ui_render_position(char *text, size_t capacity, unsigned current, unsigned total);
 
+void ui_render_checkbox(char *text, size_t capacity, const char *label, bool checked);
+void ui_render_failure(char *text, size_t capacity, const char *reason);
 void ui_render_toggle(char *text, size_t capacity, const char *label, bool enabled);
 void ui_render_value(char *text, size_t capacity, const char *label, const char *value);
 void ui_render_number(char *text, size_t capacity, const char *label, int value, bool editing);

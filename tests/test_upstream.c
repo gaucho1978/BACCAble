@@ -166,12 +166,12 @@ static void test_fault_errors(void) {
     assert(fault_reader_busy());
     now += 1;
     fault_reader_process();
-    expect_fault_error("! Read timeout");
+    expect_fault_error("\xD7" " Read timeout");
 
     start_faults();
     const uint8_t rejected[] = {3, 0x7f, 0x19, 0x22};
     fault_reply(rejected, sizeof(rejected));
-    expect_fault_error("! ECU rejected");
+    expect_fault_error("\xD7" " ECU rejected");
     fault_reader_cancel();
     char text[25];
     fault_reader_text(0, text, sizeof(text));
@@ -180,7 +180,7 @@ static void test_fault_errors(void) {
     start_faults();
     const uint8_t invalid[] = {0x10, 10, 0x59, 2, 0xff, 0, 0, 0};
     fault_reply(invalid, sizeof(invalid));
-    expect_fault_error("! Invalid reply");
+    expect_fault_error("\xD7" " Invalid reply");
 
     now = 100;
     fault_reader_start(0x40);
@@ -189,7 +189,7 @@ static void test_fault_errors(void) {
     assert(fault_reader_busy());
     now += 2000;
     fault_reader_process();
-    expect_fault_error("! CAN send failed");
+    expect_fault_error("\xD7" " CAN send failed");
 
     start_faults();
     fault_reader_text(0, text, sizeof(text));
@@ -240,7 +240,7 @@ static void test_faults(void) {
     fault_reader_process();
     const uint8_t wrong[] = {0x22, 0, 0, 0, 0, 0};
     fault_reply(wrong, sizeof(wrong));
-    expect_fault_error("! Invalid reply");
+    expect_fault_error("\xD7" " Invalid reply");
     start_faults();
     const uint8_t pending[] = {3, 0x7f, 0x19, 0x78};
     for (unsigned i = 0; i < 11; i++) {
@@ -248,7 +248,7 @@ static void test_faults(void) {
         fault_reply(pending, 4);
         fault_reader_process();
     }
-    expect_fault_error("! Read timeout");
+    expect_fault_error("\xD7" " Read timeout");
     /* More than twenty faults are consumed without overflowing the stored result. */
     start_faults();
     uint8_t payload[87] = {0x59, 2, 0xff};

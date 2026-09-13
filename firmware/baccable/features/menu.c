@@ -296,8 +296,9 @@ void menu_notice(const char *text) {
     notice_started = currentTime;
     size_t length = strlen(text);
     bool toggle = (length >= 4 && !strcmp(text + length - 4, ": ON")) ||
-                  (length >= 5 && !strcmp(text + length - 5, ": OFF"));
-    notice_duration = text[0] == UI_SYMBOL_WARNING[0] ? NOTICE_WARNING_MS
+                  (length >= 5 && !strcmp(text + length - 5, ": OFF")) ||
+                  ((text[0] == UI_GLYPH_CHECKED || text[0] == UI_GLYPH_UNCHECKED) && text[1] == ' ');
+    notice_duration = (text[0] == UI_SYMBOL_WARNING[0] || text[0] == UI_GLYPH_CROSS) ? NOTICE_WARNING_MS
                       : toggle || !strcmp(text, "Records cleared")
                           ? NOTICE_CONFIRM_MS : NOTICE_REQUEST_MS;
     if (dashboard_state.baccable_dashboard_menu_visible)
@@ -474,7 +475,7 @@ static void action_run(void) {
     if (id == ACTION_PEAK) {
         parameter_peak_enable(!parameter_peak_enabled());
         char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
-        ui_render_toggle(text, sizeof(text), "Peak hold", parameter_peak_enabled());
+        ui_render_checkbox(text, sizeof(text), "Peak hold", parameter_peak_enabled());
         menu_notice(text);
         return;
     }
@@ -506,7 +507,7 @@ static void action_run(void) {
         menu_notice("Clear faults WAIT");
         return;
     case ACTION_STATS:
-        menu_notice(statistics_reset() == 0 ? "Records cleared" : UI_SYMBOL_WARNING " Save failed");
+        menu_notice(statistics_reset() == 0 ? "Records cleared" : UI_SYMBOL_FAILURE " Save failed");
         return;
     case ACTION_DYNO:
         if (runtime_state.car_steady_counter < 100) {
@@ -574,7 +575,10 @@ static void action_render(char *text, size_t capacity, const ActionEntry *entry)
         return;
     }
     if (request->state == REQUEST_FAILED || request->state == REQUEST_TIMEOUT) {
-        ui_render_unavailable(text, capacity, request->state == REQUEST_FAILED ? "Request failed" : "No confirmation");
+        if (request->state == REQUEST_FAILED)
+            ui_render_failure(text, capacity, "Request failed");
+        else
+            snprintf_(text, capacity, UI_SYMBOL_UNKNOWN " No confirmation");
         return;
     }
     const char *reason = action_unavailable(id);
@@ -593,8 +597,10 @@ static void action_render(char *text, size_t capacity, const ActionEntry *entry)
     } else if (id == ACTION_BRAKE) {
         /* C2 confirms its override sequence, not measured brake pressure. */
         ui_render_value(text, capacity, "Brake req", chassis_state.front_brake_forced ? "ON" : "OFF");
-    } else if (id == ACTION_IBS || entry->type == UI_ENTRY_TOGGLE) {
-        ui_render_toggle(text, capacity, entry->name, id == ACTION_IBS ? ibs_override_enabled() : parameter_peak_enabled());
+    } else if (entry->type == UI_ENTRY_TOGGLE) {
+        ui_render_checkbox(text, capacity, entry->name, parameter_peak_enabled());
+    } else if (id == ACTION_IBS) {
+        ui_render_toggle(text, capacity, entry->name, ibs_override_enabled());
     } else {
         ui_render_action(text, capacity, entry->name);
     }
@@ -606,7 +612,7 @@ void menu_render(void) {
         return;
     action_requests_process();
     if (save_failed) {
-        menu_present(UI_SYMBOL_WARNING " Save failed: RES");
+        menu_present(UI_SYMBOL_FAILURE " Save failed: RES");
         return;
     }
     if (notice && currentTime - notice_started < notice_duration) {
@@ -683,7 +689,7 @@ void menu_render(void) {
                 for (unsigned i = 0; i < MENU_FAVORITES; ++i)
                     checked |= preferences.favorites[engine][i] == page->id;
             }
-            ui_render_toggle(text, sizeof(text), page->label, checked);
+            ui_render_checkbox(text, sizeof(text), page->label, checked);
         }
         break;
     case ORDER_FAVORITES:
@@ -760,7 +766,7 @@ static void persist_exit(void) {
     uint8_t preferences_result = menu_preferences_save();
     save_failed = settings_result != 0 || preferences_result != 0;
     if (save_failed) {
-        menu_present(UI_SYMBOL_WARNING " Save failed: RES");
+        menu_present(UI_SYMBOL_FAILURE " Save failed: RES");
         return;
     }
     notice = NULL;
@@ -768,6 +774,13 @@ static void persist_exit(void) {
     if (save_close) {
         fault_reader_cancel();
         close_menu();
+    } else if (save_destination == FAVORITES) {
+        close_pending = false;
+        confirmed_action = 255;
+        order_selected = 0;
+        last_input = currentTime;
+        open_pages(true);
+        menu_render();
     } else
         view = save_destination;
 }
@@ -1044,7 +1057,9 @@ void menu_process(void) {
             setup_cancel_edit();
             setup_last = setup_dashboardPageIndex;
         }
-        request_exit(ROOT, true);
+        confirmed_action = 255;
+        order_selected = 0;
+        request_exit(FAVORITES, false);
         if (!save_failed)
             return;
     }

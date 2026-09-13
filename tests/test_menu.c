@@ -30,7 +30,7 @@ static uint32_t now;
 static char screen[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
 static uint8_t old_visibility[30], saved[MENU_PREFS_SIZE];
 static bool have_old, have_saved, fail_save;
-static unsigned commands, queries;
+static unsigned commands, queries, blank_screens;
 static unsigned settings_writes, preference_writes, usb_applies;
 static uint16_t fail_type;
 static uint8_t last_command;
@@ -43,6 +43,9 @@ uint8_t board_uart_send(const uint8_t *data, size_t size) {
         assert(size == UART_BUFFER_SIZE);
         memcpy(screen, data + 1, DASHBOARD_MESSAGE_MAX_LENGTH);
         screen[DASHBOARD_MESSAGE_MAX_LENGTH] = 0;
+        bool blank = true;
+        for (unsigned i = 0; i < DASHBOARD_MESSAGE_MAX_LENGTH; ++i) blank &= screen[i] == ' ';
+        blank_screens += blank;
     } else {
         ++commands;
         last_command = size > 1 ? data[1] : 0;
@@ -391,10 +394,10 @@ static void test_controller(void) {
     menu_event(MENU_SELECT); /* Enter Feature setup. */
     fail_save = true;
     menu_event(MENU_BACK);
-    assert(strstr(screen, "! Save failed"));
+    assert(strstr(screen, UI_SYMBOL_FAILURE " Save failed"));
     now += 1800;
     menu_render();
-    assert(strstr(screen, "! Save failed"));
+    assert(strstr(screen, UI_SYMBOL_FAILURE " Save failed"));
     fail_save = false;
     menu_event(MENU_SELECT);
     assert(!strstr(screen, "Saved"));
@@ -497,7 +500,7 @@ static void test_navigation_regressions(void) {
     menu_event(MENU_NEXT); /* Browse a setting without committing it. */
     fail_save = true;
     menu_event(MENU_BACK);
-    assert(strstr(screen, "! Save failed"));
+    assert(strstr(screen, UI_SYMBOL_FAILURE " Save failed"));
     fail_save = false;
     menu_event(MENU_SELECT); /* Retry BACK, without toggling the setting. */
     now += 1500;
@@ -670,37 +673,48 @@ static void test_notice_timing(void) {
     assert(!strstr(screen, "! Unavailable"));
 }
 
-/* Idle menus close, while readings, active operations and failed saves remain recoverable. */
+/* Inactivity returns home without a blank handoff; explicit close remains retryable. */
 static void test_idle_close(void) {
     fresh_menu();
     now += 60001;
     menu_process();
-    assert(dashboard_state.baccable_dashboard_menu_visible); /* Readings stay visible. */
+    assert(menu_parameters_active()); /* Readings remain live. */
     menu_event(MENU_BACK);
+    unsigned blanks = blank_screens;
     now += 29999;
     menu_process();
-    assert(dashboard_state.baccable_dashboard_menu_visible);
+    assert(!menu_parameters_active());
     now += 1;
     uart_busy = true;
     menu_process();
+    assert(menu_parameters_active() && dashboard_state.baccable_dashboard_menu_visible);
+    uart_busy = false;
+    now += 100;
+    menu_process();
+    assert(blank_screens == blanks);
+    unsigned page = dashboard_state.dashboard_page_index;
+    menu_event(MENU_NEXT);
+    assert(dashboard_state.dashboard_page_index != page);
+    menu_event(MENU_PREVIOUS);
+    assert(dashboard_state.dashboard_page_index == page);
+
+    menu_event(MENU_BACK); /* ROOT. */
+    uart_busy = true;
+    menu_event(MENU_BACK); /* Only explicit close releases the display. */
     assert(!dashboard_state.baccable_dashboard_menu_visible);
     uart_busy = false;
     menu_process();
-    for (unsigned i = 0; i < DASHBOARD_MESSAGE_MAX_LENGTH; ++i)
-        assert(screen[i] == ' '); /* Clear retried even while the menu is hidden. */
+    assert(blank_screens == blanks + 1);
     menu_event(MENU_BACK);
-    assert(dashboard_state.baccable_dashboard_menu_visible);
-    menu_process();
-    assert(screen[0] != ' '); /* An old pending clear cannot erase a reopened menu. */
+    assert(menu_parameters_active());
 
     fresh_menu();
     menu_event(MENU_BACK);
     uart_busy = true;
-    now += 30000;
-    menu_process();
+    menu_event(MENU_BACK);
     assert(!dashboard_state.baccable_dashboard_menu_visible);
     uart_busy = false;
-    menu_event(MENU_BACK); /* Reopen before the pending clear could be retried. */
+    menu_event(MENU_BACK); /* Reopen before a rejected clear can erase the screen. */
     char reopened[sizeof(screen)];
     memcpy(reopened, screen, sizeof(reopened));
     menu_process();
@@ -708,9 +722,10 @@ static void test_idle_close(void) {
 
     fresh_menu();
     to_settings();
+    blanks = blank_screens;
     now += 59999;
     menu_process();
-    assert(dashboard_state.baccable_dashboard_menu_visible);
+    assert(!menu_parameters_active());
     fail_save = true;
     now += 1;
     menu_process();
@@ -718,30 +733,30 @@ static void test_idle_close(void) {
     fail_save = false;
     now += 60001;
     menu_process();
-    assert(dashboard_state.baccable_dashboard_menu_visible); /* Wait for deliberate retry. */
-    menu_event(MENU_SELECT); /* Retry completes the original idle close. */
-    assert(!dashboard_state.baccable_dashboard_menu_visible);
+    assert(!menu_parameters_active()); /* Wait for explicit retry. */
+    menu_event(MENU_SELECT);
+    assert(menu_parameters_active() && blank_screens == blanks);
 
     fresh_menu();
     menu_event(MENU_BACK);
     diagnostics_state.clear_faults_request = 1;
     now += 30001;
     menu_process();
-    assert(dashboard_state.baccable_dashboard_menu_visible);
+    assert(!menu_parameters_active());
     diagnostics_state.clear_faults_request = 0;
     now += 29999;
     menu_process();
-    assert(dashboard_state.baccable_dashboard_menu_visible);
+    assert(!menu_parameters_active());
     now += 1;
     menu_process();
-    assert(!dashboard_state.baccable_dashboard_menu_visible);
+    assert(menu_parameters_active());
 
     fresh_menu();
     now = UINT32_MAX - 1000;
     menu_event(MENU_BACK);
     now += 30000;
     menu_process();
-    assert(!dashboard_state.baccable_dashboard_menu_visible);
+    assert(menu_parameters_active());
 }
 
 static void expect_reading(uint8_t engine, uint16_t id, float first, float second, const char *expected) {
@@ -751,6 +766,7 @@ static void expect_reading(uint8_t engine, uint16_t id, float first, float secon
     float values[] = {first, second};
     char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
     dashboard_format_values(page->name, values, page->parameter_ids, text);
+    if (strcmp(text, expected)) fprintf(stderr, "Reading %u/%u expected [%s], got [%s]\n", engine, id, expected, text);
     assert(!strcmp(text, expected));
 }
 static void expect_setup(uint8_t id, const char *expected) {
@@ -764,17 +780,25 @@ static void expect_setup(uint8_t id, const char *expected) {
 }
 static void test_readable_screens(void) {
     fresh_menu();
-    expect_reading(0, 0x12, 100, 100, "Oil temp 100 C");
-    expect_reading(1, 0x98, 100, 100, "Oil temp 100 C");
-    expect_reading(0, 0x20, 90, 90, "Coolant temp  90C");
-    expect_reading(1, 0xa0, -20, -20, "Coolant temp -20C");
+    expect_reading(0, 0x12, 100, 100, "Oil temp 100" "\xB0" "C");
+    expect_reading(1, 0x98, 100, 100, "Oil temp 100" "\xB0" "C");
+    expect_reading(0, 0x20, 90, 90, "Coolant temp  90" "\xB0" "C");
+    expect_reading(1, 0xa0, -20, -20, "Coolant temp -20" "\xB0" "C");
     expect_reading(0, 0x18, 14.2f, 14.2f, "Battery 14.20 V");
     expect_reading(0, 0x17, -12.3f, -12.3f, "Battery  -12.3 A");
     expect_reading(0, 0x07, 14.2f, -12.3f, "Batt 14.2V  -12.3A");
     expect_reading(0, 0x07, 12.1f, -150.5f, "Batt 12.1V -150.5A");
-    expect_reading(0, 0x04, 100, 90, "Oil 100C Cool  90C");
+#ifdef LARGE_DISPLAY
+    expect_reading(0, 0x04, 100, 90, "Oil 100" "\xB0" "C Cool  90" "\xB0" "C");
+#else
+    expect_reading(0, 0x04, 100, 90, "Oil 100C Cool  90C"); /* Preserve dense numeric fields. */
+#endif
+#ifdef LARGE_DISPLAY
+    expect_reading(0, 0x02, 1.2f, 90, "Oil1.2bar Cool 90" "\xB0" "C");
+#else
     expect_reading(0, 0x02, 1.2f, 90, "Oil1.2bar Cool 90C");
-    expect_reading(1, 0x8d, 650, 650, "DPF temp  650 C");
+#endif
+    expect_reading(1, 0x8d, 650, 650, "DPF temp  650" "\xB0" "C");
     expect_reading(1, 0x99, 12.34f, 12.34f, "Oil press 12.34bar");
     expect_reading(1, 0xa6, -0.65f, -0.65f, "Turbo  -0.65 bar");
     expect_reading(1, 0xa8, -0.5f, -0.5f, "Boost req -0.50bar");
@@ -1044,6 +1068,7 @@ static void test_board_sync_retry(void) {
 #include "test_setup_ui.c"
 #include "test_unified_ui.c"
 #include "test_menu_contract.c"
+#include "test_idle_latin1.c"
 
 int main(void) {
 #ifdef MENU_DIAGNOSTICS
@@ -1060,6 +1085,10 @@ int main(void) {
         HOST_TEST(test_visible_position_contract),
         HOST_TEST(test_reading_position_integrity),
         HOST_TEST(test_position_renderer_bounds),
+        HOST_TEST(test_idle_home_contexts),
+        HOST_TEST(test_idle_commit_and_capture),
+        HOST_TEST(test_latin1_vocabulary),
+        HOST_TEST(test_temperature_glyph_bounds),
         HOST_TEST(test_filtered_editor_positions),
         HOST_TEST(test_workflow_and_version_positions),
         HOST_TEST(test_pending_action_feedback),

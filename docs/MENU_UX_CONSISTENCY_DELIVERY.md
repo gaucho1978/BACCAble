@@ -14,7 +14,7 @@ The original requirements document is retained unchanged.
 | 8–9 | BACK unwinds one level or cancels a nested draft/capture. Reading, favorite and normal information SELECT is a no-op. No SELECT event is rewritten to BACK. |
 | 10–18 | Shared bounded position rendering across Root, Groups, Settings, Actions, Information, Features and the nested Park Mirror list. Actual visible peers determine totals; temporarily unavailable actions still count. |
 | 19–21 | Reading/favorite positions, membership/visibility/order lists and fault-result positions. Existing filtering supplies counts. Empty lists and fault progress/failure have no artificial position. |
-| 22–25 | Existing request/confirmation semantics, entry types and hold-repeat restrictions retained. Idle cancels unaccepted drafts, persists committed data and closes only after successful persistence. |
+| 22–25 | Existing request/confirmation semantics, entry types and hold-repeat restrictions retained. Idle cancels unaccepted drafts and persists committed data; the subsequent idle fix returns to visible Favorites. Only explicit ROOT/BACK closes. |
 | 26–29 | Source transition/save audit and host contracts cover all views, visible counts, nested cancellation, save failures and 18/24-byte bounds. Existing setup/page filters are reused; setup exposes a small position query for nested lists. |
 | 30 | Cleanup reviewed. No action-module extraction: it is optional and adds no behavior needed for this delivery. No new UI framework, allocation, storage format or CAN protocol. |
 
@@ -81,6 +81,7 @@ suites, production C1/C2/BH/CAN builds, static analysis and size gates.
 
 Still verify rapid browsing, the 1200 ms dense-page title, readability of shortened
 labels, both real display widths and vehicle action feedback on an actual IPC.
-Host tests do not certify physical dashboard rendering. Extended glyph approval,
-CAN timing changes and investigation of the previously reported device freeze are
+Host tests do not certify physical dashboard rendering. The subsequent
+[idle/glyph delivery](architecture/IDLE_AND_GLYPHS.md) adopts the user-reported IPC
+glyph observations. Further glyph/IPC validation, CAN timing changes and investigation of the previously reported device freeze are
 outside this consistency refactor.

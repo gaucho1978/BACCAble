@@ -89,7 +89,7 @@ static void setup_park_render(char *text, size_t size) {
     else if (park_capture == 3)
         ui_render_unavailable(text, size, "Send busy; retry");
     else if (park_entries[park_page].type == UI_ENTRY_TOGGLE)
-        ui_render_toggle(text, size, park_entries[park_page].label, settings_state.park_mirror);
+        ui_render_checkbox(text, size, park_entries[park_page].label, settings_state.park_mirror);
     else if (park_entries[park_page].type == UI_ENTRY_CAPTURE && !settings_state.park_mirror)
         ui_render_unavailable(text, size, "Enable first");
     else if (park_entries[park_page].type == UI_ENTRY_CAPTURE)
@@ -335,7 +335,7 @@ void setup_render_page(uint8_t page_index) {
                          editing == param ? draft : (param->value_type == SETUP_VALUE_INT8_AS_UINT8
                              ? *(int8_t *)param->value : setup_get_value(param)), editing == param);
     else if (param->entry_type == UI_ENTRY_TOGGLE)
-        ui_render_toggle(text, sizeof(text), param->menu_text, !!setup_get_value(param));
+        ui_render_checkbox(text, sizeof(text), param->menu_text, !!setup_get_value(param));
     else if (param->entry_type == UI_ENTRY_SUBMENU)
         ui_render_action(text, sizeof(text), param->menu_text);
     else {

@@ -12,7 +12,32 @@ void ui_render_value(char *text, size_t capacity, const char *label, const char 
         snprintf_(text, capacity, "%.*s: %s", length, label, value);
 }
 
-/* Use the same explicit boolean words for all true switches. */
+/* Reserve checked/unchecked for actual editable boolean choices, never vehicle state. */
+void ui_render_checkbox(char *text, size_t capacity, const char *label, bool checked) {
+    snprintf_(text, capacity, "%c %s", checked ? UI_GLYPH_CHECKED : UI_GLYPH_UNCHECKED, label);
+}
+
+/* Report a failed local operation without confusing it with an unmet precondition. */
+void ui_render_failure(char *text, size_t capacity, const char *reason) {
+    snprintf_(text, capacity, UI_SYMBOL_FAILURE " %s", reason);
+}
+
+/* Add editor direction hints only when the entire existing value and label still fit. */
+static void editor_directions(char *text, size_t capacity) {
+    size_t length = strlen(text);
+    char *value = strstr(text, ": ");
+    if (!value || length + 4 >= capacity)
+        return;
+    value += 2;
+    memmove(value + 2, value, strlen(value) + 1);
+    value[0] = UI_GLYPH_PREV;
+    value[1] = ' ';
+    text[length + 2] = ' ';
+    text[length + 3] = UI_GLYPH_NEXT;
+    text[length + 4] = 0;
+}
+
+/* Retain explicit words for status-only and vehicle-request state. */
 void ui_render_toggle(char *text, size_t capacity, const char *label, bool enabled) {
     ui_render_value(text, capacity, label, enabled ? UI_VALUE_ON : UI_VALUE_OFF);
 }
@@ -25,6 +50,7 @@ void ui_render_number(char *text, size_t capacity, const char *label, int value,
         text[0] = UI_SYMBOL_SELECTED[0];
         text[1] = ' ';
         ui_render_value(text + 2, capacity - 2, label, number);
+        editor_directions(text, capacity);
     } else
         ui_render_value(text, capacity, label, number);
 }
@@ -37,6 +63,7 @@ void ui_render_signed_number(char *text, size_t capacity, const char *label, int
         text[0] = UI_SYMBOL_SELECTED[0];
         text[1] = ' ';
         ui_render_value(text + 2, capacity - 2, label, number);
+        editor_directions(text, capacity);
     } else
         ui_render_value(text, capacity, label, number);
 }
