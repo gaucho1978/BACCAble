@@ -40,17 +40,10 @@ Releasing RES after a hold does not select another item.
 Main menu: **Favorites → Readings → Actions → Settings → Information**.
 Reading groups: All readings, Engine, Temperatures, Battery, DPF / AdBlue,
 Performance, Other. Empty lists show `No pages` or `No favorites`; returning still
-works. All browsable lists show their visible position and total. Unavailable but
-browsable actions count; hidden entries do not. Drafts, notices, confirmations,
-pending/error states and charset ranges are not numbered.
-
-The common layout is `x/y > Label` or `x/y Label: value`. Labels shorten before
-values; compact warning rows may omit spacing to retain the entire condition.
-Dense readings and long firmware versions use a numbered title for 1200 ms after
-selection, followed by their complete original text. Short readings retain their
-counter continuously. This width exception avoids dropping values, units or
-version characters and does not delay CAN queries or change the 50 ms fragment
-interval. It also applies after automatic reading rotation.
+works. Menu lists do not display position counters, leaving the full width for
+labels, values and semantic markers. Readings and firmware versions appear
+immediately without an intermediate numbered title. CAN queries and the 50 ms
+fragment interval are unchanged.
 
 ## Shared entry types and symbols
 
@@ -342,8 +335,7 @@ independent settings; validate other physical IPC variants before assuming a mat
 NEXT/PREV moves between peers or changes the current numeric draft. SELECT uses
 or confirms the current item. BACK cancels an unfinished workflow or returns one
 level. Committed configuration changes save automatically, silently on success;
-a failed exit remains explicit and retryable. `x/y` is the position within the
-currently browsable list, subject to the dense-data title exception above.
+a failed exit remains explicit and retryable. Lists have no position prefix.
 
 | View | SELECT | BACK |
 | --- | --- | --- |

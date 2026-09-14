@@ -193,16 +193,6 @@ static const SetupParam *setup_find_by_page(uint8_t page_index) {
     return NULL;
 }
 
-/* Nested lists have their own position; unfinished edits have no peer counter. */
-bool setup_list_position(unsigned *current, unsigned *total) {
-    const SetupParam *param = setup_find_by_page(setup_dashboardPageIndex);
-    if (editing || park_capture || (param && setup_get_value(param) && menu_setting_busy(param->flash_index)))
-        return false;
-    *total = park_menu ? 3 : setup_menu_pages_count();
-    *current = (park_menu ? park_page : setup_dashboardPageIndex) + 1;
-    return *total != 0 && *current <= *total;
-}
-
 /* Jump to a different functional group of feature settings. */
 void setup_move_group(int8_t delta) {
     if (setup_in_workflow()) {

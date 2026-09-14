@@ -26,12 +26,6 @@ typedef enum {
 #define UI_VALUE_ON "ON"
 #define UI_VALUE_OFF "OFF"
 
-/* Keep values intact; return false when the full entry needs the screen without a counter. */
-bool ui_render_list_entry(char *text, size_t capacity, unsigned current, unsigned total,
-                          const char *entry);
-/* Return the space used by a valid position prefix, or zero for a non-list. */
-size_t ui_render_position(char *text, size_t capacity, unsigned current, unsigned total);
-
 void ui_render_checkbox(char *text, size_t capacity, const char *label, bool checked);
 void ui_render_failure(char *text, size_t capacity, const char *reason);
 void ui_render_toggle(char *text, size_t capacity, const char *label, bool enabled);

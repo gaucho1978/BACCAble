@@ -232,9 +232,9 @@ static void test_faults(void) {
     fault_reply(next, sizeof(next));
     assert(fault_reader_count() == 2);
     fault_reader_text(1, text, sizeof(text));
-    assert(!strcmp(text, "2/2 U0001-02"));
+    assert(!strcmp(text, "U0001-02"));
     fault_reader_text(0, text, 19);
-    assert(!strcmp(text, "1/2 P1234-56"));
+    assert(!strcmp(text, "P1234-56"));
     start_faults();
     fault_reply(first, 8);
     fault_reader_process();
@@ -269,7 +269,7 @@ static void test_faults(void) {
     }
     assert(fault_reader_count() == 20);
     fault_reader_text(19, text, sizeof(text));
-    assert(strstr(text, "20/20 +"));
+    assert(strstr(text, "+ "));
 }
 static void command(const char *text) {
     output_length = 0;

@@ -43,7 +43,7 @@ static void test_shared_renderers(void) {
         ui_render_number(text, size, "Shift RPM", 3500, true);
         assert(!strcmp(text, size == 19 ? "* Shift RPM: 3500" : "* Shift RPM: " "\xAB" " 3500 " "\xBB"));
         ui_render_action(text, size, "Read faults");
-        assert(!strcmp(text, "Read faults >"));
+        assert(!strcmp(text, "> Read faults"));
         ui_render_pending(text, size, "4WD req", "OFF");
         assert(!strcmp(text, "4WD req: OFF WAIT"));
         ui_render_unavailable(text, size, "Start engine");

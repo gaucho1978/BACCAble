@@ -8,6 +8,8 @@ static uint8_t setup_page_for(uint8_t slot) {
         char expected[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
         if (param->entry_type == UI_ENTRY_TOGGLE)
             ui_render_checkbox(expected, sizeof(expected), param->menu_text, *(uint8_t *)param->value != 0);
+        else if (param->entry_type == UI_ENTRY_SUBMENU)
+            ui_render_action(expected, sizeof(expected), param->menu_text);
         else
             snprintf_(expected, sizeof(expected), "%s", param->menu_text);
         if (!memcmp(dashboard_setup_screen, expected, strlen(expected))) {

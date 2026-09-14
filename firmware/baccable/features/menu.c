@@ -115,7 +115,7 @@ static bool preferences_saved;
 #define NOTICE_WARNING_MS 1800U
 #define NOTICE_REQUEST_MS 1200U
 static uint32_t notice_duration;
-static uint32_t confirm_started, last_input, info_changed;
+static uint32_t confirm_started, last_input;
 static void build_pages(uint16_t selected);
 
 /* Move through a list and continue from the other end at its boundary. */
@@ -273,20 +273,9 @@ void menu_present(const char *text) {
         close_pending = false;
 }
 
-/* Keep every reading byte intact; dense pages get position context before live data. */
+/* Show the complete reading immediately, without a list prefix or title delay. */
 void menu_present_reading(const char *text) {
-    char numbered[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
-    size_t used = ui_render_position(numbered, sizeof(numbered), selection + 1, list_count);
-    size_t length = strlen(text);
-    if (used && used + length < sizeof(numbered)) {
-        memcpy(numbered + used, text, length + 1);
-        menu_present(numbered);
-    } else if (used && currentTime - page_changed < NOTICE_REQUEST_MS) {
-        const ParameterPage *page = &parameter_pages[engine][dashboard_state.dashboard_page_index];
-        ui_render_list_entry(numbered, sizeof(numbered), selection + 1, list_count, page->label);
-        menu_present(numbered);
-    } else
-        menu_present(text);
+    menu_present(text);
 }
 
 /* Show brief feedback about a selection, action or save result. */
@@ -347,7 +336,6 @@ void menu_init(void) {
     function = 0;
     setting = 0;
     info = 0;
-    info_changed = currentTime;
     setup_last = 0;
     notice = NULL;
     confirmed_action = 255;
@@ -626,15 +614,12 @@ void menu_render(void) {
         return;
     }
     char text[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
-    unsigned position = 0, total = 0;
     switch (view) {
     case ROOT:
         snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %s", roots[root]);
-        position = root + 1; total = sizeof(roots) / sizeof(roots[0]);
         break;
     case GROUPS:
         snprintf_(text, sizeof(text), UI_SYMBOL_ENTER " %s", menu_group_names[group]);
-        position = group + 1; total = MENU_GROUPS;
         break;
     case FAVORITES:
     case VALUES:
@@ -649,23 +634,9 @@ void menu_render(void) {
         if (!available(actions[function].id))
             function_move(1, false);
         action_render(text, sizeof(text), &actions[function]);
-        MenuAction id = actions[function].id;
-        RequestState state = requests[id].state;
-        if (state != REQUEST_WAIT && state != REQUEST_FAILED && state != REQUEST_TIMEOUT &&
-            !(state == REQUEST_SENT && (id == ACTION_HAS || id == ACTION_CLEAR || id == ACTION_ESC)) &&
-            !(id == ACTION_AWD && chassis_state.awd_sequence) &&
-            !(id == ACTION_EXHAUST && comfort_state.force_q_vexhaust_valve_opened) &&
-            !(id == ACTION_CLEAR && diagnostics_state.clear_faults_request)) {
-            for (unsigned i = 0; i < ACTION_COUNT; ++i)
-                if (available(actions[i].id)) {
-                    ++total;
-                    if (i == function) position = total;
-                }
-        }
         break;
     }
     case SETTINGS:
-        position = setting + 1; total = sizeof(settings) / sizeof(settings[0]);
         if (setting == 4)
             ui_render_value(text, sizeof(text), "Sort", preferences.alphabetical ? "A-Z" : "groups");
         else
@@ -676,7 +647,6 @@ void menu_render(void) {
         return;
     case EDIT_FAVORITES:
     case EDIT_VISIBLE:
-        position = selection + 1; total = list_count;
         if (!list_count) {
             menu_present("No pages");
             return;
@@ -693,7 +663,6 @@ void menu_render(void) {
         }
         break;
     case ORDER_FAVORITES:
-        position = selection + 1; total = list_count;
         if (!list_count) {
             menu_present("No favorites");
             return;
@@ -710,7 +679,6 @@ void menu_render(void) {
         break;
 #endif
     case INFO:
-        position = info + 1; total = INFO_PAGES;
 #ifdef MENU_DIAGNOSTICS
         if (info == 5) {
             ui_render_action(text, sizeof(text), "IPC diag");
@@ -734,19 +702,7 @@ void menu_render(void) {
         }
         break;
     }
-    if (total) {
-        char numbered[DASHBOARD_MESSAGE_MAX_LENGTH + 1];
-        size_t prefix = ui_render_position(numbered, sizeof(numbered), position, total);
-        bool dense_version = view == INFO && info <= 2 && prefix + strlen(text) >= sizeof(numbered);
-        bool fits = !dense_version && ui_render_list_entry(numbered, sizeof(numbered), position, total, text);
-        if (dense_version)
-            snprintf_(numbered, sizeof(numbered), "%s", text);
-        if (!fits && view == INFO && currentTime - info_changed < NOTICE_REQUEST_MS)
-            ui_render_list_entry(numbered, sizeof(numbered), position, total,
-                                 info == 0 ? "FW version" : info == 1 ? "C2 version" : "BH version");
-        menu_present(numbered);
-    } else
-        menu_present(text);
+    menu_present(text);
 }
 
 /* Release the display, retrying a rejected clear until the UART accepts it. */
@@ -889,7 +845,6 @@ void menu_event(MenuEvent event) {
 #endif
         case INFO:
             info = wrap(info, INFO_PAGES, direction);
-            info_changed = currentTime;
             break;
         case SETUP:
             if (jump)
@@ -936,7 +891,6 @@ void menu_event(MenuEvent event) {
                 break;
             case 4:
                 view = INFO;
-                info_changed = currentTime;
                 break;
             }
             break;

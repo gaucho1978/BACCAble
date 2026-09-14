@@ -144,7 +144,7 @@ void fault_reader_receive(const CAN_RxHeaderTypeDef *h, const uint8_t *d) {
     }
 }
 
-/* Show progress, failure or a fault code with its position in the result list. */
+/* Show progress, failure or a fault code without a list counter. */
 void fault_reader_text(unsigned index, char *text, size_t capacity) {
     if (state != DONE || !count) {
         snprintf_(text, capacity, "%s",
@@ -159,6 +159,6 @@ void fault_reader_text(unsigned index, char *text, size_t capacity) {
     char code[16];
     snprintf_(code, sizeof(code), "%s%c%01X%01X%02X-%02X", expected > sizeof(payload) ? "+ " : "",
               "PCBU"[d[0] >> 6], (d[0] >> 4) & 3, d[0] & 15, d[1], d[2]);
-    ui_render_list_entry(text, capacity, index + 1, count, code);
+    snprintf_(text, capacity, "%s", code);
 }
 #endif
