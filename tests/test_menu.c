@@ -903,8 +903,8 @@ static void test_action_availability(void) {
         &settings_state.esc_tc_customizator_enabled, &settings_state.qv_exhaust_flap_function_enabled,
         &settings_state.has_function_enabled,        &settings_state.front_brake_forcer_master,
         &settings_state.read_faults_enabled,         &settings_state.clear_faults_enabled};
-    const char *names[] = {"Dyno",       "4WD",         "ESC/TC",          "QV exhaust",
-                           "HAS button", "Brake", "BCM faults", "Clear DTCs"};
+    const char *names[] = {"Dyno",       "AWD",         "ESC/TC",          "QV exhaust",
+                           "HAS button", "Brake", "BCM faults", "Clear BCM DTCs"};
     for (unsigned i = 0; i < 8; ++i)
         *gates[i] = 0;
     fresh_menu();
@@ -957,7 +957,7 @@ static void test_action_request_labels(void) {
     menu_event(MENU_SELECT);
     for (unsigned i = 0; i < 16 && !strstr(screen, "QV exhaust"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "> QV exhaust"));
+    assert(strstr(screen, "> Toggle QV exhaust"));
     for (unsigned state = 1; state <= 4; ++state) {
         comfort_state.force_q_vexhaust_valve_opened = state;
         now += 1;
@@ -969,10 +969,10 @@ static void test_action_request_labels(void) {
     }
     comfort_state.force_q_vexhaust_valve_opened = 0;
     menu_render();
-    assert(strstr(screen, "> QV exhaust"));
-    for (unsigned i = 0; i < 16 && !strstr(screen, "4WD"); ++i)
+    assert(strstr(screen, "> Toggle QV exhaust"));
+    for (unsigned i = 0; i < 16 && !strstr(screen, "AWD"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "> 4WD"));
+    assert(strstr(screen, "Toggle AWD disable"));
     for (unsigned state = 1; state <= 4; ++state) {
         chassis_state.awd_sequence = state;
         menu_render();
@@ -983,17 +983,17 @@ static void test_action_request_labels(void) {
     assert(strstr(screen, "! 4WD OFF request"));
     chassis_state.awd_sequence = 0;
     menu_render();
-    assert(strstr(screen, "> 4WD"));
+    assert(strstr(screen, "Toggle AWD disable"));
     settings_state.clear_faults_enabled = 1;
-    for (unsigned i = 0; i < 16 && !strstr(screen, "Clear DTCs"); ++i)
+    for (unsigned i = 0; i < 16 && !strstr(screen, "Clear BCM DTCs"); ++i)
         menu_event(MENU_NEXT);
-    assert(strstr(screen, "> Clear DTCs"));
+    assert(strstr(screen, "> Clear BCM DTCs"));
     diagnostics_state.clear_faults_request = 255;
     menu_render();
-    assert(strstr(screen, "Clear DTCs: WAIT"));
+    assert(strstr(screen, "Clear BCM DTC") && strstr(screen, ": WAIT"));
     diagnostics_state.clear_faults_request = 0;
     menu_render();
-    assert(strstr(screen, "> Clear DTCs"));
+    assert(strstr(screen, "> Clear BCM DTCs"));
     settings_state.clear_faults_enabled = 0;
     settings_state.awd_disabler_enabled = 0;
     settings_state.qv_exhaust_flap_function_enabled = 0;

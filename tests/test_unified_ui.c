@@ -23,7 +23,7 @@ static void open_test_action(const char *label) {
     menu_event(MENU_NEXT);
     menu_event(MENU_NEXT);
     menu_event(MENU_SELECT);
-    const char *search = !strcmp(label, "IBS override") ? "IBS" : !strcmp(label, "Brake req") ? "Brake" : label;
+    const char *search = !strcmp(label, "IBS SOC override") ? "IBS" : !strcmp(label, "Brake req") ? "Brake" : label;
     for (unsigned i = 0; i < 20 && !strstr(screen, search); ++i)
         menu_event(MENU_NEXT);
     assert(strstr(screen, search));
@@ -99,7 +99,7 @@ static void test_pending_action_feedback(void) {
 }
 
 static void test_conditional_actions(void) {
-    open_test_action("IBS override");
+    open_test_action("IBS SOC override");
     ibs_override_enable(false);
     telemetry_state.current_rpm_speed = 400;
     menu_render();
@@ -247,7 +247,7 @@ static void test_steering_menu_ownership(void) {
 }
 
 static void test_request_cancel_and_failure(void) {
-    open_test_action("4WD");
+    open_test_action("AWD");
     menu_event(MENU_SELECT);
     menu_event(MENU_SELECT);
     assert(chassis_state.awd_sequence == 4);
