@@ -170,7 +170,7 @@ void processingStandardMessage(){
 						}
 					}else{ //reverse gear not engaged
 						//DISABLE: brake pressed firmly enough and the sensors are beeping. Not while in reverse.
-						if (brakeTravelStatus>36.0){
+						if (brakeTravelStatus>14.5){
 							if((pdc_is_beeping == 1) && (pdc_auto_disabled == 0)) {
 								if (parkSensorsLedStatus != 1) { //led not continuous -> park sensors currently on
 									requestToTogglePDC = 1;
