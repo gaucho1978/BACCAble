@@ -399,7 +399,7 @@
 		extern uint8_t parkSensorsFunctionStatus; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
 		extern uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
 
-		// @netzmark PDC auto disable - the front chime is silenced by simulating a press of the park sensors
+		// Park Mute - the front chime is silenced by simulating a press of the park sensors
 		// button (0x5B0) when the brake is pressed firmly while the sensors are beeping. See functions_C2baccable.c
 		extern volatile uint8_t  pdc_is_beeping;		//1=front sensors in alarm (from 0x3E7)
 		extern volatile uint8_t  pdc_auto_disabled;		//1=the park sensors are off because WE switched them off
@@ -408,6 +408,7 @@
 		extern volatile uint32_t last_pdc_shot_time;	//when the push was sent
 		extern uint8_t pdcMsgData[8];
 		extern CAN_TxHeaderTypeDef pdcMsgHeader;
+		extern float brakeTravelStatus; //percentage of the brake pedal pressed 0-100%
 	#endif
 
 	#if defined(BHbaccable)

@@ -153,6 +153,54 @@ void processingStandardMessage(){
 
 			#endif
 			break;
+		case 0x00000107:
+			#if defined(C2baccable)
+				if(parkSensorsMuteFunctionEnabled){
+					//brake travel status is on byte0 in percentage from 0 to 100, factor 0,4
+					brakeTravelStatus= rx_msg_data[0] * 0.4f;
+
+					//reverse gear: the car is *supposed* to enable the PDC by itself, but it doesn't always -
+					//check the actual LED status and re-enable ourselves if the sensors are still really off.
+					if (reverseGearActive == 1) {
+						if(pdc_auto_disabled == 1){
+							if (parkSensorsLedStatus == 1  ) { //led continuous -> park sensors still really disabled
+								requestToTogglePDC = 1;
+							}
+							pdc_auto_disabled = 0;
+						}
+					}else{ //reverse gear not engaged
+						//DISABLE: brake pressed firmly enough and the sensors are beeping. Not while in reverse.
+						if (brakeTravelStatus>36.0){
+							if((pdc_is_beeping == 1) && (pdc_auto_disabled == 0)) {
+								if (parkSensorsLedStatus != 1) { //led not continuous -> park sensors currently on
+									requestToTogglePDC = 1;
+									pdc_auto_disabled = 1;
+								}
+							}
+						}else{ //brake released and the car is able to move again
+
+							if(0){//if we are in P, just disable PDC (now we don't know if we are in P (seems to be not available on C2 bus, so just temporary exclude this part of the code, while testing it (we need to be sure if we need this logic).
+								if((pdc_is_beeping == 1) && (pdc_auto_disabled == 0)) {
+									if (parkSensorsLedStatus != 1) { //led not continuous -> park sensors currently on
+										requestToTogglePDC = 1;
+										pdc_auto_disabled = 1;
+									}
+								}
+							}else{ //we are not in rear drive neither in P, and brake is released, so maybe we're moving forward
+								if(pdc_auto_disabled == 1 && parkSensorsLedStatus == 1) { //we switched them off and they really are
+									requestToTogglePDC = 1; //re enable sensors since we are moving forward probably
+									pdc_auto_disabled = 0;
+								}else if (pdc_auto_disabled == 1 && parkSensorsLedStatus != 1) { //the car put them back on by itself (speed exceeded): just drop the marker
+									pdc_auto_disabled = 0; //may be car re enabled sensors by itself, just forget internal status.
+								}
+							}
+						}
+					}
+				}
+
+
+			#endif
+			break;
 		case 0x00000116:
 			//byte 0..3 = wheel rotation pulse counters (0=leftFront, 1=rightFront, 2=leftRear, 3=rightRear)
 			//byte 4 = rotation status, 2 bits per wheel (0=steady, 1=forward, 2=backward, 3=undefined/spinning)
@@ -214,7 +262,8 @@ void processingStandardMessage(){
 			break;
 		case 0x000001F5:
 			#if defined(C2baccable)
-				//PDC disable/enable logic - byte 4 is the brake pressure
+				/*
+				//Park Mute - byte 4 is the brake pressure, but only on some veichles
 				if(parkSensorsMuteFunctionEnabled && rx_msg_header.DLC >= 5){
 					uint8_t currentPressure = rx_msg_data[4];
 
@@ -247,6 +296,7 @@ void processingStandardMessage(){
 						}
 					}
 				}
+				*/
 			#endif
 			break;
 		case 0x0000001F7:

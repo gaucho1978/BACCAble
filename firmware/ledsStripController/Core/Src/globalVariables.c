@@ -282,7 +282,7 @@ const char *FW_VERSION=_FW_VERSION;
 	//_4WD_DISABLER_ENABLED
 	uint8_t function_4wd_disabler_enabled=1; //default enabled . stored in flash
 	CAN_TxHeaderTypeDef driveTrainControlModuleResetMsgHeader[4]={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA1AF1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA1AF1, .DLC=7},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA1AF1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA1AF1, .DLC=3}};
-	uint8_t driveTrainControlModuleResetMsgData[4][8]= {{0x02, 0x11, 0x01,},{0x06, 0x2F, 0x2A, 0xAA, 0x03, 0x00, 0x00,},{0x02, 0x3E, 0x80,},{0x02, 0x10, 0x03,}}; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(set front torque to 0), reset ECU
+	uint8_t driveTrainControlModuleResetMsgData[4][8]= {{0x02, 0x11, 0x01,},{0x06, 0x2F, 0x2A, 0xAA, 0x03, 0x00, 0x00,},{0x02, 0x3E, 0x80,},{0x02, 0x10, 0x03,}}; //from last to first we have: diag session, tester present, IO Control - Short Term Adjustment(set front torque to 0), reset ECU. note: 0064 dovrebbe impostare il 4x4 attivo
 	uint32_t last_sent_drive_train_msg_time=0;
 
 	//IPC_MY23_IS_INSTALLED
@@ -434,6 +434,7 @@ const char *FW_VERSION=_FW_VERSION;
 #endif
 
 #if defined(C2baccable)
+
 	//DYNO_MODE
 
 	uint8_t DynoModeEnabled=0;
@@ -455,7 +456,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t parkSensorsFunctionStatus=0; //0=off, 1=ON active, 2=ON inactive, 3=ON disabled
 	uint8_t parkSensorsLedStatus; //0=off, 1=continuous, 2=blink
 
-	// @netzmark PDC auto disable - see functions_C2baccable.c
+	// Park Mute - see functions_C2baccable.c
 	volatile uint8_t  pdc_is_beeping     = 0; //1=front sensors in alarm (from 0x3E7)
 	volatile uint8_t  pdc_auto_disabled  = 0; //1=the park sensors are off because WE switched them off
 	volatile uint8_t  requestToTogglePDC = 0; //1=a button press has to be simulated
@@ -463,7 +464,7 @@ const char *FW_VERSION=_FW_VERSION;
 	volatile uint32_t last_pdc_shot_time = 0; //when the push was sent
 	uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
-
+	float brakeTravelStatus=0; //percentage of the brake pedal pressed 0-100%
 #endif
 
 #if defined(BHbaccable)
