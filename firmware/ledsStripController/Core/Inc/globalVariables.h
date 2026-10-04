@@ -488,19 +488,30 @@
 
 	//sniffer function 24/08/2026 - BEGIN
 	//raw can frames are streamed to usb cdc with a fixed 16 byte layout:
-	//  byte 0     : 0xA0 | DLC          (0xA = start nibble, DLC 0..8; 0xAF = frames lost marker)
+	//  byte 0     : 0xA0 | DLC          (0xA = received frame, DLC 0..8; 0xAF = frames lost marker)
+	//               0xB0 | DLC          (0xB = frame sent on the bus by baccable, DLC 0..8) //sniffer tx/debug 27/09/2026
+	//               0xC0 | N            (0xC = debug frame, baccable internal elaboration, N = valid values 0..2) //sniffer tx/debug 27/09/2026
 	//  byte 1..3  : timestamp, 24 bit little endian (currentTime, ms)
 	//  byte 4..7  : can id, 32 bit little endian
+	//               debug frame: byte 4..5 = code point id (uint16 little endian), byte 6..7 = 0
 	//  byte 8..15 : payload, zero padded above DLC
+	//               debug frame: byte 8..11 = value 1, byte 12..15 = value 2 (uint32 little endian, 0 if unused)
+	//all three high nibbles 0xA, 0xB, 0xC are valid frame starts for the receiving app's synchronization.
 	//gated to C1/C2/BH only: ACT_AS_CANABLE has no menu to trigger the function and does not need the ram
 	#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
 		#define SNIFFER_FRAME_SIZE					16		//bytes per frame
-		#define SNIFFER_FRAME_COUNT					16		//frames kept in ram
-		#define SNIFFER_BUFFER_SIZE					(SNIFFER_FRAME_SIZE*SNIFFER_FRAME_COUNT) //256 bytes, power of two: index wrap done with a mask
+		#define SNIFFER_FRAME_COUNT					64		//frames kept in ram
+		#define SNIFFER_BUFFER_SIZE					(SNIFFER_FRAME_SIZE*SNIFFER_FRAME_COUNT) //1024 bytes, power of two: index wrap done with a mask
 		#define SNIFFER_BUFFER_MASK					(SNIFFER_BUFFER_SIZE-1)
-		#define SNIFFER_USB_CHUNK					64		//usb cdc linear tx buffer size (TX_BUF_SIZE), holds exactly 4 frames
+		#if (SNIFFER_BUFFER_SIZE & SNIFFER_BUFFER_MASK) != 0
+			#error "SNIFFER_BUFFER_SIZE must be a power of two"
+		#endif
+		#define SNIFFER_USB_PACKET					64		//usb full speed bulk packet size: a partial chunk below this waits SNIFFER_FLUSH_TIMEOUT_MS
+		#define SNIFFER_USB_CHUNK					(SNIFFER_BUFFER_SIZE/2)	//max bytes handed to the usb endpoint in one transfer, straight from the ring (no copy): the device library splits it into packets //sniffer tx/debug 04/10/2026
 		#define SNIFFER_FLUSH_TIMEOUT_MS			20		//flush a partial buffer after this idle time, to keep latency low on a quiet bus
-		#define SNIFFER_START_NIBBLE				0xA0	//high nibble marking the first byte of a frame
+		#define SNIFFER_START_NIBBLE				0xA0	//high nibble marking the first byte of a frame received from the bus
+		#define SNIFFER_TX_NIBBLE					0xB0	//high nibble marking the first byte of a frame sent on the bus by baccable //sniffer tx/debug 27/09/2026
+		#define SNIFFER_DEBUG_NIBBLE				0xC0	//high nibble marking the first byte of a debug frame (baccable internal elaboration) //sniffer tx/debug 27/09/2026
 		#define SNIFFER_OVERFLOW_MARKER				0xAF	//invalid DLC 15: frame carrying the number of lost frames
 		#define SNIFFER_CAN_FRAMES_PER_LOOP			3		//bxCAN RX FIFO0 depth on stm32F072: never more than this pending
 		//Also doubles as the disconnect timeout once the host has been seen: snifferActivationTime is refreshed on
@@ -524,7 +535,21 @@
 		extern uint16_t snifferRingCount;			//bytes currently stored
 		extern uint16_t snifferDroppedFrames;		//frames lost since last overflow marker
 		extern uint32_t snifferLastFlushTime;
+		extern uint16_t snifferInflightBytes;		//bytes of the ring handed to the usb endpoint and not yet confirmed sent: released by snifferFlush() when TxState clears //sniffer tx/debug 04/10/2026
 		extern USBD_HandleTypeDef hUsbDeviceFS;	//declared in usb_device.c, needed to check TxState before a non blocking send
+
+		//sniffer tx/debug 27/09/2026 - BEGIN
+		//Declared here rather than in functions_Common.h because they are used from every module (can.c included),
+		//and globalVariables.h is the header all of them already see.
+		void snifferPushTxFrame(CAN_TxHeaderTypeDef *snifferTxHeader, uint8_t *snifferTxData);
+		void snifferPushDebug(uint16_t snifferPointId, uint8_t snifferValuesCount, uint32_t snifferValue1, uint32_t snifferValue2);
+		//Debug trace points: every call site passes its own hardcoded uint16_t id, to be searched in the sources while
+		//reading a sniff. While the sniffer is off each one costs a single test of snifferInUse. Main loop only:
+		//never use them inside an interrupt handler (uart callbacks included), the ring buffer is not interrupt safe.
+		#define SNIFFER_DEBUG(id)					do{ if(snifferInUse) snifferPushDebug((id),0,0,0); }while(0)
+		#define SNIFFER_DEBUG1(id,v1)				do{ if(snifferInUse) snifferPushDebug((id),1,(uint32_t)(v1),0); }while(0)
+		#define SNIFFER_DEBUG2(id,v1,v2)			do{ if(snifferInUse) snifferPushDebug((id),2,(uint32_t)(v1),(uint32_t)(v2)); }while(0)
+		//sniffer tx/debug 27/09/2026 - END
 
 		#ifdef DEBUG_CAN_RX_SIMULATION
 			extern uint32_t debugSimulatedMsgLastInjectTime;
@@ -537,6 +562,11 @@
 		#ifdef DEBUG_START_ELM327 // bench test with no vehicle connected
 			extern uint8_t  debugElm327AutoStarted;	//0 until the 10 second auto-start has fired once
 		#endif
+	#else
+		//sniffer tx/debug 27/09/2026 - no sniffer on this build: trace points compile to nothing
+		#define SNIFFER_DEBUG(id)					do{ }while(0)
+		#define SNIFFER_DEBUG1(id,v1)				do{ }while(0)
+		#define SNIFFER_DEBUG2(id,v1,v2)			do{ }while(0)
 	#endif
 
 	//elm327 function 26/08/2026 - BEGIN

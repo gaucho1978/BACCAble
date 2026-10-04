@@ -315,15 +315,15 @@ void storage_init(void){
 
 //sniffer function 24/08/2026 - BEGIN
 #if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
-//Writes one 16 byte frame into the ring buffer. Called from the can rx path, must stay short.
+//Writes one 16 byte frame into the ring buffer: the part shared by received, transmitted and debug frames.
+//Called from the main loop only, never from an interrupt, and must stay short.
 //SNIFFER_BUFFER_SIZE is a multiple of SNIFFER_FRAME_SIZE and snifferRingHead only ever advances
 //by whole frames, so it stays frame aligned: a single frame never wraps past the end of the
 //array, and the wrap mask only needs to be applied once, after the whole frame has been written.
-void snifferPushFrame(CAN_RxHeaderTypeDef *snifferRxHeader, uint8_t *snifferRxData){
+//sniffer tx/debug 27/09/2026 - was the body of snifferPushFrame(), now shared: the bytes written for a received frame are unchanged
+static void snifferPushRaw(uint8_t snifferFirstByte, uint32_t snifferWord, uint8_t *snifferPayload, uint8_t snifferPayloadLength){
 	uint16_t snifferBase;
 	uint32_t snifferTimeStamp;
-	uint32_t snifferCanId;
-	uint8_t  snifferDlc;
 	uint8_t  snifferByteIndex;
 
 	//as soon as there is room for the marker plus one more frame, report the frames lost during the overflow
@@ -352,52 +352,93 @@ void snifferPushFrame(CAN_RxHeaderTypeDef *snifferRxHeader, uint8_t *snifferRxDa
 		return;
 	}
 
-	snifferDlc=snifferRxHeader->DLC;
-	if(snifferDlc>8) snifferDlc=8;
-	if(snifferRxHeader->IDE==CAN_ID_EXT){
-		snifferCanId=snifferRxHeader->ExtId;
-	}else{
-		snifferCanId=snifferRxHeader->StdId;
-	}
 	snifferTimeStamp=currentTime;
 	snifferBase=snifferRingHead;
 
-	snifferRingBuffer[snifferBase+0]=SNIFFER_START_NIBBLE|snifferDlc;
+	snifferRingBuffer[snifferBase+0]=snifferFirstByte;
 	snifferRingBuffer[snifferBase+1]=(uint8_t)(snifferTimeStamp);
 	snifferRingBuffer[snifferBase+2]=(uint8_t)(snifferTimeStamp>>8);
 	snifferRingBuffer[snifferBase+3]=(uint8_t)(snifferTimeStamp>>16);
-	snifferRingBuffer[snifferBase+4]=(uint8_t)(snifferCanId);
-	snifferRingBuffer[snifferBase+5]=(uint8_t)(snifferCanId>>8);
-	snifferRingBuffer[snifferBase+6]=(uint8_t)(snifferCanId>>16);
-	snifferRingBuffer[snifferBase+7]=(uint8_t)(snifferCanId>>24);
+	snifferRingBuffer[snifferBase+4]=(uint8_t)(snifferWord);
+	snifferRingBuffer[snifferBase+5]=(uint8_t)(snifferWord>>8);
+	snifferRingBuffer[snifferBase+6]=(uint8_t)(snifferWord>>16);
+	snifferRingBuffer[snifferBase+7]=(uint8_t)(snifferWord>>24);
 	for(snifferByteIndex=0; snifferByteIndex<8; snifferByteIndex++){
-		snifferRingBuffer[snifferBase+8+snifferByteIndex]=(snifferByteIndex<snifferDlc)?snifferRxData[snifferByteIndex]:0; //zero padding above DLC
+		snifferRingBuffer[snifferBase+8+snifferByteIndex]=(snifferByteIndex<snifferPayloadLength)?snifferPayload[snifferByteIndex]:0; //zero padding above DLC
 	}
 	snifferRingHead=(snifferBase+SNIFFER_FRAME_SIZE)&SNIFFER_BUFFER_MASK;
 	snifferRingCount+=SNIFFER_FRAME_SIZE;
 }
 
+//Frame received from the bus: first byte 0xA0|DLC. Called from the can rx path.
+void snifferPushFrame(CAN_RxHeaderTypeDef *snifferRxHeader, uint8_t *snifferRxData){
+	uint8_t snifferDlc=snifferRxHeader->DLC;
+	if(snifferDlc>8) snifferDlc=8;
+	snifferPushRaw(SNIFFER_START_NIBBLE|snifferDlc, (snifferRxHeader->IDE==CAN_ID_EXT)?snifferRxHeader->ExtId:snifferRxHeader->StdId, snifferRxData, snifferDlc);
+}
+
+//sniffer tx/debug 27/09/2026 - frame sent on the bus by baccable: first byte 0xB0|DLC, same layout as a received frame.
+//Called by can_process() right after the frame has been handed to a tx mailbox, so the timestamp is the real
+//transmission time and a frame dropped by a full tx queue never shows up as sent.
+void snifferPushTxFrame(CAN_TxHeaderTypeDef *snifferTxHeader, uint8_t *snifferTxData){
+	uint8_t snifferDlc=snifferTxHeader->DLC;
+	if(snifferDlc>8) snifferDlc=8;
+	snifferPushRaw(SNIFFER_TX_NIBBLE|snifferDlc, (snifferTxHeader->IDE==CAN_ID_EXT)?snifferTxHeader->ExtId:snifferTxHeader->StdId, snifferTxData, snifferDlc);
+}
+
+//sniffer tx/debug 27/09/2026 - debug frame, baccable internal elaboration: first byte 0xC0|number of valid values,
+//byte 4..5 the code point id, byte 8..11 and 12..15 the two values. Use it through the SNIFFER_DEBUG macros only.
+void snifferPushDebug(uint16_t snifferPointId, uint8_t snifferValuesCount, uint32_t snifferValue1, uint32_t snifferValue2){
+	uint8_t snifferValues[8];
+	snifferValues[0]=(uint8_t)(snifferValue1);
+	snifferValues[1]=(uint8_t)(snifferValue1>>8);
+	snifferValues[2]=(uint8_t)(snifferValue1>>16);
+	snifferValues[3]=(uint8_t)(snifferValue1>>24);
+	snifferValues[4]=(uint8_t)(snifferValue2);
+	snifferValues[5]=(uint8_t)(snifferValue2>>8);
+	snifferValues[6]=(uint8_t)(snifferValue2>>16);
+	snifferValues[7]=(uint8_t)(snifferValue2>>24);
+	snifferPushRaw(SNIFFER_DEBUG_NIBBLE|(snifferValuesCount&0x0F), snifferPointId, snifferValues, 8);
+}
+
 //Moves buffered bytes to usb. Never waits on the usb: if the endpoint is busy we retry on the next loop.
+//sniffer tx/debug 04/10/2026 - throughput fix: one 64 byte packet per main loop iteration (the old
+//CDC_Transmit_FS path, bounded by its 64 byte linear buffer) caps the stream at 4 frames per loop, far
+//below what a busy bus delivers, and the ring then overflows (0xAF markers on the host). The usb device
+//library splits a long IN transfer into 64 byte packets by itself inside the endpoint interrupt, so the
+//ring is now handed to the endpoint directly, up to SNIFFER_USB_CHUNK contiguous bytes per transfer and
+//with no copy at all. The bytes in flight stay in the ring (still counted in snifferRingCount, so
+//snifferPushRaw can never overwrite them) and are released only once the endpoint reports the transfer
+//complete, on the next call.
 void snifferFlush(void){
 	uint16_t snifferSendLength;
 	uint16_t snifferContiguousBytes;
+	USBD_CDC_HandleTypeDef *snifferCdc;
 
 	if(snifferUsbInited==0) return;
-	if(snifferRingCount==0) return;
 	if(hUsbDeviceFS.pClassData==NULL) return; //usb not enumerated yet
-	if(((USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData)->TxState) return; //endpoint busy: do not enter the busy wait inside CDC_Transmit_FS
+	snifferCdc=(USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
+	if(snifferCdc->TxState) return; //transfer still in flight: nothing to do yet
+
+	//the previous transfer is complete: release its bytes from the ring
+	if(snifferInflightBytes){
+		snifferRingTail=(snifferRingTail+snifferInflightBytes)&SNIFFER_BUFFER_MASK;
+		snifferRingCount-=snifferInflightBytes;
+		snifferInflightBytes=0;
+	}
+	if(snifferRingCount==0) return;
 
 	snifferSendLength=snifferRingCount;
 	//a partial buffer is sent only after a while, so that on a busy bus we always send full 64 byte packets
-	if(snifferSendLength<SNIFFER_USB_CHUNK && (currentTime-snifferLastFlushTime)<SNIFFER_FLUSH_TIMEOUT_MS) return;
+	if(snifferSendLength<SNIFFER_USB_PACKET && (currentTime-snifferLastFlushTime)<SNIFFER_FLUSH_TIMEOUT_MS) return;
 	if(snifferSendLength>SNIFFER_USB_CHUNK) snifferSendLength=SNIFFER_USB_CHUNK;
 	//never read across the end of the ring: the remaining part goes out on the next flush
 	snifferContiguousBytes=SNIFFER_BUFFER_SIZE-snifferRingTail;
 	if(snifferSendLength>snifferContiguousBytes) snifferSendLength=snifferContiguousBytes;
 
-	if(CDC_Transmit_FS(&snifferRingBuffer[snifferRingTail], snifferSendLength)==USBD_OK){
-		snifferRingTail=(snifferRingTail+snifferSendLength)&SNIFFER_BUFFER_MASK;
-		snifferRingCount-=snifferSendLength;
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, &snifferRingBuffer[snifferRingTail], snifferSendLength);
+	if(USBD_CDC_TransmitPacket(&hUsbDeviceFS)==USBD_OK){
+		snifferInflightBytes=snifferSendLength;
 		snifferLastFlushTime=currentTime;
 	}
 }
@@ -408,6 +449,7 @@ void snifferStart(void){
 	snifferRingHead=0;
 	snifferRingTail=0;
 	snifferRingCount=0;
+	snifferInflightBytes=0; //sniffer tx/debug 04/10/2026 - the usb is restarted below, nothing can still be in flight
 	snifferDroppedFrames=0;
 	snifferLastFlushTime=currentTime;
 	snifferUsbStartRequested=1;

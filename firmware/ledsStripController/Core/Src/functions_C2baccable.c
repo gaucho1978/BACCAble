@@ -75,6 +75,7 @@
 		            last_pdc_shot_time = currentTime;
 		            pdcMsgData[1] = 0x20;  // push button
 		            can_tx(&pdcMsgHeader, pdcMsgData);
+		            SNIFFER_DEBUG1(0x2110, pdc_auto_disabled); //park mute: button push queued //sniffer tx/debug 27/09/2026
 		        }
 
 		        // raising the hold time allows a short beep before the PDC is disabled
@@ -82,6 +83,7 @@
 		            pdc_send_counter = 0;
 		            pdcMsgData[1] = 0x00;  // release button
 				can_tx(&pdcMsgHeader, pdcMsgData);
+		            SNIFFER_DEBUG1(0x2111, pdc_auto_disabled); //park mute: button release queued //sniffer tx/debug 27/09/2026
 		            requestToTogglePDC = 0; // cleared once push and release are both done
 			}
 		}

@@ -561,6 +561,7 @@ uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/
 	uint16_t snifferRingCount=0;
 	uint16_t snifferDroppedFrames=0;
 	uint32_t snifferLastFlushTime=0;
+	uint16_t snifferInflightBytes=0; //sniffer tx/debug 04/10/2026
 
 	#ifdef DEBUG_CAN_RX_SIMULATION
 		uint32_t debugSimulatedMsgLastInjectTime=0;

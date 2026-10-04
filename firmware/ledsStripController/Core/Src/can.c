@@ -226,6 +226,10 @@ void can_process(void)
 		// Transmit can frame
 		uint32_t mailbox_txed = 0;
 		uint32_t status = HAL_CAN_AddTxMessage(&can_handle, &txqueue.header[txqueue.tail], txqueue.data[txqueue.tail], &mailbox_txed);
+		#if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)
+			//sniffer tx/debug 27/09/2026 - copy of the frame just handed to the controller, before the slot is released
+			if(snifferInUse && status == HAL_OK) snifferPushTxFrame(&txqueue.header[txqueue.tail], txqueue.data[txqueue.tail]);
+		#endif
 		txqueue.tail = (txqueue.tail + 1) % TXQUEUE_LEN;
 
 		//onboardLed_red_on();

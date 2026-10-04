@@ -155,6 +155,28 @@ void processingStandardMessage(){
 			break;
 		case 0x00000107:
 			#if defined(C2baccable)
+				//sniffer tx/debug 27/09/2026 - park mute: snapshot of every input of the decision below, sent only when one of
+				//them changes (0x107 is periodic, sending it every time would just flood the sniff). One byte per value:
+				//  value 1 = [byte0] function enabled, [byte1] brake over threshold (same test as below, done on integers),
+				//            [byte2] reverseGearActive, [byte3] pdc_is_beeping
+				//  value 2 = [byte0] pdc_auto_disabled, [byte1] parkSensorsLedStatus, [byte2] requestToTogglePDC,
+				//            [byte3] raw brake byte (0x107 byte0, reported only: it does not trigger a new snapshot)
+				if(snifferInUse){
+					static uint32_t snifferParkMuteLastState1=0xFFFFFFFF;
+					static uint32_t snifferParkMuteLastState2=0xFFFFFFFF;
+					uint32_t snifferParkMuteState1=	((uint32_t)parkSensorsMuteFunctionEnabled)				|
+													((uint32_t)((rx_msg_data[0]*4)>145)<<8)			| //raw*0.4>14.5 <=> raw*4>145
+													((uint32_t)reverseGearActive<<16)					|
+													((uint32_t)pdc_is_beeping<<24);
+					uint32_t snifferParkMuteState2=	((uint32_t)pdc_auto_disabled)						|
+													((uint32_t)parkSensorsLedStatus<<8)				|
+													((uint32_t)requestToTogglePDC<<16);
+					if(snifferParkMuteState1!=snifferParkMuteLastState1 || snifferParkMuteState2!=snifferParkMuteLastState2){
+						snifferParkMuteLastState1=snifferParkMuteState1;
+						snifferParkMuteLastState2=snifferParkMuteState2;
+						SNIFFER_DEBUG2(0x2100, snifferParkMuteState1, snifferParkMuteState2|((uint32_t)rx_msg_data[0]<<24)); //park mute: inputs changed
+					}
+				}
 				if(parkSensorsMuteFunctionEnabled){
 					//brake travel status is on byte0 in percentage from 0 to 100, factor 0,4
 					brakeTravelStatus= rx_msg_data[0] * 0.4f;
@@ -166,6 +188,7 @@ void processingStandardMessage(){
 							if (parkSensorsLedStatus == 1  ) { //led continuous -> park sensors still really disabled
 								requestToTogglePDC = 1;
 							}
+							SNIFFER_DEBUG2(0x2101, parkSensorsLedStatus, requestToTogglePDC); //park mute: reverse gear, our marker dropped (value 2 = 1: sensors re-enabled by us) //sniffer tx/debug 27/09/2026
 							pdc_auto_disabled = 0;
 						}
 					}else{ //reverse gear not engaged
@@ -175,6 +198,7 @@ void processingStandardMessage(){
 								if (parkSensorsLedStatus != 1) { //led not continuous -> park sensors currently on
 									requestToTogglePDC = 1;
 									pdc_auto_disabled = 1;
+									SNIFFER_DEBUG1(0x2102, parkSensorsLedStatus); //park mute: brake pressed while beeping -> disable the sensors //sniffer tx/debug 27/09/2026
 								}
 							}
 						}else{ //brake released and the car is able to move again
@@ -190,8 +214,10 @@ void processingStandardMessage(){
 								if(pdc_auto_disabled == 1 && parkSensorsLedStatus == 1) { //we switched them off and they really are
 									requestToTogglePDC = 1; //re enable sensors since we are moving forward probably
 									pdc_auto_disabled = 0;
+									SNIFFER_DEBUG(0x2103); //park mute: brake released -> re-enable the sensors //sniffer tx/debug 27/09/2026
 								}else if (pdc_auto_disabled == 1 && parkSensorsLedStatus != 1) { //the car put them back on by itself (speed exceeded): just drop the marker
 									pdc_auto_disabled = 0; //may be car re enabled sensors by itself, just forget internal status.
+									SNIFFER_DEBUG1(0x2104, parkSensorsLedStatus); //park mute: brake released, the car had already re-enabled them //sniffer tx/debug 27/09/2026
 								}
 							}
 						}
