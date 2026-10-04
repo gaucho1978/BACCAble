@@ -9,8 +9,17 @@
 #if defined(C2baccable)
 
 	void C2PeriodicCheck(){
+		//dyno debug 04/10/2026 - dynoToggle() may run inside the uart rx interrupt (C2cmdtoggleDyno), where tracing
+		//is not allowed: dyno status changes are therefore detected here, in the main loop, by comparing with the last traced values
+		if(DynoModeEnabled!=snifferDynoLastModeEnabled || DynoStateMachine!=snifferDynoLastStateMachine){
+			SNIFFER_DEBUG2(0x2200, ((uint32_t)snifferDynoLastModeEnabled<<8)|snifferDynoLastStateMachine, ((uint32_t)DynoModeEnabled<<8)|DynoStateMachine); //dyno: status changed. v1=old, v2=new (byte1=DynoModeEnabled, byte0=DynoStateMachine) //dyno debug 04/10/2026
+			snifferDynoLastModeEnabled=DynoModeEnabled;
+			snifferDynoLastStateMachine=DynoStateMachine;
+		}
+
 		if(DynoStateMachine!=0xff){ //if state machine in progress
 			if(currentTime-DynoStateMachineLastUpdateTime> 4000){ //if older than 4 sec
+				SNIFFER_DEBUG2(0x2204, DynoStateMachine, DynoModeEnabled); //dyno: state machine timeout, no reply from ABS within 4 sec //dyno debug 04/10/2026
 				DynoStateMachine=0xff; //timeout. stop any sequence
 				//send message to master to inform about the status of Dyno
 				uint8_t tmpArr2[2]={C1BusID,C1cmdDynoNotActive};

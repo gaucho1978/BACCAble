@@ -23,6 +23,7 @@ void processingMessage0x000000FC(){
 		if(currentRpmSpeed< 400 ){
 			if(ESCandTCinversion!=0) ESCandTCinversion=0;
 			if(DynoModeEnabled!=0){
+				SNIFFER_DEBUG1(0x2205, currentRpmSpeed); //dyno: engine off, dyno status cleared (no command sent to ABS) //dyno debug 04/10/2026
 				DynoModeEnabled=0;
 				//engine off: tell C1 that Dyno is no longer active. Without this, DynoModeEnabledOnMaster
 				//stays stale (still 1) on C1, so after restart the "ENABLE DYNO" warning on the Front

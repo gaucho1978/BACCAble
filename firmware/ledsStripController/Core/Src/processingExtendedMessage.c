@@ -390,6 +390,14 @@ void processingExtendedMessage(){
 	#endif //end define
 
 	#if defined(C2baccable)
+		//dyno debug 04/10/2026 - every ABS diagnostic reply is traced: byte 0..3 in v1, byte 4..7 in v2 (DLC and state are in the rx frame and in 0x2200)
+		if (rx_msg_header.ExtId==0x18DAF128){
+			if(DynoStateMachine!=0xff){
+				SNIFFER_DEBUG2(0x2201, ((uint32_t)rx_msg_data[0])|((uint32_t)rx_msg_data[1]<<8)|((uint32_t)rx_msg_data[2]<<16)|((uint32_t)rx_msg_data[3]<<24), ((uint32_t)rx_msg_data[4])|((uint32_t)rx_msg_data[5]<<8)|((uint32_t)rx_msg_data[6]<<16)|((uint32_t)rx_msg_data[7]<<24)); //dyno: ABS reply while the state machine runs //dyno debug 04/10/2026
+			}else{
+				SNIFFER_DEBUG2(0x2203, ((uint32_t)rx_msg_data[0])|((uint32_t)rx_msg_data[1]<<8)|((uint32_t)rx_msg_data[2]<<16)|((uint32_t)rx_msg_data[3]<<24), ((uint32_t)rx_msg_data[4])|((uint32_t)rx_msg_data[5]<<8)|((uint32_t)rx_msg_data[6]<<16)|((uint32_t)rx_msg_data[7]<<24)); //dyno: ABS reply while the state machine is idle (unsolicited, or late reply after a timeout) //dyno debug 04/10/2026
+			}
+		}
 		if (rx_msg_header.ExtId==0x18DAF128 && DynoStateMachine!=0xff ){ //if message from ABS ECU and Dyno state machine is in progress
 			if (DynoStateMachine==0 && rx_msg_header.DLC>=3){ //we received a reply to diagnostic session request msg
 				if(rx_msg_data[0]==0x06 && rx_msg_data[1]==0x50 && rx_msg_data[2]==0x03){ //if request was successful
@@ -409,6 +417,7 @@ void processingExtendedMessage(){
 			}
 			if (DynoStateMachine==2 && rx_msg_header.DLC>=4){ //we received a reply to dyno disable msg
 				if(rx_msg_data[0]==0x03 && rx_msg_data[1]==0x6E && rx_msg_data[2]==0x30 && rx_msg_data[3]==0x02){ //if request was successful
+					SNIFFER_DEBUG(0x2210); //dyno: ABS confirmed dyno DISABLED //dyno debug 04/10/2026
 					DynoModeEnabled=0;//success change complete
 					DynoStateMachine=0xff; //disable state machine
 
@@ -422,6 +431,7 @@ void processingExtendedMessage(){
 			}
 			if (DynoStateMachine==3 && rx_msg_header.DLC>=4){ //we received a reply to dyno enable msg
 				if(rx_msg_data[0]==0x03 && rx_msg_data[1]==0x6E && rx_msg_data[2]==0x30 && rx_msg_data[3]==0x02){ //if request was successful
+					SNIFFER_DEBUG(0x2211); //dyno: ABS confirmed dyno ENABLED //dyno debug 04/10/2026
 					DynoModeEnabled=1;//success change complete
 
 					DynoStateMachine=0xff; //disable state machine
@@ -437,6 +447,7 @@ void processingExtendedMessage(){
 
 			if (DynoStateMachine!=0xff && rx_msg_header.DLC>=3){ //in any case
 				if( rx_msg_data[1]==0x7F ){ //if request refused, abort all
+					SNIFFER_DEBUG2(0x2212, DynoStateMachine, ((uint32_t)rx_msg_data[2]<<8)|rx_msg_data[3]); //dyno: ABS refused the request. v1=step, v2=byte1 service id, byte0 NRC //dyno debug 04/10/2026
 					DynoStateMachine=0xff; //disable state machine
 
 					//send message to master to inform about the status of Dyno
@@ -449,6 +460,7 @@ void processingExtendedMessage(){
 				}
 			}
 			if(DynoStateMachine!=0xff){ //if we are running, send next message
+				SNIFFER_DEBUG1(0x2213, DynoStateMachine); //dyno: sending the request of the next step //dyno debug 04/10/2026
 				DYNO_msg_header.DLC=DYNO_msg_data[DynoStateMachine][0]+1;
 				can_tx(&DYNO_msg_header, DYNO_msg_data[DynoStateMachine]); //add to the transmission queue
 				onboardLed_blue_on();

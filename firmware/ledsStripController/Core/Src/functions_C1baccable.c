@@ -362,6 +362,17 @@
 			}
 		}
 
+		//dyno debug 04/10/2026 - 4wd and dyno status changes, detected here in the main loop: _4wd_disabled is written by the
+		//menu, the engine off logic and the sequence below, DynoModeEnabledOnMaster by the uart rx interrupt (no tracing allowed there)
+		if(_4wd_disabled!=snifferLast4wdDisabled){
+			SNIFFER_DEBUG2(0x2300, snifferLast4wdDisabled, ((uint32_t)function_4wd_disabler_enabled<<8)|_4wd_disabled); //4wd: status changed. v1=old, v2=new (byte1=function enabled, byte0=_4wd_disabled; 1 = ECU reset loop running) //dyno debug 04/10/2026
+			snifferLast4wdDisabled=_4wd_disabled;
+		}
+		if(DynoModeEnabledOnMaster!=snifferLastDynoEnabledOnMaster){
+			SNIFFER_DEBUG2(0x2301, DynoModeEnabledOnMaster, _4wd_disabled); //4wd: dyno status reported by C2 changed. v1=new dyno status, v2=current _4wd_disabled //dyno debug 04/10/2026
+			snifferLastDynoEnabledOnMaster=DynoModeEnabledOnMaster;
+		}
+
 		if(function_4wd_disabler_enabled==1){
 			if(_4wd_disabled>0){
 				uint8_t tempDeltaTime=0;

@@ -445,6 +445,8 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t last_sent_tester_presence_msg_time=0; //stores time in millisec. from last sent presence. used when dyno is enabled
 	uint32_t DynoStateMachineLastUpdateTime=0; //stores time (in milliseconds from power on) when Park Assist button press was read last time
 	uint8_t ParkAssistButtonPressCount=0; //stores number of times this message field was received
+	uint8_t snifferDynoLastModeEnabled=0;		//dyno debug 04/10/2026 - last DynoModeEnabled traced by C2PeriodicCheck, to emit a debug frame only on change
+	uint8_t snifferDynoLastStateMachine=0xff;	//dyno debug 04/10/2026 - last DynoStateMachine traced by C2PeriodicCheck, to emit a debug frame only on change
 
 	//FRONT_BRAKE_FORCER
 	uint32_t last_sent_rear_brake_msg_time=0;
@@ -545,6 +547,10 @@ uint8_t front_brake_forced=0; //if=5 disables Front brakes
 uint8_t DynoModeEnabledOnMaster=0; //status of dyno in master board. tells if dyno is active
 uint32_t last_4wd_disabled_overlay_time = 0; // 4wd constraint relax change 24/08/2026
 uint8_t  show_4wd_disabled_overlay = 0;       // 4wd constraint relax change 24/08/2026
+#if defined(C1baccable)
+	uint8_t snifferLast4wdDisabled=0;			//dyno debug 04/10/2026 - last _4wd_disabled traced by C1baccablePeriodicCheck, to emit a debug frame only on change
+	uint8_t snifferLastDynoEnabledOnMaster=0;	//dyno debug 04/10/2026 - last DynoModeEnabledOnMaster traced by C1baccablePeriodicCheck (it is written by the uart rx interrupt, where tracing is not allowed)
+#endif
 
 //sniffer function 24/08/2026 - BEGIN
 #if defined(C1baccable) || defined(C2baccable) || defined(BHbaccable)

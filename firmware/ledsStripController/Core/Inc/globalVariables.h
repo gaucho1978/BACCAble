@@ -388,6 +388,8 @@
 		extern uint32_t last_sent_tester_presence_msg_time; //stores time in millisec. from last sent presence. used when dyno is enabled
 		extern uint32_t DynoStateMachineLastUpdateTime; //stores time (in milliseconds from power on) when Park Assist button press was read last time
 		extern uint8_t ParkAssistButtonPressCount; //stores number of times this message field was received
+		extern uint8_t snifferDynoLastModeEnabled;		//dyno debug 04/10/2026
+		extern uint8_t snifferDynoLastStateMachine;	//dyno debug 04/10/2026
 
 		//FRONT_BRAKE_FORCER
 		extern uint32_t last_sent_rear_brake_msg_time;
@@ -485,6 +487,10 @@
 	extern uint8_t DynoModeEnabledOnMaster; //status of dyno in master board. tells if dyno is active
 	extern uint32_t last_4wd_disabled_overlay_time; // 4wd constraint relax change 24/08/2026
 	extern uint8_t  show_4wd_disabled_overlay;       // 4wd constraint relax change 24/08/2026
+	#if defined(C1baccable)
+		extern uint8_t snifferLast4wdDisabled;			//dyno debug 04/10/2026
+		extern uint8_t snifferLastDynoEnabledOnMaster;	//dyno debug 04/10/2026
+	#endif
 
 	//sniffer function 24/08/2026 - BEGIN
 	//raw can frames are streamed to usb cdc with a fixed 16 byte layout:
