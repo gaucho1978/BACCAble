@@ -418,6 +418,8 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t faultsTimer = 0;                        // timestamp per timeout e display TIMEOUT
 	CAN_TxHeaderTypeDef faultsBodyTxHeader = {.IDE=CAN_ID_EXT, .RTR=CAN_RTR_DATA, .ExtId=0x18DA40F1, .DLC=3};
 	uint8_t  faultsBodyTxData[8];                    // buffer dati CAN per tutte le tx verso Body ECU
+	uint8_t  faultsResponsePending = 0;              // readFaults fix 05/10/2026 - 1 = ricevuto 7F xx 78 (responsePending): timeout esteso a P2*server
+	uint8_t  snifferLastFaultsState = 0xFF;          // readFaults debug 05/10/2026 - ultimo faultsStateMachine tracciato da C1baccablePeriodicCheck
 	//readFaults 12/08/2026 - END
 
 

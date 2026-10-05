@@ -9,7 +9,7 @@
 	uint8_t total_pages_in_params_setup_dashboard_menu=0;
 
 	uint8_t total_pages_in_dashboard_menu_gasoline=46;
-	uint8_t total_pages_in_dashboard_menu_diesel=55;
+	uint8_t total_pages_in_dashboard_menu_diesel=56;
 	uint8_t currentParamElementSelection=0;
 	
 
@@ -87,6 +87,7 @@
 						{.name="BAT $2.2fV $3.1fA",					.udsParamId={62,	4		}}, //param couple: BAT voltage and current
 						{.name="DPF $2.2f% $2.2f" "\xB0" "C",		.udsParamId={55,	56		}}, //param couple: DPF clogging percentage and temperature
 						{.name="REGEN $2.1f% $3.0f" "\xB0" "C",		.udsParamId={57,	56		}}, //param couple: DPF regeneration progress percentage and temperature
+						{.name="EGR C.$3.0f% ST.$3.0f%",			.udsParamId={73,	74		}}, //param couple: EGR cmd and sts
 						{.name="PWR: $3.2fCV   ",					.udsParamId={1,		1		}}, //Power
 						{.name="TORQUE: $3.2fNm",					.udsParamId={2,		2		}}, //Torque
 						{.name="DPF: $3.2f%    ",					.udsParamId={55,	55		}}, //DPF clogging percentage

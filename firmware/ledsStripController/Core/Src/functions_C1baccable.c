@@ -373,6 +373,12 @@
 			snifferLastDynoEnabledOnMaster=DynoModeEnabledOnMaster;
 		}
 
+		//readFaults debug 05/10/2026 - read faults state changes, detected here in the main loop (start from menu, timeout, end, exit)
+		if(faultsStateMachine!=snifferLastFaultsState){
+			SNIFFER_DEBUG2(0x2500, snifferLastFaultsState, faultsStateMachine); //read faults: state changed. v1=old, v2=new (0xFF idle, 0 session, 1 ReadDTC, 2 multiframe, 3 list ready, 4 TIMEOUT) //readFaults debug 05/10/2026
+			snifferLastFaultsState=faultsStateMachine;
+		}
+
 		if(function_4wd_disabler_enabled==1){
 			if(_4wd_disabled>0){
 				uint8_t tempDeltaTime=0;
@@ -676,7 +682,9 @@
 					if(main_dashboardPageIndex==2){ //readFaults 12/08/2026
 						// Timeout stati attesa 0/1/2: 2 secondi senza risposta dal Body ECU
 						if(faultsStateMachine < 3){
-							if(currentTime - faultsTimer > 2000){
+							// readFaults fix 05/10/2026 - dopo un 7F xx 78 (responsePending) la ECU ha fino a P2*server (5 s) per rispondere
+							if(currentTime - faultsTimer > (faultsResponsePending ? 5000 : 2000)){
+								SNIFFER_DEBUG2(0x2507, faultsStateMachine, faultsResponsePending); //read faults: timeout, no reply from Body ECU. v1=state, v2=1 if waiting after responsePending //readFaults debug 05/10/2026
 								faultsStateMachine = 4; // transizione a TIMEOUT display
 								faultsTimer = currentTime;
 							}

@@ -287,6 +287,7 @@ void processingExtendedMessage(){
 		//   Stato 1: first frame  (PCI nibble alto=1, SID=59, sub=02) → invia FC   → stato 2
 		//   Stato 2: consecutive frames (PCI nibble alto=2) → accumula buffer      → stato 3
 		//   Risposta negativa (SID=7F): transizione forzata a stato 4 (errore/timeout display)
+		//   eccetto 7F xx 78 (responsePending): si resta in attesa, timeout esteso a 5 s // readFaults fix 05/10/2026
 		//
 		// Formato payload risposta ReadDTCByStatusMask (0x59 0x02):
 		//   [59][02][availMask][DTChi][DTCmid][DTClo][DTCstatus] x N record
@@ -296,24 +297,40 @@ void processingExtendedMessage(){
 
 			uint8_t pci      = rx_msg_data[0];
 			uint8_t pci_type = (pci >> 4) & 0x0F;
+			uint8_t faultsDiscardReason = 0; //readFaults debug 05/10/2026 - !=0: frame ignored, reason traced below (0x2504)
+
+			SNIFFER_DEBUG2(0x2501, ((uint32_t)rx_msg_data[0])|((uint32_t)rx_msg_data[1]<<8)|((uint32_t)rx_msg_data[2]<<16)|((uint32_t)rx_msg_data[3]<<24), ((uint32_t)rx_msg_data[4])|((uint32_t)rx_msg_data[5]<<8)|((uint32_t)rx_msg_data[6]<<16)|((uint32_t)rx_msg_data[7]<<24)); //read faults: Body ECU frame. v1=byte 0..3, v2=byte 4..7 //readFaults debug 05/10/2026
+
+			// readFaults fix 05/10/2026 - 7F xx 78 (responsePending) non e' un rifiuto: la ECU chiede tempo e la risposta
+			// positiva arriva dopo. Prima veniva trattato come errore e mostrava TIMEOUT. Si resta nello stato corrente,
+			// riavviando il timeout ed estendendolo a P2*server (vedi C1baccablePeriodicCheck).
+			if (rx_msg_header.DLC >= 4 && rx_msg_data[1] == 0x7F && rx_msg_data[3] == 0x78 && faultsStateMachine < 3) {
+				SNIFFER_DEBUG2(0x2503, faultsStateMachine, rx_msg_data[2]); //read faults: responsePending, keep waiting. v1=state, v2=service id //readFaults debug 05/10/2026
+				faultsResponsePending = 1;
+				faultsTimer           = currentTime;
 
 			// Risposta negativa (0x7F): abort con display TIMEOUT
-			if (rx_msg_header.DLC >= 2 && rx_msg_data[1] == 0x7F) {
+			} else if (rx_msg_header.DLC >= 2 && rx_msg_data[1] == 0x7F) {
+				SNIFFER_DEBUG2(0x2502, faultsStateMachine, ((uint32_t)rx_msg_data[2]<<8)|rx_msg_data[3]); //read faults: request refused. v1=state, v2=byte1 service id, byte0 NRC //readFaults debug 05/10/2026
+				faultsResponsePending = 0;
 				faultsStateMachine = 4;
 				faultsTimer        = currentTime;
 
 			// Stato 0: conferma sessione estesa (50 03) → invia ReadDTC
-			} else if (faultsStateMachine == 0 &&
-					   rx_msg_header.DLC >= 3 &&
-					   rx_msg_data[1] == 0x50 && rx_msg_data[2] == 0x03) {
+			} else if (faultsStateMachine == 0) {
+				if (rx_msg_header.DLC >= 3 && rx_msg_data[1] == 0x50 && rx_msg_data[2] == 0x03) {
 				faultsBodyTxHeader.DLC = 4;
 				faultsBodyTxData[0]    = 0x03; // PCI: single frame, 3 byte dati
 				faultsBodyTxData[1]    = 0x19; // SID: ReadDTCInformation
 				faultsBodyTxData[2]    = 0x02; // subfunction: reportDTCByStatusMask
 				faultsBodyTxData[3]    = 0xFF; // statusMask: tutti i DTC attivi
 				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+					faultsResponsePending = 0;
 				faultsTimer        = currentTime; // riavvia timeout per la risposta ReadDTC
 				faultsStateMachine = 1;
+				} else {
+					faultsDiscardReason = 1; // non e' la conferma di sessione 50 03
+				}
 
 			// Stato 1 + single frame (PCI type 0): parsa DTC direttamente
 			} else if (faultsStateMachine == 1 && pci_type == 0) {
@@ -335,13 +352,18 @@ void processingExtendedMessage(){
 						faultsDTCcount++;
 						off += 4;
 					}
+					SNIFFER_DEBUG2(0x2506, faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a single frame. v1=DTC count, v2=payload bytes //readFaults debug 05/10/2026
+					faultsResponsePending = 0;
 					faultsDTCsubmenuIndex = 0;
 					faultsStateMachine    = 3;
+				} else {
+					faultsDiscardReason = 2; // single frame che non e' una risposta 59 02 valida
 				}
 
 			// Stato 1 + first frame (PCI type 1): avvia riassemblaggio multiframe
 			} else if (faultsStateMachine == 1 && pci_type == 1) {
 				uint16_t totalLen = ((uint16_t)(pci & 0x0F) << 8) | rx_msg_data[1];
+				SNIFFER_DEBUG2(0x2505, totalLen, (totalLen > 90) ? 90 : totalLen); //read faults: first frame. v1=declared length, v2=length kept (buffer is 90 bytes) //readFaults debug 05/10/2026
 				if (totalLen > 90) totalLen = 90;
 				faultsRxExpected  = totalLen;
 				faultsRxReceived  = 0;
@@ -358,6 +380,7 @@ void processingExtendedMessage(){
 				faultsBodyTxData[1]    = 0x00;
 				faultsBodyTxData[2]    = 0x00;
 				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+				faultsResponsePending = 0;
 				faultsStateMachine = 2;
 
 			// Stato 2 + consecutive frame (PCI type 2): accumula e verifica completezza
@@ -379,10 +402,20 @@ void processingExtendedMessage(){
 							faultsDTCcount++;
 							off += 4;
 						}
+						SNIFFER_DEBUG2(0x2506, faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a multiframe. v1=DTC count (max FAULTS_DTC_MAX), v2=payload bytes //readFaults debug 05/10/2026
 						faultsDTCsubmenuIndex = 0;
 						faultsStateMachine    = 3;
 					}
+				} else {
+					faultsDiscardReason = 4; // numero di sequenza inatteso: il frame viene ignorato e si arrivera' al timeout
 				}
+
+			} else {
+				faultsDiscardReason = (faultsStateMachine >= 3) ? 5 : 3; // 5 = frame arrivato a sequenza conclusa, 3 = tipo PCI inatteso per lo stato
+			}
+
+			if (faultsDiscardReason) {
+				SNIFFER_DEBUG2(0x2504, faultsStateMachine, ((uint32_t)pci<<16)|((uint32_t)faultsRxNextSN<<8)|faultsDiscardReason); //read faults: frame ignored. v1=state, v2=byte2 PCI, byte1 expected SN, byte0 reason (1 no 50 03, 2 bad single frame, 3 unexpected PCI type, 4 wrong SN, 5 sequence already ended) //readFaults debug 05/10/2026
 			}
 		}
 		//readFaults 12/08/2026 - END

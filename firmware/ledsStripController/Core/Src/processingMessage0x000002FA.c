@@ -447,6 +447,7 @@ void processingMessage0x000002FA(){
 									faultsRxReceived       = 0;
 									faultsRxExpected       = 0;
 									faultsRxNextSN         = 1;
+									faultsResponsePending  = 0; // readFaults fix 05/10/2026
 									faultsTimer            = currentTime;
 									faultsBodyTxHeader.DLC = 3;
 									faultsBodyTxData[0] = 0x02; // PCI: SF 2 byte
@@ -822,6 +823,7 @@ void processingMessage0x000002FA(){
 									sendSetupDashboardPageToSlaveBaccable();
 									break;
 								case 2: //read faults - ritorna al menu principale //readFaults 12/08/2026
+									SNIFFER_DEBUG1(0x2508, faultsStateMachine); //read faults: user left the page, sequence stopped. v1=state at exit //readFaults debug 05/10/2026
 									faultsStateMachine = 0xFF; // interrompe eventuale sequenza UDS in corso
 									dashboard_menu_indent_level = 0;
 									sendMainDashboardPageToSlaveBaccable();

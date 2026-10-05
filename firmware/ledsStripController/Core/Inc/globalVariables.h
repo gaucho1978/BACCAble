@@ -362,6 +362,8 @@
 		extern uint32_t faultsTimer;
 		extern CAN_TxHeaderTypeDef faultsBodyTxHeader;
 		extern uint8_t  faultsBodyTxData[8];
+		extern uint8_t  faultsResponsePending;          // readFaults fix 05/10/2026
+		extern uint8_t  snifferLastFaultsState;         // readFaults debug 05/10/2026
 		//readFaults 12/08/2026 - END
 
 	#endif
