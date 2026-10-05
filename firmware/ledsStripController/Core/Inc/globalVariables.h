@@ -353,9 +353,12 @@
 		#define FAULTS_DTC_MAX 20
 		extern uint8_t  faultsStateMachine;
 		extern uint8_t  faultsDTCcount;
+		extern uint16_t faultsDTCtotal;		//readFaults fix 05/10/2026 - all valid DTC in the response (faultsDTCcount keeps at most FAULTS_DTC_MAX)
 		extern uint8_t  faultsDTCsubmenuIndex;
 		extern uint8_t  faultsDTCbytes[FAULTS_DTC_MAX][3];
-		extern uint8_t  faultsRxBuffer[90];
+		extern uint8_t  faultsRecord[4];		//readFaults fix 05/10/2026 - DTC record being assembled (was faultsRxBuffer[90])
+		extern uint8_t  faultsRecordFill;
+		#define FAULTS_STATUS_MASK 0x09		//readFaults fix 05/10/2026 - DTC status bits shown: 0x01 testFailed (present now) | 0x08 confirmedDTC (stored)
 		extern uint16_t faultsRxExpected;
 		extern uint16_t faultsRxReceived;
 		extern uint8_t  faultsRxNextSN;

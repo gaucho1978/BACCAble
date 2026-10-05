@@ -8,6 +8,29 @@
 #include "processingExtendedMessage.h"
 #include "security_access_mm10ja.h" //pumpForce test25/07/2026 - algoritmo MM10JA per calcolo key ECM
 
+#if defined(C1baccable)
+//readFaults fix 05/10/2026 - consumes one byte of the ReadDTCByStatusMask payload ([59][02][availMask] then 4 byte
+//records [DTC hi][DTC mid][DTC lo][status]) as it arrives, so a response of any length is decoded without buffering
+//it. A record is kept only if its status has testFailed (present now) or confirmedDTC (stored) set: records whose only
+//bit is e.g. 0x40 (testNotCompletedSinceLastClear) are not faults. faultsRxReceived counts the payload bytes consumed.
+//The first FAULTS_DTC_MAX valid records are kept for the list, faultsDTCtotal counts them all.
+static void faultsConsumePayloadByte(uint8_t b){
+	uint16_t pos = faultsRxReceived++;
+	if (pos < 3) return; // 59 02 availMask: already checked by the caller
+	faultsRecord[faultsRecordFill++] = b;
+	if (faultsRecordFill < 4) return;
+	faultsRecordFill = 0;
+	if ((faultsRecord[3] & FAULTS_STATUS_MASK) == 0) return;
+	if (faultsDTCtotal < 0xFFFF) faultsDTCtotal++; // counted even beyond FAULTS_DTC_MAX: shown as the total in "n/m"
+	if (faultsDTCcount < FAULTS_DTC_MAX) {
+		faultsDTCbytes[faultsDTCcount][0] = faultsRecord[0];
+		faultsDTCbytes[faultsDTCcount][1] = faultsRecord[1];
+		faultsDTCbytes[faultsDTCcount][2] = faultsRecord[2];
+		faultsDTCcount++;
+	}
+}
+#endif
+
 void processingExtendedMessage(){
 	#if defined(C1baccable)
 		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds<500)){ //if immo enabled and engine is off
@@ -292,6 +315,14 @@ void processingExtendedMessage(){
 		// Formato payload risposta ReadDTCByStatusMask (0x59 0x02):
 		//   [59][02][availMask][DTChi][DTCmid][DTClo][DTCstatus] x N record
 		//   Ogni record = 4 byte; parsing: offset 3 = primo DTC high byte
+		//
+		// readFaults fix 05/10/2026 - con statusMask FF la Body ECU rispondeva con 539 byte (134 record): 132 con stato
+		// 0x40 (testNotCompletedSinceLastClear, NON sono guasti) e solo 2 guasti veri, in fondo. Il firmware teneva i primi
+		// 90 byte e non guardava lo stato: mostrava 20 codici che non erano guasti e perdeva quelli veri. Ora:
+		//   - si chiede statusMask 09 (testFailed | confirmedDTC): la ECU manda solo i guasti presenti o memorizzati;
+		//   - il byte di stato viene controllato comunque (FAULTS_STATUS_MASK), se una ECU ignorasse la maschera;
+		//   - i record si decodificano man mano che arrivano (faultsConsumePayloadByte), senza limite sulla lunghezza
+		//     della risposta: si tengono i primi FAULTS_DTC_MAX guasti validi.
 		// -----------------------------------------------------------------------
 		if (rx_msg_header.ExtId == 0x18DAF140 && faultsStateMachine != 0xFF) {
 
@@ -323,7 +354,7 @@ void processingExtendedMessage(){
 				faultsBodyTxData[0]    = 0x03; // PCI: single frame, 3 byte dati
 				faultsBodyTxData[1]    = 0x19; // SID: ReadDTCInformation
 				faultsBodyTxData[2]    = 0x02; // subfunction: reportDTCByStatusMask
-				faultsBodyTxData[3]    = 0xFF; // statusMask: tutti i DTC attivi
+					faultsBodyTxData[3]    = FAULTS_STATUS_MASK; // statusMask: solo guasti presenti (0x01) o confermati (0x08) //readFaults fix 05/10/2026 - era 0xFF
 				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
 					faultsResponsePending = 0;
 				faultsTimer        = currentTime; // riavvia timeout per la risposta ReadDTC
@@ -337,22 +368,14 @@ void processingExtendedMessage(){
 				uint8_t payloadLen = pci & 0x0F;
 				if (payloadLen >= 3 && rx_msg_header.DLC >= 4 &&
 					rx_msg_data[1] == 0x59 && rx_msg_data[2] == 0x02) {
-					if (payloadLen > 90) payloadLen = 90;
+					faultsDTCcount   = 0;
+					faultsDTCtotal   = 0;
+					faultsRxReceived = 0;
+					faultsRecordFill = 0;
 					for (uint8_t i = 0; i < payloadLen && (i + 1) < rx_msg_header.DLC; i++) {
-						faultsRxBuffer[i] = rx_msg_data[1 + i]; // [0]=59 [1]=02 [2]=avail [3..]=DTC
+						faultsConsumePayloadByte(rx_msg_data[1 + i]); // [0]=59 [1]=02 [2]=avail [3..]=record DTC
 					}
-					faultsRxReceived = payloadLen;
-					// Parsa: offset 3 = primo DTC, ogni record = 4 byte (3 DTC + 1 status)
-					faultsDTCcount = 0;
-					uint8_t off    = 3;
-					while (off + 4 <= faultsRxReceived && faultsDTCcount < FAULTS_DTC_MAX) {
-						faultsDTCbytes[faultsDTCcount][0] = faultsRxBuffer[off];
-						faultsDTCbytes[faultsDTCcount][1] = faultsRxBuffer[off + 1];
-						faultsDTCbytes[faultsDTCcount][2] = faultsRxBuffer[off + 2];
-						faultsDTCcount++;
-						off += 4;
-					}
-					SNIFFER_DEBUG2(0x2506, faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a single frame. v1=DTC count, v2=payload bytes //readFaults debug 05/10/2026
+					SNIFFER_DEBUG2(0x2506, ((uint32_t)faultsDTCtotal<<16)|faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a single frame. v1=low 16 bit DTC kept in the list, high 16 bit valid DTC in total, v2=payload bytes //readFaults debug 05/10/2026
 					faultsResponsePending = 0;
 					faultsDTCsubmenuIndex = 0;
 					faultsStateMachine    = 3;
@@ -363,17 +386,18 @@ void processingExtendedMessage(){
 			// Stato 1 + first frame (PCI type 1): avvia riassemblaggio multiframe
 			} else if (faultsStateMachine == 1 && pci_type == 1) {
 				uint16_t totalLen = ((uint16_t)(pci & 0x0F) << 8) | rx_msg_data[1];
-				SNIFFER_DEBUG2(0x2505, totalLen, (totalLen > 90) ? 90 : totalLen); //read faults: first frame. v1=declared length, v2=length kept (buffer is 90 bytes) //readFaults debug 05/10/2026
-				if (totalLen > 90) totalLen = 90;
+				SNIFFER_DEBUG2(0x2505, totalLen, totalLen); //read faults: first frame. v1=declared length, v2=same (whole response decoded, no 90 byte limit since 05/10/2026) //readFaults debug 05/10/2026
 				faultsRxExpected  = totalLen;
 				faultsRxReceived  = 0;
+				faultsRecordFill  = 0;
+				faultsDTCcount    = 0;
+				faultsDTCtotal    = 0;
 				faultsRxNextSN    = 1;
-				// Copia i primi 6 byte di payload (data[2..7])
+				// primi 6 byte di payload (data[2..7]): 59 02 availMask e l'inizio del primo record
 				uint8_t toCopy = (totalLen < 6) ? (uint8_t)totalLen : 6;
 				for (uint8_t i = 0; i < toCopy; i++) {
-					faultsRxBuffer[i] = rx_msg_data[2 + i];
+					faultsConsumePayloadByte(rx_msg_data[2 + i]);
 				}
-				faultsRxReceived = toCopy;
 				// Flow Control: ContinueToSend, BlockSize=0, STmin=0ms
 				faultsBodyTxHeader.DLC = 3;
 				faultsBodyTxData[0]    = 0x30;
@@ -389,20 +413,11 @@ void processingExtendedMessage(){
 				if (sn == faultsRxNextSN) {
 					faultsRxNextSN = (uint8_t)((faultsRxNextSN + 1) & 0x0F);
 					for (uint8_t i = 1; i < rx_msg_header.DLC && faultsRxReceived < faultsRxExpected; i++) {
-						faultsRxBuffer[faultsRxReceived++] = rx_msg_data[i];
+						faultsConsumePayloadByte(rx_msg_data[i]); // i record vengono decodificati man mano
 					}
 					if (faultsRxReceived >= faultsRxExpected) {
-						// Payload completo: parsa DTC (stesso layout del single frame)
-						faultsDTCcount = 0;
-						uint8_t off    = 3; // skip SID(59) subf(02) availMask
-						while (off + 4 <= faultsRxReceived && faultsDTCcount < FAULTS_DTC_MAX) {
-							faultsDTCbytes[faultsDTCcount][0] = faultsRxBuffer[off];
-							faultsDTCbytes[faultsDTCcount][1] = faultsRxBuffer[off + 1];
-							faultsDTCbytes[faultsDTCcount][2] = faultsRxBuffer[off + 2];
-							faultsDTCcount++;
-							off += 4;
-						}
-						SNIFFER_DEBUG2(0x2506, faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a multiframe. v1=DTC count (max FAULTS_DTC_MAX), v2=payload bytes //readFaults debug 05/10/2026
+						// Payload completo: i guasti validi sono gia' in faultsDTCbytes
+						SNIFFER_DEBUG2(0x2506, ((uint32_t)faultsDTCtotal<<16)|faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a multiframe. v1=low 16 bit DTC kept in the list (max FAULTS_DTC_MAX), high 16 bit valid DTC in total, v2=payload bytes //readFaults debug 05/10/2026
 						faultsDTCsubmenuIndex = 0;
 						faultsStateMachine    = 3;
 					}

@@ -405,13 +405,15 @@ const char *FW_VERSION=_FW_VERSION;
 
 	//readFaults 12/08/2026 - BEGIN
 	// Definizioni variabili per la sequenza UDS di lettura DTC dal Body ECU (ECU 0x40)
-	// Il buffer faultsRxBuffer accumula il payload ISO-TP completo (primo frame + consecutivi).
+	// I record DTC vengono decodificati man mano che arrivano (faultsConsumePayloadByte): niente buffer del payload.
 	// faultsBodyTxHeader ha ExtId fisso 0x18DA40F1; DLC aggiornato prima di ogni can_tx.
 	uint8_t  faultsStateMachine = 0xFF;              // 0xFF=inattivo
 	uint8_t  faultsDTCcount = 0;                     // numero DTC ricevuti e validi
+	uint16_t faultsDTCtotal = 0;                     // readFaults fix 05/10/2026 - DTC validi nella risposta, anche oltre FAULTS_DTC_MAX (mostrato come totale n/m)
 	uint8_t  faultsDTCsubmenuIndex = 0;              // indice corrente scorrimento lista DTC
 	uint8_t  faultsDTCbytes[FAULTS_DTC_MAX][3];      // record DTC: [high, mid, low] per record
-	uint8_t  faultsRxBuffer[90];                     // buffer riassemblaggio ISO-TP payload
+	uint8_t  faultsRecord[4];                        // readFaults fix 05/10/2026 - record DTC in composizione [hi][mid][lo][status]
+	uint8_t  faultsRecordFill = 0;                   // readFaults fix 05/10/2026 - byte gia' presenti in faultsRecord
 	uint16_t faultsRxExpected = 0;                   // byte totali attesi (da first frame)
 	uint16_t faultsRxReceived = 0;                   // byte payload ricevuti finora
 	uint8_t  faultsRxNextSN = 0;                     // numero sequenza atteso prossimo CF

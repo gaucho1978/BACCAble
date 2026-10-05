@@ -868,25 +868,40 @@
 								uint8_t b0=faultsDTCbytes[faultsDTCsubmenuIndex][0];
 								uint8_t b1=faultsDTCbytes[faultsDTCsubmenuIndex][1];
 								uint8_t b2=faultsDTCbytes[faultsDTCsubmenuIndex][2];
+								// readFaults fix 05/10/2026 - DTC in formato SAE J2012, come negli strumenti di diagnosi:
+								// "BODY B10AA-4A 1/2". I 2 bit alti del primo byte danno la lettera (P/C/B/U), i 2 successivi
+								// la prima cifra, poi 3 cifre esadecimali; il terzo byte e' il tipo di guasto (FTB) dopo il
+								// trattino. Prima si mostravano i 3 byte grezzi ("BODY 90AA4A").
+								static const char dtcLetter[4]={'P','C','B','U'};
 								dashboard_main_menu_array[2][0]='B';
 								dashboard_main_menu_array[2][1]='O';
 								dashboard_main_menu_array[2][2]='D';
 								dashboard_main_menu_array[2][3]='Y';
 								dashboard_main_menu_array[2][4]=' ';
-								dashboard_main_menu_array[2][5]=hx[b0>>4];
-								dashboard_main_menu_array[2][6]=hx[b0&0xF];
-								dashboard_main_menu_array[2][7]=hx[b1>>4];
-								dashboard_main_menu_array[2][8]=hx[b1&0xF];
-								dashboard_main_menu_array[2][9]=hx[b2>>4];
-								dashboard_main_menu_array[2][10]=hx[b2&0xF];
-								// Contatore N/M in posizione 12-16
+								dashboard_main_menu_array[2][5]=dtcLetter[b0>>6];
+								dashboard_main_menu_array[2][6]=(char)('0'+((b0>>4)&0x3));
+								dashboard_main_menu_array[2][7]=hx[b0&0xF];
+								dashboard_main_menu_array[2][8]=hx[b1>>4];
+								dashboard_main_menu_array[2][9]=hx[b1&0xF];
+								dashboard_main_menu_array[2][10]='-';
+								dashboard_main_menu_array[2][11]=hx[b2>>4];
+								dashboard_main_menu_array[2][12]=hx[b2&0xF];
+								// Contatore dalla posizione 14 (la riga ha 18 caratteri): "n/m" per n da 1 a 9 ("9/40" = 4
+								// caratteri), solo "n" da 10 in poi ("10/40" non ci starebbe). m e' il totale dei guasti validi
+								// nella risposta, anche oltre i FAULTS_DTC_MAX della lista: con 40 guasti si scorre da 1/40 a 20
+								// e si sa che ce ne sono altri. Oltre 99 si mostra 99 (non ci sono altri caratteri).
 								uint8_t n=(uint8_t)(faultsDTCsubmenuIndex+1);
-								uint8_t m=faultsDTCcount;
-								dashboard_main_menu_array[2][12]=(n>=10)?((char)('0'+n/10)):' ';
-								dashboard_main_menu_array[2][13]=(char)('0'+n%10);
-								dashboard_main_menu_array[2][14]='/';
-								dashboard_main_menu_array[2][15]=(m>=10)?((char)('0'+m/10)):' ';
-								dashboard_main_menu_array[2][16]=(char)('0'+m%10);
+								uint8_t m=(faultsDTCtotal>99)?99:(uint8_t)faultsDTCtotal;
+								if(n<10){
+									uint8_t pos=14;
+									dashboard_main_menu_array[2][pos++]=(char)('0'+n);
+									dashboard_main_menu_array[2][pos++]='/';
+									if(m>=10) dashboard_main_menu_array[2][pos++]=(char)('0'+m/10);
+									dashboard_main_menu_array[2][pos]=(char)('0'+m%10);
+								}else{
+									dashboard_main_menu_array[2][14]=(char)('0'+n/10);
+									dashboard_main_menu_array[2][15]=(char)('0'+n%10);
+								}
 							}
 							break;
 						case 4: // TIMEOUT
@@ -901,6 +916,13 @@
 						default:
 							break;
 					}
+				}else if(dashboard_menu_indent_level==0){
+					//readFaults fix 05/10/2026 - while reading, WAIT / DTC / TIMEOUT are written into this very row of the main
+					//menu: back on the main menu (RES, timeout, end of list) the row kept the last DTC shown instead of the
+					//menu entry. Put the label back whenever the main menu is shown.
+					static const uint8_t readFaultsLabel[]={'R','e','a','d',' ','F','a','u','l','t','s'};
+					memset(dashboard_main_menu_array[2], ' ', DASHBOARD_MESSAGE_MAX_LENGTH);
+					memcpy(dashboard_main_menu_array[2], readFaultsLabel, sizeof(readFaultsLabel));
 				}
 				break;
 			case 3:

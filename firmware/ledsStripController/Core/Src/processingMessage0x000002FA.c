@@ -443,9 +443,11 @@ void processingMessage0x000002FA(){
 									// Reset DTC precedenti e avvia sequenza UDS verso Body ECU (0x40)
 									faultsStateMachine     = 0;
 									faultsDTCcount         = 0;
+									faultsDTCtotal         = 0; // readFaults fix 05/10/2026
 									faultsDTCsubmenuIndex  = 0;
 									faultsRxReceived       = 0;
 									faultsRxExpected       = 0;
+									faultsRecordFill       = 0; // readFaults fix 05/10/2026
 									faultsRxNextSN         = 1;
 									faultsResponsePending  = 0; // readFaults fix 05/10/2026
 									faultsTimer            = currentTime;
