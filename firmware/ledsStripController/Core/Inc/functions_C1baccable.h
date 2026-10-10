@@ -44,4 +44,7 @@
 	uint8_t getNextVisibleParam(uint8_t curIndex);
 	uint8_t getPreviousVisibleParam(uint8_t curIndex);
 	void nativeMaxHoldUpdate(uint8_t paramId);
+	void faultsStartEcuSession(uint8_t ecu); //readFaults ECM 10/10/2026
+	void faultsEcuEnded(uint8_t failed); //readFaults ECM 10/10/2026
+	void faultsAbsProcess(void); //readFaults ABS 10/10/2026
 #endif /* INC_FUNCTIONS_C1BACCABLE_H_ */

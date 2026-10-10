@@ -8,8 +8,8 @@
 	uint8_t params_setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_params_setup_dashboard_menu=0;
 
-	uint8_t total_pages_in_dashboard_menu_gasoline=46;
-	uint8_t total_pages_in_dashboard_menu_diesel=56;
+	uint8_t total_pages_in_dashboard_menu_gasoline=47; //brake in show params 10/10/2026 - was 46
+	uint8_t total_pages_in_dashboard_menu_diesel=57; //brake in show params 10/10/2026 - was 56
 	uint8_t currentParamElementSelection=0;
 	
 
@@ -67,7 +67,7 @@
 					{.name="Best  0-100: $1.2fs",				.udsParamId={11,	11		}}, //0-100km/h Best time statistic
 					{.name="Best100-200: $1.2fs",				.udsParamId={12,	12		}}, //100-200km/h Best time statistic
 					{.name="Pedal Map: $enum",					.udsParamId={17,	17		}}, //selected Pedal Map
-//					{.name="BrakePedal: $3.0f%",				.udsParamId={23,	23		}}, //Brake pedal press percentage
+					{.name="BrakePedal: $3.0f%",				.udsParamId={18,	18		}}, //Brake pedal press percentage (0x107) //brake in show params 10/10/2026
 					//
 //					{.name="RAM: $5.0fB",						.udsParamId={16,	16		}}, //Free RAM
 //									{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B3),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
@@ -134,7 +134,7 @@
 						{.name="Best100-200:$2.2fs",				.udsParamId={12,	12		}}, //0-100km/h Best Statistic
 						{.name="DRIVE STYLE: $enum",				.udsParamId={15,	15		}}, //Drive Style
 						{.name="Pedal Map: $enum",					.udsParamId={17,	17		}}, //selected Pedal Map
-//						{.name="BrakePedal: $3.0f%",				.udsParamId={23,	23		}}, //Brake pedal press percentage
+						{.name="BrakePedal: $3.0f%",				.udsParamId={18,	18		}}, //Brake pedal press percentage (0x107) //brake in show params 10/10/2026
 //						{.name="RAM: $5.0fB",						.udsParamId={16,	16		}}, //Free RAM
 
 //								{.name={'F','-','L',' ','T','I','R','E',':',' ',},					.reqId=0x18DAC7F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032240B1),	.replyId=0x18DAF1C7,	.replyLen=1,	.replyOffset=4, .replyValOffset=-50,	.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}						},

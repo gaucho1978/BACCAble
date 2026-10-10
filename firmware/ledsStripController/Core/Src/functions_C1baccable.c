@@ -335,6 +335,7 @@
 				uint8_t tmpArr6[2]={C2BusID,C2cmdFunctParkSensorsMuteDisabled};
 				if(parkSensorsMuteFunctionEnabled) tmpArr6[1]=C2cmdFunctParkSensorsMuteEnabled;
 				addToUARTSendQueue(tmpArr6, 2);
+				parkMuteBrakeSent=0xFF; //C2 may have just woken up: the next 0x107 sends it the brake state again //park mute brake from C1 10/10/2026
 
 				//notify to C2 and BH the sniffer function status //sniffer function 24/08/2026
 				uint8_t tmpArr7[2]={C2_Bh_BusID,C2_Bh_cmdSnifferDisabled};
@@ -373,6 +374,7 @@
 			snifferLastDynoEnabledOnMaster=DynoModeEnabledOnMaster;
 		}
 
+		faultsAbsProcess(); //ABS faults sent by C2 for Read Faults //readFaults ABS 10/10/2026
 		//readFaults debug 05/10/2026 - read faults state changes, detected here in the main loop (start from menu, timeout, end, exit)
 		if(faultsStateMachine!=snifferLastFaultsState){
 			SNIFFER_DEBUG2(0x2500, snifferLastFaultsState, faultsStateMachine); //read faults: state changed. v1=old, v2=new (0xFF idle, 0 session, 1 ReadDTC, 2 multiframe, 3 list ready, 4 TIMEOUT) //readFaults debug 05/10/2026
@@ -680,13 +682,14 @@
 						sendParamsSetupDashboardPageToSlaveBaccable();
 					}
 					if(main_dashboardPageIndex==2){ //readFaults 12/08/2026
-						// Timeout stati attesa 0/1/2: 2 secondi senza risposta dal Body ECU
+						// Timeout stati attesa 0/1/2: 2 secondi senza risposta dalla ECU in lettura (BODY o ECM) //readFaults ECM 10/10/2026
 						if(faultsStateMachine < 3){
 							// readFaults fix 05/10/2026 - dopo un 7F xx 78 (responsePending) la ECU ha fino a P2*server (5 s) per rispondere
-							if(currentTime - faultsTimer > (faultsResponsePending ? 5000 : 2000)){
-								SNIFFER_DEBUG2(0x2507, faultsStateMachine, faultsResponsePending); //read faults: timeout, no reply from Body ECU. v1=state, v2=1 if waiting after responsePending //readFaults debug 05/10/2026
-								faultsStateMachine = 4; // transizione a TIMEOUT display
-								faultsTimer = currentTime;
+							//readFaults ABS 10/10/2026 - ABS: C2 is asked about once a second (processUART), and answers 'B' while reading
+							uint32_t faultsTimeout = (faultsEcu==FAULTS_ECU_ABS) ? 5000 : (faultsResponsePending ? 5000 : 2000);
+							if(currentTime - faultsTimer > faultsTimeout){
+								SNIFFER_DEBUG2(0x2507, faultsStateMachine, faultsResponsePending); //read faults: timeout, no reply from the ECU being read (BODY or ECM, see 0x2509). v1=state, v2=1 if waiting after responsePending //readFaults debug 05/10/2026
+								faultsEcuEnded(1); // BODY: TIMEOUT display. ECM: list with the BODY faults //readFaults ECM 10/10/2026
 							}
 						}
 						// Stato 4 TIMEOUT: dopo 1 secondo ritorna al menu principale
@@ -847,7 +850,7 @@
 					static const char hx[16]={'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 					memset(dashboard_main_menu_array[2], ' ', DASHBOARD_MESSAGE_MAX_LENGTH);
 					switch(faultsStateMachine){
-						case 0: case 1: case 2: // in attesa risposta Body ECU
+						case 0: case 1: case 2: // in attesa risposta BODY o ECM //readFaults ECM 10/10/2026
 							dashboard_main_menu_array[2][0]='W';
 							dashboard_main_menu_array[2][1]='A';
 							dashboard_main_menu_array[2][2]='I';
@@ -873,34 +876,42 @@
 								// la prima cifra, poi 3 cifre esadecimali; il terzo byte e' il tipo di guasto (FTB) dopo il
 								// trattino. Prima si mostravano i 3 byte grezzi ("BODY 90AA4A").
 								static const char dtcLetter[4]={'P','C','B','U'};
-								dashboard_main_menu_array[2][0]='B';
-								dashboard_main_menu_array[2][1]='O';
-								dashboard_main_menu_array[2][2]='D';
-								dashboard_main_menu_array[2][3]='Y';
-								dashboard_main_menu_array[2][4]=' ';
-								dashboard_main_menu_array[2][5]=dtcLetter[b0>>6];
-								dashboard_main_menu_array[2][6]=(char)('0'+((b0>>4)&0x3));
-								dashboard_main_menu_array[2][7]=hx[b0&0xF];
-								dashboard_main_menu_array[2][8]=hx[b1>>4];
-								dashboard_main_menu_array[2][9]=hx[b1&0xF];
-								dashboard_main_menu_array[2][10]='-';
-								dashboard_main_menu_array[2][11]=hx[b2>>4];
-								dashboard_main_menu_array[2][12]=hx[b2&0xF];
-								// Contatore dalla posizione 14 (la riga ha 18 caratteri): "n/m" per n da 1 a 9 ("9/40" = 4
+								// readFaults ECM 10/10/2026 - prefisso della ECU: i primi faultsDTCbodyCount guasti sono del BODY, i
+								// successivi dell'ECM. "ENGINE " non ci sta nei 18 caratteri insieme al contatore: sul display
+								// standard si usa "ECM" (allineato a "BODY", codice dalla colonna 5), sul display grande "ENGINE".
+								#if DASHBOARD_MESSAGE_MAX_LENGTH >= 24
+									static const char ecmPrefix[]="ENGINE ";
+								#else
+									static const char ecmPrefix[]="ECM  ";
+								#endif
+								static const char bodyPrefix[]="BODY ";
+								static const char absPrefix[]="ABS  "; //readFaults ABS 10/10/2026
+								const char* prefix=(faultsDTCsubmenuIndex<faultsDTCbodyCount) ? bodyPrefix : ((faultsDTCsubmenuIndex<faultsDTCecmEnd) ? ecmPrefix : absPrefix);
+								uint8_t c=0; // colonna corrente
+								while(prefix[c]){ dashboard_main_menu_array[2][c]=prefix[c]; c++; }
+								dashboard_main_menu_array[2][c++]=dtcLetter[b0>>6];
+								dashboard_main_menu_array[2][c++]=(char)('0'+((b0>>4)&0x3));
+								dashboard_main_menu_array[2][c++]=hx[b0&0xF];
+								dashboard_main_menu_array[2][c++]=hx[b1>>4];
+								dashboard_main_menu_array[2][c++]=hx[b1&0xF];
+								dashboard_main_menu_array[2][c++]='-';
+								dashboard_main_menu_array[2][c++]=hx[b2>>4];
+								dashboard_main_menu_array[2][c++]=hx[b2&0xF];
+								// Contatore dopo uno spazio (colonna 14 con BODY/ECM; la riga ha 18 caratteri): "n/m" per n da 1 a 9 ("9/40" = 4
 								// caratteri), solo "n" da 10 in poi ("10/40" non ci starebbe). m e' il totale dei guasti validi
 								// nella risposta, anche oltre i FAULTS_DTC_MAX della lista: con 40 guasti si scorre da 1/40 a 20
 								// e si sa che ce ne sono altri. Oltre 99 si mostra 99 (non ci sono altri caratteri).
 								uint8_t n=(uint8_t)(faultsDTCsubmenuIndex+1);
 								uint8_t m=(faultsDTCtotal>99)?99:(uint8_t)faultsDTCtotal;
+								uint8_t pos=(uint8_t)(c+1); //readFaults ECM 10/10/2026
 								if(n<10){
-									uint8_t pos=14;
 									dashboard_main_menu_array[2][pos++]=(char)('0'+n);
 									dashboard_main_menu_array[2][pos++]='/';
 									if(m>=10) dashboard_main_menu_array[2][pos++]=(char)('0'+m/10);
 									dashboard_main_menu_array[2][pos]=(char)('0'+m%10);
 								}else{
-									dashboard_main_menu_array[2][14]=(char)('0'+n/10);
-									dashboard_main_menu_array[2][15]=(char)('0'+n%10);
+									dashboard_main_menu_array[2][pos++]=(char)('0'+n/10);
+									dashboard_main_menu_array[2][pos]=(char)('0'+n%10);
 								}
 							}
 							break;
@@ -1556,6 +1567,9 @@
 				break;
 			case 17://Pedal current Map
 				return currentSchizzaforteMap;
+				break;
+			case 18://brake pedal press percentage, from 0x107 //brake in show params 10/10/2026
+				return brakeTravelStatus;
 				break;
 			default:
 				break;
@@ -2338,6 +2352,125 @@
 				}
 				break;
 			}
+		}
+	}
+
+	//readFaults ECM 10/10/2026 - Read Faults reads the BODY (0x18DA40F1 -> 0x18DAF140) and then, if the list is not full,
+	//the ECM (0x18DA10F1 -> 0x18DAF110) in the same way: its faults are appended to the list, shown as ECM (ENGINE on the
+	//large display). The UDS sequence is the same for both (see processingExtendedMessage.c).
+
+	//starts the sequence towards one ECU: extended session request (10 03), the reply moves on to ReadDTC.
+	//The DTC list (faultsDTCcount, faultsDTCtotal) is not touched: the ECM faults are added after the BODY ones.
+	void faultsStartEcuSession(uint8_t ecu){
+		faultsEcu              = ecu;
+		faultsTxHeader.ExtId   = (ecu==FAULTS_ECU_ECM) ? 0x18DA10F1 : 0x18DA40F1;
+		faultsRxReceived       = 0;
+		faultsRxExpected       = 0;
+		faultsRecordFill       = 0;
+		faultsRxNextSN         = 1;
+		faultsResponsePending  = 0;
+		faultsTimer            = currentTime;
+		faultsStateMachine     = 0;
+		faultsTxHeader.DLC     = 3;
+		faultsTxData[0]        = 0x02; // PCI: SF 2 byte
+		faultsTxData[1]        = 0x10; // SID: DiagnosticSessionControl
+		faultsTxData[2]        = 0x03; // sub: extendedDiagnosticSession
+		can_tx(&faultsTxHeader, faultsTxData);
+	}
+
+	//readFaults ABS 10/10/2026 - the ABS is on the C2 bus: C2 reads it and C1 collects the faults over uart (uart.h, FAULTS
+	//ABS PROTOCOL). Here only the start request is queued; the periodic message to C2 (processUART) then asks the faults
+	//from faultsAbsNextIndex, and faultsAbsProcess decodes the answers. State 0 = waiting for C2, as for BODY and ECM.
+	static void faultsStartAbs(void){
+		faultsEcu              = FAULTS_ECU_ABS;
+		faultsAbsNextIndex     = 0;
+		faultsAbsInboxTail     = faultsAbsInboxHead; // answers of a previous reading are dropped
+		faultsResponsePending  = 0;
+		faultsTimer            = currentTime;
+		faultsStateMachine     = 0;
+		uint8_t tmpArr[2]={C2BusID,C2cmdAbsFaultsStart};
+		addToUARTSendQueue(tmpArr, 2);
+	}
+
+	//the ECU being read has finished: failed=0 whole response decoded, failed=1 negative response or timeout.
+	//BODY ok and list not full: the ECM is read too. BODY failed: TIMEOUT, as before. ECM ok or failed and list not full:
+	//the ABS is read too (by C2). At the end the list is shown, with the faults of the ECUs that answered.
+	void faultsEcuEnded(uint8_t failed){
+		SNIFFER_DEBUG2(0x2509, ((uint32_t)faultsEcu<<8)|failed, ((uint32_t)faultsDTCtotal<<16)|faultsDTCcount); //read faults: one ECU finished. v1=byte1 ECU (0 BODY, 1 ECM, 2 ABS), byte0 1 if failed (refused/timeout), v2=high 16 bit valid DTC in total, low 16 bit DTC in the list //readFaults ECM 10/10/2026
+		faultsResponsePending = 0;
+		if(faultsEcu==FAULTS_ECU_BODY){
+			if(failed){
+				faultsStateMachine = 4; // TIMEOUT display
+				faultsTimer        = currentTime;
+				return;
+			}
+			faultsDTCbodyCount=faultsDTCcount;
+			faultsDTCecmEnd=faultsDTCcount; //readFaults ABS 10/10/2026
+			if(faultsDTCcount<FAULTS_DTC_MAX){
+				faultsStartEcuSession(FAULTS_ECU_ECM); // the list has room: read the ECM too (display stays on WAIT)
+				return;
+			}
+		}else if(faultsEcu==FAULTS_ECU_ECM){ //readFaults ABS 10/10/2026
+			faultsDTCecmEnd=faultsDTCcount;
+			if(faultsDTCcount<FAULTS_DTC_MAX){
+				faultsStartAbs(); // the list has still room: the ABS too (display stays on WAIT)
+				return;
+			}
+		}
+		faultsDTCsubmenuIndex = 0;
+		faultsStateMachine    = 3; // DTC list ready
+	}
+
+	//readFaults ABS 10/10/2026 - two hex chars ('0'-'9', 'A'-'F') to a byte, -1 if they are not hex digits
+	static int16_t faultsHexByte(const uint8_t *p){
+		int16_t v=0;
+		for(uint8_t i=0; i<2; i++){
+			uint8_t c=p[i];
+			v=(int16_t)(v<<4);
+			if(c>='0' && c<='9') v=(int16_t)(v+(c-'0'));
+			else if(c>='A' && c<='F') v=(int16_t)(v+(c-'A'+10));
+			else return -1;
+		}
+		return v;
+	}
+
+	//readFaults ABS 10/10/2026 - decodes the C1cmdAbsFaultsReply messages copied by the uart interrupt (main loop only).
+	//'B' C2 is still reading, 'E' the ABS did not answer (or is busy with dyno/front brake): the list keeps BODY and ECM.
+	//'R' the faults from index [6]: appended if it is the index asked, otherwise (late or repeated message) ignored.
+	void faultsAbsProcess(void){
+		while(faultsAbsInboxTail!=faultsAbsInboxHead){
+			uint8_t m[UART_BUFFER_SIZE];
+			for(uint8_t i=0; i<UART_BUFFER_SIZE; i++) m[i]=faultsAbsInbox[faultsAbsInboxTail][i];
+			faultsAbsInboxTail=(uint8_t)((faultsAbsInboxTail+1)%FAULTS_ABS_INBOX_LEN);
+
+			if(faultsEcu!=FAULTS_ECU_ABS || faultsStateMachine!=0) continue; //not collecting the ABS (any more): dropped
+			SNIFFER_DEBUG2(0x250A, ((uint32_t)m[2])|((uint32_t)m[5]<<8)|((uint32_t)m[6]<<16), ((uint32_t)faultsAbsNextIndex<<8)|faultsDTCcount); //read faults: ABS answer from C2. v1=byte0 status ('B' reading, 'E' failed, 'R' ready), byte1 kept ('A'+n), byte2 first index ('A'+i), v2=byte1 index asked, byte0 DTC in the list
+
+			if(m[2]=='B'){ faultsTimer=currentTime; continue; } //C2 is reading: the timeout restarts
+			if(m[2]=='E'){ faultsEcuEnded(1); continue; }
+			if(m[2]!='R') continue;
+
+			int16_t total=faultsHexByte(&m[3]);
+			uint8_t kept=(uint8_t)(m[5]-'A');
+			uint8_t first=(uint8_t)(m[6]-'A');
+			if(total<0 || kept>ABS_FAULTS_DTC_MAX || first!=faultsAbsNextIndex) continue;
+			faultsTimer=currentTime;
+			if(faultsAbsNextIndex==0) faultsDTCtotal=(uint16_t)(faultsDTCtotal+total); //the ABS total, counted once in "n/m"
+
+			for(uint8_t j=0; j<2; j++){
+				uint8_t i=(uint8_t)(first+j);
+				if(i>=kept || faultsDTCcount>=FAULTS_DTC_MAX) break;
+				int16_t b0=faultsHexByte(&m[7+6*j]);
+				int16_t b1=faultsHexByte(&m[9+6*j]);
+				int16_t b2=faultsHexByte(&m[11+6*j]);
+				if(b0<0 || b1<0 || b2<0) break; //corrupted: asked again from this index
+				faultsDTCbytes[faultsDTCcount][0]=(uint8_t)b0;
+				faultsDTCbytes[faultsDTCcount][1]=(uint8_t)b1;
+				faultsDTCbytes[faultsDTCcount][2]=(uint8_t)b2;
+				faultsDTCcount++;
+				faultsAbsNextIndex=(uint8_t)(i+1);
+			}
+			if(faultsAbsNextIndex>=kept || faultsDTCcount>=FAULTS_DTC_MAX) faultsEcuEnded(0); //all the ABS faults, or list full
 		}
 	}
 

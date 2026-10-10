@@ -46,6 +46,8 @@
 	#define TIMING__C1____C2_STATUS_REQUEST_TIMEOUT_MS									1010	//msec
 	#define TIMING__C1____BH_STATUS_REQUEST_TIMEOUT_MS									TIMING__C1____C2_STATUS_REQUEST_TIMEOUT_MS+250	//msec
 
+	#define ABS_FAULTS_DTC_MAX	20	//ABS DTC kept by C2 (protocol in uart.h, FAULTS ABS PROTOCOL) //readFaults ABS 10/10/2026
+	#define ABS_FAULTS_REPLY_MSGS	3	//messages sent by C2 for each C2cmdAbsFaultsGet, 2 DTC each //readFaults ABS 10/10/2026
 	#define TIMING__C1____SERIAL_TIMEOUT_REPLY_MS										250		//msec
 	#define TIMING__C2_BH_SERIAL_TIMEOUT_REPLY_MS										TIMING__C1____SERIAL_TIMEOUT_REPLY_MS-50		//msec
 
@@ -353,6 +355,8 @@
 		#define FAULTS_DTC_MAX 20
 		extern uint8_t  faultsStateMachine;
 		extern uint8_t  faultsDTCcount;
+		extern float    brakeTravelStatus;	//brake pedal press percentage from 0x107 (raw*0.4), shown in show params //brake in show params 10/10/2026
+		extern uint8_t  parkMuteBrakeSent;	//last brake state sent to C2 for park mute: 0 released, 1 pressed, 0xFF to be sent again //park mute brake from C1 10/10/2026
 		extern uint16_t faultsDTCtotal;		//readFaults fix 05/10/2026 - all valid DTC in the response (faultsDTCcount keeps at most FAULTS_DTC_MAX)
 		extern uint8_t  faultsDTCsubmenuIndex;
 		extern uint8_t  faultsDTCbytes[FAULTS_DTC_MAX][3];
@@ -363,8 +367,18 @@
 		extern uint16_t faultsRxReceived;
 		extern uint8_t  faultsRxNextSN;
 		extern uint32_t faultsTimer;
-		extern CAN_TxHeaderTypeDef faultsBodyTxHeader;
-		extern uint8_t  faultsBodyTxData[8];
+		extern CAN_TxHeaderTypeDef faultsTxHeader;	//ExtId 0x18DA40F1 (BODY) or 0x18DA10F1 (ECM), set by faultsStartEcuSession //readFaults ECM 10/10/2026
+		extern uint8_t  faultsTxData[8];
+		#define FAULTS_ECU_BODY 0	//readFaults ECM 10/10/2026
+		#define FAULTS_ECU_ECM  1	//readFaults ECM 10/10/2026
+		extern uint8_t  faultsEcu;			//ECU being read: FAULTS_ECU_BODY, then FAULTS_ECU_ECM if the list is not full //readFaults ECM 10/10/2026
+		extern uint8_t  faultsDTCbodyCount;	//faultsDTCbytes[0..faultsDTCbodyCount-1] come from BODY, the following ones from ECM //readFaults ECM 10/10/2026
+		#define FAULTS_ECU_ABS  2	//read by C2 on its bus, collected over uart //readFaults ABS 10/10/2026
+		extern uint8_t  faultsDTCecmEnd;		//faultsDTCbytes[faultsDTCbodyCount..faultsDTCecmEnd-1] come from ECM, the following ones from ABS //readFaults ABS 10/10/2026
+		extern uint8_t  faultsAbsNextIndex;	//next ABS DTC (index in the list of C2) asked with C2cmdAbsFaultsGet //readFaults ABS 10/10/2026
+		#define FAULTS_ABS_INBOX_LEN 4	//readFaults ABS 10/10/2026
+		extern volatile uint8_t faultsAbsInbox[FAULTS_ABS_INBOX_LEN][UART_BUFFER_SIZE];	//C1cmdAbsFaultsReply messages, filled by the uart interrupt //readFaults ABS 10/10/2026
+		extern volatile uint8_t faultsAbsInboxHead, faultsAbsInboxTail; //readFaults ABS 10/10/2026
 		extern uint8_t  faultsResponsePending;          // readFaults fix 05/10/2026
 		extern uint8_t  snifferLastFaultsState;         // readFaults debug 05/10/2026
 		//readFaults 12/08/2026 - END
@@ -415,7 +429,28 @@
 		extern volatile uint32_t last_pdc_shot_time;	//when the push was sent
 		extern uint8_t pdcMsgData[8];
 		extern CAN_TxHeaderTypeDef pdcMsgHeader;
-		extern float brakeTravelStatus; //percentage of the brake pedal pressed 0-100%
+		extern uint32_t parkMuteLastEvaluationTime;	//last time parkMuteEvaluate() ran //park mute brake from C1 10/10/2026
+		extern volatile uint8_t parkMuteBrakePressed;	//1=brake pressed, as sent by C1 (0x107 is not on the C2 bus) //park mute brake from C1 10/10/2026
+
+		//readFaults ABS 10/10/2026 - ABS faults read by C2 for C1 (protocol in uart.h, FAULTS ABS PROTOCOL)
+		// absFaultsState: 0xFF never started | 0=waits 50 03 | 1=waits ReadDTC reply | 2=multiframe | 3=list ready | 4=failed
+		extern uint8_t  absFaultsState;
+		extern volatile uint8_t absFaultsStartRequest;	//1=C1 asked a new reading (set by the uart interrupt)
+		extern volatile uint8_t absFaultsGetIndex;		//index asked by C1 with C2cmdAbsFaultsGet, 0xFF=none (set by the uart interrupt)
+		extern uint8_t  absFaultsDTCcount;				//DTC kept, at most ABS_FAULTS_DTC_MAX
+		extern uint16_t absFaultsDTCtotal;				//valid DTC in the ABS answer, also beyond ABS_FAULTS_DTC_MAX
+		extern uint8_t  absFaultsDTCbytes[ABS_FAULTS_DTC_MAX][3];
+		extern uint8_t  absFaultsRecord[4];
+		extern uint8_t  absFaultsRecordFill;
+		extern uint16_t absFaultsRxExpected;
+		extern uint16_t absFaultsRxReceived;
+		extern uint8_t  absFaultsRxNextSN;
+		extern uint8_t  absFaultsResponsePending;
+		extern uint32_t absFaultsTimer;
+		extern CAN_TxHeaderTypeDef absFaultsTxHeader;	//ExtId 0x18DA28F1 (ABS)
+		extern uint8_t  absFaultsTxData[8];
+		#define ABS_FAULTS_STATUS_MASK 0x09	//same DTC status bits as FAULTS_STATUS_MASK on C1: 0x01 testFailed | 0x08 confirmedDTC
+		extern uint8_t  snifferAbsFaultsLastState;	//last absFaultsState traced (0x2300)
 	#endif
 
 	#if defined(BHbaccable)

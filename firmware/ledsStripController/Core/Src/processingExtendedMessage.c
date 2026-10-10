@@ -31,6 +31,25 @@ static void faultsConsumePayloadByte(uint8_t b){
 }
 #endif
 
+#if defined(C2baccable)
+//readFaults ABS 10/10/2026 - same decoding as faultsConsumePayloadByte on C1, for the ABS faults read by C2 for C1
+static void absFaultsConsumePayloadByte(uint8_t b){
+	uint16_t pos = absFaultsRxReceived++;
+	if (pos < 3) return; // 59 02 availMask: already checked by the caller
+	absFaultsRecord[absFaultsRecordFill++] = b;
+	if (absFaultsRecordFill < 4) return;
+	absFaultsRecordFill = 0;
+	if ((absFaultsRecord[3] & ABS_FAULTS_STATUS_MASK) == 0) return;
+	if (absFaultsDTCtotal < 0xFFFF) absFaultsDTCtotal++;
+	if (absFaultsDTCcount < ABS_FAULTS_DTC_MAX) {
+		absFaultsDTCbytes[absFaultsDTCcount][0] = absFaultsRecord[0];
+		absFaultsDTCbytes[absFaultsDTCcount][1] = absFaultsRecord[1];
+		absFaultsDTCbytes[absFaultsDTCcount][2] = absFaultsRecord[2];
+		absFaultsDTCcount++;
+	}
+}
+#endif
+
 void processingExtendedMessage(){
 	#if defined(C1baccable)
 		if(immobilizerEnabled && (engineOnSinceMoreThan5seconds<500)){ //if immo enabled and engine is off
@@ -302,14 +321,15 @@ void processingExtendedMessage(){
 
 		//readFaults 12/08/2026 - BEGIN
 		// -----------------------------------------------------------------------
-		// READ FAULTS — Gestione risposte Body ECU (ECU 0x40, ExtId risposta 0x18DAF140)
+		// READ FAULTS — Gestione risposte Body ECU (ECU 0x40, ExtId risposta 0x18DAF140) e poi ECM (ECU 0x10, ExtId risposta
+		// 0x18DAF110): stessa sequenza, l'ECM viene letta dopo il BODY se la lista non e' piena (faultsEcuEnded) //readFaults ECM 10/10/2026
 		//
 		// Sequenza UDS:
 		//   Stato 0: ricezione 50 03  → invia 19 02 FF (ReadDTCByStatusMask) → stato 1
-		//   Stato 1: single frame (PCI nibble alto=0, SID=59, sub=02) → parsa DTC  → stato 3
+		//   Stato 1: single frame (PCI nibble alto=0, SID=59, sub=02) → parsa DTC  → faultsEcuEnded (ECM o stato 3) //readFaults ECM 10/10/2026
 		//   Stato 1: first frame  (PCI nibble alto=1, SID=59, sub=02) → invia FC   → stato 2
-		//   Stato 2: consecutive frames (PCI nibble alto=2) → accumula buffer      → stato 3
-		//   Risposta negativa (SID=7F): transizione forzata a stato 4 (errore/timeout display)
+		//   Stato 2: consecutive frames (PCI nibble alto=2) → accumula buffer      → faultsEcuEnded (ECM o stato 3) //readFaults ECM 10/10/2026
+		//   Risposta negativa (SID=7F): BODY → stato 4 (errore/timeout display), ECM → lista con i soli guasti BODY //readFaults ECM 10/10/2026
 		//   eccetto 7F xx 78 (responsePending): si resta in attesa, timeout esteso a 5 s // readFaults fix 05/10/2026
 		//
 		// Formato payload risposta ReadDTCByStatusMask (0x59 0x02):
@@ -324,13 +344,13 @@ void processingExtendedMessage(){
 		//   - i record si decodificano man mano che arrivano (faultsConsumePayloadByte), senza limite sulla lunghezza
 		//     della risposta: si tengono i primi FAULTS_DTC_MAX guasti validi.
 		// -----------------------------------------------------------------------
-		if (rx_msg_header.ExtId == 0x18DAF140 && faultsStateMachine != 0xFF) {
+		if (faultsEcu != FAULTS_ECU_ABS && rx_msg_header.ExtId == ((faultsEcu==FAULTS_ECU_ECM) ? 0x18DAF110 : 0x18DAF140) && faultsStateMachine != 0xFF) { //readFaults ECM 10/10/2026 - the ABS is read by C2 //readFaults ABS 10/10/2026
 
 			uint8_t pci      = rx_msg_data[0];
 			uint8_t pci_type = (pci >> 4) & 0x0F;
 			uint8_t faultsDiscardReason = 0; //readFaults debug 05/10/2026 - !=0: frame ignored, reason traced below (0x2504)
 
-			SNIFFER_DEBUG2(0x2501, ((uint32_t)rx_msg_data[0])|((uint32_t)rx_msg_data[1]<<8)|((uint32_t)rx_msg_data[2]<<16)|((uint32_t)rx_msg_data[3]<<24), ((uint32_t)rx_msg_data[4])|((uint32_t)rx_msg_data[5]<<8)|((uint32_t)rx_msg_data[6]<<16)|((uint32_t)rx_msg_data[7]<<24)); //read faults: Body ECU frame. v1=byte 0..3, v2=byte 4..7 //readFaults debug 05/10/2026
+			SNIFFER_DEBUG2(0x2501, ((uint32_t)rx_msg_data[0])|((uint32_t)rx_msg_data[1]<<8)|((uint32_t)rx_msg_data[2]<<16)|((uint32_t)rx_msg_data[3]<<24), ((uint32_t)rx_msg_data[4])|((uint32_t)rx_msg_data[5]<<8)|((uint32_t)rx_msg_data[6]<<16)|((uint32_t)rx_msg_data[7]<<24)); //read faults: frame from the ECU being read (BODY or ECM, see 0x2509). v1=byte 0..3, v2=byte 4..7 //readFaults debug 05/10/2026
 
 			// readFaults fix 05/10/2026 - 7F xx 78 (responsePending) non e' un rifiuto: la ECU chiede tempo e la risposta
 			// positiva arriva dopo. Prima veniva trattato come errore e mostrava TIMEOUT. Si resta nello stato corrente,
@@ -340,22 +360,20 @@ void processingExtendedMessage(){
 				faultsResponsePending = 1;
 				faultsTimer           = currentTime;
 
-			// Risposta negativa (0x7F): abort con display TIMEOUT
-			} else if (rx_msg_header.DLC >= 2 && rx_msg_data[1] == 0x7F) {
+			// Risposta negativa (0x7F): BODY → display TIMEOUT, ECM → lista con i soli guasti BODY //readFaults ECM 10/10/2026
+			} else if (rx_msg_header.DLC >= 2 && rx_msg_data[1] == 0x7F && faultsStateMachine < 3) { // a 7F after the end is ignored (reason 5) //readFaults ECM 10/10/2026
 				SNIFFER_DEBUG2(0x2502, faultsStateMachine, ((uint32_t)rx_msg_data[2]<<8)|rx_msg_data[3]); //read faults: request refused. v1=state, v2=byte1 service id, byte0 NRC //readFaults debug 05/10/2026
-				faultsResponsePending = 0;
-				faultsStateMachine = 4;
-				faultsTimer        = currentTime;
+				faultsEcuEnded(1); // BODY: TIMEOUT display. ECM: list with the BODY faults //readFaults ECM 10/10/2026
 
 			// Stato 0: conferma sessione estesa (50 03) → invia ReadDTC
 			} else if (faultsStateMachine == 0) {
 				if (rx_msg_header.DLC >= 3 && rx_msg_data[1] == 0x50 && rx_msg_data[2] == 0x03) {
-				faultsBodyTxHeader.DLC = 4;
-				faultsBodyTxData[0]    = 0x03; // PCI: single frame, 3 byte dati
-				faultsBodyTxData[1]    = 0x19; // SID: ReadDTCInformation
-				faultsBodyTxData[2]    = 0x02; // subfunction: reportDTCByStatusMask
-					faultsBodyTxData[3]    = FAULTS_STATUS_MASK; // statusMask: solo guasti presenti (0x01) o confermati (0x08) //readFaults fix 05/10/2026 - era 0xFF
-				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+					faultsTxHeader.DLC = 4;
+					faultsTxData[0]    = 0x03; // PCI: single frame, 3 byte dati
+					faultsTxData[1]    = 0x19; // SID: ReadDTCInformation
+					faultsTxData[2]    = 0x02; // subfunction: reportDTCByStatusMask
+					faultsTxData[3]    = FAULTS_STATUS_MASK; // statusMask: solo guasti presenti (0x01) o confermati (0x08) //readFaults fix 05/10/2026 - era 0xFF
+					can_tx(&faultsTxHeader, faultsTxData);
 					faultsResponsePending = 0;
 				faultsTimer        = currentTime; // riavvia timeout per la risposta ReadDTC
 				faultsStateMachine = 1;
@@ -368,17 +386,13 @@ void processingExtendedMessage(){
 				uint8_t payloadLen = pci & 0x0F;
 				if (payloadLen >= 3 && rx_msg_header.DLC >= 4 &&
 					rx_msg_data[1] == 0x59 && rx_msg_data[2] == 0x02) {
-					faultsDTCcount   = 0;
-					faultsDTCtotal   = 0;
-					faultsRxReceived = 0;
+					faultsRxReceived = 0; // faultsDTCcount/faultsDTCtotal are not reset: the ECM faults follow the BODY ones //readFaults ECM 10/10/2026
 					faultsRecordFill = 0;
 					for (uint8_t i = 0; i < payloadLen && (i + 1) < rx_msg_header.DLC; i++) {
 						faultsConsumePayloadByte(rx_msg_data[1 + i]); // [0]=59 [1]=02 [2]=avail [3..]=record DTC
 					}
 					SNIFFER_DEBUG2(0x2506, ((uint32_t)faultsDTCtotal<<16)|faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a single frame. v1=low 16 bit DTC kept in the list, high 16 bit valid DTC in total, v2=payload bytes //readFaults debug 05/10/2026
-					faultsResponsePending = 0;
-					faultsDTCsubmenuIndex = 0;
-					faultsStateMachine    = 3;
+					faultsEcuEnded(0); // BODY: read the ECM too if the list has room. ECM: list ready //readFaults ECM 10/10/2026
 				} else {
 					faultsDiscardReason = 2; // single frame che non e' una risposta 59 02 valida
 				}
@@ -389,9 +403,7 @@ void processingExtendedMessage(){
 				SNIFFER_DEBUG2(0x2505, totalLen, totalLen); //read faults: first frame. v1=declared length, v2=same (whole response decoded, no 90 byte limit since 05/10/2026) //readFaults debug 05/10/2026
 				faultsRxExpected  = totalLen;
 				faultsRxReceived  = 0;
-				faultsRecordFill  = 0;
-				faultsDTCcount    = 0;
-				faultsDTCtotal    = 0;
+				faultsRecordFill  = 0; // faultsDTCcount/faultsDTCtotal are not reset: the ECM faults follow the BODY ones //readFaults ECM 10/10/2026
 				faultsRxNextSN    = 1;
 				// primi 6 byte di payload (data[2..7]): 59 02 availMask e l'inizio del primo record
 				uint8_t toCopy = (totalLen < 6) ? (uint8_t)totalLen : 6;
@@ -399,11 +411,11 @@ void processingExtendedMessage(){
 					faultsConsumePayloadByte(rx_msg_data[2 + i]);
 				}
 				// Flow Control: ContinueToSend, BlockSize=0, STmin=0ms
-				faultsBodyTxHeader.DLC = 3;
-				faultsBodyTxData[0]    = 0x30;
-				faultsBodyTxData[1]    = 0x00;
-				faultsBodyTxData[2]    = 0x00;
-				can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+				faultsTxHeader.DLC = 3;
+				faultsTxData[0]    = 0x30;
+				faultsTxData[1]    = 0x00;
+				faultsTxData[2]    = 0x00;
+				can_tx(&faultsTxHeader, faultsTxData);
 				faultsResponsePending = 0;
 				faultsStateMachine = 2;
 
@@ -418,8 +430,7 @@ void processingExtendedMessage(){
 					if (faultsRxReceived >= faultsRxExpected) {
 						// Payload completo: i guasti validi sono gia' in faultsDTCbytes
 						SNIFFER_DEBUG2(0x2506, ((uint32_t)faultsDTCtotal<<16)|faultsDTCcount, faultsRxReceived); //read faults: DTC parsed from a multiframe. v1=low 16 bit DTC kept in the list (max FAULTS_DTC_MAX), high 16 bit valid DTC in total, v2=payload bytes //readFaults debug 05/10/2026
-						faultsDTCsubmenuIndex = 0;
-						faultsStateMachine    = 3;
+						faultsEcuEnded(0); // BODY: read the ECM too if the list has room. ECM: list ready //readFaults ECM 10/10/2026
 					}
 				} else {
 					faultsDiscardReason = 4; // numero di sequenza inatteso: il frame viene ignorato e si arrivera' al timeout
@@ -438,6 +449,69 @@ void processingExtendedMessage(){
 	#endif //end define
 
 	#if defined(C2baccable)
+		//readFaults ABS 10/10/2026 - ABS faults read for C1: same UDS sequence as Read Faults on C1 (10 03, 19 02 09, single
+		//frame or first frame + flow control + consecutive frames). Only while the ABS is not used by dyno or front brake
+		//(they talk to the same ECU, 0x18DA28F1): absFaultsProcess (functions_C2baccable.c) stops the reading if they start.
+		if (rx_msg_header.ExtId==0x18DAF128 && absFaultsState<3 && DynoStateMachine==0xff && DynoModeEnabled==0 && front_brake_forced==0) {
+			uint8_t pci      = rx_msg_data[0];
+			uint8_t pci_type = (pci >> 4) & 0x0F;
+			if (rx_msg_header.DLC >= 4 && rx_msg_data[1] == 0x7F && rx_msg_data[3] == 0x78) { //responsePending: keep waiting, up to 5 s
+				absFaultsResponsePending = 1;
+				absFaultsTimer           = currentTime;
+			} else if (rx_msg_header.DLC >= 2 && rx_msg_data[1] == 0x7F) { //refused
+				SNIFFER_DEBUG2(0x2301, absFaultsState, ((uint32_t)rx_msg_data[2]<<8)|rx_msg_data[3]); //ABS faults: request refused by the ABS. v1=state, v2=byte1 service id, byte0 NRC
+				absFaultsState = 4;
+			} else if (absFaultsState == 0) {
+				if (rx_msg_header.DLC >= 3 && rx_msg_data[1] == 0x50 && rx_msg_data[2] == 0x03) {
+					absFaultsTxHeader.DLC = 4;
+					absFaultsTxData[0]    = 0x03; // PCI: single frame, 3 byte dati
+					absFaultsTxData[1]    = 0x19; // SID: ReadDTCInformation
+					absFaultsTxData[2]    = 0x02; // subfunction: reportDTCByStatusMask
+					absFaultsTxData[3]    = ABS_FAULTS_STATUS_MASK;
+					can_tx(&absFaultsTxHeader, absFaultsTxData);
+					absFaultsResponsePending = 0;
+					absFaultsTimer = currentTime;
+					absFaultsState = 1;
+				}
+			} else if (absFaultsState == 1 && pci_type == 0) { //single frame
+				uint8_t payloadLen = pci & 0x0F;
+				if (payloadLen >= 3 && rx_msg_header.DLC >= 4 && rx_msg_data[1] == 0x59 && rx_msg_data[2] == 0x02) {
+					absFaultsRxReceived = 0;
+					absFaultsRecordFill = 0;
+					for (uint8_t i = 0; i < payloadLen && (i + 1) < rx_msg_header.DLC; i++) {
+						absFaultsConsumePayloadByte(rx_msg_data[1 + i]);
+					}
+					absFaultsState = 3;
+				}
+			} else if (absFaultsState == 1 && pci_type == 1) { //first frame
+				absFaultsRxExpected = ((uint16_t)(pci & 0x0F) << 8) | rx_msg_data[1];
+				absFaultsRxReceived = 0;
+				absFaultsRecordFill = 0;
+				absFaultsRxNextSN   = 1;
+				uint8_t toCopy = (absFaultsRxExpected < 6) ? (uint8_t)absFaultsRxExpected : 6;
+				for (uint8_t i = 0; i < toCopy; i++) {
+					absFaultsConsumePayloadByte(rx_msg_data[2 + i]);
+				}
+				absFaultsTxHeader.DLC = 3; // Flow Control: ContinueToSend, BlockSize=0, STmin=0ms
+				absFaultsTxData[0]    = 0x30;
+				absFaultsTxData[1]    = 0x00;
+				absFaultsTxData[2]    = 0x00;
+				can_tx(&absFaultsTxHeader, absFaultsTxData);
+				absFaultsResponsePending = 0;
+				absFaultsTimer = currentTime;
+				absFaultsState = 2;
+			} else if (absFaultsState == 2 && pci_type == 2) { //consecutive frame
+				if ((pci & 0x0F) == absFaultsRxNextSN) {
+					absFaultsRxNextSN = (uint8_t)((absFaultsRxNextSN + 1) & 0x0F);
+					for (uint8_t i = 1; i < rx_msg_header.DLC && absFaultsRxReceived < absFaultsRxExpected; i++) {
+						absFaultsConsumePayloadByte(rx_msg_data[i]);
+					}
+					absFaultsTimer = currentTime;
+					if (absFaultsRxReceived >= absFaultsRxExpected) absFaultsState = 3;
+				}
+			}
+		}
+
 		//dyno debug 04/10/2026 - every ABS diagnostic reply is traced: byte 0..3 in v1, byte 4..7 in v2 (DLC and state are in the rx frame and in 0x2200)
 		if (rx_msg_header.ExtId==0x18DAF128){
 			if(DynoStateMachine!=0xff){

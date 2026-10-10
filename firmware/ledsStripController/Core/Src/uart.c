@@ -245,6 +245,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									usbConnectedToBH=0;
 									usbConnectedToSlave=usbConnectedToC2;
 									break;
+								case C1cmdAbsFaultsReply: //ABS faults from C2: only copied here, decoded in the main loop (faultsAbsProcess) //readFaults ABS 10/10/2026
+									{
+										uint8_t next=(uint8_t)((faultsAbsInboxHead+1)%FAULTS_ABS_INBOX_LEN);
+										if(next!=faultsAbsInboxTail){ //full: dropped, C1 asks the same index again
+											for(uint8_t i=0; i<UART_BUFFER_SIZE; i++) faultsAbsInbox[faultsAbsInboxHead][i]=rxBuffer[i];
+											faultsAbsInboxHead=next;
+										}
+									}
+									break;
 								//sniffer function 24/08/2026 - END
 								default:
 									break;
@@ -294,6 +303,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									break;
 								case C2cmdFunctParkSensorsMuteEnabled: //park sensors mute enabled
 									parkSensorsMuteFunctionEnabled = 1;
+									break;
+								case C2cmdParkMuteBrakeReleased: //brake released, from C1 //park mute brake from C1 10/10/2026
+									parkMuteBrakePressed = 0;
+									break;
+								case C2cmdParkMuteBrakePressed: //brake pressed, from C1 //park mute brake from C1 10/10/2026
+									parkMuteBrakePressed = 1;
+									break;
+								case C2cmdAbsFaultsStart: //C1 asks to read the ABS faults: started in the main loop (absFaultsProcess) //readFaults ABS 10/10/2026
+									absFaultsStartRequest = 1;
+									break;
+								case C2cmdAbsFaultsGet: //C1 asks the ABS faults from index rxBuffer[2]-'A': answered in the main loop //readFaults ABS 10/10/2026
+									if(rxBuffer[2]>='A' && rxBuffer[2]<('A'+ABS_FAULTS_DTC_MAX)) absFaultsGetIndex = (uint8_t)(rxBuffer[2]-'A');
 									break;
 								default:
 									break;
@@ -718,8 +739,14 @@ void processUART(void) {
 				lastMsgSentToC2Time=currentTime;
 				//get status from C2
 				//send request thu serial line
-				uint8_t tmpArr1[2]={C2BusID,C2cmdGetStatus};
-				addToUARTSendQueue(tmpArr1, 2); //commented for test
+				uint8_t tmpArr1[3]={C2BusID,C2cmdGetStatus,' '};
+				//readFaults ABS 10/10/2026 - while C1 is collecting the ABS faults, the periodic message to C2 asks them
+				//(it opens the reply window of C2 as C2cmdGetStatus does): no extra message in the queue
+				if(faultsEcu==FAULTS_ECU_ABS && faultsStateMachine==0){
+					tmpArr1[1]=C2cmdAbsFaultsGet;
+					tmpArr1[2]=(uint8_t)('A'+faultsAbsNextIndex);
+				}
+				addToUARTSendQueue(tmpArr1, 3); //commented for test
 				onboardLed_blue_on();
 			}
 			if(currentTime-lastMsgSentToBHTime>TIMING__C1____BH_STATUS_REQUEST_TIMEOUT_MS){ //1260

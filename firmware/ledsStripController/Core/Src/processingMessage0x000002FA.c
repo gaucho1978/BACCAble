@@ -440,22 +440,13 @@ void processingMessage0x000002FA(){
 									sendDashboardPageToSlaveBaccable();
 									break;
 								case 2: //read faults //readFaults 12/08/2026
-									// Reset DTC precedenti e avvia sequenza UDS verso Body ECU (0x40)
-									faultsStateMachine     = 0;
+									// Reset DTC precedenti e avvia sequenza UDS verso Body ECU (0x40); poi, se la lista non e' piena, ECM (0x10) //readFaults ECM 10/10/2026
 									faultsDTCcount         = 0;
 									faultsDTCtotal         = 0; // readFaults fix 05/10/2026
+									faultsDTCbodyCount     = 0; //readFaults ECM 10/10/2026
+									faultsDTCecmEnd        = 0; //readFaults ABS 10/10/2026
 									faultsDTCsubmenuIndex  = 0;
-									faultsRxReceived       = 0;
-									faultsRxExpected       = 0;
-									faultsRecordFill       = 0; // readFaults fix 05/10/2026
-									faultsRxNextSN         = 1;
-									faultsResponsePending  = 0; // readFaults fix 05/10/2026
-									faultsTimer            = currentTime;
-									faultsBodyTxHeader.DLC = 3;
-									faultsBodyTxData[0] = 0x02; // PCI: SF 2 byte
-									faultsBodyTxData[1] = 0x10; // SID: DiagnosticSessionControl
-									faultsBodyTxData[2] = 0x03; // sub: extendedDiagnosticSession
-									can_tx(&faultsBodyTxHeader, faultsBodyTxData);
+									faultsStartEcuSession(FAULTS_ECU_BODY); // 10 03 to the BODY, state 0 //readFaults ECM 10/10/2026
 									dashboard_menu_indent_level++;
 									sendMainDashboardPageToSlaveBaccable(); // mostra WAIT
 									break;
@@ -804,6 +795,7 @@ void processingMessage0x000002FA(){
 											parkSensorsMuteFunctionEnabled=!parkSensorsMuteFunctionEnabled;
 											uint8_t tmpArrPkMute[2]={C2BusID,C2cmdFunctParkSensorsMuteDisabled};
 											if(parkSensorsMuteFunctionEnabled) tmpArrPkMute[1]=C2cmdFunctParkSensorsMuteEnabled;
+											parkMuteBrakeSent=0xFF; //the next 0x107 sends C2 the current brake state //park mute brake from C1 10/10/2026
 											addToUARTSendQueue(tmpArrPkMute, 2);
 											break;
 										case 29: //{'O',' ',' ','S','N','I','F','F','E','R'} //sniffer function 24/08/2026

@@ -406,9 +406,11 @@ const char *FW_VERSION=_FW_VERSION;
 	//readFaults 12/08/2026 - BEGIN
 	// Definizioni variabili per la sequenza UDS di lettura DTC dal Body ECU (ECU 0x40)
 	// I record DTC vengono decodificati man mano che arrivano (faultsConsumePayloadByte): niente buffer del payload.
-	// faultsBodyTxHeader ha ExtId fisso 0x18DA40F1; DLC aggiornato prima di ogni can_tx.
+	// faultsTxHeader: ExtId 0x18DA40F1 (BODY) o 0x18DA10F1 (ECM), impostato da faultsStartEcuSession; DLC aggiornato prima di ogni can_tx. //readFaults ECM 10/10/2026
 	uint8_t  faultsStateMachine = 0xFF;              // 0xFF=inattivo
 	uint8_t  faultsDTCcount = 0;                     // numero DTC ricevuti e validi
+	float    brakeTravelStatus = 0;                  // brake pedal press percentage from 0x107 (raw*0.4), shown in show params //brake in show params 10/10/2026
+	uint8_t  parkMuteBrakeSent = 0xFF;               // ultimo stato freno inviato alla C2 per il park mute (0xFF = da inviare) //park mute brake from C1 10/10/2026
 	uint16_t faultsDTCtotal = 0;                     // readFaults fix 05/10/2026 - DTC validi nella risposta, anche oltre FAULTS_DTC_MAX (mostrato come totale n/m)
 	uint8_t  faultsDTCsubmenuIndex = 0;              // indice corrente scorrimento lista DTC
 	uint8_t  faultsDTCbytes[FAULTS_DTC_MAX][3];      // record DTC: [high, mid, low] per record
@@ -418,8 +420,14 @@ const char *FW_VERSION=_FW_VERSION;
 	uint16_t faultsRxReceived = 0;                   // byte payload ricevuti finora
 	uint8_t  faultsRxNextSN = 0;                     // numero sequenza atteso prossimo CF
 	uint32_t faultsTimer = 0;                        // timestamp per timeout e display TIMEOUT
-	CAN_TxHeaderTypeDef faultsBodyTxHeader = {.IDE=CAN_ID_EXT, .RTR=CAN_RTR_DATA, .ExtId=0x18DA40F1, .DLC=3};
-	uint8_t  faultsBodyTxData[8];                    // buffer dati CAN per tutte le tx verso Body ECU
+	CAN_TxHeaderTypeDef faultsTxHeader = {.IDE=CAN_ID_EXT, .RTR=CAN_RTR_DATA, .ExtId=0x18DA40F1, .DLC=3};
+	uint8_t  faultsTxData[8];                    // buffer dati CAN per tutte le tx verso la ECU in lettura (BODY o ECM)
+	uint8_t  faultsEcu = FAULTS_ECU_BODY;            // ECU in lettura: prima BODY, poi ECM se la lista non e' piena //readFaults ECM 10/10/2026
+	uint8_t  faultsDTCecmEnd = 0;                    // faultsDTCbytes[faultsDTCbodyCount..faultsDTCecmEnd-1] sono dell'ECM, i successivi dell'ABS //readFaults ABS 10/10/2026
+	uint8_t  faultsAbsNextIndex = 0;                 // prossimo DTC ABS (indice nella lista di C2) chiesto con C2cmdAbsFaultsGet //readFaults ABS 10/10/2026
+	volatile uint8_t faultsAbsInbox[FAULTS_ABS_INBOX_LEN][UART_BUFFER_SIZE]; // messaggi C1cmdAbsFaultsReply copiati dall'interrupt uart //readFaults ABS 10/10/2026
+	volatile uint8_t faultsAbsInboxHead = 0, faultsAbsInboxTail = 0; //readFaults ABS 10/10/2026
+	uint8_t  faultsDTCbodyCount = 0;                 // faultsDTCbytes[0..faultsDTCbodyCount-1] sono del BODY, i successivi dell'ECM //readFaults ECM 10/10/2026
 	uint8_t  faultsResponsePending = 0;              // readFaults fix 05/10/2026 - 1 = ricevuto 7F xx 78 (responsePending): timeout esteso a P2*server
 	uint8_t  snifferLastFaultsState = 0xFF;          // readFaults debug 05/10/2026 - ultimo faultsStateMachine tracciato da C1baccablePeriodicCheck
 	//readFaults 12/08/2026 - END
@@ -470,7 +478,26 @@ const char *FW_VERSION=_FW_VERSION;
 	volatile uint32_t last_pdc_shot_time = 0; //when the push was sent
 	uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
-	float brakeTravelStatus=0; //percentage of the brake pedal pressed 0-100%
+	uint32_t parkMuteLastEvaluationTime=0; //last time parkMuteEvaluate() ran (every 30 ms, only with the function enabled) //park mute brake from C1 10/10/2026
+	volatile uint8_t parkMuteBrakePressed=0; //1=brake pressed, as sent by C1 over uart (0x107 is not on the C2 bus) //park mute brake from C1 10/10/2026
+
+	//readFaults ABS 10/10/2026 - ABS faults read by C2 for C1 (see functions_C2baccable.c and uart.h, FAULTS ABS PROTOCOL)
+	uint8_t  absFaultsState = 0xFF;
+	volatile uint8_t absFaultsStartRequest = 0;
+	volatile uint8_t absFaultsGetIndex = 0xFF;
+	uint8_t  absFaultsDTCcount = 0;
+	uint16_t absFaultsDTCtotal = 0;
+	uint8_t  absFaultsDTCbytes[ABS_FAULTS_DTC_MAX][3];
+	uint8_t  absFaultsRecord[4];
+	uint8_t  absFaultsRecordFill = 0;
+	uint16_t absFaultsRxExpected = 0;
+	uint16_t absFaultsRxReceived = 0;
+	uint8_t  absFaultsRxNextSN = 1;
+	uint8_t  absFaultsResponsePending = 0;
+	uint32_t absFaultsTimer = 0;
+	CAN_TxHeaderTypeDef absFaultsTxHeader = {.IDE=CAN_ID_EXT, .RTR=CAN_RTR_DATA, .ExtId=0x18DA28F1, .DLC=3};
+	uint8_t  absFaultsTxData[8];
+	uint8_t  snifferAbsFaultsLastState = 0xFF;
 #endif
 
 #if defined(BHbaccable)
