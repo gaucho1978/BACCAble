@@ -482,6 +482,7 @@ const char *FW_VERSION=_FW_VERSION;
 	volatile uint32_t last_pdc_shot_time = 0; //when the push was sent
 	uint8_t pdcMsgData[8]={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 	CAN_TxHeaderTypeDef pdcMsgHeader={.IDE = CAN_ID_STD, .RTR = CAN_RTR_DATA, .StdId = 0x5B0, .DLC = 8};
+	uint32_t parkMuteReverseStartTime=0; //when the reverse gear was seen engaged, 0=not engaged //park mute reverse fix 13/10/2026
 	uint32_t parkMuteLastEvaluationTime=0; //last time parkMuteEvaluate() ran (every 30 ms, only with the function enabled) //park mute brake from C1 10/10/2026
 	volatile uint8_t parkMuteBrakePressed=0; //1=brake pressed, as sent by C1 over uart (0x107 is not on the C2 bus) //park mute brake from C1 10/10/2026
 

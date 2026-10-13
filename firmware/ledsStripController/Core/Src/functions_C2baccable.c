@@ -38,8 +38,12 @@
 		}
 		//reverse gear: the car is *supposed* to enable the PDC by itself, but it doesn't always -
 		//check the actual LED status and re-enable ourselves if the sensors are still really off.
+		//park mute reverse fix 13/10/2026 - the decision waits until the reverse gear has been engaged for at least 500 ms
+		//(0xFC every 10 ms): the led status (0x54A) comes only every ~250 ms, and deciding at once used a led status from
+		//before the reverse gear, so we pressed the button although the car had just re-enabled the sensors by itself.
 		if (reverseGearActive == 1) {
-			if(pdc_auto_disabled == 1){
+			if(parkMuteReverseStartTime == 0) parkMuteReverseStartTime = currentTime; //reverse gear just engaged
+			if(pdc_auto_disabled == 1 && (currentTime - parkMuteReverseStartTime >= 500)){
 				if (parkSensorsLedStatus == 1  ) { //led continuous -> park sensors still really disabled
 					requestToTogglePDC = 1;
 				}
@@ -47,6 +51,7 @@
 				pdc_auto_disabled = 0;
 			}
 		}else{ //reverse gear not engaged
+			parkMuteReverseStartTime = 0; //park mute reverse fix 13/10/2026
 			//DISABLE: brake pressed firmly enough and the sensors are beeping. Not while in reverse.
 			if (parkMuteBrakePressed){ //brake pressed firmly (C1 applies the 14.5% threshold on 0x107) //park mute brake from C1 10/10/2026
 				if((pdc_is_beeping == 1) && (pdc_auto_disabled == 0)) {

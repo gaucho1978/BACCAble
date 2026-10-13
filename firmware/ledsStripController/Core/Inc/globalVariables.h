@@ -434,6 +434,7 @@
 		extern volatile uint32_t last_pdc_shot_time;	//when the push was sent
 		extern uint8_t pdcMsgData[8];
 		extern CAN_TxHeaderTypeDef pdcMsgHeader;
+		extern uint32_t parkMuteReverseStartTime;		//when the reverse gear was seen engaged, 0=not engaged //park mute reverse fix 13/10/2026
 		extern uint32_t parkMuteLastEvaluationTime;	//last time parkMuteEvaluate() ran //park mute brake from C1 10/10/2026
 		extern volatile uint8_t parkMuteBrakePressed;	//1=brake pressed, as sent by C1 (0x107 is not on the C2 bus) //park mute brake from C1 10/10/2026
 
