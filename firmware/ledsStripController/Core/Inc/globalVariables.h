@@ -321,7 +321,7 @@
 		extern uint8_t RF_fob_number;
 
 		//QV_EXHAUST_FLAP_FUNCTION_ENABLED
-		extern uint8_t QV_exhaust_flap_function_enabled;
+		extern uint8_t QV_exhaust_flap_function_enabled; //0=disabled, 1=enabled, 2=enabled + automatic with the drive style (D/R open, N/A close) //exhaust valves DR 11/10/2026
 		extern uint8_t ForceQVexhaustValveOpened;
 		extern uint32_t lastSentQVexhaustValveMsgTime;
 		extern CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4];
@@ -334,6 +334,11 @@
 		extern uint32_t exhaustValveMosfetCommandTime; //time when mosfet was closed
 		extern uint8_t ChineseExhaustValveRequest; //0=no request, 'O'=open request, 'C'=Close request
 		extern uint8_t chineseValveIsOpened; //0=closed, 1=opened
+		extern uint8_t exhaustValvesDNAmode;		//drive style the valves were last set for, 0xFF=none //exhaust valves DR 11/10/2026
+		extern uint8_t exhaustValvesReassert;		//1=engine started again: the next drive style received sets the valves again //exhaust valves DR 11/10/2026
+		#define EXHAUST_VALVES_ENGINE_RUNNING_RPM 400	//above it the engine runs by itself (idle 700-900): valves are opened/closed only then, never while cranking. The closing at engine off stays at rpm 0 //exhaust valves rpm 400 11/10/2026
+		extern uint8_t exhaustValvesEngineRunning;	//1=rpm > 0 at the previous check //exhaust valves DR 11/10/2026
+		extern uint8_t exhaustValvesOpenRequested; //1=the user wants the valves open, re-applied when the engine rotates again //exhaust valves memory 11/10/2026
 
 		//pumpForce test25/07/2026 - BEGIN
 		// Variabili per la sequenza UDS di forzatura pompa carburante verso ECM (ECU 0x10, ExtId tx 0x18DA10F1)

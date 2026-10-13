@@ -548,19 +548,7 @@ void processingMessage0x000002FA(){
 									addToUARTSendQueue(tmpArr3, 2);
 									break;
 								case 12: //toggle QV Exhaust Valve
-									if(ForceQVexhaustValveOpened==0){ //if valves are closed,
-										ForceQVexhaustValveOpened=1; //start override sequence
-									}else{
-										ForceQVexhaustValveOpened=4; //return control to ecu
-									}
-
-									//equivalent activity for chinese valves
-									if (chineseValveIsOpened==0){ //if valves are closed,
-									ChineseExhaustValveRequest='O'; //open request
-									}else{
-									ChineseExhaustValveRequest='C'; //close request
-									}
-
+									exhaustValvesToggle(); //QV and chinese valves, remembered while the engine is off //exhaust valves memory 11/10/2026
 									break;
 								case 13: //save Log to filesystem
 									//inform Slave baccable C2 and BH
@@ -788,8 +776,10 @@ void processingMessage0x000002FA(){
 											addToUARTSendQueue(tmpArr5, 2);
 
 											break;
-										case 27: //{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p'},
-											QV_exhaust_flap_function_enabled=!QV_exhaust_flap_function_enabled;
+										case 27: //{'O',' ',' ','E','x','h','a','u','s','t',' ','F','l','a','p'}, " DR" at the end with value 2 //exhaust valves DR 11/10/2026
+											QV_exhaust_flap_function_enabled++;
+											if(QV_exhaust_flap_function_enabled>2) QV_exhaust_flap_function_enabled=0; //rotative selection 0=disabled, 1=enabled, 2=enabled + drive style (D/R open, N/A close) //exhaust valves DR 11/10/2026
+											if(!QV_exhaust_flap_function_enabled) exhaustValvesOpenRequested=0; //function off: nothing to reopen when it is enabled again //exhaust valves memory 11/10/2026
 											break;
 										case 28: //{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e'}
 											parkSensorsMuteFunctionEnabled=!parkSensorsMuteFunctionEnabled;
@@ -884,7 +874,8 @@ void processingMessage0x000002FA(){
 		#ifndef PERMANENTLY_DISABLE_IMMO
 			if(cruiseControlDisabled && (ACC_status==0) ){ //if we are allowed to use the buttons of the cruise control
 				if (currentRpmSpeed>400){ //if motor is on
-					if(currentGear==0){ //gear is neutral
+					//gear is neutral, or gear is SNA (0xF) with the car steady since 2 seconds: with MIL on, 0x2EF byte0 is 0xFF and the gear is never 0 //immo with MIL 13/10/2026
+					if((currentGear==0) || ((currentGear==0x0F) && (carSteadyCounter==200))){
 						if((rx_msg_data[0]==0x08) && ((wheelPressedButtonID==0x10) || (wheelPressedButtonID==0x08))){ //user is pressing CC soft speed up button and it was previously released (or pressed by baccable menu up here)
 							lastPressedSpeedUpWheelButtonDuration++;
 							if(lastPressedSpeedUpWheelButtonDuration>620){ //around 20 seconds

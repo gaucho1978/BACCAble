@@ -216,6 +216,53 @@
 	}
 	//elm327 function 26/08/2026 - END
 
+	//exhaust valves memory 11/10/2026 - double click on the release button / menu item: toggles what the user wants.
+	//With the engine running it is applied at once (QV: UDS override sequence, chinese valves: radiocontrol button);
+	//with the engine off it is only remembered: C1baccablePeriodicCheck applies it as soon as the engine rotates.
+	//applies exhaustValvesOpenRequested, only with the engine running (with the engine off it is applied when it rotates).
+	//reassert=1: the chinese valves button is pressed even if they are believed to be already in that position (the
+	//drive style may have changed while baccable could not see it) //exhaust valves DR 11/10/2026
+	static void exhaustValvesApply(uint8_t reassert){
+		if(currentRpmSpeed<=EXHAUST_VALVES_ENGINE_RUNNING_RPM) return; //engine off or cranking: applied when it runs //exhaust valves rpm 400 11/10/2026
+		if(exhaustValvesOpenRequested){
+			if(ForceQVexhaustValveOpened==0) ForceQVexhaustValveOpened=1; //start override sequence
+			if(chineseValveIsOpened==0 || reassert) ChineseExhaustValveRequest='O'; //open request
+		}else{
+			if(ForceQVexhaustValveOpened!=0) ForceQVexhaustValveOpened=4; //return control to ecu
+			if(chineseValveIsOpened || reassert) ChineseExhaustValveRequest='C'; //close request
+		}
+	}
+
+	void exhaustValvesToggle(void){
+		exhaustValvesOpenRequested=!exhaustValvesOpenRequested;
+		SNIFFER_DEBUG2(0x2600, exhaustValvesOpenRequested, currentRpmSpeed); //exhaust valves: user toggle. v1=1 open requested, 0 close requested, v2=rpm (up to 400: only remembered, applied when the engine runs) //exhaust valves memory 11/10/2026
+		exhaustValvesApply(0);
+	}
+
+	//exhaust valves DR 11/10/2026 - function value 2 ("Exhaust Flap DR"): called for every drive style message (0x384).
+	//When the drive style changes the valves follow it: Dynamic or Race open, Natural or All Weather close. With the engine
+	//off it is only remembered (applied when the engine rotates, see C1baccablePeriodicCheck). After the engine started
+	//again (exhaustValvesReassert) the first drive style received sets the valves again even if it did not change: it may
+	//have changed while baccable could not see it. The double click / menu toggle still works, until the next change.
+	void exhaustValvesOnDNAmode(uint8_t mode){
+		if(QV_exhaust_flap_function_enabled!=2){
+			exhaustValvesDNAmode=0xFF; //when value 2 is selected, the current drive style is applied at once
+			exhaustValvesReassert=0;
+			return;
+		}
+		uint8_t wantOpen;
+		if(mode==0x08 || mode==0x30) wantOpen=1;		//Dynamic, Race
+		else if(mode==0x00 || mode==0x10) wantOpen=0;	//Natural, All Weather
+		else return;									//unknown value: nothing changes
+		if(mode==exhaustValvesDNAmode && !exhaustValvesReassert) return;
+		uint8_t reassert=exhaustValvesReassert;
+		exhaustValvesReassert=0;
+		exhaustValvesDNAmode=mode;
+		exhaustValvesOpenRequested=wantOpen;
+		SNIFFER_DEBUG2(0x2603, ((uint32_t)reassert<<8)|mode, ((uint32_t)wantOpen<<16)|(currentRpmSpeed>0xFFFF ? 0xFFFF : currentRpmSpeed)); //exhaust valves: drive style applied (Exhaust Flap DR). v1=byte1 1 if re-asserted after the engine started, byte0 drive style (0x00 N, 0x08 D, 0x10 A, 0x30 R), v2=high 16 bit 1 open / 0 close, low 16 bit rpm (up to 400: only remembered)
+		exhaustValvesApply(reassert);
+	}
+
 	void C1baccablePeriodicCheck(){
 		#ifndef DISABLE_LOW_CONSUME
 			lowConsume_process();
@@ -245,6 +292,31 @@
 			    HAL_GPIO_WritePin(Q11mosfet, GPIO_PIN_SET); //close transistor
 			    exhaustValveMosfetCommandTime = currentTime; //store time when button was pressed
 			    chineseValveIsOpened = 0; //update valves status
+			}
+
+			//exhaust valves memory 11/10/2026 - with the engine off the valves are closed (above for the chinese valves, in
+			//the QV sequence below), so that no message is sent on the bus with the car off, but exhaustValvesOpenRequested
+			//is kept: as soon as the engine rotates again the valves are opened again. The chinese valves wait for the
+			//radiocontrol button of the closing to be released (exhaustValveMosfetCommandTime==0).
+			//exhaust valves DR 11/10/2026 - engine started again: with value 2 the next drive style received sets the valves
+			//(open or close) again, and the restore below waits for it (no opening on an old drive style)
+			//exhaust valves rpm 400 11/10/2026 - "running" above EXHAUST_VALVES_ENGINE_RUNNING_RPM (not while cranking), "stopped"
+			//only at rpm 0, as the closing above: between 1 and 400 rpm nothing changes (no toggling around the threshold)
+			if (currentRpmSpeed > EXHAUST_VALVES_ENGINE_RUNNING_RPM && !exhaustValvesEngineRunning){
+				exhaustValvesEngineRunning = 1;
+				if (QV_exhaust_flap_function_enabled == 2) exhaustValvesReassert = 1;
+			}
+			if (currentRpmSpeed == 0) exhaustValvesEngineRunning = 0;
+
+			if (exhaustValvesOpenRequested && currentRpmSpeed > EXHAUST_VALVES_ENGINE_RUNNING_RPM && !exhaustValvesReassert){ //exhaust valves DR 11/10/2026
+				if (ForceQVexhaustValveOpened == 0){
+					ForceQVexhaustValveOpened = 1; //start override sequence
+					SNIFFER_DEBUG1(0x2601, currentRpmSpeed); //exhaust valves: QV override (re)started, the user wants them open. v1=rpm //exhaust valves memory 11/10/2026
+				}
+				if (chineseValveIsOpened == 0 && ChineseExhaustValveRequest == 0 && exhaustValveMosfetCommandTime == 0){
+					ChineseExhaustValveRequest = 'O'; //open request
+					SNIFFER_DEBUG1(0x2602, currentRpmSpeed); //exhaust valves: chinese valves open button pressed, the user wants them open. v1=rpm //exhaust valves memory 11/10/2026
+				}
 			}
 
 
@@ -1394,8 +1466,10 @@
 			case 26:
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[HAS_function_enabled];
 				break;
-			case 27:
-				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[QV_exhaust_flap_function_enabled];
+			case 27: //{'O',' ',' ','E','x','h','a','u','s','t',' ','F','l','a','p',' ',' ',' '} //exhaust valves DR 11/10/2026
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!QV_exhaust_flap_function_enabled]; // double ! coerces to bool
+				dashboard_setup_menu_array[setup_dashboardPageIndex][16]=(QV_exhaust_flap_function_enabled==2) ? 'D' : ' '; //"DR": opened in Dynamic and Race
+				dashboard_setup_menu_array[setup_dashboardPageIndex][17]=(QV_exhaust_flap_function_enabled==2) ? 'R' : ' ';
 				break;
 			case 28: //{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e'}
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[parkSensorsMuteFunctionEnabled];
@@ -2246,8 +2320,8 @@
 					#endif
 				}
 				break;
-			case 28: //QV_EXHAUST_FLAP_FUNCTION_ENABLED
-				if(tmpParam>1){
+			case 28: //QV_EXHAUST_FLAP_FUNCTION_ENABLED (0=disabled, 1=enabled, 2=enabled + drive style) //exhaust valves DR 11/10/2026
+				if(tmpParam>2){
 					#if defined(QV_EXHAUST_FLAP_FUNCTION_ENABLED)
 						return 1;
 					#else

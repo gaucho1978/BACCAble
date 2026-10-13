@@ -203,18 +203,7 @@ void processingStandardMessage(){
 							onboardLed_blue_on();
 							//execute action :-)
 							if(QV_exhaust_flap_function_enabled){
-								if(ForceQVexhaustValveOpened==0){ //if valves are closed
-									ForceQVexhaustValveOpened=1; //start override sequence
-								}else{
-									ForceQVexhaustValveOpened=4; //return control to ecu
-								}
-
-								//equivalent activity for chinese valves
-								if (chineseValveIsOpened==0){ //if valves are closed,
-								ChineseExhaustValveRequest='O'; //open request
-								}else{
-								ChineseExhaustValveRequest='C'; //close request
-								}
+								exhaustValvesToggle(); //QV and chinese valves, remembered while the engine is off //exhaust valves memory 11/10/2026
 							}
 						}
 					}

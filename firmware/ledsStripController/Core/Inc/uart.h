@@ -103,6 +103,7 @@
 	//void enter_standby_mode();
 	//void resetOtherProcessorsSleepStatus();
 	//uint8_t getOtherProcessorsSleepingStatus();
+	void uart2ReceiverOn(void); //uart tx storm fix 11/10/2026 - receiver of the inter chip line back on after a transmission
 	void addToUARTSendQueue(const uint8_t *data, size_t length);
 	void addToUARTSendQueueDuringInterrupt(const uint8_t *data, size_t length);
 

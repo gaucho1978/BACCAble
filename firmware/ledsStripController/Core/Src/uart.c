@@ -489,6 +489,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart->Instance == USART2){
         //message sent. what do we do?
     	onboardLed_blue_on(); //successfully sent
+		uart2ReceiverOn(); //off while we were transmitting (see uart2TransmitQueued) //uart tx storm fix 11/10/2026
     }
 
 	#if defined(C1baccable)
@@ -587,7 +588,66 @@ void restartUart(UART_HandleTypeDef *huart){
 #endif
 //elm327 function 26/08/2026 - END
 
+//uart tx storm fix 11/10/2026 - BEGIN
+//The line between the chips is a single wire: while a chip transmits, its own receiver gets every byte it sends. If
+//those bytes are not read in time (e.g. the usb interrupt is busy serving a pen drive read on C2/BH) an overrun
+//error occurs, and the HAL error handler sets huart->State=READY while the transmission is still running. From then on
+//UART_Transmit_IT() sees "not busy", returns without writing and WITHOUT disabling the TXE interrupt: TXE stays
+//pending forever and the uart interrupt fires continuously. Having the same priority as the usb interrupt and a
+//lower IRQ number, it always wins: usb and the main loop are never served again (C2 stuck with both leds on, the
+//phone waiting 35 s for a pen drive read, 11/10/2026). Two fixes: the receiver is switched off while we transmit
+//(no echo, so no overrun, as uart_link_send() already does), and an error during a transmission aborts it cleanly.
+
+//receiver of the inter chip line back on, after one of our transmissions (or its abort)
+void uart2ReceiverOn(void){
+	__HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_FEF | UART_CLEAR_NEF | UART_CLEAR_OREF | UART_CLEAR_PEF);
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	SET_BIT(huart2.Instance->CR1, USART_CR1_RE);
+}
+
+//sends the message at the head of the queue, with the receiver off, and removes it from the queue. Interrupts are off
+//around start and removal: an error interrupt that puts the message back in the queue (HAL_UART_ErrorCallback) must
+//find it already removed. Returns 1 if the transmission started.
+static uint8_t uart2TransmitQueued(void){
+	uint8_t started=0;
+	__disable_irq();
+	CLEAR_BIT(huart2.Instance->CR1, USART_CR1_RE); //no echo of our own bytes while we drive the line
+	if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
+		tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE; // update head index in a circular way
+		tx_queue->count--;
+		started=1;
+	}else{
+		SET_BIT(huart2.Instance->CR1, USART_CR1_RE); //not started: receiver back on at once
+	}
+	__enable_irq();
+	return started;
+}
+//uart tx storm fix 11/10/2026 - END
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart){
+	//uart tx storm fix 11/10/2026 - a transmission was running: the HAL has already set State=READY, so the TXE (or TC)
+	//interrupt left enabled would fire forever. Abort it: interrupts off, and on the inter chip line the message goes
+	//back in the queue if not all of its bytes had been loaded (TXE still enabled), to be sent again at the next
+	//chance. If they had all been loaded (only TC enabled) it is considered sent: no duplicate commands.
+	if(huart->Instance->CR1 & (USART_CR1_TXEIE | USART_CR1_TCIE)){
+		uint8_t incomplete = (huart->Instance->CR1 & USART_CR1_TXEIE) ? 1 : 0;
+		__HAL_UART_DISABLE_IT(huart, UART_IT_TXE);
+		__HAL_UART_DISABLE_IT(huart, UART_IT_TC);
+		if(huart->Instance == USART2){
+			if(incomplete && tx_queue->count < QUEUE_SIZE){ //the slot of the aborted message is free until the queue is full
+				tx_queue->head = (tx_queue->head + QUEUE_SIZE - 1) % QUEUE_SIZE;
+				tx_queue->count++;
+			}
+			uart2ReceiverOn();
+		}
+		#if defined(C1baccable)
+			if(huart->Instance == USART1){ //same end as HAL_UART_TxCpltCallback: back to receive
+				CLEAR_BIT(huart1.Instance->CR1, USART_CR1_TE);
+				SET_BIT(huart1.Instance->CR1, USART_CR1_RE);
+			}
+		#endif
+	}
+
 
 	if (( currentTime - lastUartErrorCallback)>1000) onboardLed_red_on();
 	lastUartErrorCallback = currentTime;
@@ -769,11 +829,7 @@ void processUART(void) {
 
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
 				if(tx_queue->tx_buffer[tx_queue->head][1]==C1cmdLaneSingleTap) onboardLed_red_on(); //just for test
-				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
-
-					// update head index in a circular way
-					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;
-					tx_queue->count--;
+				if (uart2TransmitQueued()){ //receiver off while transmitting, message removed from the queue //uart tx storm fix 11/10/2026
 					//onboardLed_blue_on();
 				}else{
 					onboardLed_red_on();
@@ -790,9 +846,10 @@ void processUART(void) {
     	if(currentTime-last_sent_serial_msg_time>TIMING__C1____SERIAL_TIMEOUT_REPLY_MS){ //each 250msec send a message (so that we left the time to receiver to reply)
 			last_sent_serial_msg_time=currentTime;
 			if( __HAL_UART_GET_FLAG(&huart2, UART_FLAG_TC) ){ //&& (huart2.State == HAL_UART_STATE_READY)
-				if (HAL_UART_Transmit_IT(&huart2, tx_queue->tx_buffer[tx_queue->head], UART_BUFFER_SIZE) == HAL_OK){
+				uint8_t msgDestination=tx_queue->tx_buffer[tx_queue->head][0]; //read before the message leaves the queue //uart tx storm fix 11/10/2026
+				if (uart2TransmitQueued()){ //receiver off while transmitting, message removed from the queue //uart tx storm fix 11/10/2026
 					//save time
-					switch(tx_queue->tx_buffer[tx_queue->head][0]){
+					switch(msgDestination){
 						case C2BusID:
 						case C2_Bh_BusID: //only C2 is allowed to reply when this msg is received
 						case AllResetFaults: //only C2 is allowed to reply when this msg is received
@@ -806,10 +863,6 @@ void processUART(void) {
 							break;
 						default:
 					}
-
-					// update head index in a circular way
-					tx_queue->head = (tx_queue->head + 1) % QUEUE_SIZE;
-					tx_queue->count--;
 				}else{
 					onboardLed_red_on();
 

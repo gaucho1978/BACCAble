@@ -47,4 +47,6 @@
 	void faultsStartEcuSession(uint8_t ecu); //readFaults ECM 10/10/2026
 	void faultsEcuEnded(uint8_t failed); //readFaults ECM 10/10/2026
 	void faultsAbsProcess(void); //readFaults ABS 10/10/2026
+	void exhaustValvesToggle(void); //exhaust valves memory 11/10/2026
+	void exhaustValvesOnDNAmode(uint8_t mode); //exhaust valves DR 11/10/2026
 #endif /* INC_FUNCTIONS_C1BACCABLE_H_ */

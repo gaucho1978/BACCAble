@@ -182,7 +182,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'M','a','i','n',' ','S','e','t','u','p',' ','M','e','n','u',' ',' ',' '},
 			{'P','a','r','a','m','s',' ','S','e','t','u','p',' ','M','e','n','u',' '},
 			{'E','n','a','b','l','e',' ','H','A','S',' ',' ',' ',' ',' ',' ',' ',' '},
-			{'T','o','g','g','l','e',' ','Q','V',' ','V','a','l','v','e',' ',' ',' '},
+			{'T','o','g','g','l','e',' ','E','x','h','a','u','s','t',' ',' ',' ',' '}, //exhaust valves DR 11/10/2026 - was "Toggle QV Valve"
 			{'S','a','v','e',' ','L','o','g',' ','t','o',' ','F','i','l','e',' ',' '},
 			{'R','e','s','e','t',' ','S','t','a','t','i','s','t','i','c','s',' ',' '},
 		{'M','a','x',' ','H','o','l','d',' ','O','F','F',' ',' ',' ',' ',' ',' '},
@@ -218,7 +218,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','C','l','o','s','e',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','O','p','e','n',' ',' ','W','i','n','d','o','w','s',' ',' ',},
 			{'O',' ',' ','H','A','S',' ','V','i','r','t','u','a','l',' ','P','a','d',},
-			{'O',' ',' ','Q','V',' ','E','x','h','a','u','s','t',' ','F','l','a','p',},
+			{'O',' ',' ','E','x','h','a','u','s','t',' ','F','l','a','p',' ',' ',' ',}, //exhaust valves DR 11/10/2026 - was "QV Exhaust Flap"; " DR" at the end with value 2
 			{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e',},
 			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026
 			{'O',' ',' ','E','L','M','3','2','7',' ',' ',' ',' ',' ',' ',' ',' ',' ',}, //elm327 function 26/08/2026 - last free slot of the array
@@ -377,7 +377,7 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t RF_fob_number=0;
 
 	//QV_EXHAUST_FLAP_FUNCTION_ENABLED
-	uint8_t QV_exhaust_flap_function_enabled=0;
+	uint8_t QV_exhaust_flap_function_enabled=0; //0=disabled, 1=enabled (double click / menu), 2=enabled + automatic with the drive style (D/R open, N/A close) //exhaust valves DR 11/10/2026
 	uint8_t ForceQVexhaustValveOpened=0; //state machine: 0=valve automatically selected by ECU, 1=connection request to send, 2=tester present to send, 3=temporary param overwrite, 4=return control to ECU to send
 	uint32_t lastSentQVexhaustValveMsgTime=0;
 	CAN_TxHeaderTypeDef forceQVexhaustValveMsgHeader[4] ={{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=3},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=7},{.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA, .ExtId=0x18DA17F1, .DLC=5}};
@@ -390,6 +390,10 @@ const char *FW_VERSION=_FW_VERSION;
 	uint32_t exhaustValveMosfetCommandTime=0; //time when mosfet was closed
 	uint8_t ChineseExhaustValveRequest=0; //0=no request, 'O'=open request, 'C'=Close request
 	uint8_t chineseValveIsOpened=0; //0=closed, 1=opened
+	uint8_t exhaustValvesDNAmode=0xFF; //drive style the valves were last set for (function value 2), 0xFF=none yet //exhaust valves DR 11/10/2026
+	uint8_t exhaustValvesReassert=0; //1=the engine started again: the next drive style received sets the valves again (function value 2) //exhaust valves DR 11/10/2026
+	uint8_t exhaustValvesEngineRunning=0; //1=engine running (rpm went above EXHAUST_VALVES_ENGINE_RUNNING_RPM, back to 0 only at rpm 0), to detect the engine starting again //exhaust valves DR 11/10/2026
+	uint8_t exhaustValvesOpenRequested=0; //1=the user wants the valves open (double click / menu): kept in ram while the engine is off and applied again as soon as it rotates //exhaust valves memory 11/10/2026
 
 	//pumpForce test25/07/2026 - BEGIN
 	// Definizioni variabili per la sequenza UDS di forzatura pompa carburante (ECM 0x10)
