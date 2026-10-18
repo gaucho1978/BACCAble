@@ -12,6 +12,7 @@
 
 	void BHbaccableInitCheck();
 	void BHperiodicCheck();
+	void dnaRestoreOn256(void); //DNA memory 18/10/2026
 	uint8_t saveOnFlashBH();
 	uint16_t readFromFlashBH(uint8_t paramId);
 

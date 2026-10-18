@@ -61,6 +61,7 @@
 
 				allProcessorsWakeupTime=currentTime;
 				instructSlaveBoardsTriggerEnabled=1;
+				dnaMemoryWakeUp=1; //the car slept: DNA memory setting read again, drive style restored at the next engine start //DNA memory 18/10/2026
 			}
 		}else{ //altrimenti se non siamo in basso consumo
 			//se l'ultimo messaggio ricevuto é piú vecchio di 2,5 secondi, riduci i consumi

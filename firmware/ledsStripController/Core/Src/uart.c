@@ -346,6 +346,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 									function_park_mirror=1;
 									storeCurrentParkMirrorPosition=1;
 									break;
+								case BHcmdDnaMemoryRestore: //set the drive style rxBuffer[2]: started in the main loop (BHperiodicCheck) //DNA memory 18/10/2026
+									if(rxBuffer[2]=='A' || rxBuffer[2]=='N' || rxBuffer[2]=='D' || rxBuffer[2]=='R') dnaRestoreRequest=rxBuffer[2];
+									break;
 								default:
 							}
 							weCanSendAMessageReply=currentTime;

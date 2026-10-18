@@ -61,6 +61,7 @@
 		//elm327CheckActivationTimeout()). The two modes share the single usb cdc port, so they are mutually
 		//exclusive: the setup menu already clears one when the other is enabled, this is just the safety net.
 		elm327FunctionEnabled=(uint8_t)readFromFlash(32);
+		dnaMemoryFunctionEnabled=(uint8_t)readFromFlash(33); //read again at every wake up, see dnaMemoryProcess() //DNA memory 18/10/2026
 		if(elm327FunctionEnabled && snifferFunctionEnabled==0) elm327Start();
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
@@ -263,10 +264,65 @@
 		exhaustValvesApply(reassert);
 	}
 
+	//DNA memory 18/10/2026 - BEGIN
+	//The drive style in use with the engine running is memorized (frozen below DNA_MEMORY_ENGINE_RUNNING_RPM, so the
+	//style the BCM may set while the engine stops is not taken). After the car slept (wake up from low consume), at the
+	//first engine start, after DNA_MEMORY_SETTLE_MS, if the drive style is not the memorized one BH is asked once to
+	//set it: the DNA selector (DSCM, 0x256) is on the BH bus. Then nothing more until the car sleeps again: the user is
+	//free to change the drive style, and the new choice is memorized. A stop of the Start&Stop does not arm the restore.
+	static char dnaMemoryLetter(uint8_t mode){ //0x384 code -> letter sent to BH, 0 if unknown
+		switch(mode){
+			case 0x10: return 'A';
+			case 0x00: return 'N';
+			case 0x08: return 'D';
+			case 0x30: return 'R';
+			default:   return 0;
+		}
+	}
+
+	static void dnaMemoryProcess(void){
+		if(dnaMemoryWakeUp){ //the car just woke up: setting read from flash again, restore armed
+			dnaMemoryWakeUp=0;
+			dnaMemoryFunctionEnabled=(uint8_t)readFromFlash(33);
+			dnaMemoryRestoreArmed=1;
+		}
+		if(!dnaMemoryFunctionEnabled){
+			dnaMemoryRestoreArmed=0;
+			return;
+		}
+		if(currentRpmSpeed<=DNA_MEMORY_ENGINE_RUNNING_RPM){ //engine off: memory frozen
+			dnaMemoryEngineOnTime=0;
+			return;
+		}
+		if(dnaMemoryEngineOnTime==0) dnaMemoryEngineOnTime=currentTime;
+		uint8_t letter=dnaMemoryLetter(currentDNAmode);
+		if(dnaMemoryRestoreArmed){
+			if(currentTime-dnaMemoryEngineOnTime<DNA_MEMORY_SETTLE_MS) return; //the BCM is still setting its start drive style
+			dnaMemoryRestoreArmed=0; //one attempt only for each wake up
+			char wanted=dnaMemoryLetter(dnaMemoryStyle);
+			if(wanted && letter && dnaMemoryStyle!=currentDNAmode){
+				uint8_t tmpArr[3]={BhBusID,BHcmdDnaMemoryRestore,(uint8_t)wanted};
+				addToUARTSendQueue(tmpArr, 3);
+				dnaMemoryCommandTime=currentTime;
+				SNIFFER_DEBUG2(0x2800, dnaMemoryStyle, currentDNAmode); //DNA memory: restore requested to BH. v1=memorized style, v2=current style (0x00 N, 0x08 D, 0x10 A, 0x30 R)
+			}else{
+				SNIFFER_DEBUG2(0x2801, dnaMemoryStyle, currentDNAmode); //DNA memory: nothing to restore (same style, or none memorized). v1=memorized style (0xFF none), v2=current style
+			}
+			return;
+		}
+		if(dnaMemoryCommandTime){
+			if(currentTime-dnaMemoryCommandTime<DNA_MEMORY_RESTORE_HOLD_MS) return; //BH is moving the selector: intermediate styles are not memorized
+			dnaMemoryCommandTime=0;
+		}
+		if(letter) dnaMemoryStyle=currentDNAmode;
+	}
+	//DNA memory 18/10/2026 - END
+
 	void C1baccablePeriodicCheck(){
 		#ifndef DISABLE_LOW_CONSUME
 			lowConsume_process();
 		#endif
+		dnaMemoryProcess(); //DNA memory 18/10/2026
 
 		if(QV_exhaust_flap_function_enabled){
 
@@ -1047,7 +1103,7 @@
 				}
 
 				if(printEnableDyno>0){
-					printEnableDyno--;
+				printEnableDyno--;
 					uint8_t enableDynoMsg[12]={BhBusIDparamString,'E','N','A','B','L','E',' ','D','Y','N','O'};
 					addToUARTSendQueue(enableDynoMsg, 12);//print message "Enable Dyno"
 					return;
@@ -1480,6 +1536,9 @@
 			case 30: //{'O',' ',' ','E','L','M','3','2','7'} //elm327 function 26/08/2026
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[elm327FunctionEnabled];
 				break;
+			case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
+				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[dnaMemoryFunctionEnabled];
+				break;
 			default:
 				break;
 		}
@@ -1854,7 +1913,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=32; //elm327 function 26/08/2026 - was 31
+		uint8_t paramsNumber=33; //elm327 function 26/08/2026 - was 31 //DNA memory 18/10/2026 - was 32
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -1888,6 +1947,7 @@
 		  parkSensorsMuteFunctionEnabled,  //slot 30: FRONT_PARK_MUTE
 		  snifferFunctionEnabled,  //slot 31: SNIFFER //sniffer function 24/08/2026
 		  elm327FunctionEnabled,  //slot 32: ELM327 //elm327 function 26/08/2026
+		  dnaMemoryFunctionEnabled,  //slot 33: DNA_MEMORY //DNA memory 18/10/2026
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -2343,7 +2403,7 @@
 					#if defined(FRONT_PARK_MUTE) //user_config 28/08/2026
 						return 1;
 					#else
-					return 0; // flash non inizializzata: default disabilitato
+						return 0; // flash non inizializzata: default disabilitato
 					#endif
 				}
 				break;
@@ -2352,7 +2412,7 @@
 					#if defined(SNIFFER) //user_config 28/08/2026
 						return 1;
 					#else
-					return 0; // flash non inizializzata: default disabilitato
+						return 0; // flash non inizializzata: default disabilitato
 					#endif
 				}
 				break;
@@ -2361,9 +2421,12 @@
 					#if defined(ELM327) //user_config 28/08/2026
 						return 1;
 					#else
-					return 0; // flash non inizializzata: default disabilitato
+						return 0; // flash non inizializzata: default disabilitato
 					#endif
 				}
+				break;
+			case 33: //DNA_MEMORY (1=enabled 0=disabled) //DNA memory 18/10/2026
+				if(tmpParam>1) return 0; // flash non inizializzata: default disabilitato
 				break;
 			default:
 				return 0;

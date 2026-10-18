@@ -37,7 +37,139 @@
 
 	}
 
+	//DNA memory 18/10/2026 - BEGIN
+	//C1 asks a drive style (BHcmdDnaMemoryRestore) at the first engine start after the car slept. The DNA selector
+	//(DSCM) sends 0x256 every ~250 ms: byte 0 = 0x40 up (A->N->D->R), 0x20 down, 0x00 not pressed. The presses are made
+	//by sending the frame just received from the selector again, with byte 0 changed, right after it:
+	// - short press (every step but D->R): one changed frame, then the next 0x256 is let through ("not pressed");
+	// - long press (D->R, always the last step): every 0x256 is changed for DNA_RESTORE_LONG_PRESS_MS, then nothing
+	//   (the following frames of the selector carry the release).
+	//The whole sequence, from the current style to the wanted one, is worked out first and sent without checking the
+	//style meanwhile. DNA_RESTORE_CHECK_DELAY_MS after its end the style is checked: if it is not the wanted one the
+	//sequence is worked out again and sent once more, then nothing. Abort at once if the user moves the selector or the
+	//engine stops. Afterwards nothing is sent until the next request: the user is free to change the drive style.
+	static uint8_t dnaRestorePosition(uint8_t mode){ //0x46C code -> position on the selector, 0xFF unknown
+		switch(mode){
+			case 0x04: return 0; //A
+			case 0x00: return 1; //N
+			case 0x02: return 2; //D
+			case 0x0C: return 3; //R
+			default:   return 0xFF;
+		}
+	}
+
+	//works out the presses from the current style to dnaRestoreTarget. 0 = nothing to do (or style unknown)
+	static uint8_t dnaRestorePlan(void){
+		uint8_t cur=dnaRestorePosition(currentDNAmode);
+		if(cur==0xFF || cur==dnaRestoreTarget) return 0;
+		dnaRestoreLong=0;
+		if(dnaRestoreTarget>cur){
+			dnaRestoreDir=0x40; //up
+			if(dnaRestoreTarget==3){ //R: the last step D->R is the long press
+				dnaRestoreShortLeft=(uint8_t)(2-cur);
+				dnaRestoreLong=1;
+			}else{
+				dnaRestoreShortLeft=(uint8_t)(dnaRestoreTarget-cur);
+			}
+		}else{
+			dnaRestoreDir=0x20; //down
+			dnaRestoreShortLeft=(uint8_t)(cur-dnaRestoreTarget);
+		}
+		dnaRestoreSkipNext=0;
+		dnaRestoreLongStart=0;
+		SNIFFER_DEBUG2(0x2700, ((uint32_t)dnaRestorePass<<16)|((uint32_t)cur<<8)|dnaRestoreTarget, ((uint32_t)dnaRestoreDir<<16)|((uint32_t)dnaRestoreShortLeft<<8)|dnaRestoreLong); //DNA memory: sequence worked out. v1=byte2 pass, byte1 current position, byte0 wanted (0 A, 1 N, 2 D, 3 R), v2=byte2 direction (0x40 up, 0x20 down), byte1 short presses, byte0 1 if long press D->R
+		return 1;
+	}
+
+	static void dnaRestoreStop(uint8_t reason){
+		SNIFFER_DEBUG2(0x2703, reason, ((uint32_t)dnaRestoreState<<8)|dnaRestorePass); //DNA memory: stopped. v1=reason (1 not started: no fresh 0x46C/0x256 or engine off, 2 nothing to do, 3 user moved the selector, 4 engine stopped, 5 done: wanted style reached, 6 done: second sequence sent), v2=byte1 state, byte0 pass
+		dnaRestoreState=0;
+	}
+
+	//called on every 0x256 received (main loop): sends the presses right after the frame of the selector
+	void dnaRestoreOn256(void){
+		if(dnaRestoreState!=1) return;
+		if(rx_msg_data[0] & 0x60){ dnaRestoreStop(3); return; } //a real press of the user (our own frames are never received)
+		if(currentRpmSpeed<=DNA_RESTORE_ENGINE_RUNNING_RPM){ dnaRestoreStop(4); return; }
+		uint8_t press=0;
+		if(dnaRestoreSkipNext){
+			dnaRestoreSkipNext=0; //the selector's "not pressed" goes through
+		}else if(dnaRestoreShortLeft>0){
+			dnaRestoreShortLeft--;
+			press=dnaRestoreDir;
+			dnaRestoreSkipNext=1;
+		}else if(dnaRestoreLong){
+			if(dnaRestoreLongStart==0) dnaRestoreLongStart=currentTime;
+			if(currentTime-dnaRestoreLongStart<DNA_RESTORE_LONG_PRESS_MS) press=0x40;
+			else dnaRestoreLong=0; //long press over: the next frames of the selector carry the release
+		}
+		if(press){
+			uint8_t d[8];
+			memcpy(d, rx_msg_data, 8);
+			d[0]=(uint8_t)((d[0] & ~0x60) | press);
+			can_tx((CAN_TxHeaderTypeDef *)&rx_msg_header, d); //the frame of the selector again, pressed
+			//can_process(); //sent as soon as possible after the original
+			SNIFFER_DEBUG2(0x2701, press, ((uint32_t)dnaRestoreShortLeft<<8)|dnaRestoreLong); //DNA memory: press sent. v1=byte 0 sent (0x40 up, 0x20 down), v2=byte1 short presses left, byte0 1 if long press pending/running
+		}
+		if(dnaRestoreShortLeft==0 && !dnaRestoreLong && !dnaRestoreSkipNext){ //sequence complete (after a short press: when its release went through)
+			dnaRestoreState=2;
+			dnaRestoreEndTime=currentTime;
+		}
+	}
+
+	//Called from BHperiodicCheck() on every main loop iteration. It does not send any frame by itself: it starts a
+	//sequence (state 1), aborts it if the engine stops, and checks the result once a sequence is over (state 2).
+	//The presses themselves are sent by dnaRestoreOn256(), right after each 0x256 received from the selector.
+	//dnaRestoreState: 0=idle, nothing is sent | 1=sequence running (dnaRestoreOn256 sends the presses) |
+	//                 2=sequence over, waiting DNA_RESTORE_CHECK_DELAY_MS before checking the drive style
+	static void dnaRestoreProcess(void){
+		//--- 1) a new request arrived from C1 (stored by the uart interrupt as a letter: 'A','N','D' or 'R')
+		if(dnaRestoreRequest){ //new request from C1
+			char letter=(char)dnaRestoreRequest;
+			dnaRestoreRequest=0; //consumed: one request starts at most one restore (first sequence + one repetition)
+			dnaRestoreTarget=(letter=='A')?0:(letter=='N')?1:(letter=='D')?2:3; //position on the selector, A=0 ... R=3
+			dnaRestorePass=1; //first sequence
+			dnaRestoreState=0; //a new request replaces any restore still in progress
+			//start only if everything needed is really there:
+			// - engine running (the drive style is set only with the engine on, as decided by C1);
+			// - 0x46C received recently: the current drive style is known, so the sequence can be worked out;
+			// - 0x256 received recently: the DNA selector is on this bus and keeps sending its frames, which are the
+			//   trigger for every press (on cars with a different selector, as Ambrotek's, it never arrives).
+			//The times are 0 until the first message of that kind has been received since power on.
+			if(currentRpmSpeed<=DNA_RESTORE_ENGINE_RUNNING_RPM || dnaRestoreLast46CTime==0 || dnaRestoreLast256Time==0 ||
+			   currentTime-dnaRestoreLast46CTime>DNA_RESTORE_INPUT_MAX_AGE_MS || currentTime-dnaRestoreLast256Time>DNA_RESTORE_INPUT_MAX_AGE_MS){
+				dnaRestoreStop(1); //selector not on this bus, style unknown or engine off: nothing is sent
+			}else if(dnaRestorePlan()){ //works out direction, number of short presses and the final long press (D->R)
+				dnaRestoreState=1; //from now on dnaRestoreOn256() sends the presses
+			}else{
+				dnaRestoreStop(2); //already in the wanted drive style (or current style unknown): nothing to do
+			}
+		}
+
+		//--- 2) the engine stopped while restoring: abort at once, no further frame is sent
+		if(dnaRestoreState!=0 && currentRpmSpeed<=DNA_RESTORE_ENGINE_RUNNING_RPM){
+			dnaRestoreStop(4);
+			return;
+		}
+
+		//--- 3) a sequence is over: after DNA_RESTORE_CHECK_DELAY_MS (time for the BCM to update 0x46C) check the style
+		if(dnaRestoreState==2 && currentTime-dnaRestoreEndTime>=DNA_RESTORE_CHECK_DELAY_MS){
+			if(dnaRestorePosition(currentDNAmode)==dnaRestoreTarget){
+				dnaRestoreStop(5); //wanted drive style reached: done
+			}else if(dnaRestorePass==1){
+				//first sequence did not reach it: work out the presses again, from the drive style the car is in now
+				dnaRestorePass=2;
+				if(dnaRestorePlan()) dnaRestoreState=1; //sent once more; after it the check only logs the result (5 or 6), nothing more is sent
+				else dnaRestoreStop(2);
+			}else{
+				dnaRestoreStop(6); //second sequence over too: give up, nothing more is sent until the next request
+			}
+		}
+	}
+	//DNA memory 18/10/2026 - END
+
 	void BHperiodicCheck(){
+		dnaRestoreProcess(); //DNA memory 18/10/2026
 		if(requestToSendOneFrame>0){ //if requested by a message received from master baccable
 			//send one msg to write something on the dashboard each 50msec (one frame each 300msec)
 			if (currentTime-lastSentTelematic_display_info_msg_Time>50){
@@ -72,46 +204,46 @@
 		if(function_park_mirror){ //if function parkmirror is enabled
 
 			if(currentGear==0x0E){ //if reverse gear is selected
-exitReverseTime = 0; //Reset hysteresis timer while in Reverse
+				exitReverseTime = 0; //Reset hysteresis timer while in Reverse
 				neutralGearEntryTime = 0; //we are not in Neutral
 
-					switch(turnIndicator){
-						case 0x02: //left arrow inserted
-							//if left and right mirror were not requested to move
-							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired){
-								//if we are returning to operative position
-								if(restoreOperativeMirrorsPosition){
-									//forget it
-									restoreOperativeMirrorsPosition=0;
-								}else{
-									//store current mirror position, because mirror was not previously lowered
-									storeOperativeMirrorPosition=1;
-								}
+				switch(turnIndicator){
+					case 0x02: //left arrow inserted
+						//if left and right mirror were not requested to move
+						if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired){
+							//if we are returning to operative position
+							if(restoreOperativeMirrorsPosition){
+								//forget it
+								restoreOperativeMirrorsPosition=0;
+							}else{
+								//store current mirror position, because mirror was not previously lowered
+								storeOperativeMirrorPosition=1;
 							}
-							if(!leftParkMirrorPositionRequired){
+						}
+						if(!leftParkMirrorPositionRequired){
 							leftParkMirrorPositionRequired=1; //Enable sending command to move mirror
-								leftParkMirrorPositionRequiredRequestTime=currentTime;
+							leftParkMirrorPositionRequiredRequestTime=currentTime;
+						}
+						break;
+					case 0x01: //right arrow inserted
+						//if left and right mirror were not requested to move
+						if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired){
+							//if we are returning to operative position
+							if(restoreOperativeMirrorsPosition){
+								//forget it
+								restoreOperativeMirrorsPosition=0;
+							}else{
+								//store current mirror position, because mirror was not previously lowered
+								storeOperativeMirrorPosition=1;
 							}
-							break;
-						case 0x01: //right arrow inserted
-							//if left and right mirror were not requested to move
-							if(!leftParkMirrorPositionRequired && !rightParkMirrorPositionRequired){
-								//if we are returning to operative position
-								if(restoreOperativeMirrorsPosition){
-									//forget it
-									restoreOperativeMirrorsPosition=0;
-								}else{
-									//store current mirror position, because mirror was not previously lowered
-									storeOperativeMirrorPosition=1;
-								}
-							}
-							if(!rightParkMirrorPositionRequired){
-							rightParkMirrorPositionRequired=1; //Enable sending command to move mirror
-								rightParkMirrorPositionRequiredRequestTime=currentTime;
-							}
-							break;
-						default:
-					}
+						}
+						if(!rightParkMirrorPositionRequired){
+						rightParkMirrorPositionRequired=1; //Enable sending command to move mirror
+							rightParkMirrorPositionRequiredRequestTime=currentTime;
+						}
+						break;
+					default:
+				}
 
 			}else if(currentGear==0x00){ //Neutral
 				if(neutralGearEntryTime==0) neutralGearEntryTime=currentTime; //remember when Neutral began
@@ -137,20 +269,20 @@ exitReverseTime = 0; //Reset hysteresis timer while in Reverse
 					//currentTime+10001 is how the instant return is obtained: both operands are uint32_t, so the
 					//currentTime-exitReverseTime below underflows to a huge value and fires on this same loop.
 					if((currentGear==0x0D)||(currentRpmSpeed<=400)) exitReverseTime=currentTime+10001;
-				}
+                }
 
 
 
 				//Trigger return only after 10 seconds of constant driving forward (or instantly in case of P)
 				if(exitReverseTime != 0 && (currentTime - exitReverseTime > 10000)){
-				if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){ //if mirrors are potentially not in operative position,
-					restoreOperativeMirrorsPosition=1; //request to restore mirrors to their original position
-					restoreOperativeMirrorsPositionRequestTime=currentTime;
+					if(leftParkMirrorPositionRequired || rightParkMirrorPositionRequired){ //if mirrors are potentially not in operative position,
+					  restoreOperativeMirrorsPosition=1; //request to restore mirrors to their original position
+					  restoreOperativeMirrorsPositionRequestTime=currentTime;
+					}
+				    leftParkMirrorPositionRequired=0; //stop sending message to set Park position for mirrors
+				    rightParkMirrorPositionRequired=0;//stop sending message to set Park position for mirrors
+                    exitReverseTime = 0; //Reset timer after execution
 				}
-				leftParkMirrorPositionRequired=0; //stop sending message to set Park position for mirrors
-				rightParkMirrorPositionRequired=0;//stop sending message to set Park position for mirrors
-                                        exitReverseTime = 0; //Reset timer after execution
-			        }
 			}
 
 			//Prepare msg to send: set Operative position of the mirrors

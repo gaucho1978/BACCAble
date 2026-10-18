@@ -167,7 +167,7 @@
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[31][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30]
+		extern uint8_t dashboard_setup_menu_array[32][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30] //DNA memory 18/10/2026 - was [31]
 
 		//extern uint8_t params_setup_dashboardPageIndex;
 		//extern uint8_t shownParamsArray[240];
@@ -338,6 +338,16 @@
 		extern uint8_t exhaustValvesReassert;		//1=engine started again: the next drive style received sets the valves again //exhaust valves DR 11/10/2026
 		#define EXHAUST_VALVES_ENGINE_RUNNING_RPM 400	//above it the engine runs by itself (idle 700-900): valves are opened/closed only then, never while cranking. The closing at engine off stays at rpm 0 //exhaust valves rpm 400 11/10/2026
 		extern uint8_t exhaustValvesEngineRunning;	//1=rpm > 0 at the previous check //exhaust valves DR 11/10/2026
+		//DNA memory 18/10/2026 - the drive style in use is restored at the first engine start after the car slept
+		#define DNA_MEMORY_ENGINE_RUNNING_RPM 400	//above it the engine runs: the drive style is memorized, and restored after the car slept
+		#define DNA_MEMORY_SETTLE_MS 2000			//engine running for this long before restoring: the BCM sets its own start drive style first
+		#define DNA_MEMORY_RESTORE_HOLD_MS 10000	//no memorizing for this long after the command: BH is still moving the selector (7 s worst case)
+		extern uint8_t  dnaMemoryFunctionEnabled;	//0=disabled, 1=enabled. saved on flash (slot 33)
+		extern uint8_t  dnaMemoryStyle;			//drive style to restore (0x384 codes: 0x00 N, 0x08 D, 0x10 A, 0x30 R), 0xFF=none yet
+		extern volatile uint8_t dnaMemoryWakeUp;	//1=the car just woke up (set by lowConsume.c): read the setting again and arm the restore
+		extern uint8_t  dnaMemoryRestoreArmed;		//1=restore at the next engine start
+		extern uint32_t dnaMemoryEngineOnTime;		//when the engine was seen running, 0=not running
+		extern uint32_t dnaMemoryCommandTime;		//when the restore command was sent to BH, 0=none
 		extern uint8_t exhaustValvesOpenRequested; //1=the user wants the valves open, re-applied when the engine rotates again //exhaust valves memory 11/10/2026
 
 		//pumpForce test25/07/2026 - BEGIN
@@ -460,6 +470,23 @@
 	#endif
 
 	#if defined(BHbaccable)
+		//DNA memory 18/10/2026 - drive style set by BH moving the DNA selector (0x256), on request of C1
+		#define DNA_RESTORE_ENGINE_RUNNING_RPM 400	//below it (engine stopped) the sequence is aborted
+		#define DNA_RESTORE_INPUT_MAX_AGE_MS 1000	//0x46C (style) and 0x256 (selector) must be fresh to start
+		#define DNA_RESTORE_LONG_PRESS_MS 2000		//D->R: the selector is kept up for this long
+		#define DNA_RESTORE_CHECK_DELAY_MS 1000		//after a sequence, the style is checked after this delay (once)
+		extern volatile uint8_t dnaRestoreRequest;	//letter of the style asked by C1 ('A','N','D','R'), 0=none (set by the uart interrupt)
+		extern uint8_t  dnaRestoreState;			//0=idle, 1=sequence running, 2=waiting to check the result
+		extern uint8_t  dnaRestoreTarget;			//position of the wanted style: 0=A, 1=N, 2=D, 3=R
+		extern uint8_t  dnaRestorePass;				//1=first sequence, 2=the one repeated after the check
+		extern uint8_t  dnaRestoreShortLeft;		//short presses still to send
+		extern uint8_t  dnaRestoreDir;				//byte 0 of 0x256 for the presses: 0x40 up (A->R), 0x20 down (R->A)
+		extern uint8_t  dnaRestoreLong;				//1=the sequence ends with the long press D->R
+		extern uint8_t  dnaRestoreSkipNext;			//1=the next 0x256 is let through (selector "not pressed")
+		extern uint32_t dnaRestoreLongStart;		//when the long press started, 0=not started
+		extern uint32_t dnaRestoreEndTime;			//when the sequence ended
+		extern uint32_t dnaRestoreLast46CTime;		//last 0x46C received
+		extern uint32_t dnaRestoreLast256Time;		//last 0x256 received
 		extern uint32_t lastSentTelematic_display_info_msg_Time;
 		extern uint8_t telematic_display_info_field_totalFrameNumber; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5)
 		extern uint8_t telematic_display_info_field_frameNumber; //current frame

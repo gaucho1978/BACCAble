@@ -282,7 +282,7 @@ void processingMessage0x000002FA(){
 
 									if(function_4wd_disabler_enabled==0){
 										if(main_dashboardPageIndex==8) main_dashboardPageIndex--;
-										}
+									}
 
 									if(function_front_brake_forcer_master==0){
 										if(main_dashboardPageIndex==7) main_dashboardPageIndex--;
@@ -607,7 +607,8 @@ void processingMessage0x000002FA(){
 												((uint16_t)(uint8_t)pedal_map_power						!= readFromFlash(29))	|| //PEDAL_MAP_POWER
 												((uint16_t)parkSensorsMuteFunctionEnabled				!= readFromFlash(30))	|| //FRONT_PARK_MUTE
 												((uint16_t)snifferFunctionEnabled						!= readFromFlash(31))	|| //SNIFFER //sniffer function 24/08/2026
-												((uint16_t)elm327FunctionEnabled						!= readFromFlash(32))	){ //ELM327 //elm327 function 26/08/2026
+												((uint16_t)elm327FunctionEnabled						!= readFromFlash(32))	|| //ELM327 //elm327 function 26/08/2026
+												((uint16_t)dnaMemoryFunctionEnabled						!= readFromFlash(33))	){ //DNA_MEMORY //DNA memory 18/10/2026
 													//sniffer function 24/08/2026 - BEGIN
 													//the only setting here with a real hardware side effect (usb re-enumeration), so unlike every
 													//other setting above it is deliberately applied here, at save&exit, rather than immediately on
@@ -799,6 +800,9 @@ void processingMessage0x000002FA(){
 										case 30: //{'O',' ',' ','E','L','M','3','2','7'} //elm327 function 26/08/2026
 											elm327FunctionEnabled=!elm327FunctionEnabled;
 											if(elm327FunctionEnabled) snifferFunctionEnabled=0;
+											break;
+										case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
+											dnaMemoryFunctionEnabled=!dnaMemoryFunctionEnabled;
 											break;
 										default:
 											break;

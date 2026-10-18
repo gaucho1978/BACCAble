@@ -167,8 +167,8 @@ void processingStandardMessage(){
 						uint8_t tmpArrBrake[2]={C2BusID, brakePressed ? C2cmdParkMuteBrakePressed : C2cmdParkMuteBrakeReleased};
 						addToUARTSendQueue(tmpArrBrake, 2);
 						parkMuteBrakeSent=brakePressed;
-						}
-									}
+					}
+				}
 			#endif
 			//park mute brake from C1 10/10/2026 - the C2 park mute logic that used to be here never ran: 0x107 is not on the
 			//C2 bus. It is now in C2PeriodicCheck (functions_C2baccable.c), driven by the brake state received from C1.
@@ -282,6 +282,12 @@ void processingStandardMessage(){
 		case 0x00000226:
 			processingMessage0x00000226();
 			break;
+		case 0x00000256: //STATUS_DSCM, from the DNA selector: byte 0 = 0x40 selector up, 0x20 down, 0x00 not pressed (every ~250 ms) //DNA memory 18/10/2026
+			#if defined(BHbaccable)
+				dnaRestoreLast256Time=currentTime;
+				dnaRestoreOn256(); //DNA memory: the presses are sent right after a frame of the selector
+			#endif
+			break;
 		case 0x0000025A: //msg received by DriveStyle control module
 			#if defined(BHbaccable)
 				if (ESCandTCinversion){
@@ -382,7 +388,7 @@ void processingStandardMessage(){
 
 		case 0x000003E6:
 			#if defined(BHbaccable)
-				currentRpmSpeed =
+			currentRpmSpeed =
 			      ((uint32_t)(rx_msg_data[3] & 0b00000111) << 11)        /* bit [13:11] = 3 least significant bits of rx_msg_data[3] */
 			    | ((uint32_t)rx_msg_data[4] << 3)                         /* bit [10:3]  = all 8 bits of rx_msg_data[4] */
 			    | ((uint32_t)((rx_msg_data[5] >> 5) & 0b00000111));       /* bit [2:0]   = 3 most significant bits of rx_msg_data[5] */
@@ -394,7 +400,7 @@ void processingStandardMessage(){
 				//byte 0: 0x00 = no alarms, 0x40 = some alarm at the front (or reverse gear, not served while in R)
 				if(rx_msg_header.DLC >= 6){
 					pdc_is_beeping = (rx_msg_data[0] > 0x00) ? 1 : 0;
-							}
+				}
 				//byte 1 bits 4-0 + byte 2 bits 7-4 = obstacle distances: bits 0-2 front right, 3-5 front left,
 				//6-8 front central (0=none, 1=far, 2=near; the central one goes up to 6)
 			#endif
@@ -471,6 +477,7 @@ void processingStandardMessage(){
 				}
 				//current DNA mode, also called "Drive Style Status" (RDNA mode) is on byte 7, from bit 0 to bit 4 (0x0=Natural, 0x2=dynamic, 0x4=AllWeather, 0xC=race)
 				currentDNAmode=rx_msg_data[7] & 0x1F; //1F is the mask from bit 4 to 0
+				dnaRestoreLast46CTime=currentTime; //drive style is known and fresh //DNA memory 18/10/2026
 				if (ESCandTCinversion){
 					if(currentDNAmode!=0x0C){ //if not in race
 						rx_msg_data[7] = (rx_msg_data[7] & ~0x1F) | 0x0C;  //set Race mode (0x30) to show on IPC the race screen (msg from body to IPC, ETM, ESEM)

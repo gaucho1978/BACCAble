@@ -189,8 +189,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=31; //elm327 function 26/08/2026 - was 30, ELM327 entry added
-	uint8_t dashboard_setup_menu_array[31][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full
+	uint8_t total_pages_in_setup_dashboard_menu=32; //elm327 function 26/08/2026 - was 30, ELM327 entry added //DNA memory 18/10/2026 - was 31
+	uint8_t dashboard_setup_menu_array[32][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full //DNA memory 18/10/2026 - was [31]
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
@@ -222,6 +222,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','F','r','o','n','t',' ','P','a','r','k',' ','M','u','t','e',},
 			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026
 			{'O',' ',' ','E','L','M','3','2','7',' ',' ',' ',' ',' ',' ',' ',' ',' ',}, //elm327 function 26/08/2026 - last free slot of the array
+			{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y',' ',' ',' ',' ',' ',}, //DNA memory 18/10/2026
 
 		};
 
@@ -393,6 +394,12 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t exhaustValvesDNAmode=0xFF; //drive style the valves were last set for (function value 2), 0xFF=none yet //exhaust valves DR 11/10/2026
 	uint8_t exhaustValvesReassert=0; //1=the engine started again: the next drive style received sets the valves again (function value 2) //exhaust valves DR 11/10/2026
 	uint8_t exhaustValvesEngineRunning=0; //1=engine running (rpm went above EXHAUST_VALVES_ENGINE_RUNNING_RPM, back to 0 only at rpm 0), to detect the engine starting again //exhaust valves DR 11/10/2026
+	uint8_t  dnaMemoryFunctionEnabled=0; //0=disabled, 1=enabled, saved on flash (slot 33) //DNA memory 18/10/2026
+	uint8_t  dnaMemoryStyle=0xFF; //drive style to restore (0x384 codes), 0xFF=none yet //DNA memory 18/10/2026
+	volatile uint8_t dnaMemoryWakeUp=0; //1=the car just woke up //DNA memory 18/10/2026
+	uint8_t  dnaMemoryRestoreArmed=0; //1=restore at the next engine start //DNA memory 18/10/2026
+	uint32_t dnaMemoryEngineOnTime=0; //when the engine was seen running, 0=not running //DNA memory 18/10/2026
+	uint32_t dnaMemoryCommandTime=0; //when the restore command was sent to BH, 0=none //DNA memory 18/10/2026
 	uint8_t exhaustValvesOpenRequested=0; //1=the user wants the valves open (double click / menu): kept in ram while the engine is off and applied again as soon as it rotates //exhaust valves memory 11/10/2026
 
 	//pumpForce test25/07/2026 - BEGIN
@@ -506,6 +513,19 @@ const char *FW_VERSION=_FW_VERSION;
 #endif
 
 #if defined(BHbaccable)
+	//DNA memory 18/10/2026 - see functions_BHbaccable.c
+	volatile uint8_t dnaRestoreRequest=0;
+	uint8_t  dnaRestoreState=0;
+	uint8_t  dnaRestoreTarget=0;
+	uint8_t  dnaRestorePass=0;
+	uint8_t  dnaRestoreShortLeft=0;
+	uint8_t  dnaRestoreDir=0;
+	uint8_t  dnaRestoreLong=0;
+	uint8_t  dnaRestoreSkipNext=0;
+	uint32_t dnaRestoreLongStart=0;
+	uint32_t dnaRestoreEndTime=0;
+	uint32_t dnaRestoreLast46CTime=0;
+	uint32_t dnaRestoreLast256Time=0;
 	uint32_t lastSentTelematic_display_info_msg_Time=0;
 	uint8_t telematic_display_info_field_totalFrameNumber=(DASHBOARD_MESSAGE_MAX_LENGTH / 3) - 1; //it shall be a multiple of 3 reduced by 1 (example: 3x2-1=5)
 	uint8_t telematic_display_info_field_frameNumber=0; //current frame

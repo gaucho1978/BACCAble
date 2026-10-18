@@ -75,6 +75,7 @@
 	#define BHcmdFunctParkMirrorDisabled		0x22 //second byte of the message to BH bus, identifies the request to disable park mirror
 	#define BHcmdFunctParkMirrorEnabled			0x23 //second byte of the message to BH bus, identifies the request to enable park mirror
 	#define BHcmdFunctParkMirrorStoreCurPos		0x24 //second byte of the message to BH bus, identifies the request to enable park mirror and to store current mirror position
+	#define BHcmdDnaMemoryRestore				0x25 //second byte of the message to BH bus: set the drive style to the third byte ('A','N','D','R') moving the DNA selector //DNA memory 18/10/2026
 
 	#define C2_Bh_cmdSetPedalBoostStatus		0x39 //second byte of the message to C2 and BH bus, identifies the pedal booster function status. Third byte of the message will contain its status
 	#define	C2_Bh_cmdFunctHAS_Disabled			0x3A //second byte of the message to C2 and BH bus, identifies the request to disable HAS function.
