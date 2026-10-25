@@ -212,8 +212,14 @@
 			elm327ActivationTime=currentTime;
 			return;
 		}
-		if(currentTime-elm327ActivationTime<SNIFFER_ACTIVATION_TIMEOUT_MS) return; //still within the grace window
-		elm327Stop(); //host never showed up, or went away: back to being a plain baccable
+		//usb suspend guard 25/10/2026 - dev_state has left CONFIGURED. If the host had already enumerated us and
+		//then went quiet (a routine PC side usb suspend, or an unplug: indistinguishable here, no vbus sensing),
+		//hold the mode for ELM327_SUSPEND_HOLD_MS before giving up. During the hold elm327InUse stays 1, so
+		//lowConsume keeps blocking sleep on its own - no other change is needed. If instead the host never
+		//configured us at all, keep the short SNIFFER_ACTIVATION_TIMEOUT_MS give up window as before.
+		uint32_t graceWindow = elm327ActivationConfirmed ? ELM327_SUSPEND_HOLD_MS : SNIFFER_ACTIVATION_TIMEOUT_MS;
+		if(currentTime-elm327ActivationTime<graceWindow) return; //still within the grace window
+		elm327Stop(); //host never showed up, or stayed away past the guard: back to being a plain baccable
 	}
 	//elm327 function 26/08/2026 - END
 
@@ -1070,7 +1076,7 @@
 						memcpy(dashboard_main_menu_array[main_dashboardPageIndex], "WAIT...     ", 12);
 						commandsMenuEnabled=0; //disable menu movement
 					}else{
-						memcpy(dashboard_main_menu_array[main_dashboardPageIndex], "CLEAR FAULTS", 12);
+						memcpy(dashboard_main_menu_array[main_dashboardPageIndex], "Clear Faults", 12); //same look as the other entries (was "CLEAR FAULTS") 25/10/2026
 						commandsMenuEnabled=1; //enable menu movement
 					}
 				}

@@ -601,6 +601,13 @@
 		//enumeration on top of that polling latency. //sniffer function 24/08/2026
 		#define SNIFFER_ACTIVATION_TIMEOUT_MS		10000	//if the host has not configured us within this time from activation, usb is fully powered down and we go back to being a plain baccable
 
+		//usb suspend guard 25/10/2026 - once a host has really enumerated the ELM327 (elm327ActivationConfirmed), a
+		//host side usb suspend - or an unplug: with no vbus sensing the two are indistinguishable - is tolerated for
+		//this long before giving up and letting the board sleep. ONLY this confirmed-then-gone case uses the long
+		//window; the initial "host never showed up" give up keeps SNIFFER_ACTIVATION_TIMEOUT_MS. It is purely a
+		//battery guard against a PC that suspends an idle port: nothing else in the ordinary baccable logic depends on it.
+		#define ELM327_SUSPEND_HOLD_MS				180000	//3 minutes
+
 		extern uint8_t  snifferInUse;				//0=off, 1=on while the function is starting up or actively running. never saved on flash by itself
 		extern uint8_t  snifferFunctionEnabled;		//0=off, 1=on. saved on flash (slot 31), toggled from the setup menu, applied on SAVE&EXIT and at boot/wake
 		extern uint32_t snifferActivationTime;		//rolling "last time a host was seen": set when the attempt starts, then refreshed on every loop while the host keeps us CONFIGURED. drives the SNIFFER_ACTIVATION_TIMEOUT_MS give up window
