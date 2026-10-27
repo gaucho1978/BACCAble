@@ -45,7 +45,7 @@
 					{.name="BATT.: $3.0f%  ",					.udsParamId={34,	34		}}, //Battery State Of Charge
 					{.name="BATT.: $3.3fA  ",					.udsParamId={4,		4		}}, //Battery Current
 					{.name="BATT.: $3.3fV  ",					.udsParamId={35,	35		}}, //Battery Voltage
-					{.name="AIR COND.: $3.3fbar",				.udsParamId={36,	36		}}, //Air Conditioner Pressure
+					{.name="AIR COND.:$2.2fbar",				.udsParamId={36,	36		}}, //Air Conditioner Pressure (same format as diesel, max 18 chars - V.3.9.2)
 					{.name="CUR. GEAR: $enum",					.udsParamId={6,		6		}}, //Current Gear
 					{.name="Time ON: $6.0fmin",					.udsParamId={37,	37		}}, //Time Since engine on
 					{.name="OVER RPM: $3.0fsec",				.udsParamId={38,	38		}}, //elapsed time in engine overspeed condition
@@ -64,8 +64,8 @@
 					{.name="Seatbelt Alarm:$enum",				.udsParamId={13,	13		}}, //SeatBelt Alarm
 					{.name="  0-100Km/h $1.3fs",				.udsParamId={9,		9		}}, //0-100km/h time statistic
 					{.name="100-200Km/h $1.3fs",				.udsParamId={10,	10		}}, //100-200km/h time statistic
-					{.name="Best  0-100: $1.2fs",				.udsParamId={11,	11		}}, //0-100km/h Best time statistic
-					{.name="Best100-200: $1.2fs",				.udsParamId={12,	12		}}, //100-200km/h Best time statistic
+					{.name="Best  0-100:$2.2fs",				.udsParamId={11,	11		}}, //0-100km/h Best time statistic (same format as diesel: MISSED fits in 18 chars - V.3.9.2)
+					{.name="Best100-200:$2.2fs",				.udsParamId={12,	12		}}, //100-200km/h Best time statistic (same format as diesel: MISSED fits in 18 chars - V.3.9.2)
 					{.name="Pedal Map: $enum",					.udsParamId={17,	17		}}, //selected Pedal Map
 					{.name="BrakePedal: $3.0f%",				.udsParamId={18,	18		}}, //Brake pedal press percentage (0x107) //brake in show params 10/10/2026
 					//
