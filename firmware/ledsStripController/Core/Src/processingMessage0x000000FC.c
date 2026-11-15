@@ -50,9 +50,12 @@ void processingMessage0x000000FC(){
 			if(_4wd_disabled>0){
 				//disable 4dw function
 				_4wd_disabled=0; //disable 4dw function
-				dashboard_main_menu_array[main_dashboardPageIndex][4]=' '; //enabled
-				dashboard_main_menu_array[main_dashboardPageIndex][5]='E';
-				dashboard_main_menu_array[main_dashboardPageIndex][6]='n';
+				//4wd label fix 15/11/2026 - was [main_dashboardPageIndex]: here we are not inside the menu switch, so that index is
+				//the page currently on screen, not the 4WD one. Leaving 4WD disabled, scrolling to another entry and dropping
+				//below 400 rpm (engine off, start&stop) wrote " En" into that entry (e.g. "Togg EnDYNO") and left "4WD Disabled" stale.
+				dashboard_main_menu_array[8][4]=' '; //enabled (page 8 = "4WD  Enabled", see case 8 in processingMessage0x000002FA.c)
+				dashboard_main_menu_array[8][5]='E';
+				dashboard_main_menu_array[8][6]='n';
 				commandsMenuEnabled=1;//enable menu commands
 			}
 
