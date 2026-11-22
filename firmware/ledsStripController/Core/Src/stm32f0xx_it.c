@@ -1,6 +1,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_it.h"
+#include "usb_device.h" //usb irq storm protection 22/11/2026
 //#include "main.h"
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
@@ -94,6 +95,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   HAL_IncTick();
+  usbStormIrqCount=0; //usb irq storm protection 22/11/2026 - SysTick got through: the usb interrupt is not hogging the cpu
 }
 
 /******************************************************************************/
@@ -117,9 +119,32 @@ void DMA1_Channel4_5_6_7_IRQHandler(void)
   /* USER CODE END DMA1_Channel4_5_6_7_IRQn 1 */
 }
 
+//usb irq storm protection 22/11/2026 - see usb_device.h
+volatile uint8_t usbStormIrqCount=0;
+volatile uint8_t usbDisabledUntilReboot=0;
+volatile uint16_t usbStormIstr=0;
+
 void USB_IRQHandler(void)
 {
   /* USER CODE BEGIN USB_IRQn 0 */
+	//usb irq storm protection 22/11/2026 - BEGIN
+	if(usbDisabledUntilReboot){ //should never happen (irq disabled below), just in case: keep the peripheral silent
+		USB->CNTR = USB_CNTR_FRES | USB_CNTR_PDWN;
+		USB->ISTR = 0;
+		return;
+	}
+	usbStormIrqCount++;
+	if(usbStormIrqCount>=USB_STORM_IRQ_THRESHOLD){
+		usbStormIstr = (uint16_t)USB->ISTR;			//which event was looping, for diagnostics
+		USB->CNTR = USB_CNTR_FRES | USB_CNTR_PDWN;	//no more usb interrupts, usb block in reset and powered down
+		USB->ISTR = 0;								//clear any pending event
+		USB->BCDR &= (uint16_t)~USB_BCDR_DPPU;		//release the D+ pull-up
+		NVIC_DisableIRQ(USB_IRQn);
+		NVIC_ClearPendingIRQ(USB_IRQn);
+		usbDisabledUntilReboot = 1;					//every usb bring up is skipped until the next reset
+		return;
+	}
+	//usb irq storm protection 22/11/2026 - END
 
   /* USER CODE END USB_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_FS);

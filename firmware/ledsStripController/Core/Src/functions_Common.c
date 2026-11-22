@@ -522,7 +522,7 @@ void snifferCheckActivationTimeout(void){
 	if(snifferInUse==0) return;
 	if(hUsbDeviceFS.dev_state==USBD_STATE_CONFIGURED){
 		if(snifferActivationConfirmed==0){
-		snifferActivationConfirmed=1;
+			snifferActivationConfirmed=1;
 			#if defined(C2baccable) || defined(BHbaccable)
 				//Tell C1 this board's usb session is genuinely alive, once, the first time it is confirmed.
 				//Without this, C1 only knows about this board's usb from STORAGE_Init_FS() (usbd_storage_if.c),
@@ -556,6 +556,7 @@ void snifferCheckActivationTimeout(void){
 void snifferUsbStartIfRequested(void){
 	if(snifferUsbStartRequested==0) return;
 	snifferUsbStartRequested=0;
+	if(usbDisabledUntilReboot) return; //usb irq storm protection 22/11/2026 - usb switched off until the next reset: no teardown, no bring up
 	if(snifferUsbInited) return; //already running as cdc, nothing to do until the next power cycle. this is a one shot bring up: no retry if the host never configures us.
 
 	//Any usb stack already running must be torn down before we come back as cdc. This is driven by the actual
@@ -584,7 +585,7 @@ void snifferUsbStartIfRequested(void){
 		//when the class was actually initialized, while the low level driver is torn down either way.
 		//note: USBD_DeInit() already performs USBD_LL_Stop()+USBD_LL_DeInit() internally, so it is not called twice here.
 		if(hUsbDeviceFS.pClassData!=NULL){
-		USBD_DeInit(&hUsbDeviceFS);
+			USBD_DeInit(&hUsbDeviceFS);
 		}else{
 			USBD_LL_Stop(&hUsbDeviceFS);
 			USBD_LL_DeInit(&hUsbDeviceFS);

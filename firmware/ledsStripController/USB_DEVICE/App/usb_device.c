@@ -41,6 +41,7 @@
 USBD_HandleTypeDef hUsbDeviceFS;
 
 void MX_USB_DEVICE_Init(void){
+	if(usbDisabledUntilReboot) return; //usb irq storm protection 22/11/2026 - usb switched off until the next reset
 	// --- Reset USB core --- prevents problems when exiting from a Hardware Reset
 	__HAL_RCC_USB_FORCE_RESET();
 	HAL_Delay(2);
@@ -127,6 +128,7 @@ void MX_USB_DEVICE_Init(void){
 
 	void usb_device_attach(void){
 		if(usbAttached) return;
+		if(usbDisabledUntilReboot) return; //usb irq storm protection 22/11/2026 - usb switched off until the next reset
 
 		usbdDescSelectElm327Mode(); //descriptors must answer as the elm327 emulator before the host enumerates us
 
