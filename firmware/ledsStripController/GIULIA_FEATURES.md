@@ -2,7 +2,7 @@
 
 Written for a Giulia 952 2.0 petrol (engine ECU Marelli IAW10JA). Based on V.3.9.4.
 
-**State: partly tested on one car (Giulia 952 2.0 petrol).** The owner ran an earlier build of this branch (C1 with the three value pages, BH and C2 one build older): the parameter pages showed values, `Auto Scroll` worked and the `Cold Alarm` entry worked. That build also had a screen rate setting, removed afterwards because no difference was visible in the car, and a two value rail pressure page, now one value. The final code has host tests and ARM builds only. Not tested: drive style page binding, `Hold Mode`, `Warnings` and the chime, `ECM Watch`, the OBD pages 61..64, diesel. DID scales marked "unverified" are working assumptions.
+**State: partly tested on one car (Giulia 952 2.0 petrol), owner's report.** With the final code on C1 (BH and C2 on an earlier build of the branch) the engine starts with no new dashboard errors, the immobilizer status is as before, the new Setup entries and `SAVE&EXIT` work, and the rail pressure page, the three value pages and `Auto Scroll` work. On an earlier build the parameter pages showed values and the `Cold Alarm` entry worked. Values were not compared with a scan tool in these reports. Not tested: drive style page binding, `Hold Mode`, `Warnings` and the chime, `ECM Watch`, the OBD pages 61..64, diesel. DID scales marked "unverified" are working assumptions.
 
 The new pages, `ECM DTC` and `Cold Alarm` need the engine type set to gasoline. The manuals do not describe these features yet.
 
