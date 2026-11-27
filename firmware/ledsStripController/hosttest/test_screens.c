@@ -1,4 +1,4 @@
-// host test for the giulia h1 changes: cc -I stub -I <Core>/Inc ... see run line
+// host test: parameter decoding, dashboard lines, flash upgrade, warm-up timer and ECM watch. Run with run.sh
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -44,7 +44,7 @@ int main(void){
 	{ char b[6]; floatToStr(b,100.0f,1,5); int ok=!strcmp(b,"100 "); if(!ok) fails++; printf("%s floatToStr 100.0 [%s]\n",ok?"ok  ":"FAIL",b); }
 	{ char b[6]; floatToStr(b,-10.5f,1,5); int ok=!strcmp(b,"-10 "); if(!ok) fails++; printf("%s floatToStr -10.5 in $2.1f [%s]\n",ok?"ok  ":"FAIL",b); }
 	{ const uint16_t want[5]={500,400,350,500,500}; const uint8_t mode[5]={0,1,2,3,255}; for(int k=0;k<5;k++){ int ok=screenRefreshPeriodMs(mode[k])==want[k] && screenRefreshPeriodMs(mode[k])>310; if(!ok) fails++; printf("%s refresh mode %d -> %d ms\n",ok?"ok  ":"FAIL",mode[k],screenRefreshPeriodMs(mode[k])); } }
-	//giulia h3 - stage 2
+	//pages 54..65
 	pg(54,B(5,0x62,0x18,0x6C,0xFF,0xE8,0,0),B(5,0x62,0x18,0x6D,0x00,0x00,0,0),0,0,"SPK1 -1.5 2 0   \xB0");
 	pg(54,B(5,0x62,0x18,0x6C,0xFF,0xFF,0,0),B(5,0x62,0x18,0x6D,0xFF,0x40,0,0),0,0,"SPK1 -0.1 2 -12 \xB0");
 	pg(55,B(5,0x62,0x18,0x6E,0x00,0x30,0,0),B(5,0x62,0x18,0x6F,0xFF,0xD0,0,0),0,0,"SPK3 3    4 -3  \xB0");
@@ -101,7 +101,7 @@ int main(void){
 	  ok&=(warmupTimerMinutes()==99.9f);
 	  if(!ok) fails++; printf("%s warm-up timer (%.1f, %.1f)\n",ok?"ok  ":"FAIL",m,m2); }
 
-	//giulia h4 - watchdogs and consumption
+	//ECM watch and consumption
 	#define CK(name,cond) do{ int ok=(cond); if(!ok) fails++; printf("%s %s\n",ok?"ok  ":"FAIL",name); }while(0)
 	#define RX(...) gwOnReply(&g,B(__VA_ARGS__),8,now,spd,cold)
 	{ gw_state g; char t[19]; uint32_t now=1000; float spd=0; uint8_t cold=75; uint8_t d[8];

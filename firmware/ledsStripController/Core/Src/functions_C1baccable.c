@@ -62,12 +62,12 @@
 		//exclusive: the setup menu already clears one when the other is enabled, this is just the safety net.
 		elm327FunctionEnabled=(uint8_t)readFromFlash(32);
 		dnaMemoryFunctionEnabled=(uint8_t)readFromFlash(33); //read again at every wake up, see dnaMemoryProcess() //DNA memory 18/10/2026
-		screenRefreshMode=(uint8_t)readFromFlash(40); //giulia h2
-		warnMode=(uint8_t)readFromFlash(34); //giulia h3
-		dnaPagesND=readFromFlash(35); //giulia h3
-		dnaPagesAR=readFromFlash(36); //giulia h3
-		autoScrollMode=(uint8_t)readFromFlash(37); //giulia h3
-		giuliaWatchMode=(uint8_t)readFromFlash(38); giuliaColdMode=(uint8_t)readFromFlash(39); //giulia h4
+		screenRefreshMode=(uint8_t)readFromFlash(40); //screen rate
+		warnMode=(uint8_t)readFromFlash(34); //warnings
+		dnaPagesND=readFromFlash(35); //page by drive style
+		dnaPagesAR=readFromFlash(36); //page by drive style
+		autoScrollMode=(uint8_t)readFromFlash(37); //auto scroll
+		giuliaWatchMode=(uint8_t)readFromFlash(38); giuliaColdMode=(uint8_t)readFromFlash(39); //ECM watch
 		if(elm327FunctionEnabled && snifferFunctionEnabled==0) elm327Start();
 		//arise trigger to notify enabled functions to slave boards with dedicated messages,after some seconds
 		allProcessorsWakeupTime=currentTime;
@@ -330,7 +330,7 @@
 	}
 	//DNA memory 18/10/2026 - END
 
-	//giulia h4: background requests of the watchdogs. Runs with the engine on, also with the menu hidden.
+	//background requests of the watchdogs. Runs with the engine on, also with the menu hidden.
 	//One request per GW_SLOT_MS, placed between two requests of the page on screen.
 	void giuliaWatchPeriodic(void){
 		static uint32_t stopMs=0; static uint8_t hadRun=0;
@@ -349,7 +349,7 @@
 		can_tx(&h,d);
 	}
 
-	//giulia h4: a frame from the engine ECU: feed the watchdogs. giuliaWarnUpdate() shows what is active
+	//a frame from the engine ECU: feed the watchdogs. giuliaWarnUpdate() shows what is active
 	void giuliaWatchOnEcmFrame(void){
 		if(!gwRunning || faultsStateMachine!=0xFF) return; //while Read Faults runs the replies are its own
 		gwOnReply(&gw,rx_msg_data,rx_msg_header.DLC,currentTime,currentSpeed_km_h,gwColdLimit(giuliaColdMode));
@@ -791,7 +791,7 @@
 
 
 		if(settingsSaveRequested && currentRpmSpeed<400){ settingsSaveRequested=0; saveOnflash(); }
-		stage3Periodic(); //giulia h3: warnings, chime, page by drive style, auto scroll
+		warningsAndPagesPeriodic(); //warnings, chime, page by drive style, auto scroll
 
 		if(shutdownDashboardMenuRequestTime>0){
 			if(currentTime-shutdownDashboardMenuRequestTime>39000){
@@ -801,10 +801,10 @@
 				shutdownDashboardMenuRequestTime=0; //avoid to return here
 			}
 		}
-		giuliaWatchPeriodic(); //giulia h4
+		giuliaWatchPeriodic(); //ECM watch
 		//send a parameter request each xx msec if dashboard menu shall be visible
 		//baccableDashboardMenuVisible=1; //force menu always on, just for debug
-		if((currentTime-last_sent_uds_parameter_request_Time>screenRefreshPeriodMs(screenRefreshMode)) && baccableDashboardMenuVisible ){ //giulia h2 - was 500
+		if((currentTime-last_sent_uds_parameter_request_Time>screenRefreshPeriodMs(screenRefreshMode)) && baccableDashboardMenuVisible ){ //was 500
 			last_sent_uds_parameter_request_Time=currentTime;
 
 
@@ -826,7 +826,7 @@
 
 							memcpy(&uds_parameter_request_msg_data[0],&single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqData,single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen );
 							uds_parameter_request_msg_header.DLC=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen;
-							if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyFlags & UDS_REPLY_OBD){ //giulia h3 - OBD request: 8 bytes, padded with zeros
+							if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyFlags & UDS_REPLY_OBD){ //OBD request: 8 bytes, padded with zeros
 								memset(&uds_parameter_request_msg_data[3],0,5);
 								uds_parameter_request_msg_header.DLC=8;
 							}
@@ -834,7 +834,7 @@
 							can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
 						}else{ //<0xff reqId means special value that we use to get particular values
 							float nativeVal=getNativeParam((uint8_t)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]);
-							dashboardParamCouple[currentParamElementSelection]=applyHold(currentParamElementSelection,nativeVal); //giulia h1 - max or min hold
+							dashboardParamCouple[currentParamElementSelection]=applyHold(currentParamElementSelection,nativeVal); //max or min hold
 							sendDashboardPageToSlaveBaccable();  //Send params to BH board
 						}
 					}
@@ -1007,7 +1007,7 @@
 			} // 4wd constraint relax change 24/08/2026
 		} // 4wd constraint relax change 24/08/2026
 
-		if(dashboard_menu_indent_level==0 && warnOverlay(currentTime,&uartTxMsg[1])){ //giulia h3: warning over the main menu
+		if(dashboard_menu_indent_level==0 && warnOverlay(currentTime,&uartTxMsg[1])){ //warning over the main menu
 			addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
 			return;
 		}
@@ -1273,7 +1273,7 @@
 				}
 				//nothing to do
 				break;
-			case 18:{ //giulia h4: "ECM DTC --- NEW --"
+			case 18:{ //"ECM DTC --- NEW --"
 				uint8_t *r=dashboard_main_menu_array[18];
 				if(!gwRunning || !(gw.have&(1<<GW_ITEM_DTC))){ memcpy(&r[8], gw.dtcOff && gwRunning ? "n/a" : "---", 3); r[16]='-'; r[17]='-'; }
 				else{
@@ -1282,17 +1282,17 @@
 					r[16]=m>9 ? (uint8_t)('0'+m/10) : ' '; r[17]=(uint8_t)('0'+m%10);
 				}
 				break;}
-			case 19: //giulia h4: "Cold Alarm 75"
+			case 19: //"Cold Alarm 75"
 				if(gwColdLimit(giuliaColdMode)){ dashboard_main_menu_array[19][11]=(uint8_t)('0'+gwColdLimit(giuliaColdMode)/10); dashboard_main_menu_array[19][12]=(uint8_t)('0'+gwColdLimit(giuliaColdMode)%10); dashboard_main_menu_array[19][13]=0xB0; dashboard_main_menu_array[19][14]='C'; }
 				else memcpy(&dashboard_main_menu_array[19][11],"OFF ",4);
 				break;
 			case 15: //Max Hold: update ON/OFF text
-				memcpy(&dashboard_main_menu_array[15][10], maxHold_enabled==0 ? "OFF" : (maxHold_enabled==1 ? "MAX" : "MIN"), 3); //giulia h1
+				memcpy(&dashboard_main_menu_array[15][10], maxHold_enabled==0 ? "OFF" : (maxHold_enabled==1 ? "MAX" : "MIN"), 3);
 				break;
-			case 16: //giulia h3: page bound to the drive style in use
+			case 16: //page bound to the drive style in use
 				dnaPageMenuText(dashboard_main_menu_array[16]);
 				break;
-			case 17: //giulia h3: auto scroll
+			case 17: //auto scroll
 				memcpy(&dashboard_main_menu_array[17][12], autoScrollMode==1 ? "3s " : (autoScrollMode==2 ? "5s " : (autoScrollMode==3 ? "10s" : "OFF")), 3);
 				break;
 			default:
@@ -1598,15 +1598,15 @@
 			case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[dnaMemoryFunctionEnabled];
 				break;
-			case 34: //giulia h4: "ECM Watch: ALL"
+			case 34: //"ECM Watch: ALL"
 				memcpy(&dashboard_setup_menu_array[34][11], giuliaWatchMode==1 ? "ALL " : (giuliaWatchMode==2 ? "TEMP" : (giuliaWatchMode==3 ? "DTC " : "OFF ")), 4);
 				break;
-			case 32: //giulia h2 - {'S','c','r','e','e','n',' ','R','a','t','e',' ','5','0','0','m','s'}
+			case 32: //{'S','c','r','e','e','n',' ','R','a','t','e',' ','5','0','0','m','s'}
 				dashboard_setup_menu_array[setup_dashboardPageIndex][12]=(uint8_t)('0'+screenRefreshPeriodMs(screenRefreshMode)/100);
 				dashboard_setup_menu_array[setup_dashboardPageIndex][13]=(uint8_t)('0'+(screenRefreshPeriodMs(screenRefreshMode)/10)%10);
 				dashboard_setup_menu_array[setup_dashboardPageIndex][14]='0';
 				break;
-			case 33: //giulia h3: {'O',' ',' ','W','a','r','n','i','n','g','s'}, " +Chime" with value 2
+			case 33: //{'O',' ',' ','W','a','r','n','i','n','g','s'}, " +Chime" with value 2
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!warnMode];
 				memcpy(&dashboard_setup_menu_array[setup_dashboardPageIndex][11], warnMode==2 ? " +Chime" : "       ", 7);
 				break;
@@ -1703,7 +1703,7 @@
 			} // 4wd constraint relax change 24/08/2026
 		} // 4wd constraint relax change 24/08/2026
 
-		if(warnOverlay(currentTime,&uartTxMsg[1])){ //giulia h3: warning over the parameters page
+		if(warnOverlay(currentTime,&uartTxMsg[1])){ //warning over the parameters page
 			addToUARTSendQueue(uartTxMsg, UART_BUFFER_SIZE);
 			return;
 		}
@@ -1766,13 +1766,13 @@
 			case 13: //seat belt alarm status
 				return seatbeltAlarmDisabled;
 				break;
-			case 14://giulia h3 - warm-up timer, minutes (was debug param)
+			case 14://warm-up timer, minutes (was debug param)
 				return warmupTimerMinutes();
 				break;
 			case 15://current Drive Style
 				return currentDNAmode;
 				break;
-			case 16://giulia h4: was free RAM: instant consumption, L/100 km
+			case 16://was free RAM: instant consumption, L/100 km
 				return (currentTime-fuelFlowTime>3000) ? NAN : gwFuelPer100(fuelFlowLh,currentSpeed_km_h);
 			case 17://Pedal current Map
 				return currentSchizzaforteMap;
@@ -1989,7 +1989,7 @@
 
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=40; //slots: 33 DNA Memory, 34..40 Giulia settings
+		uint8_t paramsNumber=40; //elm327 function 26/08/2026 - was 31 //DNA memory 18/10/2026 - was 32 //slots 34..40 added - was 33
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -2024,12 +2024,12 @@
 		  snifferFunctionEnabled,  //slot 31: SNIFFER //sniffer function 24/08/2026
 		  elm327FunctionEnabled,  //slot 32: ELM327 //elm327 function 26/08/2026
 		  dnaMemoryFunctionEnabled,  //slot 33: DNA_MEMORY //DNA memory 18/10/2026
-		  [33]=warnMode,  //slot 34 //giulia h3
-		  [34]=dnaPagesND,  //slot 35 //giulia h3
-		  [35]=dnaPagesAR,  //slot 36 //giulia h3
-		  [36]=autoScrollMode,  //slot 37 //giulia h3
-		  [37]=giuliaWatchMode, [38]=giuliaColdMode, //giulia h4: slots 38, 39
-		  [39]=screenRefreshMode,  //slot 40: screen refresh mode //giulia h2
+		  [33]=warnMode,  //slot 34 //warnings
+		  [34]=dnaPagesND,  //slot 35 //page by drive style
+		  [35]=dnaPagesAR,  //slot 36 //page by drive style
+		  [36]=autoScrollMode,  //slot 37 //auto scroll
+		  [37]=giuliaWatchMode, [38]=giuliaColdMode, //slots 38, 39
+		  [39]=screenRefreshMode,  //slot 40: screen refresh mode //screen rate
 		};
 
 		for (uint8_t i = 0; i < paramsNumber; i++) {
@@ -2121,7 +2121,7 @@
 	uint8_t saveShownParamsOnflash(){
 		//compare current stats with best stored times
 		uint8_t weShallWriteFlash=0;
-		uint16_t params[30]={0}; //giulia h1 - was uninitialized: words 3..29 went to flash as stack garbage
+		uint16_t params[30]={0}; //was uninitialized: words 3..29 went to flash as stack garbage
 		weShallWriteFlash=1;
 		if(weShallWriteFlash){ //save shown params
 			HAL_FLASH_Unlock(); //unlock flash
@@ -2512,20 +2512,20 @@
 			case 33: //DNA_MEMORY (1=enabled 0=disabled) //DNA memory 18/10/2026
 				if(tmpParam>1) return 0; // flash non inizializzata: default disabilitato
 				break;
-			case 38: case 39: //giulia h4: blank flash and 0 both mean the default
+			case 38: case 39: //blank flash and 0 both mean the default
 				if(tmpParam>3) return 0;
 				break;
-			case 34: //giulia h3: warnings: 0 off, 1 text, 2 text and chime. blank flash means off
+			case 34: //warnings: 0 off, 1 text, 2 text and chime. blank flash means off
 				if(tmpParam>2) return 0;
 				break;
-			case 35: //giulia h3: pages bound to N and D
-			case 36: //giulia h3: pages bound to A and R
+			case 35: //pages bound to N and D
+			case 36: //pages bound to A and R
 				if(tmpParam==0xFFFF) return 0;
 				break;
-			case 37: //giulia h3: auto scroll: 0 off, 1..3
+			case 37: //auto scroll: 0 off, 1..3
 				if(tmpParam>3) return 0;
 				break;
-			case 40: //giulia h2 - screen refresh mode, blank flash (0xFFFF) means 500ms
+			case 40: //screen refresh mode, blank flash (0xFFFF) means 500ms
 				if(tmpParam>2) return 0;
 				break;
 			default:
@@ -2572,7 +2572,7 @@
 	    return (curIndex < total) ? curIndex : 0; //all hidden
 	}
 
-	//giulia h3: BEGIN
+	//drive style page, auto scroll and warnings - BEGIN
 	//text of main menu row 16: "DNA N: " and the name of the page bound to the drive style in use
 	void dnaPageMenuText(uint8_t *row){
 		static const char letters[4]={'N','D','A','R'};
@@ -2602,7 +2602,7 @@
 		settingsSaveRequested=1; //written with the engine stopped
 	}
 
-	static void stage3ShowPage(uint8_t page){
+	static void showParamsPage(uint8_t page){
 		dashboardPageIndex=page;
 		dashboardParamCouple[0]=NAN;
 		dashboardParamCouple[1]=NAN;
@@ -2610,7 +2610,7 @@
 	}
 
 	//called at every main loop, works every 100 ms
-	//giulia merge: the watchdog alarms go to the stage 3 warning table, as levels. Slots: warnings.h
+	//the ECM watch alarms go to the warning table, as levels. Slots: warnings.h
 	static void giuliaWarnUpdate(uint8_t enabled){
 		static const uint8_t bit[5]={GW_AL_COOLANT_HOT, GW_AL_NEW_FAULT, GW_AL_CAC_DROP, GW_AL_ICAIR_HOT, GW_AL_COOLANT_COLD};
 		static const uint8_t slot[5]={1,2,3,4,7};
@@ -2624,7 +2624,7 @@
 		}
 	}
 
-	void stage3Periodic(void){
+	void warningsAndPagesPeriodic(void){
 		static uint32_t lastRun=0, lastHiddenLine=0;
 		static uint8_t hiddenLineShown=0;
 		if(currentTime-lastRun<100) return;
@@ -2637,7 +2637,7 @@
 			warnSet(WARN_ID_OIL_COLD,0,0,"",currentTime);
 			warnSet(WARN_ID_OIL_PRESSURE,0,0,"",currentTime);
 		}
-		giuliaWarnUpdate(warnMode!=0); //giulia merge: one switch (Warnings) for all warnings
+		giuliaWarnUpdate(warnMode!=0); //one switch (Warnings) for all warnings
 		if(warnChimePending(currentTime) && warnMode==2){
 			uint8_t chimeMsg[1]={BhBusChimeRequest};
 			addToUARTSendQueue(chimeMsg, 1);
@@ -2666,7 +2666,7 @@
 
 		//page bound to the drive style
 		uint8_t page=dnaPageDecide(currentTime, currentDNAmode, dnaPagesND, dnaPagesAR, total_pages_in_params_setup_dashboard_menu);
-		if(page!=0xFF && page!=dashboardPageIndex) stage3ShowPage(page);
+		if(page!=0xFF && page!=dashboardPageIndex) showParamsPage(page);
 
 		//auto scroll: parameters page on screen, engine running, hold mode off
 		uint8_t allowed=baccableDashboardMenuVisible && dashboard_menu_indent_level==1 && main_dashboardPageIndex==1 && currentRpmSpeed>=400 && !maxHold_enabled;
@@ -2674,12 +2674,12 @@
 			uint8_t next=dashboardPageIndex+1;
 			if(next>=total_pages_in_params_setup_dashboard_menu) next=0;
 			next=getNextVisibleParam(next);
-			if(next!=dashboardPageIndex) stage3ShowPage(next);
+			if(next!=dashboardPageIndex) showParamsPage(next);
 		}
 	}
-	//giulia h3: END
+	//drive style page, auto scroll and warnings - END
 
-	//giulia h1 - hold mode: 0=off, 1=keep the maximum, 2=keep the minimum. Returns the value to show.
+	//hold mode: 0=off, 1=keep the maximum, 2=keep the minimum. Returns the value to show.
 	float applyHold(uint8_t sel, float value){
 		if(!maxHold_enabled) return value;
 		if(isnan(dashboardParamCouple[sel])){
@@ -2701,7 +2701,7 @@
 			if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[sel]==paramId){
 				if(!isnan(dashboardParamCouple[sel])){ //only after the 500ms cycle has set the initial value
 					float value=getNativeParam(paramId);
-					if(maxHold_enabled==1 ? (value > dashboardParamMaxHold[sel]) : (value < dashboardParamMaxHold[sel])){ //giulia h1 - min hold
+					if(maxHold_enabled==1 ? (value > dashboardParamMaxHold[sel]) : (value < dashboardParamMaxHold[sel])){ //min hold
 						dashboardParamMaxHold[sel]=value;
 					}
 				}

@@ -35,6 +35,14 @@ $ CFLAGS="-DRELEASE_FLAVOR=CAN_FLAVOR -DCAN_FLAVOR=1" make clean all
 ```
 
 
+## Host tests
+
+Parameter decoding, dashboard line formatting, the ECM watch and the warning logic can be tested on the PC, without a board. The script needs zsh and clang with AddressSanitizer.
+```
+$ hosttest/run.sh Core
+```
+
+
 ## Flashing with the Bootloader
 
 Simply plug in your CANable with the BOOT jumper enabled (or depress the boot button on the CANable Pro while plugging in). Next, type `make flash` and your CANable will be updated to the latest firwmare. Unplug/replug the device after moving the boot jumper back, and your CANable will be up and running.

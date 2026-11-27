@@ -44,13 +44,14 @@
 	uint8_t getNextVisibleParam(uint8_t curIndex);
 	uint8_t getPreviousVisibleParam(uint8_t curIndex);
 	void nativeMaxHoldUpdate(uint8_t paramId);
-	float applyHold(uint8_t sel, float value); //giulia h1
-	void stage3Periodic(void); //giulia h3
-	void dnaPageMenuText(uint8_t *row); //giulia h3
-	void dnaPageBindToggle(void); //giulia h3
+	float applyHold(uint8_t sel, float value); //hold mode
+	void warningsAndPagesPeriodic(void);
+	void dnaPageMenuText(uint8_t *row); //page by drive style
+	void dnaPageBindToggle(void); //page by drive style
 	void faultsStartEcuSession(uint8_t ecu); //readFaults ECM 10/10/2026
 	void faultsEcuEnded(uint8_t failed); //readFaults ECM 10/10/2026
-	void giuliaWatchPeriodic(void); void giuliaWatchOnEcmFrame(void); //giulia h4
+	void giuliaWatchPeriodic(void); //ECM watch
+	void giuliaWatchOnEcmFrame(void); //ECM watch
 	void faultsAbsProcess(void); //readFaults ABS 10/10/2026
 	void exhaustValvesToggle(void); //exhaust valves memory 11/10/2026
 	void exhaustValvesOnDNAmode(uint8_t mode); //exhaust valves DR 11/10/2026

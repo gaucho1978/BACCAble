@@ -1,4 +1,4 @@
-// host test for giulia h3, warnings, chime, page by drive style, auto scroll. Built from Core/Src/warnings.c as it is.
+// host test for warnings, chime, page by drive style, auto scroll. Built from Core/Src/warnings.c as it is.
 #include <stdio.h>
 #include <string.h>
 #include "warnings.h"
@@ -6,7 +6,7 @@ static int fails=0, checks=0;
 #define CK(c,name) do{ int ok=(c); checks++; if(!ok) fails++; printf("%s %s\n",ok?"ok  ":"FAIL",name); }while(0)
 static uint32_t now=1000;
 static int chimes, shown, shownCold, shownLow; static char last[19];
-// runs ms of time in 100 ms steps, like stage3Periodic, and draws the screen every 500 ms
+// runs ms of time in 100 ms steps, like warningsAndPagesPeriodic, and draws the screen every 500 ms
 static void run(uint32_t ms, uint32_t rpm, uint16_t ticks, uint8_t t, uint8_t p, uint32_t age){
 	for(uint32_t k=0;k<ms;k+=100){
 		now+=100;
@@ -53,7 +53,7 @@ int main(void){
 	// low pressure with the engine cold and revving: critical wins the window
 	run(3500,4000,500,60,12,10); zero(); run(6000,4000,500,60,12,10); CK(shownLow>=4 && shownCold==0,"cold and low pressure both active: only the critical one is drawn");
 	run(3000,800,500,130,22,10); run(70000,800,500,130,22,10);
-	// interface for stage 4: two plain warnings take turns, 1 s every 5 s
+	// two plain warnings take turns, 1 s every 5 s
 	{ warnReset(); now=1000000; int n1=0,n5=0; uint8_t b[18];
 	  for(int k=0;k<400;k++){ now+=100; warnSet(1,1,0,"COOLANT HOT 108\xB0""C",now); warnSet(5,1,0,"IC AIR HOT 65\xB0""C",now);
 	    if(now%500==0 && warnOverlay(now,b)){ if(b[0]=='C') n1++; else n5++; } }
@@ -63,7 +63,7 @@ int main(void){
 	  warnSet(2,1,0,"A TEXT LONGER THAN 18 CHARS",now); now+=5000; CK(warnOverlay(now,b) && !memcmp(b,"A TEXT LONGER THAN",18),"long text cut to 18");
 	  warnSet(2,1,0,"SHORT",now); now+=100; CK(warnOverlay(now,b) && !memcmp(b,"SHORT             ",18),"short text padded with spaces"); warnReset(); }
 	// drive style pages
-	{ uint16_t nd=0, ar=0xFFFF; 
+	{ uint16_t nd=0, ar=0xFFFF;
 	  CK(dnaPageGet(0,0,0,54)==0xFF && dnaPageGet(0xFFFF,0xFFFF,1,54)==0xFF,"slots 0 and blank flash: nothing bound");
 	  dnaPageSet(&nd,&ar,0,49); dnaPageSet(&nd,&ar,1,0); dnaPageSet(&nd,&ar,3,53);
 	  CK(nd==0x0132 && ar==0x3600,"N=49, D=0, R=53 packed as page+1"); printf("     slot35=0x%04X slot36=0x%04X\n",nd,ar);

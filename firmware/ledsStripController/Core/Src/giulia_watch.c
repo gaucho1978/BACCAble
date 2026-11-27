@@ -1,4 +1,4 @@
-//giulia h4: see giulia_watch.h
+//see giulia_watch.h
 #include "giulia_watch.h"
 #include <math.h>
 #include <string.h>

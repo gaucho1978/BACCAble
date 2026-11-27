@@ -72,17 +72,17 @@ void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
             count++;
         }
         for (uint8_t j = count; j > 0; j--) {
-            if (i + j - 1 < maxLen - 1) { //giulia h1: the old test (i < maxLen - 1) let a number wider than the field write past the buffer
+            if (i + j - 1 < maxLen - 1) { //the old test (i < maxLen - 1) let a number wider than the field write past the buffer
                 str[i + j - 1] = (intPart % 10) + '0';
             }
             intPart /= 10;
         }
         i += count;
-        if (i > maxLen - 1) i = maxLen - 1; //giulia h1: number wider than the field, keep the leading digits and stay inside the buffer
+        if (i > maxLen - 1) i = maxLen - 1; //number wider than the field, keep the leading digits and stay inside the buffer
     }
 
     // Conversione della parte decimale
-    uint8_t dotWritten = 0; //giulia h1
+    uint8_t dotWritten = 0;
     if (precision > 0 && i < maxLen - 1) {
         str[i++] = '.';
         dotWritten = 1;
@@ -96,7 +96,7 @@ void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen) {
     }
 
     // Rimuovere zeri finali superflui
-    if (dotWritten) { //giulia h1: was (precision > 0), which also ate the zeros of an integer part with no dot after it
+    if (dotWritten) { //was (precision > 0), which also ate the zeros of an integer part with no dot after it
         while (i > intStart && str[i - 1] == '0') {
             str[--i] = '\0';
         }

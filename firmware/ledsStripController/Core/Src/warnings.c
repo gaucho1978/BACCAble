@@ -1,4 +1,4 @@
-//giulia h3: see warnings.h
+//see warnings.h
 #include <string.h>
 #include "warnings.h"
 

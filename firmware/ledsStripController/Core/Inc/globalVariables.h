@@ -91,7 +91,7 @@
 		#include "vuMeter.h" //this is used to control led strip through usb pin
 		#include "lowConsume.h"
 		#include "uds_parameters.h"
-		#include "warnings.h" //giulia h3
+		#include "warnings.h" //warnings
 		#include "elm327.h" //elm327 function 26/08/2026
 		//extern uint32_t lastReceivedCanMsgTime;
 	#endif
@@ -168,16 +168,16 @@
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[35][DASHBOARD_MESSAGE_MAX_LENGTH]; //31 DNA Memory, 32 Screen Rate, 33 Warnings, 34 ECM Watch
-		extern uint8_t screenRefreshMode; //giulia h2
+		extern uint8_t dashboard_setup_menu_array[35][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30] //DNA memory 18/10/2026 - was [31] //Screen Rate, Warnings, ECM Watch - was [32]
+		extern uint8_t screenRefreshMode; //screen rate
 		extern uint8_t settingsSaveRequested; //main menu choice waiting for a flash write
-		extern uint8_t warnMode; //giulia h3
-		extern uint16_t dnaPagesND; //giulia h3
-		extern uint16_t dnaPagesAR; //giulia h3
-		extern uint8_t autoScrollMode; //giulia h3
-		extern uint32_t oil4B2LastTime; //giulia h3
+		extern uint8_t warnMode; //warnings
+		extern uint16_t dnaPagesND; //page by drive style
+		extern uint16_t dnaPagesAR; //page by drive style
+		extern uint8_t autoScrollMode; //auto scroll
+		extern uint32_t oil4B2LastTime; //oil warnings
 		#include "giulia_watch.h"
-		extern gw_state gw; extern uint8_t gwRunning, giuliaWatchMode, giuliaColdMode; extern float fuelFlowLh; extern uint32_t fuelFlowTime; //giulia h4
+		extern gw_state gw; extern uint8_t gwRunning, giuliaWatchMode, giuliaColdMode; extern float fuelFlowLh; extern uint32_t fuelFlowTime; //ECM watch
 
 		//extern uint8_t params_setup_dashboardPageIndex;
 		//extern uint8_t shownParamsArray[240];

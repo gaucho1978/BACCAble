@@ -1,15 +1,15 @@
 #ifndef INC_WARNINGS_H_
 #define INC_WARNINGS_H_
-//giulia h3: warning overlay, chime requests, page bound to the drive style, auto scroll.
+//warning overlay, chime requests, page bound to the drive style, auto scroll.
 //Pure logic: no HAL, no globals of the firmware. Built into the host test as it is.
 #include <stdint.h>
 
 #define WARN_SLOTS				8	//slot number = priority, 0 is the highest
 #define WARN_TEXT_LEN			18	//DASHBOARD_MESSAGE_MAX_LENGTH
-#define WARN_ID_OIL_PRESSURE	0	//stage 3
-//slots 1..5: stage 4 (coolant hot, IC air hot, CAC sensor drop, new ECM fault, spare)
-#define WARN_ID_OIL_COLD		6	//stage 3
-//slot 7: stage 4 (coolant cold)
+#define WARN_ID_OIL_PRESSURE	0
+//slots 1..4: ECM watch (coolant hot, new ECM fault, CAC sensor drop, IC air hot), slot 5 is free
+#define WARN_ID_OIL_COLD		6
+//slot 7: ECM watch (coolant cold)
 
 #define WARN_F_CRITICAL			0x01	//1 s every 2 s instead of 1 s every 5 s, chime repeated, shown with the menu hidden
 #define WARN_F_CHIME			0x02	//asks one chime when raised

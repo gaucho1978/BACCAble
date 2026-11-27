@@ -1,4 +1,4 @@
-//giulia h4: background watchdogs (temperatures, new engine faults) and instant consumption.
+//background watchdogs (temperatures, new engine faults) and instant consumption.
 //Pure logic: no HAL, no globals. Also built by the host test.
 #ifndef INC_GIULIA_WATCH_H_
 #define INC_GIULIA_WATCH_H_

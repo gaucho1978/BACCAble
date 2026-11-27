@@ -563,25 +563,25 @@ void processingMessage0x000002FA(){
 								case 14: //reset statistics
 									resetStatisticsOnFlash();
 									break;
-								case 18: //giulia h4: acknowledge the new faults
+								case 18: //acknowledge the new faults
 									gw.dtcBase=gw.dtcCount; gw.active&=(uint8_t)~GW_AL_NEW_FAULT;
 									break;
-								case 19: //giulia h4: cold alarm limit: 75, 70, 80, off
+								case 19: //cold alarm limit: 75, 70, 80, off
 									giuliaColdMode=(giuliaColdMode+1)%4;
 									settingsSaveRequested=1;
 									break;
 								case 15: //Max Hold toggle
-									maxHold_enabled=(maxHold_enabled+1)%3; //giulia h1 - OFF, MAX, MIN
+									maxHold_enabled=(maxHold_enabled+1)%3; //OFF, MAX, MIN
 									if(maxHold_enabled){
 										//force fresh start: next parameter update will initialise max hold from scratch
 										dashboardParamCouple[0]=NAN;
 										dashboardParamCouple[1]=NAN;
 									}
 									break;
-								case 16: //giulia h3: bind the parameters page in use to the drive style in use
+								case 16: //bind the parameters page in use to the drive style in use
 									dnaPageBindToggle();
 									break;
-								case 17: //giulia h3: auto scroll: OFF, 3 s, 5 s, 10 s
+								case 17: //auto scroll: OFF, 3 s, 5 s, 10 s
 									autoScrollMode=(autoScrollMode+1)%4;
 									settingsSaveRequested=1; //written with the engine stopped
 									break;
@@ -626,10 +626,10 @@ void processingMessage0x000002FA(){
 												((uint16_t)parkSensorsMuteFunctionEnabled				!= readFromFlash(30))	|| //FRONT_PARK_MUTE
 												((uint16_t)snifferFunctionEnabled						!= readFromFlash(31))	|| //SNIFFER //sniffer function 24/08/2026
 												((uint16_t)elm327FunctionEnabled						!= readFromFlash(32))	|| //ELM327 //elm327 function 26/08/2026
-												((uint16_t)dnaMemoryFunctionEnabled						!= readFromFlash(33))	|| //DNA_MEMORY
+												((uint16_t)dnaMemoryFunctionEnabled						!= readFromFlash(33))	|| //DNA_MEMORY //DNA memory 18/10/2026
 												((uint16_t)screenRefreshMode							!= readFromFlash(40))	||
 												((uint16_t)warnMode										!= readFromFlash(34))	||
-												((uint16_t)giuliaWatchMode != readFromFlash(38)) || ((uint16_t)giuliaColdMode != readFromFlash(39)) /*giulia h4*/	){
+												((uint16_t)giuliaWatchMode != readFromFlash(38)) || ((uint16_t)giuliaColdMode != readFromFlash(39))	){
 													//sniffer function 24/08/2026 - BEGIN
 													//the only setting here with a real hardware side effect (usb re-enumeration), so unlike every
 													//other setting above it is deliberately applied here, at save&exit, rather than immediately on
@@ -825,13 +825,13 @@ void processingMessage0x000002FA(){
 										case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
 											dnaMemoryFunctionEnabled=!dnaMemoryFunctionEnabled;
 											break;
-										case 34: //giulia h4: ECM Watch: OFF, ALL, TEMP, DTC
+										case 34: //ECM Watch: OFF, ALL, TEMP, DTC
 											giuliaWatchMode=(giuliaWatchMode+1)%4;
 											break;
-										case 32: //giulia h2 - Screen Rate: 500, 400, 350 ms. applied at once, kept with SAVE&EXIT
+										case 32: //Screen Rate: 500, 400, 350 ms. applied at once, kept with SAVE&EXIT
 											screenRefreshMode=(screenRefreshMode+1)%3;
 											break;
-										case 33: //giulia h3: Warnings: off, text, text and chime. One test chime when the chime is selected
+										case 33: //Warnings: off, text, text and chime. One test chime when the chime is selected
 											warnMode=(warnMode+1)%3;
 											if(warnMode==2){
 												uint8_t tmpArrChime[1]={BhBusChimeRequest};

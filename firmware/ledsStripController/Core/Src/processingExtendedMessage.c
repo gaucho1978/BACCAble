@@ -99,22 +99,22 @@ void processingExtendedMessage(){
 			}
 		} //end of immobilizer section
 
-		if(rx_msg_header.ExtId==0x18DAF110) giuliaWatchOnEcmFrame(); //giulia h4
+		if(rx_msg_header.ExtId==0x18DAF110) giuliaWatchOnEcmFrame(); //ECM watch
 		if ((rx_msg_header.ExtId==single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyId) && baccableDashboardMenuVisible){ //if we received UDS message with current selected parameter, let's aquire it
 			if(dashboard_menu_indent_level==1 && main_dashboardPageIndex==1){ //if we are in show params menu
 				onboardLed_blue_on();
-				float tmpVal2; //giulia h1 - decoding moved to udsDecodeReply (signed values, DID check)
+				float tmpVal2; //decoding moved to udsDecodeReply (signed values, DID check)
 				if (udsDecodeReply(&single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]], rx_msg_data, rx_msg_header.DLC, &tmpVal2)){
 
 					if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]== uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[!currentParamElementSelection]){
 						currentParamElementSelection=0; //single param
 					}
 
-					if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]==92){ //giulia h4: fuel flow kept for L/100 km
+					if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]==92){ //fuel flow kept for L/100 km
 						fuelFlowLh=(fuelFlowLh!=fuelFlowLh || currentTime-fuelFlowTime>3000) ? tmpVal2 : fuelFlowLh+0.5f*(tmpVal2-fuelFlowLh);
 						fuelFlowTime=currentTime;
 					}
-					dashboardParamCouple[currentParamElementSelection]=applyHold(currentParamElementSelection,tmpVal2); //giulia h1 - max or min hold
+					dashboardParamCouple[currentParamElementSelection]=applyHold(currentParamElementSelection,tmpVal2); //max or min hold
 					sendDashboardPageToSlaveBaccable();//send parameters to BH
 				}
 			}

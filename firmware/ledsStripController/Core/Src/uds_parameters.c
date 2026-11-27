@@ -8,7 +8,7 @@
 	uint8_t params_setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_params_setup_dashboard_menu=0;
 
-	uint8_t total_pages_in_dashboard_menu_gasoline=67; //giulia: 47 upstream pages and 20 new ones
+	uint8_t total_pages_in_dashboard_menu_gasoline=67; //brake in show params 10/10/2026 - was 46 //20 new pages - was 47
 	uint8_t total_pages_in_dashboard_menu_diesel=57; //brake in show params 10/10/2026 - was 56
 	uint8_t currentParamElementSelection=0;
 	
@@ -75,18 +75,18 @@
 					{.name="KNK1 $3.0f 2 $3.0fmV",				.udsParamId={93,	94		}}, //page 51: knock sensor cyl 1 and 2
 					{.name="KNK3 $3.0f 4 $3.0fmV",				.udsParamId={95,	96		}}, //page 52: knock sensor cyl 3 and 4
 					{.name="GEAR $enum TQ $3.0fNm",				.udsParamId={6,		2		}}, //page 53: gear and torque, both native (no UDS request)
-					[54]={.name="SPK1 $2.1f 2 $2.1f" "\xB0",	.udsParamId={97,	98	}}, //giulia h3 - spark correction cyl 1 and 2, signed
-					[55]={.name="SPK3 $2.1f 4 $2.1f" "\xB0",	.udsParamId={99,	100	}}, //giulia h3 - spark correction cyl 3 and 4, signed
-					[56]={.name="KNOCK: $4.0fmV",	.udsParamId={101,	101	}}, //giulia h3 - knock sensor, 2 bytes (page 32 reads 1 byte)
-					[57]={.name="RAIL $3.0f/$3.0fbar",	.udsParamId={102,	103	}}, //giulia h3 - fuel rail pressure DID 1946 / 1947
-					[58]={.name="OIL $3.0f" "\xB0" "C MA $3.0f" "\xB0" "C",	.udsParamId={5,	32	}}, //giulia h3 - oil (native) and MultiAir oil
-					[59]={.name="EGT$4.0f CAT$4.0f" "\xB0" "C",	.udsParamId={40,	41	}}, //giulia h3 - exhaust gas and catalyst
-					[60]={.name="IDLE $4.0f/$4.0frpm",	.udsParamId={104,	105	}}, //giulia h3 - idle target / engine speed
-					[61]={.name="ST $3.1f LT $3.1f%",	.udsParamId={106,	107	}}, //giulia h3 - OBD 06 / 07 fuel trims
-					[62]={.name="OUT $3.0f" "\xB0" "C W.$3.0f" "\xB0" "C",	.udsParamId={108,	42	}}, //giulia h3 - OBD 46 ambient air and water
-					[63]={.name="ADV $3.1f" "\xB0" " LD $3.0f%",	.udsParamId={109,	110	}}, //giulia h3 - OBD 0E timing advance and OBD 04 load
-					[64]={.name="LAMBDA: $1.3f",	.udsParamId={111,	111	}}, //giulia h3 - OBD 44 commanded lambda
-					[65]={.name="W.UP $2.1fmin $3.0f" "\xB0" "C",	.udsParamId={14,	5	}}, //giulia h3 - warm-up timer (native 14) and oil
+					[54]={.name="SPK1 $2.1f 2 $2.1f" "\xB0",	.udsParamId={97,	98	}}, //spark correction cyl 1 and 2, signed
+					[55]={.name="SPK3 $2.1f 4 $2.1f" "\xB0",	.udsParamId={99,	100	}}, //spark correction cyl 3 and 4, signed
+					[56]={.name="KNOCK: $4.0fmV",	.udsParamId={101,	101	}}, //knock sensor, 2 bytes (page 32 reads 1 byte)
+					[57]={.name="RAIL $3.0f/$3.0fbar",	.udsParamId={102,	103	}}, //fuel rail pressure DID 1946 / 1947
+					[58]={.name="OIL $3.0f" "\xB0" "C MA $3.0f" "\xB0" "C",	.udsParamId={5,	32	}}, //oil (native) and MultiAir oil
+					[59]={.name="EGT$4.0f CAT$4.0f" "\xB0" "C",	.udsParamId={40,	41	}}, //exhaust gas and catalyst
+					[60]={.name="IDLE $4.0f/$4.0frpm",	.udsParamId={104,	105	}}, //idle target / engine speed
+					[61]={.name="ST $3.1f LT $3.1f%",	.udsParamId={106,	107	}}, //OBD 06 / 07 fuel trims
+					[62]={.name="OUT $3.0f" "\xB0" "C W.$3.0f" "\xB0" "C",	.udsParamId={108,	42	}}, //OBD 46 ambient air and water
+					[63]={.name="ADV $3.1f" "\xB0" " LD $3.0f%",	.udsParamId={109,	110	}}, //OBD 0E timing advance and OBD 04 load
+					[64]={.name="LAMBDA: $1.3f",	.udsParamId={111,	111	}}, //OBD 44 commanded lambda
+					[65]={.name="W.UP $2.1fmin $3.0f" "\xB0" "C",	.udsParamId={14,	5	}}, //warm-up timer (native 14) and oil
 					[66]={.name="$2.1fL/h $2.1fL/100",				.udsParamId={92,	16		}}, //page 66: fuel flow and instant consumption
 					//
 //					{.name="RAM: $5.0fB",						.udsParamId={16,	16		}}, //Free RAM
@@ -190,7 +190,7 @@
 		{.reqId=0x1C,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //11		best statistic 0/100
 		{.reqId=0x1D,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //12		best statistic 100/200
 		{.reqId=0x1E,		.reqLen=4,	.reqData=SWAP_UINT32(0x032255A0),	.replyId=0x18DAF160,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={' ',}							}, //13		seat belt alarm
-		{.reqId=0x1F,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //14		warm-up timer, minutes (giulia h3 - was debug string)
+		{.reqId=0x1F,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //14		warm-up timer, minutes (was debug string)
 		{.reqId=0x20,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={' ', }							}, //15		Drive Style
 		{.reqId=0x21,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B', }							}, //16		Free RAM
 		{.reqId=0x22,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={' ', }							}, //17		Selected Pedal Map
@@ -273,7 +273,7 @@
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221892),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //94		knock sensor cyl 2 (gasoline IAW10JA)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221893),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //95		knock sensor cyl 3 (gasoline IAW10JA)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221894),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //96		knock sensor cyl 4 (gasoline IAW10JA)
-		[97]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186C),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //97		spark correction cyl 1, 16 bit signed (giulia h3)
+		[97]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186C),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //97		spark correction cyl 1, 16 bit signed
 		[98]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186D),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //98		spark correction cyl 2
 		[99]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186E),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //99		spark correction cyl 3
 		[100]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //100		spark correction cyl 4
@@ -316,7 +316,7 @@
 		"?      "
 	};
 
-	//giulia h1 - decodes a single frame positive reply to service 0x22 for parameter p.
+	//decodes a single frame positive reply to service 0x22 for parameter p.
 	//Returns 1 and writes the scaled value, or 0 if the frame is not the answer to this parameter
 	//(negative response, other DID, too short). Pure function: also built by the host test.
 	uint8_t udsDecodeReply(const uds_param_single_element *p, const uint8_t *rx, uint8_t dlc, float *out){
@@ -324,7 +324,7 @@
 		uint8_t n=p->replyLen;
 		if(n>4) n=4;
 		uint8_t first=4; //first data byte of a 0x62 reply
-		if(p->replyFlags & UDS_REPLY_OBD){ //giulia h3 - reply is PCI, 0x41, PID, data
+		if(p->replyFlags & UDS_REPLY_OBD){ //reply is PCI, 0x41, PID, data
 			first=3;
 			if(dlc<3+p->replyOffset+p->replyLen || rx[0]>7 || rx[0]<2+p->replyOffset+p->replyLen) return 0;
 			if(rx[1]!=0x41 || rx[2]!=req[2]) return 0;
@@ -344,13 +344,13 @@
 		return 1;
 	}
 
-	//giulia h2 - screen refresh period for the saved mode 0..2. One parameter is also requested once per period.
+	//screen refresh period for the saved mode 0..2. One parameter is also requested once per period.
 	//BH needs 6 frames, one each >50ms, to write a line (about 310ms), so the period must stay above that.
 	uint16_t screenRefreshPeriodMs(uint8_t mode){
 		return mode==1 ? 400 : (mode==2 ? 350 : 500);
 	}
 
-	//giulia h3 - warm-up timer: minutes from engine start until the oil reaches 80 C, then the number stays.
+	//warm-up timer: minutes from engine start until the oil reaches 80 C, then the number stays.
 	//Called on every 0xFC frame with the tick in ms, so it does not depend on the screen refresh period.
 	//A stop shorter than WARMUP_REARM_MS does not restart it. A later start with warm oil keeps the last result.
 	static uint32_t warmupStartMs=0, warmupLastRunMs=0;
