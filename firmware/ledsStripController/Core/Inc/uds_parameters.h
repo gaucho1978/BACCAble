@@ -37,10 +37,13 @@
 	_Static_assert(sizeof(uds_param_single_element)==40, "uds_param_single_element grew"); //table layout check
 	#define UDS_REPLY_SIGNED 0x01 //signed UDS decoding
 	#define SHOWN_PARAMS_MARK 0x6A31		//last word of the page visibility area: written by this firmware
-	#define UPSTREAM_PAGES_GASOLINE 47		//pages whose visibility bit older firmware stored
+	#define UPSTREAM_PAGES_GASOLINE 47		//pages whose visibility bit older firmware stored, gasoline selected
+	#define UPSTREAM_PAGES_DIESEL 57		//the same with diesel selected
 	#define OBD_PAGES_FIRST 61				//gasoline pages that send OBD functional requests: hidden until enabled
 	#define OBD_PAGES_LAST 64
 	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel);
+	#define SETTINGS_SLOTS 40
+	uint8_t mergeMainMenuSlots(uint16_t *slots, uint16_t dnaND, uint16_t dnaAR, uint8_t autoScroll, uint8_t cold);	//1: something changed
 	#define UDS_REPLY_OBD 0x02 //OBD mode 01 request (02 01 PID), reply is 41 PID data: data start at byte 3
 	#define UDS_PAGES_MAX 72 //pages per fuel type, was 60. One visibility bit per page: must stay <= 240
 	#define UDS_SINGLE_PARAMS_MAX 130 //parameter records, was 100. Index is uint8_t: must stay <= 255

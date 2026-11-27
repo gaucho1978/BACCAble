@@ -374,10 +374,23 @@
 	}
 
 	//older firmware stored only the bits of its own pages (the rest of the area held stack garbage). Without our
-	//mark: show the new gasoline pages, except the ones that put OBD functional requests on the bus.
+	//mark, every bit past those pages gets the default: shown, except the gasoline pages that put OBD functional
+	//requests on the bus. Done with either fuel selected: the same bits serve both after a change of fuel.
 	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel){
-		if(mark==SHOWN_PARAMS_MARK || isDiesel) return;
-		for(uint8_t i=UPSTREAM_PAGES_GASOLINE; i<UDS_PAGES_MAX; i++){
+		if(mark==SHOWN_PARAMS_MARK) return;
+		for(uint8_t i=isDiesel ? UPSTREAM_PAGES_DIESEL : UPSTREAM_PAGES_GASOLINE; i<UDS_PAGES_MAX; i++){
 			shown[i]=(i>=OBD_PAGES_FIRST && i<=OBD_PAGES_LAST) ? 0 : 1;
 		}
+	}
+
+	//copies into the stored settings (slot n is slots[n-1]) only what the main menu changes: slots 35, 36, 37 and 39.
+	//Everything else keeps the stored value, so Setup menu changes still need SAVE&EXIT.
+	uint8_t mergeMainMenuSlots(uint16_t *slots, uint16_t dnaND, uint16_t dnaAR, uint8_t autoScroll, uint8_t cold){
+		const uint8_t index[4]={34,35,36,38};
+		const uint16_t value[4]={dnaND,dnaAR,autoScroll,cold};
+		uint8_t changed=0;
+		for(uint8_t i=0;i<4;i++){
+			if(slots[index[i]]!=value[i]){ slots[index[i]]=value[i]; changed=1; }
+		}
+		return changed;
 	}

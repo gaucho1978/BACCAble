@@ -12,6 +12,7 @@
 	//uint8_t tmpArr3[2]={C2BusID,C2cmdRaceMaskDefault};
 
 #if defined(C1baccable)
+	static uint8_t saveMainMenuChoices(void);
 	void C1baccableInitCheck(){
 		#ifndef DISABLE_LOW_CONSUME
 			lowConsume_init();
@@ -790,7 +791,7 @@
 		}
 
 
-		if(settingsSaveRequested && currentRpmSpeed<400){ settingsSaveRequested=0; saveOnflash(); }
+		if(settingsSaveRequested && currentRpmSpeed<400){ settingsSaveRequested=0; saveMainMenuChoices(); }
 		warningsAndPagesPeriodic(); //warnings, chime, page by drive style, auto scroll
 
 		if(shutdownDashboardMenuRequestTime>0){
@@ -1970,9 +1971,8 @@
 		return (float)(((float)vol*100.0f)/180.0f);
 	}
 
-	uint8_t saveOnflash(){ //store params permanently on flash
-		//last page to store on flash is 0x0801 F800 (we can store 2 bytes each time)
-		// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
+	//erases the settings page and writes count slots
+	static uint8_t writeSettingsPage(const uint16_t *params, uint8_t paramsNumber){
 		HAL_FLASH_Unlock(); //unlock flash
 
 		//erase flash
@@ -1987,6 +1987,22 @@
 			return 254; //error
 		}
 
+		for (uint8_t i = 0; i < paramsNumber; i++) {
+		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
+		        HAL_FLASH_Lock();
+		        onboardLed_red_blink(9);
+		        return 255;
+		    }
+		}
+
+		//lock the flash
+		HAL_FLASH_Lock();
+		return 0;
+	}
+
+	uint8_t saveOnflash(){ //store params permanently on flash
+		//last page to store on flash is 0x0801 F800 (we can store 2 bytes each time)
+		// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
 		uint8_t paramsNumber=40; //elm327 function 26/08/2026 - was 31 //DNA memory 18/10/2026 - was 32 //slots 34..40 added - was 33
@@ -2032,17 +2048,15 @@
 		  [39]=screenRefreshMode,  //slot 40: screen refresh mode //screen rate
 		};
 
-		for (uint8_t i = 0; i < paramsNumber; i++) {
-		    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, LAST_PAGE_ADDRESS + (i * 4), params[i]) != HAL_OK) {
-		        HAL_FLASH_Lock();
-		        onboardLed_red_blink(9);
-		        return 255;
-		    }
-		}
+		return writeSettingsPage(params, paramsNumber);
+	}
 
-		//lock the flash
-		HAL_FLASH_Lock();
-		return 0;
+	//deferred write of the main menu choices: every other slot keeps what is stored, not what is in ram
+	static uint8_t saveMainMenuChoices(void){
+		uint16_t slots[SETTINGS_SLOTS];
+		for (uint8_t i = 0; i < SETTINGS_SLOTS; i++) slots[i]=*(volatile uint16_t*)(LAST_PAGE_ADDRESS+(i*4));
+		if(!mergeMainMenuSlots(slots, dnaPagesND, dnaPagesAR, autoScrollMode, giuliaColdMode)) return 0;
+		return writeSettingsPage(slots, SETTINGS_SLOTS);
 	}
 
 	uint8_t resetStatisticsOnFlash(){
@@ -2139,7 +2153,7 @@
 			}
 
 			//let's prepare variables
-			compress_to_uint16(shownParamsArray, total_pages_in_params_setup_dashboard_menu, params);
+			compress_to_uint16(shownParamsArray, UDS_PAGES_MAX, params); //all bits: both fuels share them
 			params[29]=SHOWN_PARAMS_MARK; //pages use words 0..14 at most
 
 			//it seems that stm32F072 supports only writing 2byte words

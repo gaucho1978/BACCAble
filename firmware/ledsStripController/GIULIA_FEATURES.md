@@ -21,9 +21,9 @@ The new pages, `ECM DTC` and `Cold Alarm` need the engine type set to gasoline. 
 | 61..64 | fuel trims, ambient and water temp, timing advance and load, lambda | OBD service 01, **functional requests on 0x18DB33F1** |
 | 65, 66 | warm-up timer, instant L/h and L/100 km | |
 
-After an update of a board already set to gasoline, pages 47..60 and 65, 66 are visible and 61..64 are hidden until enabled in Params Setup Menu.
+After an update, pages 47..60 and 65, 66 are visible and 61..64 are hidden until enabled in Params Setup Menu. The default is applied with either fuel selected, and saving the page selection keeps the bits of all pages.
 
-Known issue: the default for new pages is applied at power on, and only with gasoline selected. After a change from diesel to gasoline, check pages 47..66 in Params Setup Menu: on a blank board 61..64 stay visible until the next power cycle, and if the page selection was saved with diesel selected, pages 57..66 stay hidden.
+Both fuel types share one visibility bit per page number, as upstream already does. On a board set to diesel, pages 0..56 keep the diesel choice, so check pages 47..56 after a change to gasoline.
 
 ## Main menu
 
@@ -35,7 +35,7 @@ Press RES to change an entry.
 - `ECM DTC`: stored and new engine fault count, press to acknowledge (petrol only). It needs `ECM Watch` set to all or faults.
 - `Cold Alarm`: coolant limit 75, 70, 80 C or off (petrol only).
 
-The drive style pages, `Auto Scroll` and `Cold Alarm` are written to flash when the engine is not running.
+The drive style pages, `Auto Scroll` and `Cold Alarm` are written to flash when the engine is not running. This write changes only those settings: Setup menu changes still need `SAVE&EXIT`.
 
 ## Setup menu (all new functions are off by default)
 

@@ -191,6 +191,16 @@ int main(void){
 	  memset(sh,0,sizeof sh); sh[0]=1; shownParamsUpgrade(sh,0x1234,0); ok=sh[0]==1 && sh[1]==0 && sh[46]==0 && sh[47]==1 && sh[60]==1 && sh[61]==0 && sh[64]==0 && sh[65]==1 && sh[66]==1;
 	  if(!ok) fails++; printf("%s upgrade: new gasoline pages shown, OBD pages hidden, old choice kept\n",ok?"ok  ":"FAIL");
 	  memset(sh,0,sizeof sh); shownParamsUpgrade(sh,SHOWN_PARAMS_MARK,0); ok=sh[47]==0 && sh[66]==0; if(!ok) fails++; printf("%s upgrade: with the mark nothing changes\n",ok?"ok  ":"FAIL");
-	  memset(sh,0,sizeof sh); shownParamsUpgrade(sh,0xFFFF,1); ok=sh[47]==0; if(!ok) fails++; printf("%s upgrade: diesel untouched\n",ok?"ok  ":"FAIL"); }
+	  memset(sh,0,sizeof sh); shownParamsUpgrade(sh,0xFFFF,1); ok=sh[47]==0 && sh[56]==0 && sh[57]==1 && sh[61]==0 && sh[64]==0 && sh[65]==1 && sh[66]==1;
+	  if(!ok) fails++; printf("%s upgrade with diesel selected: diesel choices kept, OBD pages hidden before a change of fuel\n",ok?"ok  ":"FAIL"); }
+	{ //saved with diesel selected and read back: gasoline bits past the diesel pages survive
+	  uint8_t sh[240], back[240]; uint16_t w[30]={0}; memset(sh,0,sizeof sh); sh[58]=1; sh[66]=1;
+	  compress_to_uint16(sh,UDS_PAGES_MAX,w); decompress_from_uint16(w,30,back,240);
+	  int ok=back[58]==1 && back[66]==1 && back[61]==0 && w[29]==0; if(!ok) fails++; printf("%s visibility: all page bits are stored with either fuel\n",ok?"ok  ":"FAIL"); }
+	{ uint16_t sl[SETTINGS_SLOTS]; for(int k=0;k<SETTINGS_SLOTS;k++) sl[k]=100+k; sl[34]=0xFFFF;
+	  int ok=mergeMainMenuSlots(sl,0x0201,0x0403,2,1)==1 && sl[34]==0x0201 && sl[35]==0x0403 && sl[36]==2 && sl[38]==1;
+	  for(int k=0;k<SETTINGS_SLOTS;k++) if(k!=34 && k!=35 && k!=36 && k!=38) ok&=(sl[k]==100+k);
+	  if(!ok) fails++; printf("%s deferred save: only slots 35, 36, 37, 39 change\n",ok?"ok  ":"FAIL");
+	  ok=mergeMainMenuSlots(sl,0x0201,0x0403,2,1)==0; if(!ok) fails++; printf("%s deferred save: nothing to write when equal\n",ok?"ok  ":"FAIL"); }
 	printf("fails=%d\n",fails); return fails;
 }
