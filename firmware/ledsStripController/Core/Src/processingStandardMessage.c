@@ -40,7 +40,7 @@ void processingStandardMessage(){
 					//override the displaied string, by restarting the frame
 					paramsStringCharIndex=0; //prepare to send first char of the string
 					telematic_display_info_field_frameNumber=0; //prepare to send first frame
-					if((requestToSendOneFrame==0) && (dashboardPageStringArray[0]!=' ')) requestToSendOneFrame++; //if message is not empty (we check only first char) and if required, increment messages sequence to send, in order to send at least one
+					if((requestToSendOneFrame==0) && ((dashboardPageStringPending ? dashboardPageStringNext[0] : dashboardPageStringArray[0])!=' ')) requestToSendOneFrame++; //if message is not empty (we check only first char) and if required, increment messages sequence to send, in order to send at least one
 					lastSentTelematic_display_info_msg_Time=0; //if required will immediately send a sequence
 				}
 			#endif
@@ -545,6 +545,7 @@ void processingStandardMessage(){
 				if(rx_msg_header.DLC>=4){
 					oilPressure= ((rx_msg_data[0] & 0b00000001) << 7 | ((rx_msg_data[1] >> 1) & 0b01111111));
 					oilTemperature= ((rx_msg_data[2] & 0b00111111) << 2 | ((rx_msg_data[3] >> 6) & 0b00000011));
+					oil4B2LastTime=currentTime; //oil warnings
 					nativeMaxHoldUpdate(0); //oil pressure
 					nativeMaxHoldUpdate(5); //oil temperature
 				}

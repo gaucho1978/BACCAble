@@ -7,7 +7,8 @@
 
 #ifndef INC_FUNCTIONS_C1BACCABLE_H_
 	#define INC_FUNCTIONS_C1BACCABLE_H_
-	#include "globalVariables.h"
+	#include "page_order.h"
+#include "globalVariables.h"
 	#include "functions_Common.h"
 
 	void C1baccableInitCheck(void);
@@ -26,7 +27,7 @@
 	void sendParamsSetupDashboardPageToSlaveBaccable(void);
 	void sendDashboardPageToSlaveBaccable(void);
 	float getNativeParam(uint8_t paramId);
-	void buildLineWithFormat(const char* template, float values[2], const uint8_t paramId[2], char* result);
+	void buildLineWithFormat(const char* template, float values[3], const uint8_t paramId[3], char* result);
 	uint8_t removePatterns(char *str);
 	uint32_t getFreeRAM(void);
 	void clearDashboardBaccableMenu(void);
@@ -41,11 +42,20 @@
 	uint16_t readFromFlash(uint8_t paramId);
 	float readStatisticsFromFlash(uint8_t paramId);
 	uint8_t getParamIndexFromReqId(uint32_t searchedReqId);
-	uint8_t getNextVisibleParam(uint8_t curIndex);
-	uint8_t getPreviousVisibleParam(uint8_t curIndex);
+	void rebuildPageOrder(void);
+	uint8_t stepShownPage(uint8_t cur, int8_t delta);
+	uint8_t paramsSetupPage(uint8_t pos);
+	void resetPageValues(void);
+	void udsReplyReceived(void);
 	void nativeMaxHoldUpdate(uint8_t paramId);
+	float applyHold(uint8_t sel, float value); //hold mode
+	void warningsAndPagesPeriodic(void);
+	void dnaPageMenuText(uint8_t *row); //page by drive style
+	void dnaPageBindToggle(void); //page by drive style
 	void faultsStartEcuSession(uint8_t ecu); //readFaults ECM 10/10/2026
 	void faultsEcuEnded(uint8_t failed); //readFaults ECM 10/10/2026
+	void giuliaWatchPeriodic(void); //ECM watch
+	void giuliaWatchOnEcmFrame(void); //ECM watch
 	void faultsAbsProcess(void); //readFaults ABS 10/10/2026
 	void exhaustValvesToggle(void); //exhaust valves memory 11/10/2026
 	void exhaustValvesOnDNAmode(uint8_t mode); //exhaust valves DR 11/10/2026

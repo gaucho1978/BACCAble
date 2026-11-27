@@ -16,6 +16,7 @@ void processingMessage0x000000FC(){
 			//onboardLed_blue_on();
 			#if defined(C1baccable)
 				nativeMaxHoldUpdate(1); //power CV depends on RPM: update max hold at extraction
+				warmupTimerUpdate(currentTime, currentRpmSpeed, oilTemperature); //warm-up timer
 			#endif
 		}
 	#endif

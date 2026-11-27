@@ -358,7 +358,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
 					case BhBusIDparamString: //message directed to baccable connected to BH bus in order to transfer a parameter to print
 						#if defined(BHbaccable)
-							memcpy(&dashboardPageStringArray[0], &rxBuffer[1], DASHBOARD_MESSAGE_MAX_LENGTH); //copy array that we will use in the main
+							memcpy(&dashboardPageStringNext[0], &rxBuffer[1], DASHBOARD_MESSAGE_MAX_LENGTH); //taken by the main loop between two writes
+							dashboardPageStringPending=1;
 
 							if(ESCandTCinversion){ //if esc/tc is active, don't show baccable menu
 								requestToSendOneFrame=0;

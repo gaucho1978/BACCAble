@@ -1,14 +1,14 @@
 #include "uds_parameters.h"
 
-	float dashboardParamCouple[2];
-	float dashboardParamMaxHold[2]; // stores max value for each displayed param (used by Max Hold feature)
+	float dashboardParamCouple[3];
+	float dashboardParamMaxHold[3]; // stores max value for each displayed param (used by Max Hold feature)
 
 
 	uint8_t shownParamsArray[240];
 	uint8_t params_setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_params_setup_dashboard_menu=0;
 
-	uint8_t total_pages_in_dashboard_menu_gasoline=47; //brake in show params 10/10/2026 - was 46
+	uint8_t total_pages_in_dashboard_menu_gasoline=74; //47 upstream pages, 20 two or one value pages, 7 three value pages
 	uint8_t total_pages_in_dashboard_menu_diesel=57; //brake in show params 10/10/2026 - was 56
 	uint8_t currentParamElementSelection=0;
 	
@@ -19,7 +19,7 @@
 
 	//format string $x.yf for float params where y is decimal part and x is integer part
 	//format string $enum for enumerator values derived from specific enum arrays
-	const	uds_params_couple_element uds_params_array[2][60]={
+	const	uds_params_couple_element uds_params_array[2][UDS_PAGES_MAX]={
 				{ 	//Gasoline
 					{.name="PWR $3.0fCV $3.0fNm",				.udsParamId={1,		2		}}, //param couple: PWR and Torque
 					{.name="OIL $1.1fbar W.$3.0f" "\xB0" "C",	.udsParamId={0,		42		}}, //param couple: OIL pressure and Water Temp.
@@ -68,6 +68,33 @@
 					{.name="Best100-200:$2.2fs",				.udsParamId={12,	12		}}, //100-200km/h Best time statistic (same format as diesel: MISSED fits in 18 chars - V.3.9.2)
 					{.name="Pedal Map: $enum",					.udsParamId={17,	17		}}, //selected Pedal Map
 					{.name="BrakePedal: $3.0f%",				.udsParamId={18,	18		}}, //Brake pedal press percentage (0x107) //brake in show params 10/10/2026
+					{.name="GBX $3.0f" "\xB0" "C W.$3.0f" "\xB0" "C",	.udsParamId={33,	42		}}, //page 47: gearbox oil and water temp.
+					{.name="CAC $3.0f" "\xB0" "C IC $3.0f" "\xB0" "C",	.udsParamId={89,	22		}}, //page 48: DID 1C16 (hypothesis: CAC coolant) and intercooler air out
+					{.name="MAP $1.2f BST $1.2f",				.udsParamId={90,	24		}}, //page 49: manifold pressure and boost before throttle, bar abs
+					{.name="AIR $3.0fkg $2.1fL/h",				.udsParamId={91,	92		}}, //page 50: air mass kg/h and fuel flow L/h
+					{.name="KNK1 $3.0f 2 $3.0fmV",				.udsParamId={93,	94		}}, //page 51: knock sensor cyl 1 and 2
+					{.name="KNK3 $3.0f 4 $3.0fmV",				.udsParamId={95,	96		}}, //page 52: knock sensor cyl 3 and 4
+					{.name="GEAR $enum TQ $3.0fNm",				.udsParamId={6,		2		}}, //page 53: gear and torque, both native (no UDS request)
+					[54]={.name="SPK1 $2.1f 2 $2.1f" "\xB0",	.udsParamId={97,	98	}}, //spark correction cyl 1 and 2, signed
+					[55]={.name="SPK3 $2.1f 4 $2.1f" "\xB0",	.udsParamId={99,	100	}}, //spark correction cyl 3 and 4, signed
+					[56]={.name="KNOCK: $4.0fmV",	.udsParamId={101,	101	}}, //knock sensor, 2 bytes (page 32 reads 1 byte)
+					[57]={.name="RAIL: $3.0fbar",	.udsParamId={102,	102	}}, //fuel rail pressure, DID 1946
+					[58]={.name="OIL $3.0f" "\xB0" "C MA $3.0f" "\xB0" "C",	.udsParamId={5,	32	}}, //oil (native) and MultiAir oil
+					[59]={.name="EGT$4.0f CAT$4.0f" "\xB0" "C",	.udsParamId={40,	41	}}, //exhaust gas and catalyst
+					[60]={.name="IDLE $4.0f/$4.0frpm",	.udsParamId={104,	105	}}, //idle target / engine speed
+					[61]={.name="ST $3.1f LT $3.1f%",	.udsParamId={106,	107	}}, //OBD 06 / 07 fuel trims
+					[62]={.name="OUT $3.0f" "\xB0" "C W.$3.0f" "\xB0" "C",	.udsParamId={108,	42	}}, //OBD 46 ambient air and water
+					[63]={.name="ADV $3.1f" "\xB0" " LD $3.0f%",	.udsParamId={109,	110	}}, //OBD 0E timing advance and OBD 04 load
+					[64]={.name="LAMBDA: $1.3f",	.udsParamId={111,	111	}}, //OBD 44 commanded lambda
+					[65]={.name="W.UP $2.1fmin $3.0f" "\xB0" "C",	.udsParamId={14,	5	}}, //warm-up timer (native 14) and oil
+					[66]={.name="$2.1fL/h $2.1fL/100",				.udsParamId={92,	16		}}, //page 66: fuel flow and instant consumption
+					[67]={.name="U$3.0f O$3.0f W$3.0f" "\xB0" "",	.udsParamId={32,	5,	42	},	.values=3}, //UniAir, oil and water
+					[68]={.name="O$3.0f W$3.0f G$3.0f" "\xB0" "",	.udsParamId={5,	42,	33	},	.values=3}, //oil, water and gearbox
+					[69]={.name="M$1.2f B$1.2f T$3.0f",	.udsParamId={90,	24,	22	},	.values=3}, //manifold, boost and intercooler air
+					[70]={.name="P$1.1f O$3.0f W$3.0f" "\xB0" "",	.udsParamId={0,	5,	42	},	.values=3}, //oil pressure, oil and water
+					[71]={.name="$2.1fV $4.0fA $3.0f%",	.udsParamId={35,	4,	21	},	.values=3}, //battery voltage, current and charge
+					[72]={.name="G$enum T$3.0f B$1.2f",	.udsParamId={6,	2,	24	},	.values=3}, //gear, torque and boost
+					[73]={.name="E$4.0f C$4.0f T$3.0f",	.udsParamId={40,	41,	22	},	.values=3}, //exhaust gas, catalyst and intercooler air
 					//
 //					{.name="RAM: $5.0fB",						.udsParamId={16,	16		}}, //Free RAM
 //									{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B3),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
@@ -154,7 +181,7 @@
 	};
 
 	
-	const	uds_param_single_element single_uds_params_array[100]={
+	const	uds_param_single_element single_uds_params_array[UDS_SINGLE_PARAMS_MAX]={
 		{.reqId=0x10,		.reqLen=4,  .reqData=SWAP_UINT32(0x00000000),	.replyId=0x000004B2,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,  	.replyScale=0.1,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					}, //0		oil pressure
 		{.reqId=0x11,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=-500,	.replyScale=0.000142378,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'C','V',}						}, //1		power
 		{.reqId=0x12,	    .reqLen=4,	.reqData=SWAP_UINT32(0x00000000),   .replyId=0x000000FB,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=1,				.replyScaleOffset=-500,	.replyDecimalDigits=0,	.replyMeasurementUnit={'N','m',}						}, //2		torque
@@ -170,7 +197,7 @@
 		{.reqId=0x1C,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //11		best statistic 0/100
 		{.reqId=0x1D,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //12		best statistic 100/200
 		{.reqId=0x1E,		.reqLen=4,	.reqData=SWAP_UINT32(0x032255A0),	.replyId=0x18DAF160,	.replyLen=1,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={' ',}							}, //13		seat belt alarm
-		{.reqId=0x1F,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //14		debug string
+		{.reqId=0x1F,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'s', }							}, //14		warm-up timer, minutes (was debug string)
 		{.reqId=0x20,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={' ', }							}, //15		Drive Style
 		{.reqId=0x21,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'B', }							}, //16		Free RAM
 		{.reqId=0x22,		.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=1,				.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={' ', }							}, //17		Selected Pedal Map
@@ -194,7 +221,7 @@
 		{.reqId=0x18DA40F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x03221004),   .replyId=0x18DAF140,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.1,            .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'V',}							}, //35		battery voltage (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					}, //36		air conditioner pressure (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x03221009),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.25,           .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={'m',}                            }, //37		time since engine ON (gasoline)
-		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x03222006),   .replyId=0xDA18F110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.01,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'s',}							}, //38		time spent in engine overspeed (gasoline)
+		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x03222006),   .replyId=0x18DAF110,    .replyLen=2,    .replyOffset=0, .replyValOffset=0,      .replyScale=0.01,           .replyScaleOffset=0,    .replyDecimalDigits=2,  .replyMeasurementUnit={'s',}							}, //38		time spent in engine overspeed (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03222004),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=0,  .replyMeasurementUnit={' ',}							}, //39		engine overspeed number of times (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x032218BA),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,      .replyScale=5,           	.replyScaleOffset=-50,  .replyDecimalDigits=0,  .replyMeasurementUnit={0xB0,'C',}                       }, //40		exhaust gas temperature (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x03221837),   .replyId=0x18DAF110,    .replyLen=1,    .replyOffset=0, .replyValOffset=0,    	.replyScale=5,              .replyScaleOffset=-50,  .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C',}                       }, //41		Catalytic sensor temperature (gasoline)
@@ -210,7 +237,7 @@
 		{.reqId=0x18DAC7F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x022230B4),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}						}, //51		rear right tyre pressure (not implemented now)
 		{.reqId=0x18DAC7F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x022240B2),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}						}, //52		front left tyre pressure (not implemented now)
 		{.reqId=0x18DAC7F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x022240B1),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}						}, //53		rear left tyre pressure (not implemented now)
-		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218AA),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0,001,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'g','/','k','m'}					}, //54		particulate (gasoline)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218AA),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.001,			.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'g','/','k','m'}					}, //54		particulate (gasoline)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x032218E4),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.015259022,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							}, //55		DPF clogging percentage (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x032218DE),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						}, //56		DPF temperature (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,  .reqData=SWAP_UINT32(0x0322380B),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.001525902,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'%',}							}, //57		DPF regeneration progress percentage (diesel)
@@ -245,6 +272,28 @@
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322192F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,		.replyScale=0.01,			.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'b','a','r',}					}, //86		Air Conditioner pressure (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.0004,			.replyScaleOffset=0,	.replyDecimalDigits=3,	.replyMeasurementUnit={'L','/','h',}					}, //87		Fuel consume (diesel)
 		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322193F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0, .replyValOffset=0,		.replyScale=0.02,			.replyScaleOffset=-40,	.replyDecimalDigits=1,	.replyMeasurementUnit={0xB0,'C',}						}, //88		Debimeter temperature (diesel)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221C16),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=1,		.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}		}, //89		DID 1C16, hypothesis: charge air cooler coolant temperature (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221937),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.001,	.replyScaleOffset=0,	.replyDecimalDigits=2,	.replyMeasurementUnit={'b','a','r',}	}, //90		intake manifold pressure, 1 mbar/count (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03223A60),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'k','g','/','h',}	}, //91		measured air mass, 0.125 kg/h/count (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221942),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.1,	.replyScaleOffset=0,	.replyDecimalDigits=1,	.replyMeasurementUnit={'L','/','h',}	}, //92		fuel flow, 0.1 L/h/count, not verified (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221891),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //93		knock sensor cyl 1 (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221892),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //94		knock sensor cyl 2 (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221893),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //95		knock sensor cyl 3 (gasoline IAW10JA)
+		{.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221894),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}		}, //96		knock sensor cyl 4 (gasoline IAW10JA)
+		[97]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186C),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //97		spark correction cyl 1, 16 bit signed
+		[98]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186D),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //98		spark correction cyl 2
+		[99]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186E),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //99		spark correction cyl 3
+		[100]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //100		spark correction cyl 4
+		[101]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221841),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}	}, //101		knock sensor, 16 bit
+		[102]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221946),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.00599,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'b','a','r',}	}, //102		fuel rail pressure, DID 1946
+		[104]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186B),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=10,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'r','p','m',}	}, //104		idle speed target
+		[105]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221000),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.25,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'r','p','m',}	}, //105		engine speed
+		[106]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010600),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=-128,	.replyScale=0.78125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}	}, //106		OBD 06 short term fuel trim
+		[107]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010700),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=-128,	.replyScale=0.78125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}	}, //107		OBD 07 long term fuel trim
+		[108]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02014600),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=0,	.replyScale=1,	.replyScaleOffset=-40,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,'C',}	}, //108		OBD 46 ambient air temperature
+		[109]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010E00),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=-128,	.replyScale=0.5,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,}	}, //109		OBD 0E timing advance
+		[110]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010400),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=0,	.replyScale=0.39215686,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}	}, //110		OBD 04 calculated load
+		[111]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02014400),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=0,	.replyScale=0.000030517578,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={' ',}	}, //111		OBD 44 commanded lambda
 	
 	};
 
@@ -272,3 +321,81 @@
 		"GO     ",
 		"?      "
 	};
+
+	//decodes a single frame positive reply to service 0x22 for parameter p.
+	//Returns 1 and writes the scaled value, or 0 if the frame is not the answer to this parameter
+	//(negative response, other DID, too short). Pure function: also built by the host test.
+	uint8_t udsDecodeReply(const uds_param_single_element *p, const uint8_t *rx, uint8_t dlc, float *out){
+		const uint8_t *req=(const uint8_t *)&p->reqData; //bytes as sent: PCI, 0x22, DID high, DID low
+		uint8_t n=p->replyLen;
+		if(n>4) n=4;
+		uint8_t first=4; //first data byte of a 0x62 reply
+		if(p->replyFlags & UDS_REPLY_OBD){ //reply is PCI, 0x41, PID, data
+			first=3;
+			if(dlc<3+p->replyOffset+p->replyLen || rx[0]>7 || rx[0]<2+p->replyOffset+p->replyLen) return 0;
+			if(rx[1]!=0x41 || rx[2]!=req[2]) return 0;
+		}else{
+			if(dlc<4+p->replyOffset+p->replyLen) return 0;
+			if(rx[1]!=0x62 || rx[2]!=req[2] || rx[3]!=req[3]) return 0;
+		}
+		uint32_t raw=0;
+		for(uint8_t i=0;i<n;i++) raw |= ((uint32_t)rx[first+p->replyOffset+i]) << (8*(n-1-i));
+		int32_t val=(int32_t)raw;
+		if(p->replyFlags & UDS_REPLY_SIGNED){
+			if(n==1) val=(int8_t)raw;
+			else if(n==2) val=(int16_t)raw;
+		}
+		val+=p->replyValOffset; //signed sum: the old uint32_t sum wrapped to 4 billions below zero
+		*out=((float)val*p->replyScale)+(float)p->replyScaleOffset;
+		return 1;
+	}
+
+	//warm-up timer: minutes from engine start until the oil reaches 80 C, then the number stays.
+	//Called on every 0xFC frame with the tick in ms, so it does not depend on the screen refresh period.
+	//A stop shorter than WARMUP_REARM_MS does not restart it. A later start with warm oil keeps the last result.
+	static uint32_t warmupStartMs=0, warmupLastRunMs=0;
+	static uint16_t warmupTenths=0;
+	static uint8_t warmupState=0; //0=never run, 1=counting, 2=done
+	void warmupTimerUpdate(uint32_t nowMs, uint32_t rpm, uint8_t oilRaw){
+		if(rpm<400) return;
+		if(warmupState==0 || (nowMs-warmupLastRunMs>WARMUP_REARM_MS && (warmupState==1 || oilRaw<WARMUP_OIL_RAW))){
+			warmupState=1;
+			warmupStartMs=nowMs;
+		}
+		warmupLastRunMs=nowMs;
+		if(warmupState==1){
+			uint32_t t=(nowMs-warmupStartMs)/6000; //tenths of a minute
+			warmupTenths=(t>999) ? 999 : (uint16_t)t;
+			if(oilRaw>=WARMUP_OIL_RAW) warmupState=2;
+		}
+	}
+	float warmupTimerMinutes(void){
+		return (float)warmupTenths/10.0f;
+	}
+
+	//older firmware stored only the bits of its own pages (the rest of the area held stack garbage). Without our
+	//mark, every bit past those pages gets the default: shown, except the gasoline pages that put OBD functional
+	//requests on the bus. Done with either fuel selected: the same bits serve both after a change of fuel.
+	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel){
+		if(mark==SHOWN_PARAMS_MARK) return;
+		uint8_t first=isDiesel ? UPSTREAM_PAGES_DIESEL : UPSTREAM_PAGES_GASOLINE;
+		if(mark==SHOWN_PARAMS_MARK_72) first=THREE_VALUE_PAGES_FIRST; //the earlier bits are the driver's choice
+		for(uint8_t i=first; i<UDS_PAGES_MAX; i++){
+			shown[i]=(i>=OBD_PAGES_FIRST && i<=OBD_PAGES_LAST) ? 0 : 1;
+		}
+	}
+
+	//copies into the stored settings (slot n is slots[n-1]) only what the main menu changes: slots 35, 36, 37 and 39.
+	//Everything else keeps the stored value, so Setup menu changes still need SAVE&EXIT.
+	uint8_t mergeMainMenuSlots(uint16_t *slots, uint16_t dnaND, uint16_t dnaAR, uint8_t autoScroll, uint8_t cold){
+		const uint8_t index[4]={34,35,36,38};
+		const uint16_t value[4]={dnaND,dnaAR,autoScroll,cold};
+		uint8_t changed=0;
+		for(uint8_t i=0;i<4;i++){
+			if(slots[index[i]]!=value[i]){ slots[index[i]]=value[i]; changed=1; }
+		}
+		return changed;
+	}
+
+	//Params Setup names of the three value pages, from THREE_VALUE_PAGES_FIRST (their templates are only letters)
+	const char * const threeValuePageLabels[7]={ "UAIR OIL WAT", "OIL WAT GBOX", "MAP BOOST IAT", "OILP OIL WAT", "BATT V A %", "GEAR TQ BOOST", "EGT CAT IAT" };

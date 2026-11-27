@@ -91,6 +91,7 @@
 		#include "vuMeter.h" //this is used to control led strip through usb pin
 		#include "lowConsume.h"
 		#include "uds_parameters.h"
+		#include "warnings.h" //warnings
 		#include "elm327.h" //elm327 function 26/08/2026
 		//extern uint32_t lastReceivedCanMsgTime;
 	#endif
@@ -167,7 +168,15 @@
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[32][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30] //DNA memory 18/10/2026 - was [31]
+		extern uint8_t dashboard_setup_menu_array[34][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30] //DNA memory 18/10/2026 - was [31] //Warnings, ECM Watch - was [32]
+		extern uint8_t settingsSaveRequested; //main menu choice waiting for a flash write
+		extern uint8_t warnMode; //warnings
+		extern uint16_t dnaPagesND; //page by drive style
+		extern uint16_t dnaPagesAR; //page by drive style
+		extern uint8_t autoScrollMode; //auto scroll
+		extern uint32_t oil4B2LastTime; //oil warnings
+		#include "giulia_watch.h"
+		extern gw_state gw; extern uint8_t gwRunning, giuliaWatchMode, giuliaColdMode; extern float fuelFlowLh; extern uint32_t fuelFlowTime; //ECM watch
 
 		//extern uint8_t params_setup_dashboardPageIndex;
 		//extern uint8_t shownParamsArray[240];
@@ -532,6 +541,8 @@
 
 	//
 	extern uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]; //it contains string to print on dashboard
+	extern uint8_t dashboardPageStringNext[DASHBOARD_MESSAGE_MAX_LENGTH]; //line received while one is being written
+	extern volatile uint8_t dashboardPageStringPending;
 
 	extern float currentSpeed_km_h; //current vehicle speed
 	extern float previousSpeed_km_h; //store speed at previous loop

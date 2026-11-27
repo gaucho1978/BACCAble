@@ -17,7 +17,8 @@
 						   (((uint32_t)(x) << 24) & 0xFF000000)
 	typedef struct{
 		char		name[DASHBOARD_MESSAGE_MAX_LENGTH +5];
-		uint8_t 	udsParamId[2];
+		uint8_t 	udsParamId[3];
+		uint8_t		values;			//3 for a three value page, 0 otherwise (then one or two, see pageValueCount)
 	} uds_params_couple_element;
 
 	typedef struct{
@@ -27,22 +28,45 @@
 		uint32_t 	replyId;
 		uint8_t		replyLen;
 		uint8_t		replyOffset;
+		uint8_t		replyFlags;		//bit0 = raw value is signed (8 or 16 bit). Sits in a padding byte, the struct stays 40 bytes
 		int32_t		replyValOffset;
 		float		replyScale;
 		int32_t		replyScaleOffset;
 		uint8_t		replyMeasurementUnit[7];
 		uint8_t		replyDecimalDigits;
 	} uds_param_single_element;
+	_Static_assert(sizeof(uds_param_single_element)==40, "uds_param_single_element grew"); //table layout check
+	#define UDS_REPLY_SIGNED 0x01 //signed UDS decoding
+	#define SHOWN_PARAMS_MARK 0x6A32		//last word of the page visibility area: all UDS_PAGES_MAX bits are stored
+	#define SHOWN_PARAMS_MARK_72 0x6A31	//the same from the build that stored 72 bits, before the three value pages
+	#define THREE_VALUE_PAGES_FIRST 67
+	#define UPSTREAM_PAGES_GASOLINE 47		//pages whose visibility bit older firmware stored, gasoline selected
+	#define UPSTREAM_PAGES_DIESEL 57		//the same with diesel selected
+	#define OBD_PAGES_FIRST 61				//gasoline pages that send OBD functional requests: hidden until enabled
+	#define OBD_PAGES_LAST 64
+	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel);
+	#define SETTINGS_SLOTS 39
+	extern const char * const threeValuePageLabels[7];
+	uint8_t mergeMainMenuSlots(uint16_t *slots, uint16_t dnaND, uint16_t dnaAR, uint8_t autoScroll, uint8_t cold);	//1: something changed
+	#define UDS_REPLY_OBD 0x02 //OBD mode 01 request (02 01 PID), reply is 41 PID data: data start at byte 3
+	#define UDS_PAGES_MAX 80 //pages per fuel type, was 60. One visibility bit per page: must stay <= 240
+	#define UDS_SINGLE_PARAMS_MAX 130 //parameter records, was 100. Index is uint8_t: must stay <= 255
+	#define WARMUP_OIL_RAW 120 //oil 80 C as raw byte of 0x4B2 (raw-40)
+	#define WARMUP_REARM_MS 60000 //engine off longer than this: next start is a new warm-up
+	void warmupTimerUpdate(uint32_t nowMs, uint32_t rpm, uint8_t oilRaw); //warm-up timer
+	float warmupTimerMinutes(void); //warm-up timer
+	uint8_t udsDecodeReply(const uds_param_single_element *p, const uint8_t *rx, uint8_t dlc, float *out); //signed UDS decoding
 
-	extern float dashboardParamCouple[2];
-	extern float dashboardParamMaxHold[2];
+	extern float dashboardParamCouple[3];
+	extern float dashboardParamMaxHold[3];
 	extern uint8_t shownParamsArray[240];
+	_Static_assert(UDS_PAGES_MAX<=240 && UDS_SINGLE_PARAMS_MAX<=255, "table sizes"); //table size check
 	extern uint8_t params_setup_dashboardPageIndex;
 	extern uint8_t total_pages_in_params_setup_dashboard_menu;
 	extern uint8_t total_pages_in_dashboard_menu_gasoline;
 	extern uint8_t total_pages_in_dashboard_menu_diesel;
-	extern const uds_params_couple_element uds_params_array[2][60];
-	extern const uds_param_single_element single_uds_params_array[100];
+	extern const uds_params_couple_element uds_params_array[2][UDS_PAGES_MAX];
+	extern const uds_param_single_element single_uds_params_array[UDS_SINGLE_PARAMS_MAX];
 	extern uint8_t currentParamElementSelection;
 
 	extern const char* dpfRegenEnumStrings[];

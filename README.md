@@ -63,6 +63,10 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 - Subfolder hardware/newBaccableDedicatedPcb contains the new pcb for Baccable
 - Subfolder Manuals contains the manuals
 
+## Extra functions for the 2.0 petrol engine
+
+Extra dashboard pages including three value pages, dashboard warnings and an engine ECU watch are described in [GIULIA_FEATURES.md](firmware/ledsStripController/GIULIA_FEATURES.md). They were written for a Giulia 952 2.0 petrol. They are only partly tested on one car: see the state section in that file.
+
 ## DASHBOARD MENU functionality Notes
 
 For communication between ucan or canable, you will need to connect canable boards as shown in the following reference image:
@@ -85,7 +89,8 @@ This is the structure of each element:
 - replyId:						It is the message ID of the received reply. Tipically if the reqID is 18DAAABB the replyID shall be 18DABBAA
 - replyLen:						It is the number of bytes of the parameter that we want to extract from the received message
 - replyOffset:					It defines where is located the parameter. 0 means that it is the first byte of the expected field of UDS message, 1 means that we shall start from second byte, and so on.
-- replyValOffset: 				Once the parameter is decoded as unsigned integer, the first calculation on the value will be + replyValOffset 
+- replyFlags:					Options for decoding the reply. UDS_REPLY_SIGNED: the raw value (1 or 2 bytes) is signed. UDS_REPLY_OBD: the request is OBD service 01 and the reply data follows the PID. 0 for an unsigned UDS value.
+- replyValOffset: 				Once the parameter is decoded as an integer (unsigned, unless UDS_REPLY_SIGNED is set), the first calculation on the value will be + replyValOffset 
 - replyScale:					Once the parameter has been summed with replyValOffset, the result will be multiplied by replyScale
 - replyScaleOffset:				Once the parameter has been multiplied by replyScale, the result will be summed to replyScaleOffset
 - replyMeasurementUnit[7]:		It is a string appended at the end of the parameter string to define measurement unit. Too long strings will have measurement unit cutted and not shown on the dashboard.

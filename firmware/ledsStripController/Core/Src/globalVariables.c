@@ -167,8 +167,20 @@ const char *FW_VERSION=_FW_VERSION;
 
 	uint8_t main_dashboardPageIndex=0;
 	uint8_t dashboard_menu_indent_level=0;
-	uint8_t maxHold_enabled=0; // 0=Max Hold OFF, 1=Max Hold ON (RAM only, resets on power cycle)
-	uint8_t dashboard_main_menu_array_len=16;
+	gw_state gw; //ECM watch
+	uint8_t gwRunning=0; //1 while the engine runs and the watch state is valid
+	uint8_t giuliaWatchMode=0; //flash slot 38: 0=off (default), 1=all, 2=temperatures, 3=faults
+	uint8_t giuliaColdMode=0; //flash slot 39: 0=75 C (default), 1=70, 2=80, 3=off
+	float fuelFlowLh=NAN; //last DID 1942 value, smoothed
+	uint32_t fuelFlowTime=0;
+	uint8_t settingsSaveRequested=0; //a page erase stalls the cpu: it waits for the engine to stop
+	uint8_t maxHold_enabled=0; // 0=Hold OFF, 1=Max Hold, 2=Min Hold (RAM only, resets on power cycle)
+	uint8_t warnMode=0; //0=warnings off, 1=text, 2=text and chime. saved on flash (slot 34)
+	uint16_t dnaPagesND=0; //page bound to Natural (low byte) and Dynamic (high byte), page+1, 0=none. slot 35
+	uint16_t dnaPagesAR=0; //same for All weather (low byte) and Race (high byte). slot 36
+	uint8_t autoScrollMode=0; //0=off, 1=3 s, 2=5 s, 3=10 s. slot 37
+	uint32_t oil4B2LastTime=0; //when 0x4B2 was last received
+	uint8_t dashboard_main_menu_array_len=20;
 	uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH]={
 			{},
 			{'S','h','o','w',' ','P','a','r','a','m','e','t','e','r','s',' ',' ',' '},
@@ -185,12 +197,16 @@ const char *FW_VERSION=_FW_VERSION;
 			{'T','o','g','g','l','e',' ','E','x','h','a','u','s','t',' ',' ',' ',' '}, //exhaust valves DR 11/10/2026 - was "Toggle QV Valve"
 			{'S','a','v','e',' ','L','o','g',' ','t','o',' ','F','i','l','e',' ',' '},
 			{'R','e','s','e','t',' ','S','t','a','t','i','s','t','i','c','s',' ',' '},
-		{'M','a','x',' ','H','o','l','d',' ','O','F','F',' ',' ',' ',' ',' ',' '},
+		{'H','o','l','d',' ','M','o','d','e',' ','O','F','F',' ',' ',' ',' ',' '}, //was "Max Hold OFF"
+		{'D','N','A',' ','N',':',' ','n','o','t',' ','b','o','u','n','d',' ',' '}, //row 16
+		{'A','u','t','o',' ','S','c','r','o','l','l',' ','O','F','F',' ',' ',' '}, //row 17
+			{'E','C','M',' ','D','T','C',' ','-','-','-',' ','N','E','W',' ','-','-'}, //row 18: press = acknowledge
+			{'C','o','l','d',' ','A','l','a','r','m',' ','7','5',' ',' ',' ',' ',' '}, //row 19: press = next limit
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=32; //elm327 function 26/08/2026 - was 30, ELM327 entry added //DNA memory 18/10/2026 - was 31
-	uint8_t dashboard_setup_menu_array[32][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full //DNA memory 18/10/2026 - was [31]
+	uint8_t total_pages_in_setup_dashboard_menu=34; //elm327 function 26/08/2026 - was 30, ELM327 entry added //DNA memory 18/10/2026 - was 31 //Warnings, ECM Watch - was 32
+	uint8_t dashboard_setup_menu_array[34][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full //DNA memory 18/10/2026 - was [31] //Warnings, ECM Watch - was [32]
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
@@ -223,6 +239,8 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026
 			{'O',' ',' ','E','L','M','3','2','7',' ',' ',' ',' ',' ',' ',' ',' ',' ',}, //elm327 function 26/08/2026 - last free slot of the array
 			{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y',' ',' ',' ',' ',' ',}, //DNA memory 18/10/2026
+			{'O',' ',' ','W','a','r','n','i','n','g','s',' ',' ',' ',' ',' ',' ',' '}, //index 32
+			{'E','C','M',' ','W','a','t','c','h',':',' ','O','F','F',' ',' ',' ',' '}, //index 33
 
 		};
 
@@ -575,6 +593,8 @@ CAN_TxHeaderTypeDef clearFaults_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA
 
 //
 uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]={' ',}; //it contains string to print on dashboard
+uint8_t dashboardPageStringNext[DASHBOARD_MESSAGE_MAX_LENGTH];
+volatile uint8_t dashboardPageStringPending=0;
 
 float currentSpeed_km_h=0; //current vehicle speed
 float previousSpeed_km_h=0; //store speed at previous loop
