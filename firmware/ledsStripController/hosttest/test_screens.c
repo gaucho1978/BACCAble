@@ -4,12 +4,13 @@
 #include <math.h>
 #include "uds_parameters.h"
 #include "giulia_watch.h"
+#include "page_order.h"
 uint8_t statistics_0_100_started=0, statistics_100_200_started=0, currentSchizzaforteMap='-', currentDNAmode=0;
 void floatToStr(char* str, float num, uint8_t precision, uint8_t maxLen);
 #include "extracted.inc"
 static int fails=0;
 static void pg(int page,const uint8_t*rx0,const uint8_t*rx1,float n0,float n1,const char*expect){
-	float v[2]={NAN,NAN}; char s[64]; memset(s,0,sizeof s);
+	float v[3]={NAN,NAN,NAN}; char s[64]; memset(s,0,sizeof s);
 	const uint8_t*id=uds_params_array[0][page].udsParamId;
 	if(rx0) udsDecodeReply(&single_uds_params_array[id[0]],rx0,8,&v[0]); else v[0]=n0;
 	if(rx1) udsDecodeReply(&single_uds_params_array[id[1]],rx1,8,&v[1]); else v[1]=n1;
@@ -43,15 +44,14 @@ int main(void){
 	{ char b[5]; floatToStr(b,1000.0f,1,4+1-1); int ok=!strcmp(b,"100"); if(!ok) fails++; printf("%s floatToStr 1000 in a 3 char field [%s]\n",ok?"ok  ":"FAIL",b); }
 	{ char b[6]; floatToStr(b,100.0f,1,5); int ok=!strcmp(b,"100 "); if(!ok) fails++; printf("%s floatToStr 100.0 [%s]\n",ok?"ok  ":"FAIL",b); }
 	{ char b[6]; floatToStr(b,-10.5f,1,5); int ok=!strcmp(b,"-10 "); if(!ok) fails++; printf("%s floatToStr -10.5 in $2.1f [%s]\n",ok?"ok  ":"FAIL",b); }
-	{ const uint16_t want[5]={500,400,350,500,500}; const uint8_t mode[5]={0,1,2,3,255}; for(int k=0;k<5;k++){ int ok=screenRefreshPeriodMs(mode[k])==want[k] && screenRefreshPeriodMs(mode[k])>310; if(!ok) fails++; printf("%s refresh mode %d -> %d ms\n",ok?"ok  ":"FAIL",mode[k],screenRefreshPeriodMs(mode[k])); } }
 	//pages 54..65
 	pg(54,B(5,0x62,0x18,0x6C,0xFF,0xE8,0,0),B(5,0x62,0x18,0x6D,0x00,0x00,0,0),0,0,"SPK1 -1.5 2 0   \xB0");
 	pg(54,B(5,0x62,0x18,0x6C,0xFF,0xFF,0,0),B(5,0x62,0x18,0x6D,0xFF,0x40,0,0),0,0,"SPK1 -0.1 2 -12 \xB0");
 	pg(55,B(5,0x62,0x18,0x6E,0x00,0x30,0,0),B(5,0x62,0x18,0x6F,0xFF,0xD0,0,0),0,0,"SPK3 3    4 -3  \xB0");
 	pg(56,B(5,0x62,0x18,0x41,0x05,0xDF,0,0),0,0,0,"KNOCK: 188 mV");
 	pg(56,B(5,0x62,0x18,0x41,0x34,0xCB,0,0),0,0,0,"KNOCK: 1689mV");
-	pg(57,B(5,0x62,0x19,0x46,0x52,0x88,0,0),B(5,0x62,0x19,0x47,0x53,0x8D,0,0),0,0,"RAIL 127/128bar");
-	pg(57,B(5,0x62,0x19,0x46,0x84,0x61,0,0),B(5,0x62,0x19,0x47,0x1A,0x15,0,0),0,0,"RAIL 203/40 bar");
+	pg(57,B(5,0x62,0x19,0x46,0x52,0x88,0,0),0,0,0,"RAIL: 127bar");
+	pg(57,B(5,0x62,0x19,0x46,0x84,0x61,0,0),0,0,0,"RAIL: 203bar");
 	pg(58,0,B(5,0x62,0x19,0x8E,0x07,0xA8,0,0),86,0,"OIL 86 \xB0""C MA 83 \xB0""C");
 	pg(58,0,B(5,0x62,0x19,0x8E,0x01,0x40,0,0),-25,0,"OIL -25\xB0""C MA -20\xB0""C");
 	pg(59,B(4,0x62,0x18,0xBA,0x7F,0,0,0),B(4,0x62,0x18,0x37,0x6C,0,0,0),0,0,"EGT585  CAT490 \xB0""C");
@@ -202,5 +202,33 @@ int main(void){
 	  for(int k=0;k<SETTINGS_SLOTS;k++) if(k!=34 && k!=35 && k!=36 && k!=38) ok&=(sl[k]==100+k);
 	  if(!ok) fails++; printf("%s deferred save: only slots 35, 36, 37, 39 change\n",ok?"ok  ":"FAIL");
 	  ok=mergeMainMenuSlots(sl,0x0201,0x0403,2,1)==0; if(!ok) fails++; printf("%s deferred save: nothing to write when equal\n",ok?"ok  ":"FAIL"); }
+	{ //three value pages: normal and extreme values, 18 chars at most
+	  struct { int page; float a,b,c; } tv[]={ {67,84,86,89},{67,-20,-20,-20},{67,130,135,118},{68,86,89,71},{68,-25,-30,-22},{69,0.30f,1.02f,27},{69,2.59f,2.61f,102},
+	    {70,2.2f,86,89},{70,6.5f,-20,105},{71,13.9f,-2,85},{71,14.7f,-120,100},{72,4,250,1.80f},{72,7,-35,1.02f},{73,585,490,27},{73,1015,865,-20} };
+	  for(unsigned k=0;k<sizeof tv/sizeof tv[0];k++){ float v[3]={tv[k].a,tv[k].b,tv[k].c}; char o[64]; memset(o,0,sizeof o);
+	    const uds_params_couple_element*e=&uds_params_array[0][tv[k].page];
+	    buildLineWithFormat(e->name,v,e->udsParamId,o);
+	    int ok=strlen(e->name)<=22 && strlen(o)<=18 && pageValueCount(e)==3; if(!ok) fails++; printf("%s three %d [%s] %d\n",ok?"ok  ":"FAIL",tv[k].page,o,(int)strlen(o)); } }
+	{ float v[3]={14.7f,-120,100}; char o[64]; memset(o,0,sizeof o); buildLineWithFormat(uds_params_array[0][71].name,v,uds_params_array[0][71].udsParamId,o);
+	  int ok=strstr(o,"-120")!=0; if(!ok) fails++; printf("%s battery current of three digits is not cut\n",ok?"ok  ":"FAIL"); }
+	{ for(int fuel=0;fuel<2;fuel++){
+	    uint8_t total=fuel?total_pages_in_dashboard_menu_diesel:total_pages_in_dashboard_menu_gasoline, order[UDS_PAGES_MAX], seen[UDS_PAGES_MAX]={0}, shown[240];
+	    uint8_t comb=pageOrderBuild(uds_params_array[fuel],total,order); int ok=1, last=3;
+	    for(int i=0;i<total;i++){ int c=pageValueCount(&uds_params_array[fuel][order[i]]); ok&=!seen[order[i]] && c<=last && ((i<comb)==(c>1)); last=c; seen[order[i]]=1; }
+	    if(!fuel) ok&=order[0]==67 && order[6]==73;
+	    if(!ok) fails++; printf("%s order fuel %d: every page once, three then two then one (combined %d of %d)\n",ok?"ok  ":"FAIL",fuel,comb,total);
+	    int saves=0, pages=0; for(int pos=0;pos<total+2;pos++){ uint8_t e=pageMenuEntry(order,total,comb,pos); if(e==PAGE_MENU_SAVE){ saves++; ok&=(pos==comb || pos==total+1); } else { pages++; ok&=(pageValueCount(&uds_params_array[fuel][e])>1)==(pos<comb); } }
+	    ok&= saves==2 && pages==total && pageMenuStep(total,total+1,1)==0 && pageMenuStep(total,0,-1)==total+1 && pageMenuStep(total,total-3,10)==0 && pageMenuStep(total,5,-10)==total+1 && pageMenuStep(total,0,1)==1;
+	    if(!ok) fails++; printf("%s params setup list fuel %d: combined, SAVE, singles, SAVE, wraps\n",ok?"ok  ":"FAIL",fuel);
+	    for(int i=0;i<240;i++) shown[i]=1; uint8_t cur=order[0]; for(int i=0;i<total;i++) cur=pageOrderStep(order,total,shown,cur,1);
+	    ok=cur==order[0] && pageOrderStep(order,total,shown,order[0],-1)==order[total-1] && pageOrderStep(order,total,shown,order[total-1],1)==order[0] && pageOrderStep(order,total,shown,order[0],10)==order[10];
+	    shown[order[1]]=0; ok&=pageOrderStep(order,total,shown,order[0],1)==order[2] && pageOrderStep(order,total,shown,order[2],-1)==order[0];
+	    shown[order[0]]=0; ok&=pageOrderStep(order,total,shown,order[2],-1)==order[total-1];
+	    memset(shown,0,sizeof shown); ok&=pageOrderStep(order,total,shown,order[3],1)==order[3];
+	    if(!ok) fails++; printf("%s page stepping fuel %d\n",ok?"ok  ":"FAIL",fuel); } }
+	{ int ok=pageNextElement(0,3,0)==0xFF && pageNextElement(7,3,0)==1 && pageNextElement(7,3,2)==0 && pageNextElement(5,3,0)==2 && pageNextElement(5,3,2)==0 && pageNextElement(2,3,1)==1 && pageNextElement(1,1,0)==0 && pageNextElement(3,2,1)==0;
+	  if(!ok) fails++; printf("%s request rotation\n",ok?"ok  ":"FAIL"); }
+	{ uint8_t sh[240]; memset(sh,0,sizeof sh); shownParamsUpgrade(sh,SHOWN_PARAMS_MARK_72,0); int ok=sh[47]==0 && sh[66]==0 && sh[67]==1 && sh[73]==1;
+	  if(!ok) fails++; printf("%s upgrade from the 72 bit build: old choice kept, three value pages shown\n",ok?"ok  ":"FAIL"); }
 	printf("fails=%d\n",fails); return fails;
 }

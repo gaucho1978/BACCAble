@@ -13,6 +13,25 @@
 
 #if defined(C1baccable)
 	static uint8_t saveMainMenuChoices(void);
+
+	static uint8_t pageOrder[UDS_PAGES_MAX];	//combined pages first, see page_order.h
+	static uint8_t pageOrderCombined=0;
+	static uint8_t udsAwaitingReply=0;
+
+	void rebuildPageOrder(void){
+		pageOrderCombined=pageOrderBuild(uds_params_array[function_is_diesel_enabled], total_pages_in_params_setup_dashboard_menu, pageOrder);
+	}
+	uint8_t stepShownPage(uint8_t cur, int8_t delta){
+		return pageOrderStep(pageOrder, total_pages_in_params_setup_dashboard_menu, shownParamsArray, cur, delta);
+	}
+	uint8_t paramsSetupPage(uint8_t pos){
+		return pageMenuEntry(pageOrder, total_pages_in_params_setup_dashboard_menu, pageOrderCombined, pos);
+	}
+	void udsReplyReceived(void){ udsAwaitingReply=0; }
+	void resetPageValues(void){
+		for(uint8_t i=0;i<PAGE_VALUES_MAX;i++) dashboardParamCouple[i]=NAN;
+		udsAwaitingReply=0;
+	}
 	void C1baccableInitCheck(){
 		#ifndef DISABLE_LOW_CONSUME
 			lowConsume_init();
@@ -63,7 +82,6 @@
 		//exclusive: the setup menu already clears one when the other is enabled, this is just the safety net.
 		elm327FunctionEnabled=(uint8_t)readFromFlash(32);
 		dnaMemoryFunctionEnabled=(uint8_t)readFromFlash(33); //read again at every wake up, see dnaMemoryProcess() //DNA memory 18/10/2026
-		screenRefreshMode=(uint8_t)readFromFlash(40); //screen rate
 		warnMode=(uint8_t)readFromFlash(34); //warnings
 		dnaPagesND=readFromFlash(35); //page by drive style
 		dnaPagesAR=readFromFlash(36); //page by drive style
@@ -75,6 +93,8 @@
 		instructSlaveBoardsTriggerEnabled=1;
 
 		readShownParamsFromFlash();
+		rebuildPageOrder();
+		dashboardPageIndex=pageOrderStep(pageOrder, total_pages_in_params_setup_dashboard_menu, shownParamsArray, pageOrder[total_pages_in_params_setup_dashboard_menu-1], 1); //first shown page of the order
 	}
 
 	void setSchizzaforteMap(uint8_t map){
@@ -340,7 +360,7 @@
 		if(giuliaWatchMode==GW_MODE_OFF) return;
 		if(faultsStateMachine!=0xFF || clearFaultsRequest || elm327ActivationConfirmed) return; //another UDS user owns the engine ECU
 		uint32_t since=currentTime-last_sent_uds_parameter_request_Time;
-		uint32_t period=screenRefreshPeriodMs(screenRefreshMode);
+		const uint32_t period=500; //the screen period below
 		if(since<GW_GUARD_MS || (since+GW_GUARD_MS>period && since<period+50)) return; //too close to the page request
 		uint8_t item=gwNextItem(&gw,currentTime,giuliaWatchMode);
 		if(item==GW_ITEM_NONE) return;
@@ -805,7 +825,7 @@
 		giuliaWatchPeriodic(); //ECM watch
 		//send a parameter request each xx msec if dashboard menu shall be visible
 		//baccableDashboardMenuVisible=1; //force menu always on, just for debug
-		if((currentTime-last_sent_uds_parameter_request_Time>screenRefreshPeriodMs(screenRefreshMode)) && baccableDashboardMenuVisible ){ //was 500
+		if((currentTime-last_sent_uds_parameter_request_Time>500) && baccableDashboardMenuVisible ){
 			last_sent_uds_parameter_request_Time=currentTime;
 
 
@@ -816,27 +836,32 @@
 				case 1:
 					if(main_dashboardPageIndex==1){ //we are in show params submenu
 						clearFaultsRequest=0; //ensure we don't perform more tasks simoultaneously
-						currentParamElementSelection=!currentParamElementSelection;
-						if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]== uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[!currentParamElementSelection]){
-							currentParamElementSelection=0; //single param
+						const uds_params_couple_element *page=&uds_params_array[function_is_diesel_enabled][dashboardPageIndex];
+						uint8_t count=pageValueCount(page), udsMask=0;
+						//values the board already has cost no request: all of them are refreshed on every tick
+						for(uint8_t k=0;k<count;k++){
+							if(single_uds_params_array[page->udsParamId[k]].reqId>0xFF) udsMask|=(uint8_t)(1u<<k);
+							else dashboardParamCouple[k]=applyHold(k,getNativeParam(page->udsParamId[k]));
 						}
-
-						if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqId>0xFF){ //if req id is greather than 0xFF it is a standard UDS request.
+						//one request per tick, the requested values take turns
+						uint8_t next=pageNextElement(udsMask, count, currentParamElementSelection);
+						if(next==0xFF){
+							sendDashboardPageToSlaveBaccable();  //Send params to BH board
+						}else{
+							if(udsAwaitingReply && udsMask!=(uint8_t)((1u<<count)-1)) sendDashboardPageToSlaveBaccable(); //no reply: keep the other values alive
+							currentParamElementSelection=next;
+							const uds_param_single_element *rec=&single_uds_params_array[page->udsParamId[next]];
 							//request current parameter to ECU
-							uds_parameter_request_msg_header.ExtId=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqId;
-
-							memcpy(&uds_parameter_request_msg_data[0],&single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqData,single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen );
-							uds_parameter_request_msg_header.DLC=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].reqLen;
-							if(single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyFlags & UDS_REPLY_OBD){ //OBD request: 8 bytes, padded with zeros
+							uds_parameter_request_msg_header.ExtId=rec->reqId;
+							memcpy(&uds_parameter_request_msg_data[0],&rec->reqData,rec->reqLen);
+							uds_parameter_request_msg_header.DLC=rec->reqLen;
+							if(rec->replyFlags & UDS_REPLY_OBD){ //OBD request: 8 bytes, padded with zeros
 								memset(&uds_parameter_request_msg_data[3],0,5);
 								uds_parameter_request_msg_header.DLC=8;
 							}
 							//onboardLed_blue_on();
 							can_tx(&uds_parameter_request_msg_header, uds_parameter_request_msg_data); //transmit the request
-						}else{ //<0xff reqId means special value that we use to get particular values
-							float nativeVal=getNativeParam((uint8_t)uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]);
-							dashboardParamCouple[currentParamElementSelection]=applyHold(currentParamElementSelection,nativeVal); //max or min hold
-							sendDashboardPageToSlaveBaccable();  //Send params to BH board
+							udsAwaitingReply=1;
 						}
 					}
 
@@ -1599,15 +1624,10 @@
 			case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[dnaMemoryFunctionEnabled];
 				break;
-			case 34: //"ECM Watch: ALL"
-				memcpy(&dashboard_setup_menu_array[34][11], giuliaWatchMode==1 ? "ALL " : (giuliaWatchMode==2 ? "TEMP" : (giuliaWatchMode==3 ? "DTC " : "OFF ")), 4);
+			case 33: //"ECM Watch: ALL"
+				memcpy(&dashboard_setup_menu_array[33][11], giuliaWatchMode==1 ? "ALL " : (giuliaWatchMode==2 ? "TEMP" : (giuliaWatchMode==3 ? "DTC " : "OFF ")), 4);
 				break;
-			case 32: //{'S','c','r','e','e','n',' ','R','a','t','e',' ','5','0','0','m','s'}
-				dashboard_setup_menu_array[setup_dashboardPageIndex][12]=(uint8_t)('0'+screenRefreshPeriodMs(screenRefreshMode)/100);
-				dashboard_setup_menu_array[setup_dashboardPageIndex][13]=(uint8_t)('0'+(screenRefreshPeriodMs(screenRefreshMode)/10)%10);
-				dashboard_setup_menu_array[setup_dashboardPageIndex][14]='0';
-				break;
-			case 33: //{'O',' ',' ','W','a','r','n','i','n','g','s'}, " +Chime" with value 2
+			case 32: //{'O',' ',' ','W','a','r','n','i','n','g','s'}, " +Chime" with value 2
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[!!warnMode];
 				memcpy(&dashboard_setup_menu_array[setup_dashboardPageIndex][11], warnMode==2 ? " +Chime" : "       ", 7);
 				break;
@@ -1624,8 +1644,9 @@
 
 	void sendParamsSetupDashboardPageToSlaveBaccable(){
 		uartTxMsg[0]= BhBusIDparamString;//first char shall be a # to talk with slave canable connected to BH can bus
-		switch(params_setup_dashboardPageIndex){
-			case 0: //{'S','A','V','E','&','E','X','I','T',},
+		uint8_t menuPage=paramsSetupPage(params_setup_dashboardPageIndex);
+		switch(menuPage){
+			case PAGE_MENU_SAVE: //{'S','A','V','E','&','E','X','I','T',},
 				uartTxMsg[1]='S';
 				uartTxMsg[2]='A';
 				uartTxMsg[3]='V';
@@ -1647,17 +1668,15 @@
 
 				break;
 			default: //hidden or shown params
-				uartTxMsg[1]=checkbox_symbols[shownParamsArray[params_setup_dashboardPageIndex-1]];
+				uartTxMsg[1]=checkbox_symbols[shownParamsArray[menuPage]];
 				uartTxMsg[2]=' ';
 				uartTxMsg[3]=' ';
 
 				char tmpName[DASHBOARD_MESSAGE_MAX_LENGTH + 5];
 
-				memcpy(
-				    tmpName,
-				    uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex - 1].name,
-				    strlen(uds_params_array[function_is_diesel_enabled][params_setup_dashboardPageIndex - 1].name) + 1
-				);
+				const char *menuName=uds_params_array[function_is_diesel_enabled][menuPage].name;
+				if(uds_params_array[function_is_diesel_enabled][menuPage].values==3 && menuPage>=THREE_VALUE_PAGES_FIRST) menuName=threeValuePageLabels[menuPage-THREE_VALUE_PAGES_FIRST];
+				memcpy(tmpName, menuName, strlen(menuName) + 1);
 
 				uint8_t tmpStrLen=removePatterns(tmpName); //remove special patterns from template
 				if(tmpStrLen>UART_BUFFER_SIZE-4) tmpStrLen=UART_BUFFER_SIZE-4;
@@ -1791,7 +1810,7 @@
 	// syntax: $n.yf or $enum
 	// n = 0..6 (integer part), y = 0..3 (decimal)
 
-	void buildLineWithFormat(const char* template, float values[2], const uint8_t paramId[2], char* result) {
+	void buildLineWithFormat(const char* template, float values[3], const uint8_t paramId[3], char* result) {
 		//onboardLed_red_blink(5);
 	    int i = 0;   // indice output
 	    int which = 0; // 0 = val1, 1 = val2
@@ -2005,7 +2024,7 @@
 		// and we shall erase entire page before write. one page size is FLASH_PAGE_SIZE (2048 bytes in st32F072)
 		//it seems that stm32F072 supports only writing 2byte words
 		//write parameter
-		uint8_t paramsNumber=40; //elm327 function 26/08/2026 - was 31 //DNA memory 18/10/2026 - was 32 //slots 34..40 added - was 33
+		uint8_t paramsNumber=39; //elm327 function 26/08/2026 - was 31 //DNA memory 18/10/2026 - was 32 //slots 34..40 added - was 33
 		uint16_t params[40] = {
 		  immobilizerEnabled,
 		  function_smart_disable_start_stop_enabled,
@@ -2045,7 +2064,6 @@
 		  [35]=dnaPagesAR,  //slot 36 //page by drive style
 		  [36]=autoScrollMode,  //slot 37 //auto scroll
 		  [37]=giuliaWatchMode, [38]=giuliaColdMode, //slots 38, 39
-		  [39]=screenRefreshMode,  //slot 40: screen refresh mode //screen rate
 		};
 
 		return writeSettingsPage(params, paramsNumber);
@@ -2539,9 +2557,6 @@
 			case 37: //auto scroll: 0 off, 1..3
 				if(tmpParam>3) return 0;
 				break;
-			case 40: //screen refresh mode, blank flash (0xFFFF) means 500ms
-				if(tmpParam>2) return 0;
-				break;
 			default:
 				return 0;
 				break;
@@ -2564,27 +2579,6 @@
 
 
 
-	uint8_t getNextVisibleParam(uint8_t curIndex) {
-
-	    uint8_t index = curIndex;
-	    while (index < total_pages_in_params_setup_dashboard_menu && !shownParamsArray[index]) index++;
-
-	    if (index >= total_pages_in_params_setup_dashboard_menu) index = 0; //if all hidden, restart from the beginning
-	    while (index < curIndex && !shownParamsArray[index]) index++;
-
-	    return index;
-	}
-
-	uint8_t getPreviousVisibleParam(uint8_t curIndex) {
-	    uint8_t total = total_pages_in_params_setup_dashboard_menu;
-	    if (total == 0) return 0;
-	    uint8_t index = (curIndex < total) ? curIndex : (uint8_t)(total - 1);
-	    for (uint8_t k = 0; k < total; k++) { //at most one full turn, wrapping from 0 to the last page
-	        if (shownParamsArray[index]) return index;
-	        index = index ? (uint8_t)(index - 1) : (uint8_t)(total - 1);
-	    }
-	    return (curIndex < total) ? curIndex : 0; //all hidden
-	}
 
 	//drive style page, auto scroll and warnings - BEGIN
 	//text of main menu row 16: "DNA N: " and the name of the page bound to the drive style in use
@@ -2618,8 +2612,7 @@
 
 	static void showParamsPage(uint8_t page){
 		dashboardPageIndex=page;
-		dashboardParamCouple[0]=NAN;
-		dashboardParamCouple[1]=NAN;
+		resetPageValues();
 		if(baccableDashboardMenuVisible && dashboard_menu_indent_level==1 && main_dashboardPageIndex==1) sendDashboardPageToSlaveBaccable();
 	}
 
@@ -2685,9 +2678,7 @@
 		//auto scroll: parameters page on screen, engine running, hold mode off
 		uint8_t allowed=baccableDashboardMenuVisible && dashboard_menu_indent_level==1 && main_dashboardPageIndex==1 && currentRpmSpeed>=400 && !maxHold_enabled;
 		if(autoScrollDue(currentTime, autoScrollMode, allowed, dashboardPageIndex)){
-			uint8_t next=dashboardPageIndex+1;
-			if(next>=total_pages_in_params_setup_dashboard_menu) next=0;
-			next=getNextVisibleParam(next);
+			uint8_t next=stepShownPage(dashboardPageIndex,1);
 			if(next!=dashboardPageIndex) showParamsPage(next);
 		}
 	}
@@ -2711,7 +2702,7 @@
 	// Fast-returns if max hold is inactive or the params view is not shown.
 	void nativeMaxHoldUpdate(uint8_t paramId){
 		if(!maxHold_enabled || dashboard_menu_indent_level!=1 || main_dashboardPageIndex!=1 || !baccableDashboardMenuVisible) return;
-		for(uint8_t sel=0; sel<2; sel++){
+		for(uint8_t sel=0; sel<pageValueCount(&uds_params_array[function_is_diesel_enabled][dashboardPageIndex]); sel++){
 			if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[sel]==paramId){
 				if(!isnan(dashboardParamCouple[sel])){ //only after the 500ms cycle has set the initial value
 					float value=getNativeParam(paramId);

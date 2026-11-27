@@ -173,7 +173,6 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t giuliaColdMode=0; //flash slot 39: 0=75 C (default), 1=70, 2=80, 3=off
 	float fuelFlowLh=NAN; //last DID 1942 value, smoothed
 	uint32_t fuelFlowTime=0;
-	uint8_t screenRefreshMode=0; //0=500ms (stock), 1=400ms, 2=350ms. saved on flash (slot 40)
 	uint8_t settingsSaveRequested=0; //a page erase stalls the cpu: it waits for the engine to stop
 	uint8_t maxHold_enabled=0; // 0=Hold OFF, 1=Max Hold, 2=Min Hold (RAM only, resets on power cycle)
 	uint8_t warnMode=0; //0=warnings off, 1=text, 2=text and chime. saved on flash (slot 34)
@@ -206,8 +205,8 @@ const char *FW_VERSION=_FW_VERSION;
 
 	};
 	uint8_t setup_dashboardPageIndex=0;
-	uint8_t total_pages_in_setup_dashboard_menu=35; //elm327 function 26/08/2026 - was 30, ELM327 entry added //DNA memory 18/10/2026 - was 31 //Screen Rate, Warnings, ECM Watch - was 32
-	uint8_t dashboard_setup_menu_array[35][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full //DNA memory 18/10/2026 - was [31] //Screen Rate, Warnings, ECM Watch - was [32]
+	uint8_t total_pages_in_setup_dashboard_menu=34; //elm327 function 26/08/2026 - was 30, ELM327 entry added //DNA memory 18/10/2026 - was 31 //Warnings, ECM Watch - was 32
+	uint8_t dashboard_setup_menu_array[34][DASHBOARD_MESSAGE_MAX_LENGTH]={ //elm327 function 26/08/2026 - was [30], the array was full //DNA memory 18/10/2026 - was [31] //Warnings, ECM Watch - was [32]
 			{'S','A','V','E','&','E','X','I','T',' ',' ',' ',' ',' ',' ',' ',' ',' '},
 			{'O',' ',' ','S','t','a','r','t','&','S','t','o','p',' ',' ',' ',' ',' '},
 			{'L','a','u','n','c','h','T','o','r','q','u','e',' ','1','0','0','N','m'},
@@ -240,9 +239,8 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','S','N','I','F','F','E','R',' ',' ',' ',' ',' ',' ',' ',' ',}, //sniffer function 24/08/2026
 			{'O',' ',' ','E','L','M','3','2','7',' ',' ',' ',' ',' ',' ',' ',' ',' ',}, //elm327 function 26/08/2026 - last free slot of the array
 			{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y',' ',' ',' ',' ',' ',}, //DNA memory 18/10/2026
-			{'S','c','r','e','e','n',' ','R','a','t','e',' ','5','0','0','m','s',' '}, //index 32
-			{'O',' ',' ','W','a','r','n','i','n','g','s',' ',' ',' ',' ',' ',' ',' '}, //index 33
-			{'E','C','M',' ','W','a','t','c','h',':',' ','O','F','F',' ',' ',' ',' '}, //index 34
+			{'O',' ',' ','W','a','r','n','i','n','g','s',' ',' ',' ',' ',' ',' ',' '}, //index 32
+			{'E','C','M',' ','W','a','t','c','h',':',' ','O','F','F',' ',' ',' ',' '}, //index 33
 
 		};
 

@@ -6,5 +6,5 @@ C=$1; D=${0:A:h}
   awk '/^\tvoid buildLineWithFormat\(/{f=1} /^\tuint8_t removePatterns\(/{f=0} f{print}' $C/Src/functions_C1baccable.c
   awk '/^\tvoid compress_to_uint16\(/{f=1} /^\tvoid readShownParamsFromFlash\(/{f=0} f{print}' $C/Src/functions_C1baccable.c; } > $D/extracted.inc
 clang ${=HOSTFLAGS} -fsyntax-only -Wno-everything -Werror=initializer-overrides -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1 -I$D/stub -I$C/Inc $C/Src/uds_parameters.c || exit 1 # fails on two entries with the same [index]
-clang ${=HOSTFLAGS} -w -g -fsanitize=address,undefined -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1 -I$D/stub -I$D -I$C/Inc -o $D/test_screens $D/test_screens.c $C/Src/uds_parameters.c $C/Src/giulia_watch.c -lm && $D/test_screens
+clang ${=HOSTFLAGS} -w -g -fsanitize=address,undefined -DRELEASE_FLAVOR=C1_FLAVOR -DC1_FLAVOR=1 -I$D/stub -I$D -I$C/Inc -o $D/test_screens $D/test_screens.c $C/Src/uds_parameters.c $C/Src/giulia_watch.c $C/Src/page_order.c -lm && $D/test_screens
 clang ${=HOSTFLAGS} -Wall -g -fsanitize=address,undefined -I$D/stub -I$C/Inc -o $D/test_warnings $D/test_warnings.c $C/Src/warnings.c && $D/test_warnings

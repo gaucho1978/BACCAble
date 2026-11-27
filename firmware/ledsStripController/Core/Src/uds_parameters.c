@@ -1,14 +1,14 @@
 #include "uds_parameters.h"
 
-	float dashboardParamCouple[2];
-	float dashboardParamMaxHold[2]; // stores max value for each displayed param (used by Max Hold feature)
+	float dashboardParamCouple[3];
+	float dashboardParamMaxHold[3]; // stores max value for each displayed param (used by Max Hold feature)
 
 
 	uint8_t shownParamsArray[240];
 	uint8_t params_setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_params_setup_dashboard_menu=0;
 
-	uint8_t total_pages_in_dashboard_menu_gasoline=67; //brake in show params 10/10/2026 - was 46 //20 new pages - was 47
+	uint8_t total_pages_in_dashboard_menu_gasoline=74; //47 upstream pages, 20 two or one value pages, 7 three value pages
 	uint8_t total_pages_in_dashboard_menu_diesel=57; //brake in show params 10/10/2026 - was 56
 	uint8_t currentParamElementSelection=0;
 	
@@ -78,7 +78,7 @@
 					[54]={.name="SPK1 $2.1f 2 $2.1f" "\xB0",	.udsParamId={97,	98	}}, //spark correction cyl 1 and 2, signed
 					[55]={.name="SPK3 $2.1f 4 $2.1f" "\xB0",	.udsParamId={99,	100	}}, //spark correction cyl 3 and 4, signed
 					[56]={.name="KNOCK: $4.0fmV",	.udsParamId={101,	101	}}, //knock sensor, 2 bytes (page 32 reads 1 byte)
-					[57]={.name="RAIL $3.0f/$3.0fbar",	.udsParamId={102,	103	}}, //fuel rail pressure DID 1946 / 1947
+					[57]={.name="RAIL: $3.0fbar",	.udsParamId={102,	102	}}, //fuel rail pressure, DID 1946
 					[58]={.name="OIL $3.0f" "\xB0" "C MA $3.0f" "\xB0" "C",	.udsParamId={5,	32	}}, //oil (native) and MultiAir oil
 					[59]={.name="EGT$4.0f CAT$4.0f" "\xB0" "C",	.udsParamId={40,	41	}}, //exhaust gas and catalyst
 					[60]={.name="IDLE $4.0f/$4.0frpm",	.udsParamId={104,	105	}}, //idle target / engine speed
@@ -88,6 +88,13 @@
 					[64]={.name="LAMBDA: $1.3f",	.udsParamId={111,	111	}}, //OBD 44 commanded lambda
 					[65]={.name="W.UP $2.1fmin $3.0f" "\xB0" "C",	.udsParamId={14,	5	}}, //warm-up timer (native 14) and oil
 					[66]={.name="$2.1fL/h $2.1fL/100",				.udsParamId={92,	16		}}, //page 66: fuel flow and instant consumption
+					[67]={.name="U$3.0f O$3.0f W$3.0f" "\xB0" "",	.udsParamId={32,	5,	42	},	.values=3}, //UniAir, oil and water
+					[68]={.name="O$3.0f W$3.0f G$3.0f" "\xB0" "",	.udsParamId={5,	42,	33	},	.values=3}, //oil, water and gearbox
+					[69]={.name="M$1.2f B$1.2f T$3.0f",	.udsParamId={90,	24,	22	},	.values=3}, //manifold, boost and intercooler air
+					[70]={.name="P$1.1f O$3.0f W$3.0f" "\xB0" "",	.udsParamId={0,	5,	42	},	.values=3}, //oil pressure, oil and water
+					[71]={.name="$2.1fV $4.0fA $3.0f%",	.udsParamId={35,	4,	21	},	.values=3}, //battery voltage, current and charge
+					[72]={.name="G$enum T$3.0f B$1.2f",	.udsParamId={6,	2,	24	},	.values=3}, //gear, torque and boost
+					[73]={.name="E$4.0f C$4.0f T$3.0f",	.udsParamId={40,	41,	22	},	.values=3}, //exhaust gas, catalyst and intercooler air
 					//
 //					{.name="RAM: $5.0fB",						.udsParamId={16,	16		}}, //Free RAM
 //									{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B3),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
@@ -279,7 +286,6 @@
 		[100]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186F),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_SIGNED,	.replyValOffset=0,	.replyScale=0.0625,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'d','e','g',}	}, //100		spark correction cyl 4
 		[101]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221841),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'m','V',}	}, //101		knock sensor, 16 bit
 		[102]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221946),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.00599,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'b','a','r',}	}, //102		fuel rail pressure, DID 1946
-		[103]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221947),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.00599,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'b','a','r',}	}, //103		fuel rail pressure, DID 1947
 		[104]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x0322186B),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=10,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'r','p','m',}	}, //104		idle speed target
 		[105]={.reqId=0x18DA10F1,	.reqLen=4,	.reqData=SWAP_UINT32(0x03221000),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=0,	.replyValOffset=0,	.replyScale=0.25,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'r','p','m',}	}, //105		engine speed
 		[106]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010600),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=-128,	.replyScale=0.78125,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}	}, //106		OBD 06 short term fuel trim
@@ -344,12 +350,6 @@
 		return 1;
 	}
 
-	//screen refresh period for the saved mode 0..2. One parameter is also requested once per period.
-	//BH needs 6 frames, one each >50ms, to write a line (about 310ms), so the period must stay above that.
-	uint16_t screenRefreshPeriodMs(uint8_t mode){
-		return mode==1 ? 400 : (mode==2 ? 350 : 500);
-	}
-
 	//warm-up timer: minutes from engine start until the oil reaches 80 C, then the number stays.
 	//Called on every 0xFC frame with the tick in ms, so it does not depend on the screen refresh period.
 	//A stop shorter than WARMUP_REARM_MS does not restart it. A later start with warm oil keeps the last result.
@@ -378,7 +378,9 @@
 	//requests on the bus. Done with either fuel selected: the same bits serve both after a change of fuel.
 	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel){
 		if(mark==SHOWN_PARAMS_MARK) return;
-		for(uint8_t i=isDiesel ? UPSTREAM_PAGES_DIESEL : UPSTREAM_PAGES_GASOLINE; i<UDS_PAGES_MAX; i++){
+		uint8_t first=isDiesel ? UPSTREAM_PAGES_DIESEL : UPSTREAM_PAGES_GASOLINE;
+		if(mark==SHOWN_PARAMS_MARK_72) first=THREE_VALUE_PAGES_FIRST; //the earlier bits are the driver's choice
+		for(uint8_t i=first; i<UDS_PAGES_MAX; i++){
 			shown[i]=(i>=OBD_PAGES_FIRST && i<=OBD_PAGES_LAST) ? 0 : 1;
 		}
 	}
@@ -394,3 +396,6 @@
 		}
 		return changed;
 	}
+
+	//Params Setup names of the three value pages, from THREE_VALUE_PAGES_FIRST (their templates are only letters)
+	const char * const threeValuePageLabels[7]={ "UAIR OIL WAT", "OIL WAT GBOX", "MAP BOOST IAT", "OILP OIL WAT", "BATT V A %", "GEAR TQ BOOST", "EGT CAT IAT" };

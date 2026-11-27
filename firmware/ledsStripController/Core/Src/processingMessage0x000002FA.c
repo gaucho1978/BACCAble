@@ -139,17 +139,9 @@ void processingMessage0x000002FA(){
 									break;
 								case 1:
 									if(main_dashboardPageIndex==1){ //we are in show params submenu
-										dashboardPageIndex += 1; //set next page
-										if(function_is_diesel_enabled==1){
-											if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // make a rotative menu
-										}else{
-											if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // make a rotative menu
-										}
-
-										dashboardPageIndex=getNextVisibleParam(dashboardPageIndex);
+										dashboardPageIndex=stepShownPage(dashboardPageIndex,1); //along the display order, hidden pages skipped
 										//onboardLed_blue_on();
-										dashboardParamCouple[0]=NAN;//zeroize params
-										dashboardParamCouple[1]=NAN;//zeroize params
+										resetPageValues();
 
 										sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 									}
@@ -165,8 +157,7 @@ void processingMessage0x000002FA(){
 										sendSetupDashboardPageToSlaveBaccable(); //send
 									}
 									if(main_dashboardPageIndex==10){ //we are in params setup menu
-										params_setup_dashboardPageIndex+=1;//set next page
-										if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+										params_setup_dashboardPageIndex=pageMenuStep(total_pages_in_params_setup_dashboard_menu, params_setup_dashboardPageIndex, 1);
 										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
 									if(main_dashboardPageIndex==2 && faultsStateMachine==3 && faultsDTCcount>0){ //readFaults 12/08/2026
@@ -224,16 +215,9 @@ void processingMessage0x000002FA(){
 										break;
 									case 1:
 										if(main_dashboardPageIndex==1){ //we are in show params submenu
-											dashboardPageIndex += 10; //set 10 pages forward (+1 in gentle command)
-											if(function_is_diesel_enabled==1){
-												if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // make a rotative menu
-											}else{
-												if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // make a rotative menu
-											}
-											dashboardPageIndex=getNextVisibleParam(dashboardPageIndex);
+											dashboardPageIndex=stepShownPage(dashboardPageIndex,10); //along the display order, hidden pages skipped
 												//onboardLed_blue_on();
-											dashboardParamCouple[0]=NAN;//zeroize params
-											dashboardParamCouple[1]=NAN;//zeroize params
+											resetPageValues();
 											sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 										}
 										if(main_dashboardPageIndex==9){ //we are in setup menu
@@ -245,8 +229,7 @@ void processingMessage0x000002FA(){
 											sendSetupDashboardPageToSlaveBaccable(); //send
 										}
 										if(main_dashboardPageIndex==10){ //we are in params setup menu
-											params_setup_dashboardPageIndex+=10;//set next page
-											if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+											params_setup_dashboardPageIndex=pageMenuStep(total_pages_in_params_setup_dashboard_menu, params_setup_dashboardPageIndex, 10);
 											//onboardLed_blue_on();
 											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
@@ -308,16 +291,9 @@ void processingMessage0x000002FA(){
 									break;
 								case 1:
 									if(main_dashboardPageIndex==1){ //we are in show params submenu
-										dashboardPageIndex -= 1; //set previous page
-										if(function_is_diesel_enabled==1){
-											if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=total_pages_in_dashboard_menu_diesel-1; // make a rotative menu
-										}else{
-											if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=total_pages_in_dashboard_menu_gasoline-1; // make a rotative menu
-										}
-										dashboardPageIndex=getPreviousVisibleParam(dashboardPageIndex);
+										dashboardPageIndex=stepShownPage(dashboardPageIndex,-1); //along the display order, hidden pages skipped
 										//onboardLed_blue_on();
-										dashboardParamCouple[0]=NAN;//zeroize params
-										dashboardParamCouple[1]=NAN;//zeroize params
+										resetPageValues();
 										sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 									}
 									if(main_dashboardPageIndex==9){ //we are in setup menu
@@ -330,8 +306,7 @@ void processingMessage0x000002FA(){
 										sendSetupDashboardPageToSlaveBaccable(); //send
 									}
 									if(main_dashboardPageIndex==10){ //we are in params setup menu
-										params_setup_dashboardPageIndex-=1;//set next page
-										if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=total_pages_in_params_setup_dashboard_menu; // make a rotative menu
+										params_setup_dashboardPageIndex=pageMenuStep(total_pages_in_params_setup_dashboard_menu, params_setup_dashboardPageIndex, -1);
 										//onboardLed_blue_on();
 										sendParamsSetupDashboardPageToSlaveBaccable(); //send
 									}
@@ -391,19 +366,11 @@ void processingMessage0x000002FA(){
 										break;
 									case 1:
 										if(main_dashboardPageIndex==1){ //we are in show params submenu
-											dashboardPageIndex -= 10; //set 10 pages backward
-
-											if(function_is_diesel_enabled==1){
-												if(dashboardPageIndex>=total_pages_in_dashboard_menu_diesel)  dashboardPageIndex=0; // stay at zero.
-											}else{
-												if(dashboardPageIndex>=total_pages_in_dashboard_menu_gasoline)  dashboardPageIndex=0; // stay at zero.
-											}
-											dashboardPageIndex=getPreviousVisibleParam(dashboardPageIndex);
+											dashboardPageIndex=stepShownPage(dashboardPageIndex,-10); //along the display order, hidden pages skipped
 
 
 											//onboardLed_blue_on();
-											dashboardParamCouple[0]=NAN;//zeroize params
-											dashboardParamCouple[1]=NAN;//zeroize params
+											resetPageValues();
 											sendDashboardPageToSlaveBaccable(); //send dashboard page to BH
 										}
 										if(main_dashboardPageIndex==9){ //we are in setup menu
@@ -415,8 +382,7 @@ void processingMessage0x000002FA(){
 											sendSetupDashboardPageToSlaveBaccable(); //send
 										}
 										if(main_dashboardPageIndex==10){ //we are in params setup menu
-											params_setup_dashboardPageIndex-=10;//set prev page
-											if(params_setup_dashboardPageIndex>total_pages_in_params_setup_dashboard_menu)  params_setup_dashboardPageIndex=0; // make a rotative menu
+											params_setup_dashboardPageIndex=pageMenuStep(total_pages_in_params_setup_dashboard_menu, params_setup_dashboardPageIndex, -10);
 											//onboardLed_blue_on();
 											sendParamsSetupDashboardPageToSlaveBaccable(); //send
 										}
@@ -439,8 +405,7 @@ void processingMessage0x000002FA(){
 							switch(main_dashboardPageIndex){
 								case 1: //show params
 									dashboard_menu_indent_level++;
-									dashboardParamCouple[0]=NAN;//zeroize params
-									dashboardParamCouple[1]=NAN;//zeroize params
+									resetPageValues();
 									sendDashboardPageToSlaveBaccable();
 									break;
 								case 2: //read faults //readFaults 12/08/2026
@@ -574,8 +539,7 @@ void processingMessage0x000002FA(){
 									maxHold_enabled=(maxHold_enabled+1)%3; //OFF, MAX, MIN
 									if(maxHold_enabled){
 										//force fresh start: next parameter update will initialise max hold from scratch
-										dashboardParamCouple[0]=NAN;
-										dashboardParamCouple[1]=NAN;
+										resetPageValues();
 									}
 									break;
 								case 16: //bind the parameters page in use to the drive style in use
@@ -627,7 +591,6 @@ void processingMessage0x000002FA(){
 												((uint16_t)snifferFunctionEnabled						!= readFromFlash(31))	|| //SNIFFER //sniffer function 24/08/2026
 												((uint16_t)elm327FunctionEnabled						!= readFromFlash(32))	|| //ELM327 //elm327 function 26/08/2026
 												((uint16_t)dnaMemoryFunctionEnabled						!= readFromFlash(33))	|| //DNA_MEMORY //DNA memory 18/10/2026
-												((uint16_t)screenRefreshMode							!= readFromFlash(40))	||
 												((uint16_t)warnMode										!= readFromFlash(34))	||
 												((uint16_t)giuliaWatchMode != readFromFlash(38)) || ((uint16_t)giuliaColdMode != readFromFlash(39))	){
 													//sniffer function 24/08/2026 - BEGIN
@@ -735,6 +698,8 @@ void processingMessage0x000002FA(){
 										case 18: //{'Ø',' ',' ','D','i','e','s','e','l',' ',' ',' ','P','a','r','a','m','s'},
 											function_is_diesel_enabled=!function_is_diesel_enabled;
 											total_pages_in_params_setup_dashboard_menu = function_is_diesel_enabled ? total_pages_in_dashboard_menu_diesel : total_pages_in_dashboard_menu_gasoline;
+											rebuildPageOrder(); dashboardPageIndex=stepShownPage(255,0); //another fuel, another table
+											params_setup_dashboardPageIndex=0;
 											break;
 										case 19: // {'O',' ',' ','O','d','o','m','e','t','e','r',' ','B','l','i','n','k',' '},
 											function_disable_odometer_blink=!function_disable_odometer_blink;
@@ -825,13 +790,10 @@ void processingMessage0x000002FA(){
 										case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
 											dnaMemoryFunctionEnabled=!dnaMemoryFunctionEnabled;
 											break;
-										case 34: //ECM Watch: OFF, ALL, TEMP, DTC
+										case 33: //ECM Watch: OFF, ALL, TEMP, DTC
 											giuliaWatchMode=(giuliaWatchMode+1)%4;
 											break;
-										case 32: //Screen Rate: 500, 400, 350 ms. applied at once, kept with SAVE&EXIT
-											screenRefreshMode=(screenRefreshMode+1)%3;
-											break;
-										case 33: //Warnings: off, text, text and chime. One test chime when the chime is selected
+										case 32: //Warnings: off, text, text and chime. One test chime when the chime is selected
 											warnMode=(warnMode+1)%3;
 											if(warnMode==2){
 												uint8_t tmpArrChime[1]={BhBusChimeRequest};
@@ -851,13 +813,14 @@ void processingMessage0x000002FA(){
 									sendMainDashboardPageToSlaveBaccable();
 									break;
 								case 10: //PARAMS SETUP MENU
-									switch(params_setup_dashboardPageIndex){
-										case 0: //{'S','A','V','E','&','E','X','I','T',},
+									switch(paramsSetupPage(params_setup_dashboardPageIndex)){
+										case PAGE_MENU_SAVE: //two of them: after the combined pages and at the end
 											saveShownParamsOnflash();
+											params_setup_dashboardPageIndex=0; //next time the list starts with the combined pages
 											dashboard_menu_indent_level=0;
 											break;
 										default: //toggle hidden variable of current param
-											shownParamsArray[params_setup_dashboardPageIndex-1]=!shownParamsArray[params_setup_dashboardPageIndex-1];
+											shownParamsArray[paramsSetupPage(params_setup_dashboardPageIndex)]=!shownParamsArray[paramsSetupPage(params_setup_dashboardPageIndex)];
 											break;
 									}
 									break;

@@ -65,7 +65,7 @@ I started the development from the famous SLCAN firmware (https://github.com/nor
 
 ## Extra functions for the 2.0 petrol engine
 
-Extra dashboard pages, a selectable screen refresh rate, dashboard warnings and an engine ECU watch are described in [GIULIA_FEATURES.md](firmware/ledsStripController/GIULIA_FEATURES.md). They were written for a Giulia 952 2.0 petrol. So far they have only been compiled and checked with host tests: they have not been run on a board or in a car.
+Extra dashboard pages including three value pages, dashboard warnings and an engine ECU watch are described in [GIULIA_FEATURES.md](firmware/ledsStripController/GIULIA_FEATURES.md). They were written for a Giulia 952 2.0 petrol. They are only partly tested on one car: see the state section in that file.
 
 ## DASHBOARD MENU functionality Notes
 

@@ -168,8 +168,7 @@
 		extern uint8_t dashboard_main_menu_array[20][DASHBOARD_MESSAGE_MAX_LENGTH];
 		extern uint8_t setup_dashboardPageIndex;
 		extern uint8_t total_pages_in_setup_dashboard_menu;
-		extern uint8_t dashboard_setup_menu_array[35][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30] //DNA memory 18/10/2026 - was [31] //Screen Rate, Warnings, ECM Watch - was [32]
-		extern uint8_t screenRefreshMode; //screen rate
+		extern uint8_t dashboard_setup_menu_array[34][DASHBOARD_MESSAGE_MAX_LENGTH]; //elm327 function 26/08/2026 - was [30] //DNA memory 18/10/2026 - was [31] //Warnings, ECM Watch - was [32]
 		extern uint8_t settingsSaveRequested; //main menu choice waiting for a flash write
 		extern uint8_t warnMode; //warnings
 		extern uint16_t dnaPagesND; //page by drive style

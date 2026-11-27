@@ -1,15 +1,15 @@
-# Extra dashboard screens, screen rate, warnings and watchdogs
+# Extra dashboard screens, warnings and watchdogs
 
 Written for a Giulia 952 2.0 petrol (engine ECU Marelli IAW10JA). Based on V.3.9.4.
 
-**State: builds and host tests only. Nothing here has run on a board or in a car yet.** DID scales marked "unverified" are working assumptions.
+**State: partly tested on one car (Giulia 952 2.0 petrol).** The owner ran an earlier build of this branch (C1 with the three value pages, BH and C2 one build older): the parameter pages showed values, `Auto Scroll` worked and the `Cold Alarm` entry worked. That build also had a screen rate setting, removed afterwards because no difference was visible in the car, and a two value rail pressure page, now one value. The final code has host tests and ARM builds only. Not tested: drive style page binding, `Hold Mode`, `Warnings` and the chime, `ECM Watch`, the OBD pages 61..64, diesel. DID scales marked "unverified" are working assumptions.
 
 The new pages, `ECM DTC` and `Cold Alarm` need the engine type set to gasoline. The manuals do not describe these features yet.
 
 ## Boards
 
 - C1: all features.
-- BH: one fix, a new dashboard line is taken only between two writes, so a 350 or 400 ms screen rate cannot mix two texts.
+- BH: one fix, a new dashboard line is taken only between two writes, so a line arriving during a write (for example after quick menu presses) cannot mix two texts.
 - C2: no functional change.
 
 ## New parameter pages (petrol)
@@ -17,13 +17,29 @@ The new pages, `ECM DTC` and `Cold Alarm` need the engine type set to gasoline. 
 | Pages | Screens | Notes |
 |---|---|---|
 | 47..53 | gearbox and water temp, DID 1C16 and intercooler air, MAP and boost, air mass and fuel flow, knock 1..4, gear and torque | 1C16 meaning and DID 1942 fuel flow are unverified |
-| 54..60 | spark correction per cylinder (signed), knock (2 bytes), fuel rail pressure, oil and MultiAir oil, EGT and catalyst, idle target and rpm | rail pressure: which DID is measured is unverified |
+| 54..60 | spark correction per cylinder (signed), knock (2 bytes), fuel rail pressure (DID 1946), oil and MultiAir oil, EGT and catalyst, idle target and rpm | rail pressure: whether DID 1946 is the measured or the target value is unverified |
 | 61..64 | fuel trims, ambient and water temp, timing advance and load, lambda | OBD service 01, **functional requests on 0x18DB33F1** |
 | 65, 66 | warm-up timer, instant L/h and L/100 km | |
 
 After an update, pages 47..60 and 65, 66 are visible and 61..64 are hidden until enabled in Params Setup Menu. The default is applied with either fuel selected, and saving the page selection keeps the bits of all pages.
 
 Both fuel types share one visibility bit per page number, as upstream already does. On a board set to diesel, pages 0..56 keep the diesel choice, so check pages 47..56 after a change to gasoline.
+
+## Three value pages and page order
+
+| Page | Screen | Values |
+|---|---|---|
+| 67 | `U84 O86 W89 °` | UniAir oil, engine oil, water |
+| 68 | `O86 W89 G71 °` | engine oil, water, gearbox |
+| 69 | `M0.3 B1.02 T27` | manifold pressure, boost, intercooler air |
+| 70 | `P2.2 O86 W89 °` | oil pressure, oil, water |
+| 71 | `13.9V -2 A 85 %` | battery voltage, current, charge |
+| 72 | `G4 T250 B1.8` | gear, torque, boost |
+| 73 | `E585 C490 T27` | exhaust gas, catalyst, intercooler air |
+
+Pages are shown with three value pages first, then two value pages, then single ones. Page numbers do not change, so saved visibility and drive style bindings stay. Params Setup Menu lists the combined pages, `SAVE & EXIT`, the single pages and `SAVE & EXIT` again, then starts over. Either entry saves everything.
+
+Values the board already has are refreshed on every 500 ms screen period. Requested values take turns, one request per period.
 
 ## Main menu
 
@@ -43,7 +59,6 @@ Changes are kept with `SAVE&EXIT`.
 
 | Entry | Values |
 |---|---|
-| `Screen Rate` | 500 (as before), 400, 350 ms. One parameter is requested per period |
 | `Warnings` | off, text, text and chime. Gates every warning |
 | `ECM Watch` | off, all, temperatures, faults |
 
@@ -76,7 +91,7 @@ Critical warnings are also shown with the dashboard menu hidden. The chime is re
 
 ## Saved settings
 
-Slot 33 stays DNA Memory. New: slot 34 warnings, 35 and 36 pages bound to drive styles, 37 auto scroll, 38 ECM watch, 39 cold alarm, 40 screen rate. Blank flash and 0 mean the default. The last word of the page visibility area holds a mark (`0x6A31`).
+Slot 33 stays DNA Memory. New: slot 34 warnings, 35 and 36 pages bound to drive styles, 37 auto scroll, 38 ECM watch, 39 cold alarm. Blank flash and 0 mean the default. The last word of the page visibility area holds a mark (`0x6A32`).
 
 ## Tests
 
