@@ -99,40 +99,22 @@ void processingExtendedMessage(){
 			}
 		} //end of immobilizer section
 
+		if(rx_msg_header.ExtId==0x18DAF110) giuliaWatchOnEcmFrame(); //giulia h4
 		if ((rx_msg_header.ExtId==single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyId) && baccableDashboardMenuVisible){ //if we received UDS message with current selected parameter, let's aquire it
 			if(dashboard_menu_indent_level==1 && main_dashboardPageIndex==1){ //if we are in show params menu
 				onboardLed_blue_on();
-				if (rx_msg_header.DLC>=4+single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyOffset+single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyLen){
-					uint8_t numberOfBytesToRead=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyLen;
-					// Limita il numero di byte a un massimo di 4 per evitare overflow
-					if (numberOfBytesToRead > 4) {
-						numberOfBytesToRead = 4;
-					}
-					uint32_t tmpVal=0; //take value of received parameter
-
-					// Costruisce il valore a partire dai byte ricevuti
-					for (size_t i = 0; i < numberOfBytesToRead; i++) {
-						tmpVal |= ((uint32_t)rx_msg_data[4+single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyOffset+i]) << (8 * (numberOfBytesToRead - 1 - i));
-					}
-
-					tmpVal+=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyValOffset;
-					float tmpVal2 =tmpVal * single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyScale;
-					tmpVal2 +=single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]].replyScaleOffset;
+				float tmpVal2; //giulia h1 - decoding moved to udsDecodeReply (signed values, DID check)
+				if (udsDecodeReply(&single_uds_params_array[uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]], rx_msg_data, rx_msg_header.DLC, &tmpVal2)){
 
 					if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]== uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[!currentParamElementSelection]){
 						currentParamElementSelection=0; //single param
 					}
 
-					if(maxHold_enabled){
-						if(isnan(dashboardParamCouple[currentParamElementSelection])){
-							dashboardParamMaxHold[currentParamElementSelection]=tmpVal2; //first update after navigation: reset max hold
-						}else if(tmpVal2 > dashboardParamMaxHold[currentParamElementSelection]){
-							dashboardParamMaxHold[currentParamElementSelection]=tmpVal2; //new maximum found
-						}
-						dashboardParamCouple[currentParamElementSelection]=dashboardParamMaxHold[currentParamElementSelection];
-					}else{
-						dashboardParamCouple[currentParamElementSelection]=tmpVal2; //normal behavior
+					if(uds_params_array[function_is_diesel_enabled][dashboardPageIndex].udsParamId[currentParamElementSelection]==92){ //giulia h4: fuel flow kept for L/100 km
+						fuelFlowLh=(fuelFlowLh!=fuelFlowLh || currentTime-fuelFlowTime>3000) ? tmpVal2 : fuelFlowLh+0.5f*(tmpVal2-fuelFlowLh);
+						fuelFlowTime=currentTime;
 					}
+					dashboardParamCouple[currentParamElementSelection]=applyHold(currentParamElementSelection,tmpVal2); //giulia h1 - max or min hold
 					sendDashboardPageToSlaveBaccable();//send parameters to BH
 				}
 			}

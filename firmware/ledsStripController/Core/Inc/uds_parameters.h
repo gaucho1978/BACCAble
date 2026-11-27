@@ -27,22 +27,35 @@
 		uint32_t 	replyId;
 		uint8_t		replyLen;
 		uint8_t		replyOffset;
+		uint8_t		replyFlags;		//giulia h1: bit0 = raw value is signed (8 or 16 bit). Sits in a padding byte, the struct stays 40 bytes
 		int32_t		replyValOffset;
 		float		replyScale;
 		int32_t		replyScaleOffset;
 		uint8_t		replyMeasurementUnit[7];
 		uint8_t		replyDecimalDigits;
 	} uds_param_single_element;
+	_Static_assert(sizeof(uds_param_single_element)==40, "uds_param_single_element grew"); //giulia h1
+	#define UDS_REPLY_SIGNED 0x01 //giulia h1
+	#define UDS_REPLY_OBD 0x02 //giulia h3 - OBD mode 01 request (02 01 PID), reply is 41 PID data: data start at byte 3
+	#define UDS_PAGES_MAX 72 //giulia h3 - pages per fuel type, was 60. One visibility bit per page: must stay <= 240
+	#define UDS_SINGLE_PARAMS_MAX 130 //giulia h3 - parameter records, was 100. Index is uint8_t: must stay <= 255
+	#define WARMUP_OIL_RAW 120 //giulia h3 - oil 80 C as raw byte of 0x4B2 (raw-40)
+	#define WARMUP_REARM_MS 60000 //giulia h3 - engine off longer than this: next start is a new warm-up
+	void warmupTimerUpdate(uint32_t nowMs, uint32_t rpm, uint8_t oilRaw); //giulia h3
+	float warmupTimerMinutes(void); //giulia h3
+	uint16_t screenRefreshPeriodMs(uint8_t mode); //giulia h2
+	uint8_t udsDecodeReply(const uds_param_single_element *p, const uint8_t *rx, uint8_t dlc, float *out); //giulia h1
 
 	extern float dashboardParamCouple[2];
 	extern float dashboardParamMaxHold[2];
 	extern uint8_t shownParamsArray[240];
+	_Static_assert(UDS_PAGES_MAX<=240 && UDS_SINGLE_PARAMS_MAX<=255, "table sizes"); //giulia h3
 	extern uint8_t params_setup_dashboardPageIndex;
 	extern uint8_t total_pages_in_params_setup_dashboard_menu;
 	extern uint8_t total_pages_in_dashboard_menu_gasoline;
 	extern uint8_t total_pages_in_dashboard_menu_diesel;
-	extern const uds_params_couple_element uds_params_array[2][60];
-	extern const uds_param_single_element single_uds_params_array[100];
+	extern const uds_params_couple_element uds_params_array[2][UDS_PAGES_MAX];
+	extern const uds_param_single_element single_uds_params_array[UDS_SINGLE_PARAMS_MAX];
 	extern uint8_t currentParamElementSelection;
 
 	extern const char* dpfRegenEnumStrings[];

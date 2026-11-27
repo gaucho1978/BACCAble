@@ -545,6 +545,7 @@ void processingStandardMessage(){
 				if(rx_msg_header.DLC>=4){
 					oilPressure= ((rx_msg_data[0] & 0b00000001) << 7 | ((rx_msg_data[1] >> 1) & 0b01111111));
 					oilTemperature= ((rx_msg_data[2] & 0b00111111) << 2 | ((rx_msg_data[3] >> 6) & 0b00000011));
+					oil4B2LastTime=currentTime; //giulia h3
 					nativeMaxHoldUpdate(0); //oil pressure
 					nativeMaxHoldUpdate(5); //oil temperature
 				}
