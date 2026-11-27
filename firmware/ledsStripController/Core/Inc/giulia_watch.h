@@ -45,9 +45,11 @@
 	#define GW_AL_CAC_DROP		0x08
 	#define GW_AL_NEW_FAULT		0x10
 
-	//watch mode, flash slot 38: 0 = all (default), 1 = temperatures only, 2 = faults only, 3 = off
-	#define GW_MODE_HAS_TEMP(m)	((m)==0 || (m)==1)
-	#define GW_MODE_HAS_DTC(m)	((m)==0 || (m)==2)
+	//watch mode, flash slot 38: 0 = off (default: nothing is asked until the driver turns it on), 1 = all,
+	//2 = temperatures only, 3 = faults only
+	#define GW_MODE_OFF			0
+	#define GW_MODE_HAS_TEMP(m)	((m)==1 || (m)==2)
+	#define GW_MODE_HAS_DTC(m)	((m)==1 || (m)==3)
 
 	typedef struct{
 		uint32_t startMs;		//engine start (gwReset)

@@ -109,7 +109,7 @@ int main(void){
 	    for(uint32_t ms=1;ms<=60000;ms++){ uint8_t it=gwNextItem(&g,ms,(uint8_t)mode); if(it!=GW_ITEM_NONE){ n[it]++; if(!first && ms-last<GW_SLOT_MS) bad=1; last=ms; first=0; } }
 	    printf("     mode %d in 60 s: cac %d water %d ic %d dtc %d\n",mode,n[0],n[1],n[2],n[3]);
 	    CK("scheduler: at most one request per second", !bad && n[0]+n[1]+n[2]+n[3]<=60);
-	    CK("scheduler: mode selects the items", (mode==0 && n[3]==6 && n[1]+n[2]+n[0]==54) || (mode==1 && n[3]==0 && n[0]+n[1]+n[2]==60) || (mode==2 && n[3]==6 && n[0]+n[1]+n[2]==0) || (mode==3 && n[0]+n[1]+n[2]+n[3]==0)); }
+	    CK("scheduler: mode selects the items", (mode==0 && n[0]+n[1]+n[2]+n[3]==0) || (mode==1 && n[3]==6 && n[0]+n[1]+n[2]==54) || (mode==2 && n[3]==0 && n[0]+n[1]+n[2]==60) || (mode==3 && n[3]==6 && n[0]+n[1]+n[2]==0)); }
 	  gwReset(&g,0);
 	  CK("request 22 1003", gwBuildRequest(&g,GW_ITEM_WATER,d)==4 && !memcmp(d,B(3,0x22,0x10,0x03),4));
 	  CK("request 22 1C16", gwBuildRequest(&g,GW_ITEM_CAC,d)==4 && !memcmp(d,B(3,0x22,0x1C,0x16),4));
@@ -127,7 +127,7 @@ int main(void){
 	  RX(3,0x7F,0x19,0x12,0,0,0,0); RX(3,0x7F,0x19,0x12,0,0,0,0); RX(3,0x7F,0x19,0x12,0,0,0,0);
 	  CK("dtc: 3 refusals switch the mask to 08", g.dtcMask==0x08 && !g.dtcOff && gwBuildRequest(&g,GW_ITEM_DTC,d) && d[3]==0x08);
 	  RX(3,0x7F,0x19,0x12,0,0,0,0); RX(3,0x7F,0x19,0x12,0,0,0,0); RX(3,0x7F,0x19,0x12,0,0,0,0);
-	  { int asked=0; for(uint32_t ms=now;ms<now+60000;ms++) if(gwNextItem(&g,ms,2)==GW_ITEM_DTC) asked++; CK("dtc: 3 more refusals stop the requests", g.dtcOff && asked==0); }
+	  { int asked=0; for(uint32_t ms=now;ms<now+60000;ms++) if(gwNextItem(&g,ms,3)==GW_ITEM_DTC) asked++; CK("dtc: 3 more refusals stop the requests", g.dtcOff && asked==0); }
 	  g.dtcCount=1001; g.dtcBase=0; CK("dtc: text stays in 18 chars", gwAlarmText(&g,GW_AL_NEW_FAULT,t)==18 && !strcmp(t,"NEW ECM FAULT: 999"));
 	  //coolant hot
 	  gwReset(&g,0); now=5000;
@@ -160,6 +160,7 @@ int main(void){
 	  CK("resume: 40 s stop keeps run time and baseline", gwEngineStart(&g,now+40000,now,1)==0 && g.startMs==0 && g.dtcBase==3 && (g.have&(1<<GW_ITEM_DTC)));
 	  CK("resume: 3 min stop resets", gwEngineStart(&g,now+180000,now,1)==1 && g.startMs==(uint32_t)(now+180000) && !(g.have&(1<<GW_ITEM_DTC)));
 	  CK("resume: first start resets", gwEngineStart(&g,5000,0,0)==1 && g.startMs==5000);
+	#if GW_CAC_VERIFIED
 	  //charge air cooler sensor
 	  gwReset(&g,0); now=1000; RX(4,0x62,0x10,0x03,90+40,0,0,0);
 	  CK("cac: first value, no alarm", RX(5,0x62,0x1C,0x16,0x00,25,0,0)==0); now+=2000;
@@ -173,6 +174,10 @@ int main(void){
 	  gwReset(&g,0); now=1000; RX(5,0x62,0x1C,0x16,0x00,25,0,0); now+=30000;
 	  CK("cac: old sample is not compared", RX(5,0x62,0x1C,0x16,0x00,60,0,0)==0);
 	  CK("cac: DLC 5 is ignored", gwOnReply(&g,B(5,0x62,0x1C,0x16,0xFF,0,0,0),5,now,spd,cold)==0 && g.cac==60);
+	#else
+	  gwReset(&g,0); now=1000; RX(4,0x62,0x10,0x03,90+40,0,0,0); RX(5,0x62,0x1C,0x16,0x00,25,0,0); now+=2000;
+	  CK("cac: watch is off while 1C16 is not verified", RX(5,0x62,0x1C,0x16,0x7F,0xFF,0,0)==0 && g.cacDrops==0 && g.active==0);
+	#endif
 	  //consumption
 	  CK("L/100: 8.4 L/h at 100 km/h", fabsf(gwFuelPer100(8.4f,100)-8.4f)<0.001f);
 	  CK("L/100: fuel cut is 0", gwFuelPer100(0,80)==0);
@@ -182,7 +187,10 @@ int main(void){
 	pg(66,B(4,0x62,0x19,0x42,0x54,0,0,0),0,0,8.4f,"8.4 L/h 8.4 L/100");
 	pg(66,B(4,0x62,0x19,0x42,0x0A,0,0,0),0,0,NAN,"1   L/h     L/100");
 	pg(66,B(4,0x62,0x19,0x42,0xFF,0,0,0),0,0,99.9f,"25.5L/h 99.9L/100");
-	pg(67,0,0,-40,2,"CACmin -40 DRP 2 ");
-	pg(67,0,0,NAN,0,"CACmin     DRP 0 ");
+	{ uint8_t sh[240]; int ok;
+	  memset(sh,0,sizeof sh); sh[0]=1; shownParamsUpgrade(sh,0x1234,0); ok=sh[0]==1 && sh[1]==0 && sh[46]==0 && sh[47]==1 && sh[60]==1 && sh[61]==0 && sh[64]==0 && sh[65]==1 && sh[66]==1;
+	  if(!ok) fails++; printf("%s upgrade: new gasoline pages shown, OBD pages hidden, old choice kept\n",ok?"ok  ":"FAIL");
+	  memset(sh,0,sizeof sh); shownParamsUpgrade(sh,SHOWN_PARAMS_MARK,0); ok=sh[47]==0 && sh[66]==0; if(!ok) fails++; printf("%s upgrade: with the mark nothing changes\n",ok?"ok  ":"FAIL");
+	  memset(sh,0,sizeof sh); shownParamsUpgrade(sh,0xFFFF,1); ok=sh[47]==0; if(!ok) fails++; printf("%s upgrade: diesel untouched\n",ok?"ok  ":"FAIL"); }
 	printf("fails=%d\n",fails); return fails;
 }

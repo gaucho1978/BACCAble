@@ -22,7 +22,7 @@
 #define WARN_CHIME_REPEAT_MS	30000	//critical warning still active: chime again
 #define WARN_CHIME_REPEAT_MAX	3		//chimes for one raise of a critical warning
 
-//thresholds, raw units of 0x4B2 (see docs/baccable-stage3-plan.md, all marked as guesses there)
+//thresholds, raw units of 0x4B2 (estimates, not yet confirmed on a car)
 #define WARN_OILT_COLD_RAW		100		//60 C (raw-40)
 #define WARN_OILT_RPM_ON		3500
 #define WARN_OILT_RPM_OFF		3000

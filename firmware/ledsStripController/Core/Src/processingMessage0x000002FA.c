@@ -132,6 +132,7 @@ void processingMessage0x000002FA(){
 										if(main_dashboardPageIndex==12) main_dashboardPageIndex++;
 									}
 
+									if(function_is_diesel_enabled==1 && main_dashboardPageIndex==18) main_dashboardPageIndex+=2; //watchdog rows: gasoline only
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 									//onboardLed_blue_on();
 									sendMainDashboardPageToSlaveBaccable();//send dashboard page via usb
@@ -216,6 +217,7 @@ void processingMessage0x000002FA(){
 											if(main_dashboardPageIndex==12) main_dashboardPageIndex++;
 										}
 
+										if(function_is_diesel_enabled==1 && main_dashboardPageIndex==18) main_dashboardPageIndex+=2; //watchdog rows: gasoline only
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=0; // make a rotative menu
 										//onboardLed_blue_on();
 										sendMainDashboardPageToSlaveBaccable();//send dashboard page to BH
@@ -270,6 +272,7 @@ void processingMessage0x000002FA(){
 									main_dashboardPageIndex-= 1; //set next page
 
 									if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
+									if(function_is_diesel_enabled==1 && main_dashboardPageIndex==19) main_dashboardPageIndex=17; //watchdog rows: gasoline only
 
 									if(QV_exhaust_flap_function_enabled==0){
 										if(main_dashboardPageIndex==12) main_dashboardPageIndex--;
@@ -352,6 +355,7 @@ void processingMessage0x000002FA(){
 									case 0: //main menu
 										main_dashboardPageIndex-= 1; //set next page
 										if(main_dashboardPageIndex>=dashboard_main_menu_array_len)  main_dashboardPageIndex=dashboard_main_menu_array_len-1; // make a rotative menu
+										if(function_is_diesel_enabled==1 && main_dashboardPageIndex==19) main_dashboardPageIndex=17; //watchdog rows: gasoline only
 
 										if(QV_exhaust_flap_function_enabled==0){
 											if(main_dashboardPageIndex==12) main_dashboardPageIndex--;
@@ -562,8 +566,9 @@ void processingMessage0x000002FA(){
 								case 18: //giulia h4: acknowledge the new faults
 									gw.dtcBase=gw.dtcCount; gw.active&=(uint8_t)~GW_AL_NEW_FAULT;
 									break;
-								case 19: //giulia h4: cold alarm limit: 75, 70, 80, off. Kept with SAVE&EXIT
+								case 19: //giulia h4: cold alarm limit: 75, 70, 80, off
 									giuliaColdMode=(giuliaColdMode+1)%4;
+									settingsSaveRequested=1;
 									break;
 								case 15: //Max Hold toggle
 									maxHold_enabled=(maxHold_enabled+1)%3; //giulia h1 - OFF, MAX, MIN
@@ -578,7 +583,7 @@ void processingMessage0x000002FA(){
 									break;
 								case 17: //giulia h3: auto scroll: OFF, 3 s, 5 s, 10 s
 									autoScrollMode=(autoScrollMode+1)%4;
-									saveOnflash();
+									settingsSaveRequested=1; //written with the engine stopped
 									break;
 								default:
 									break;
@@ -820,7 +825,7 @@ void processingMessage0x000002FA(){
 										case 31: //{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y'} //DNA memory 18/10/2026
 											dnaMemoryFunctionEnabled=!dnaMemoryFunctionEnabled;
 											break;
-										case 34: //giulia h4: ECM Watch: ALL, TEMP, DTC, OFF
+										case 34: //giulia h4: ECM Watch: OFF, ALL, TEMP, DTC
 											giuliaWatchMode=(giuliaWatchMode+1)%4;
 											break;
 										case 32: //giulia h2 - Screen Rate: 500, 400, 350 ms. applied at once, kept with SAVE&EXIT

@@ -336,7 +336,7 @@
 		static uint32_t stopMs=0; static uint8_t hadRun=0;
 		if(engineOnSinceMoreThan5seconds<500 || function_is_diesel_enabled){ if(gwRunning) stopMs=currentTime; gwRunning=0; return; }
 		if(!gwRunning){ gwEngineStart(&gw,currentTime,stopMs,hadRun); hadRun=1; gwRunning=1; } //a Start&Stop pause keeps the state
-		if(giuliaWatchMode==3) return;
+		if(giuliaWatchMode==GW_MODE_OFF) return;
 		if(faultsStateMachine!=0xFF || clearFaultsRequest || elm327ActivationConfirmed) return; //another UDS user owns the engine ECU
 		uint32_t since=currentTime-last_sent_uds_parameter_request_Time;
 		uint32_t period=screenRefreshPeriodMs(screenRefreshMode);
@@ -790,6 +790,7 @@
 		}
 
 
+		if(settingsSaveRequested && currentRpmSpeed<400){ settingsSaveRequested=0; saveOnflash(); }
 		stage3Periodic(); //giulia h3: warnings, chime, page by drive style, auto scroll
 
 		if(shutdownDashboardMenuRequestTime>0){
@@ -1598,7 +1599,7 @@
 				dashboard_setup_menu_array[setup_dashboardPageIndex][0]=checkbox_symbols[dnaMemoryFunctionEnabled];
 				break;
 			case 34: //giulia h4: "ECM Watch: ALL"
-				memcpy(&dashboard_setup_menu_array[34][11], giuliaWatchMode==0 ? "ALL " : (giuliaWatchMode==1 ? "TEMP" : (giuliaWatchMode==2 ? "DTC " : "OFF ")), 4);
+				memcpy(&dashboard_setup_menu_array[34][11], giuliaWatchMode==1 ? "ALL " : (giuliaWatchMode==2 ? "TEMP" : (giuliaWatchMode==3 ? "DTC " : "OFF ")), 4);
 				break;
 			case 32: //giulia h2 - {'S','c','r','e','e','n',' ','R','a','t','e',' ','5','0','0','m','s'}
 				dashboard_setup_menu_array[setup_dashboardPageIndex][12]=(uint8_t)('0'+screenRefreshPeriodMs(screenRefreshMode)/100);
@@ -1773,11 +1774,6 @@
 				break;
 			case 16://giulia h4: was free RAM: instant consumption, L/100 km
 				return (currentTime-fuelFlowTime>3000) ? NAN : gwFuelPer100(fuelFlowLh,currentSpeed_km_h);
-			case 120: //giulia h4: lowest DID 1C16 since the engine start
-				return (gwRunning && (gw.have&(1<<GW_ITEM_CAC))) ? (float)gw.cacMin : NAN;
-			case 121: //giulia h4: DID 1C16 drop events since the engine start
-				return gwRunning ? (float)gw.cacDrops : NAN;
-				break;
 			case 17://Pedal current Map
 				return currentSchizzaforteMap;
 				break;
@@ -2144,6 +2140,7 @@
 
 			//let's prepare variables
 			compress_to_uint16(shownParamsArray, total_pages_in_params_setup_dashboard_menu, params);
+			params[29]=SHOWN_PARAMS_MARK; //pages use words 0..14 at most
 
 			//it seems that stm32F072 supports only writing 2byte words
 			//write parameter
@@ -2208,6 +2205,7 @@
 
 		//decompress
 		decompress_from_uint16(params, 30, shownParamsArray, 240);
+		shownParamsUpgrade(shownParamsArray, params[29], function_is_diesel_enabled);
 
 		}
 
@@ -2564,14 +2562,14 @@
 	}
 
 	uint8_t getPreviousVisibleParam(uint8_t curIndex) {
-
-	    uint8_t index = curIndex;
-	    while (index >= 0 && !shownParamsArray[index]) index--;
-
-	    if (index >= total_pages_in_params_setup_dashboard_menu) index = total_pages_in_params_setup_dashboard_menu-1; //if all hidden, restart from the end
-	    while (index > curIndex && !shownParamsArray[index]) index--;
-
-	    return index;
+	    uint8_t total = total_pages_in_params_setup_dashboard_menu;
+	    if (total == 0) return 0;
+	    uint8_t index = (curIndex < total) ? curIndex : (uint8_t)(total - 1);
+	    for (uint8_t k = 0; k < total; k++) { //at most one full turn, wrapping from 0 to the last page
+	        if (shownParamsArray[index]) return index;
+	        index = index ? (uint8_t)(index - 1) : (uint8_t)(total - 1);
+	    }
+	    return (curIndex < total) ? curIndex : 0; //all hidden
 	}
 
 	//giulia h3: BEGIN
@@ -2601,7 +2599,7 @@
 		if(idx>3) return;
 		uint8_t bound=dnaPageGet(dnaPagesND,dnaPagesAR,idx,total_pages_in_params_setup_dashboard_menu);
 		dnaPageSet(&dnaPagesND,&dnaPagesAR,idx,(bound==dashboardPageIndex) ? 0xFF : dashboardPageIndex);
-		saveOnflash();
+		settingsSaveRequested=1; //written with the engine stopped
 	}
 
 	static void stage3ShowPage(uint8_t page){

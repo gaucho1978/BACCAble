@@ -8,7 +8,7 @@
 	uint8_t params_setup_dashboardPageIndex=0;
 	uint8_t total_pages_in_params_setup_dashboard_menu=0;
 
-	uint8_t total_pages_in_dashboard_menu_gasoline=68; //giulia merge: two stage 4 pages; //giulia h3 - was 54; //giulia h1 - was 47; //brake in show params 10/10/2026 - was 46
+	uint8_t total_pages_in_dashboard_menu_gasoline=67; //giulia: 47 upstream pages and 20 new ones
 	uint8_t total_pages_in_dashboard_menu_diesel=57; //brake in show params 10/10/2026 - was 56
 	uint8_t currentParamElementSelection=0;
 	
@@ -88,7 +88,6 @@
 					[64]={.name="LAMBDA: $1.3f",	.udsParamId={111,	111	}}, //giulia h3 - OBD 44 commanded lambda
 					[65]={.name="W.UP $2.1fmin $3.0f" "\xB0" "C",	.udsParamId={14,	5	}}, //giulia h3 - warm-up timer (native 14) and oil
 					[66]={.name="$2.1fL/h $2.1fL/100",				.udsParamId={92,	16		}}, //page 66: fuel flow and instant consumption
-					[67]={.name="CACmin $3.0f DRP $2.0f",			.udsParamId={120,	121		}}, //page 66
 					//
 //					{.name="RAM: $5.0fB",						.udsParamId={16,	16		}}, //Free RAM
 //									{.name={'T', 'Y', 'R', 'E', ' ', 'R', 'F', ':', ' ',},              .reqId=0x18DAC7F1,  .reqLen=4,  .reqData=SWAP_UINT32(0x022240B3),   .replyId=0x18DAF1C7,    .replyLen=1,    .replyOffset=4, .replyValOffset=-50,    .replyScale=1,              .replyScaleOffset=0,    .replyDecimalDigits=1,  .replyMeasurementUnit={0xB0,'C'}                        }, // LIMITE BYTE
@@ -289,8 +288,6 @@
 		[109]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010E00),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=-128,	.replyScale=0.5,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={0xB0,}	}, //109		OBD 0E timing advance
 		[110]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02010400),	.replyId=0x18DAF110,	.replyLen=1,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=0,	.replyScale=0.39215686,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={'%',}	}, //110		OBD 04 calculated load
 		[111]={.reqId=0x18DB33F1,	.reqLen=3,	.reqData=SWAP_UINT32(0x02014400),	.replyId=0x18DAF110,	.replyLen=2,	.replyOffset=0,	.replyFlags=UDS_REPLY_OBD,	.replyValOffset=0,	.replyScale=0.000030517578,	.replyScaleOffset=0,	.replyDecimalDigits=0,	.replyMeasurementUnit={' ',}	}, //111		OBD 44 commanded lambda
-		[120]={.reqId=0x30,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyScale=1,	.replyMeasurementUnit={0xB0,'C',}	}, //120	giulia h4 - native: lowest DID 1C16 since the engine start
-		[121]={.reqId=0x31,	.reqLen=4,	.reqData=SWAP_UINT32(0x00000000),	.replyId=0x00000000,	.replyLen=2,	.replyScale=1,	.replyMeasurementUnit={' ',}		}, //121	giulia h4 - native: DID 1C16 drop events
 	
 	};
 
@@ -374,4 +371,13 @@
 	}
 	float warmupTimerMinutes(void){
 		return (float)warmupTenths/10.0f;
+	}
+
+	//older firmware stored only the bits of its own pages (the rest of the area held stack garbage). Without our
+	//mark: show the new gasoline pages, except the ones that put OBD functional requests on the bus.
+	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel){
+		if(mark==SHOWN_PARAMS_MARK || isDiesel) return;
+		for(uint8_t i=UPSTREAM_PAGES_GASOLINE; i<UDS_PAGES_MAX; i++){
+			shown[i]=(i>=OBD_PAGES_FIRST && i<=OBD_PAGES_LAST) ? 0 : 1;
+		}
 	}

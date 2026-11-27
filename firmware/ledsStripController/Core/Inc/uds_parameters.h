@@ -36,6 +36,11 @@
 	} uds_param_single_element;
 	_Static_assert(sizeof(uds_param_single_element)==40, "uds_param_single_element grew"); //giulia h1
 	#define UDS_REPLY_SIGNED 0x01 //giulia h1
+	#define SHOWN_PARAMS_MARK 0x6A31		//last word of the page visibility area: written by this firmware
+	#define UPSTREAM_PAGES_GASOLINE 47		//pages whose visibility bit older firmware stored
+	#define OBD_PAGES_FIRST 61				//gasoline pages that send OBD functional requests: hidden until enabled
+	#define OBD_PAGES_LAST 64
+	void shownParamsUpgrade(uint8_t *shown, uint16_t mark, uint8_t isDiesel);
 	#define UDS_REPLY_OBD 0x02 //giulia h3 - OBD mode 01 request (02 01 PID), reply is 41 PID data: data start at byte 3
 	#define UDS_PAGES_MAX 72 //giulia h3 - pages per fuel type, was 60. One visibility bit per page: must stay <= 240
 	#define UDS_SINGLE_PARAMS_MAX 130 //giulia h3 - parameter records, was 100. Index is uint8_t: must stay <= 255

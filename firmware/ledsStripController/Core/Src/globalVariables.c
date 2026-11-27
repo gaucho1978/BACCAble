@@ -169,11 +169,12 @@ const char *FW_VERSION=_FW_VERSION;
 	uint8_t dashboard_menu_indent_level=0;
 	gw_state gw; //giulia h4
 	uint8_t gwRunning=0; //giulia h4: 1 while the engine runs and the watch state is valid
-	uint8_t giuliaWatchMode=0; //giulia h4: flash slot 38: 0=all (default), 1=temperatures, 2=faults, 3=off
+	uint8_t giuliaWatchMode=0; //giulia h4: flash slot 38: 0=off (default), 1=all, 2=temperatures, 3=faults
 	uint8_t giuliaColdMode=0; //giulia h4: flash slot 39: 0=75 C (default), 1=70, 2=80, 3=off
 	float fuelFlowLh=NAN; //giulia h4: last DID 1942 value, smoothed
 	uint32_t fuelFlowTime=0;
 	uint8_t screenRefreshMode=0; //giulia h2 - 0=500ms (stock), 1=400ms, 2=350ms. saved on flash (slot 40)
+	uint8_t settingsSaveRequested=0; //a page erase stalls the cpu: it waits for the engine to stop
 	uint8_t maxHold_enabled=0; // 0=Hold OFF, 1=Max Hold, 2=Min Hold (RAM only, resets on power cycle) //giulia h1
 	uint8_t warnMode=0; //giulia h3: 0=warnings off, 1=text, 2=text and chime. saved on flash (slot 34)
 	uint16_t dnaPagesND=0; //giulia h3: page bound to Natural (low byte) and Dynamic (high byte), page+1, 0=none. slot 35
@@ -241,7 +242,7 @@ const char *FW_VERSION=_FW_VERSION;
 			{'O',' ',' ','D','N','A',' ','M','e','m','o','r','y',' ',' ',' ',' ',' ',}, //DNA memory 18/10/2026
 			{'S','c','r','e','e','n',' ','R','a','t','e',' ','5','0','0','m','s',' '}, //giulia h2
 			{'O',' ',' ','W','a','r','n','i','n','g','s',' ',' ',' ',' ',' ',' ',' '}, //giulia h3: index 33
-			{'E','C','M',' ','W','a','t','c','h',':',' ','A','L','L',' ',' ',' ',' '}, //giulia h4: index 34
+			{'E','C','M',' ','W','a','t','c','h',':',' ','O','F','F',' ',' ',' ',' '}, //giulia h4: index 34
 
 		};
 
@@ -594,6 +595,8 @@ CAN_TxHeaderTypeDef clearFaults_msg_header={.IDE=CAN_ID_EXT, .RTR = CAN_RTR_DATA
 
 //
 uint8_t dashboardPageStringArray[DASHBOARD_MESSAGE_MAX_LENGTH]={' ',}; //it contains string to print on dashboard
+uint8_t dashboardPageStringNext[DASHBOARD_MESSAGE_MAX_LENGTH];
+volatile uint8_t dashboardPageStringPending=0;
 
 float currentSpeed_km_h=0; //current vehicle speed
 float previousSpeed_km_h=0; //store speed at previous loop

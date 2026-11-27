@@ -99,7 +99,9 @@ uint8_t gwOnReply(gw_state *s, const uint8_t *rx, uint8_t dlc, uint32_t now, flo
 		s->icAir=(int16_t)rx[4]-40; s->tIc=now; s->have|=(1<<GW_ITEM_ICAIR);
 		if(held(s->icAir>=GW_ICAIR_HOT_ON && speed>=GW_ICAIR_SPEED, &s->icN, &s->icSince, prev, now, GW_ICAIR_HOLD_MS)) out|=raise(s,GW_AL_ICAIR_HOT);
 		if(s->icAir<=GW_ICAIR_HOT_OFF) s->active&=(uint8_t)~GW_AL_ICAIR_HOT;
-	}else if(did==0x1C16 && dlc>=6){
+	}
+	#if GW_CAC_VERIFIED
+	else if(did==0x1C16 && dlc>=6){
 		int16_t v=(int16_t)(((uint16_t)rx[4]<<8)|rx[5]);
 		uint8_t had=s->have&(1<<GW_ITEM_CAC);
 		uint8_t fresh= had && (now-s->tCac<=GW_STALE_MS);
@@ -115,6 +117,7 @@ uint8_t gwOnReply(gw_state *s, const uint8_t *rx, uint8_t dlc, uint32_t now, flo
 		if(v<s->cacMin) s->cacMin=v;
 		s->cac=v; s->tCac=now; s->have|=(1<<GW_ITEM_CAC);
 	}
+	#endif
 	return out;
 }
 

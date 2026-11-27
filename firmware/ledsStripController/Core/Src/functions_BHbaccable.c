@@ -174,6 +174,13 @@
 			//send one msg to write something on the dashboard each 50msec (one frame each 300msec)
 			if (currentTime-lastSentTelematic_display_info_msg_Time>50){
 				lastSentTelematic_display_info_msg_Time=currentTime;
+				//a new line is taken only before its first frame, so one write never mixes two texts
+				if(paramsStringCharIndex==0 && dashboardPageStringPending){
+					__disable_irq(); //the uart interrupt writes the pending line
+					memcpy(dashboardPageStringArray, dashboardPageStringNext, DASHBOARD_MESSAGE_MAX_LENGTH);
+					dashboardPageStringPending=0;
+					__enable_irq();
+				}
 				//prepare msg to send:
 				//frame number is on byte 0 from bit 2 to 0 and byte1 from bit7 to 6
 				telematic_display_info_msg_data[0]=(telematic_display_info_msg_data[0] & ~0x07) | ((telematic_display_info_field_frameNumber>>2) & 0x07);
